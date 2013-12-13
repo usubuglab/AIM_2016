@@ -1,14 +1,18 @@
 #-------------------------------------------------------INPUTS--------------------------------------------------------#
 #In the ideal world, users should only need to put inputs here and be able to get results out of the 'black box' below using existing functions.
 DBpassword=''#Always leave blank when saving for security and because changes annually. Contact Sarah Judson for current password.
+DBserver=''#ditto as with DBpassword
 
 #FILTERS
 ##from most to least specific
+All='Y'#set to 'Y' (meaning 'yes') if you want to query all sites (note this is quite time consuming and large, use provided filters wherever possible)
 sitecodes=c('AR-LS-8003','AR-LS-8007', 'TP-LS-8240')
 dates=c('05/05/2005')
 hitchs=c('')#NOT WORKING YET
 crews=c('R1')#NOT WORKING YET
 projects=c('NRSA')#NOT WORKING YET
+years=c(2013)#NOT WORKING YET
+UIDall=ifelse(All=='Y','%','')#swj to do: add | (or) for if all possible filters ==''
 
 #PARAMETERS
 #specify if desired (will make queries less intensive):
@@ -28,8 +32,9 @@ setwd('M:\\buglab\\Research Projects\\BLM_WRSA_Stream_Surveys\\Technology\\Outpu
 
 ##Establish an ODBC connection##
 #the db was created in SQL Server Manager on 11/19/2013 by Sarah Judson#
-wrsaConnectSTR=sprintf("Driver={SQL Server Native Client 10.0};Server=129.123.16.13,1433;Database=WRSAdb;Uid=feng; Pwd=%s;",DBpassword)
+wrsaConnectSTR=sprintf("Driver={SQL Server Native Client 10.0};Server=%s;Database=WRSAdb;Uid=feng; Pwd=%s;",DBserver,DBpassword)
 wrsa1314=odbcDriverConnect(connection = wrsaConnectSTR)
+#SWJ to do: throw this into a function that also prompts for server and password if missing (='')
 
 
 #SQL assistance functions
@@ -86,8 +91,8 @@ sqlColumns(wrsa1314,"tblPOINT")
 #select samples
 UIDs=sqlQuery(wrsa1314, sprintf("select distinct UID from tblVERIFICATION 
                                 where (active='TRUE') 
-                                AND ((Parameter='SITE_ID' and Result in (%s)) OR (Parameter='DATE_COL' and Result in (%s)))"
-                                ,inLOOP(sitecodes),inLOOP(dates)))
+                                AND ((Parameter='SITE_ID' and Result in (%s)) OR (Parameter='DATE_COL' and Result in (%s)) OR (UID like '%s'))"
+                                ,inLOOP(sitecodes),inLOOP(dates),UIDall))
 #SWJ to do: add additional filters
 #SWJ to do: prompt for data entry (mini-GUI)
 
@@ -100,7 +105,7 @@ tblPOINTbank=tblRetrieve('tblPOINT',bankP)
 
 
 #Close ODBC connection when done talking to SQL Server
-odbcClose(wrsa1314)
+odbcClose(wrsa1314); rm(DBpassword); rm(DBserver)
 
 #--------------------------------------------------------PIVOT VIEWS--------------------------------------------------------#
 ##RESHAPE to PIVOT## 
