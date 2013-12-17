@@ -1,23 +1,27 @@
 #-------------------------------------------------------INPUTS--------------------------------------------------------#
 #In the ideal world, users should only need to put inputs here and be able to get results out of the 'black box' below using existing functions.
 DBpassword=''#Always leave blank when saving for security and because changes annually. Contact Sarah Judson for current password.
+DBuser=''#ditto as with DBpassword
 DBserver=''#ditto as with DBpassword
+#this is a change
 
 #FILTERS
 ##from most to least specific
-All='Y'#set to 'Y' (meaning 'yes') if you want to query all sites (note this is quite time consuming and large, use provided filters wherever possible)
+AllData='Y'#set to 'Y' (meaning 'yes') if you want to query all sites (note this is quite time consuming and large, use provided filters wherever possible)
 sitecodes=c('AR-LS-8003','AR-LS-8007', 'TP-LS-8240')
 dates=c('05/05/2005')
 hitchs=c('')#NOT WORKING YET
 crews=c('R1')#NOT WORKING YET
 projects=c('NRSA')#NOT WORKING YET
 years=c(2013)#NOT WORKING YET
-UIDall=ifelse(All=='Y','%','')#swj to do: add | (or) for if all possible filters ==''
+
 
 #PARAMETERS
 #specify if desired (will make queries less intensive):
+AllParam='Y'#set to 'Y' (meaning 'yes') if you want to query all parameters
 testP=c('ANGLE','APPEALING','ALGAE')#test, one from each level of table
 bankP=c('ANGLE','UNDERCUT','EROSION','COVER','STABLE')
+
 
 
 #--------------------------------------------------------SETUP--------------------------------------------------------#
@@ -32,7 +36,7 @@ setwd('M:\\buglab\\Research Projects\\BLM_WRSA_Stream_Surveys\\Technology\\Outpu
 
 ##Establish an ODBC connection##
 #the db was created in SQL Server Manager on 11/19/2013 by Sarah Judson#
-wrsaConnectSTR=sprintf("Driver={SQL Server Native Client 10.0};Server=%s;Database=WRSAdb;Uid=feng; Pwd=%s;",DBserver,DBpassword)
+wrsaConnectSTR=sprintf("Driver={SQL Server Native Client 10.0};Server=%s;Database=WRSAdb;Uid=%s; Pwd=%s;",DBserver,DBuser, DBpassword)
 wrsa1314=odbcDriverConnect(connection = wrsaConnectSTR)
 #SWJ to do: throw this into a function that also prompts for server and password if missing (='')
 
@@ -53,9 +57,12 @@ inLOOP=function(inSTR) {
   return(loopSTR) 
 }
 #tblRetrieve: standard retrieval query
-tblRetrieve=function(table, parameters=''){
+tblRetrieve=function(table, parameters='', filter=''){
   if(parameters==''){parameters=sqlQuery(wrsa1314,sprintf("select distinct parameter from %s", table))}
-  sqlTABLE=sqlQuery(wrsa1314, sprintf('select * from %s where UID in (%s) and parameter in (%s)',table, inLOOP(UIDs),inLOOP(parameters)))
+  sqlTABLE=sqlQuery(wrsa1314, sprintf('select * from %s where UID in (%s) and parameter in (%s) %s',table, inLOOP(UIDs),inLOOP(parameters), ifelse(filter=='','',paste('and', filter))))
+  if(class(sqlTABLE)=="character"){#if returns a SQL error, assume that UID or parameter is not present and just retrieve the whole table
+    sqlTABLE=sqlQuery(wrsa1314, sprintf('select * from %s  %s',table, ifelse(filter=='','',paste('where', filter))))
+      }
   return(sqlTABLE)#could auto return the pivoted view, but currently assuming that is for on the fly viewing and is not the easiest way to perform metrics
 }
 #PVTconstruct: dyanamic generation of SQL pivot queries
@@ -65,6 +72,7 @@ FROM (SELECT UID %s,Parameter, Result
 FROM %s) p PIVOT (min(Result) FOR Parameter IN (%s)) AS pvt
 WHERE %s
 "
+  if(parameters==''){parameters=sqlQuery(wrsa1314,sprintf("select distinct parameter from %s", table))}#repeat from tblRetrieve() push to subfunction at some point
   if(tblTYPE %in% c('tblVERIFICATION', 'tblREACH')){ParamResolution=''
   } else if(tblTYPE=='tblTRANSECT'){ParamResolution=',Transect'
   } else if(tblTYPE=='tblPOINT'){ParamResolution=',Transect, Point'
@@ -84,9 +92,14 @@ WHERE %s
 
 #--------------------------------------------------------SQL RETRIEVE--------------------------------------------------------#
 #SQL tables are created and imports managed via an independent R scripts (createNRSA1314db_SWJ.r)
-#all possible tables
-sqlTables(wrsa1314)
-sqlColumns(wrsa1314,"tblPOINT")
+dbTBL=sqlTables(wrsa1314, tableType="TABLE")#all possible tables
+dbCOL=sqlColumns(wrsa1314,"tblPOINT")#column names (similar structure for each tbl since flat)
+dbPARAM=sqlQuery(wrsa1314,'Select SAMPLE_TYPE, PARAMETER, LABEL from tblMETADATA')#parameter names (SWJ to do: iterate over Sample_Type groups to generate pivots)
+tmpTYPE=as.character(unique(dbPARAM$SAMPLE_TYPE))
+dbTYPE=substr(tmpTYPE,1,nchar(tmpTYPE) - 1)#substr to get rid of the random "x" at the end of each name
+#UID and parameter prep (SWJ to do: could roll into a selectUID function and into the final sql call function (i.e. the winner btwn tblRetrieve and PvTconstruct))
+UIDall=ifelse(AllData=='Y','%','')#swj to do: add | (or) for if all possible filters ==''
+parameters=ifelse(AllParam='Y','',NULL)#functions interpret '' as all parameters, otherwise it is a specified list in the function input
 
 #select samples
 UIDs=sqlQuery(wrsa1314, sprintf("select distinct UID from tblVERIFICATION 
@@ -103,11 +116,29 @@ tblREACH=tblRetrieve('tblREACH')#not specifying parameters will retrieve the ent
 tblREACHtest=tblRetrieve('tblREACH',testP)
 tblPOINTbank=tblRetrieve('tblPOINT',bankP)
 
+#retrieve all possible tables by protocol groups and pivot
+tblCOL=c('UID', 'PARAMETER','RESULT')
+pvtCOL='UID %s ~ PARAMETER'
+for (t in 1:nrow(dbTBL)){
+  tblNAME=dbTBL$TABLE_NAME[t]
+  tbl=tblRetrieve(tblNAME)
+  if(min(c('SAMPLE_TYPE',tblCOL) %in% colnames(tbl))==1){#if minimum needed columns are present, proceed, otherwise assume it is a pivoted or otherwise human readable table
+      if(tblNAME=='tblPOINT'){tblCOL2=append(tblCOL,c('TRANSECT','POINT'), after=1); pvtCOL2=sprintf(pvtCOL,'+ TRANSECT + POINT')
+  } else if (tblNAME=='tblTRANSECT'){tblCOL2=append(tblCOL,'TRANSECT', after=1); pvtCOL2=sprintf(pvtCOL,'+ TRANSECT')
+  } else {tblCOL2=tblCOL; pvtCOL2=sprintf(pvtCOL,'')}
+  for(s in 1:length(dbTYPE)){
+    tblPVT=cast(subset(tbl,select=tblCOL2, subset=SAMPLE_TYPE %in% dbTYPE[s]), eval(parse(text=pvtCOL2)))#very predictable structure except for the input table and whether transect and point need to be included in the columns = possibly plug into function
+    if(nrow(tblPVT)>1 & is.na(tblPVT$UID)==FALSE){#only assign pivot to variable if not empty
+      assign(sprintf('%s_pvt_%s',tblNAME,dbTYPE[s]),tblPVT)   
+    }
+  }
+}
+}
 
 #Close ODBC connection when done talking to SQL Server
-odbcClose(wrsa1314); rm(DBpassword); rm(DBserver)
+odbcClose(wrsa1314); rm(DBpassword); rm(DBserver); rm(DBuser)
 
-#--------------------------------------------------------PIVOT VIEWS--------------------------------------------------------#
+#--------------------------------------------------------CUSTOM PIVOT VIEWS--------------------------------------------------------#
 ##RESHAPE to PIVOT## 
 #EXAMPLES of both methods#
 #SQL option ('View' creation to copy/paste)
