@@ -1,7 +1,7 @@
 #-------------------------------------------------------INPUTS--------------------------------------------------------#
 #In the ideal world, users should only need to put inputs here and be able to get results out of the 'black box' below using existing functions.
 DBpassword=''#Always leave blank when saving for security and because changes annually. Contact Sarah Judson for current password.
-
+,
 #FILTERS
 ##from most to least specific
 sitecodes=c('AR-LS-8003','AR-LS-8007', 'TP-LS-8240')
