@@ -32,13 +32,14 @@ for (r in 1:length(requiredPACKAGES)){
   library(requiredPACKAGES[r],character.only = TRUE)
 }
 
-setwd('M:\\buglab\\Research Projects\\BLM_WRSA_Stream_Surveys\\Technology\\Output\\WRSA')#SWJ to do: map more dynamically but securely
+#setwd('\\\\share1.bluezone.usu.edu\\miller\\buglab\\Research Projects\\BLM_WRSA_Stream_Surveys\\Technology\\Output\\WRSA')#SWJ to do: map more dynamically but securely
 
 ##Establish an ODBC connection##
 #the db was created in SQL Server Manager on 11/19/2013 by Sarah Judson#
 wrsaConnectSTR=sprintf("Driver={SQL Server Native Client 10.0};Server=%s;Database=WRSAdb;Uid=%s; Pwd=%s;",DBserver,DBuser, DBpassword)
 wrsa1314=odbcDriverConnect(connection = wrsaConnectSTR)
 #SWJ to do: throw this into a function that also prompts for server and password if missing (='')
+#SWJ to do: throw the function into a separate referenced script because multiple files are using this
 
 
 #SQL assistance functions
@@ -162,11 +163,24 @@ qastatsBANK_CNTagg=aggregate(tblPOINTbank,FUN='length', by=list(tblPOINTbank$UID
 tblPOINTbankNUM=subset(tblPOINTbank,subset= is.na(as.numeric(as.character(tblPOINTbank$RESULT)))==FALSE);tblPOINTbankNUM$RESULT=as.numeric(as.character(tblPOINTbankNUM$RESULT))
 qastatsBANK_MEANcast=cast(tblPOINTbankNUM, UID ~ PARAMETER, value='RESULT', fun.aggregate=mean)
 
+##QA checks##
+WetWidthDIFF=sqlQuery(wrsa1314,"select WetTRAN.UID, WetTRAN.TRANSECT, RESULT_PNTthal, RESULT_TRAN
+ from (select UID, TRANSECT, RESULT as RESULT_PNTthal from tblpoint
+where parameter like 'wetwid%'
+and POINT='0') as WetPNTthal
+join (select  UID, TRANSECT, RESULT as RESULT_TRAN from tbltransect
+where parameter like 'wetwid%') as WetTRAN
+on (WetTRAN.UID=WetPNTthal.UID and WetTRAN.TRANSECT=WetPNTthal.TRANSECT)
+--where ROUND(convert(float,result_pntthal),1) <> ROUND(convert(float,result_tran),1)
+--and WetTRAN.UID=11625 --query struggles when running the convert function with multiple UID, makes no sense, running where statement externally in excel via Exact()
+")#should only occur on paper forms where value is recorded twice and therefore appears in the db twice
+
 ##GRTS adjusted weights##
 #TBD# Pull from UTBLM
 
 ##EPA aquamet##
 #TBD# Pull from aquamet 1.0 provided by Tom Kincaid and Curt Seegler via Marlys Cappaert
+#go to NRSAmetrics_SWJ.R
 
 ##OE computation##
 #TBD# Pull from VanSickle

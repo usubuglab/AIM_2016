@@ -1,6 +1,7 @@
 #-------------------------------------------------------INPUTS--------------------------------------------------------#
 #In the ideal world, users should only need to put inputs here and be able to get results out of the 'black box' below using existing functions.
 DBpassword=''#Always leave blank when saving for security and because changes annually. Contact Sarah Judson for current password.
+DBuser=''#ditto as with DBpassword
 DBserver=''#ditto as with DBpassword
 
 #createWRSAdb.db
@@ -28,8 +29,8 @@ library("RODBC")
 print ("Please enter Password")
 ##Establish an ODBC connection##
 #the db was created in SQL Server Manager on 11/19/2013 by Sarah Judson#
-wrsaConnectSTR=sprintf("Driver={SQL Server Native Client 10.0};Server=%s;Database=WRSAdb;Uid=feng; Pwd=%s;",DBserver,DBpassword)
-nrsa1314=odbcDriverConnect(connection = wrsaConnectSTR)
+wrsaConnectSTR=sprintf("Driver={SQL Server Native Client 10.0};Server=%s;Database=WRSAdb;Uid=%s; Pwd=%s;",DBserver,DBuser, DBpassword)
+wrsa1314=odbcDriverConnect(connection = wrsaConnectSTR)
 #end ODBC connection#
 
 #GENERAL TABLE STRINGS#
@@ -61,7 +62,7 @@ CREATEstr="create table %s
 
 #COLUMN CHECKING FUNCTION#
 VAR=c("UID" , "SAMPLE_TYPE", "PARAMETER" ,  "RESULT"  ,  "FLAG",  "IND" , "ACTIVE", "OPERATION" ,"INSERTION", "DEPRECATION" ,"REASON")
-IndMax=sqlQuery(nrsa1314, 'select max(IND) from tblREACH');IndMax=ifelse(is.na(IndMax),1,IndMax)#SWJ to do: should this be unioned between all tables?YES -- does it only apply to incoming app data? investigate index in the EPA tables
+IndMax=sqlQuery(wrsa1314, 'select max(IND) from tblREACH');IndMax=ifelse(is.na(IndMax),1,IndMax)#SWJ to do: should this be unioned between all tables?YES -- does it only apply to incoming app data? investigate index in the EPA tables
 ##SWJ to do: index cleanup (only change index for NAMC data; create new record and deprecate old for EPA data)
 # select IND, COUNT(result) as CR 
 # from (select 
@@ -112,34 +113,37 @@ ColCheck = function(TBL){
 #SWJ: combine Site level (1 measurement per site visit) tables
 #EPA tables combined in REACH: tblASSESSMENT, tblCHANNELCONST,  tblTORRENT
 if('CREATE' %in% MODE){
-sqlQuery(nrsa1314, sprintf(CREATEstr,'tblREACH','','[PK_tblREACH]',''))
-sqlQuery(nrsa1314, sprintf(CREATEstr,'tblTRANSECT',
+sqlQuery(wrsa1314, sprintf(CREATEstr,'tblREACH','','[PK_tblREACH]',''))
+sqlQuery(wrsa1314, sprintf(CREATEstr,'tblTRANSECT',
                            ',TRANSECT         nvarchar(5)    NOT NULL',
                            '[PK_tblTRANSECT]',
                            ',TRANSECT ASC,PARAMETER ASC'))
-sqlQuery(nrsa1314, sprintf(CREATEstr,'tblPOINT',
+sqlQuery(wrsa1314, sprintf(CREATEstr,'tblPOINT',
                            ',TRANSECT         nvarchar(5)    NOT NULL,
                            POINT        nvarchar(5)    NOT NULL',
                            '[PK_tblPOINT]',
                            ',TRANSECT ASC,PARAMETER ASC, POINT ASC'))
 #SWJ to do: needs cleanup
-sqlQuery(nrsa1314, sprintf(CREATEstr,'tblVERIFICATION','','[PK_tblVERIFICATION]',',PARAMETER ASC'))
+sqlQuery(wrsa1314, sprintf(CREATEstr,'tblVERIFICATION','','[PK_tblVERIFICATION]',',PARAMETER ASC'))
 VER=read.csv('tblVERIFICATIONDec22013.csv')
 VER=ColCheck(VER)
-sqlSave(nrsa1314,dat=VER,tablename='tblVERIFICATION',rownames=F, append=TRUE)#,fast=FALSE)
+sqlSave(wrsa1314,dat=VER,tablename='tblVERIFICATION',rownames=F, append=TRUE)#,fast=FALSE)
 
 META=read.csv("M:\\buglab\\Research Projects\\BLM_WRSA_Stream_Surveys\\Technology\\Database\\DRAFTtblPARAMETERDESCRIPTIONS.csv")
-sqlSave(nrsa1314,dat=META,tablename='tblMETADATA',rownames=F, append=TRUE)#,fast=FALSE)
+sqlSave(wrsa1314,dat=META,tablename='tblMETADATA',rownames=F, append=TRUE)#,fast=FALSE)
+
+XWALK=read.csv("XWALK_18Dec13add.csv")
+sqlSave(wrsa1314, dat=XWALK,tablename='tblXWALK',rownames=F, append=TRUE)
 
 #SAMPLE_TYPE= (CHEM, PERI, SEDE, BERW, BELG) 
 #SWJ: Sample Table kept separate because tracks primary keys, doesn't store data
 
-sqlQuery(nrsa1314, sprintf(CREATEstr,'tblSAMPLES','','[PK_tblSAMPLES]',',PARAMETER ASC'))
+sqlQuery(wrsa1314, sprintf(CREATEstr,'tblSAMPLES','','[PK_tblSAMPLES]',',PARAMETER ASC'))
 SAM=read.csv('tblSAMPLESOct312013.csv'); SAM=SAM[-1]
-sqlSave(nrsa1314,dat=SAM,tablename='tblSAMPLES',rownames=F, append=TRUE)#,fast=FALSE)
+sqlSave(wrsa1314,dat=SAM,tablename='tblSAMPLES',rownames=F, append=TRUE)#,fast=FALSE)
 
 
-sqlQuery(nrsa1314, sprintf(CREATEstr,'tblCOMMENTS',#table name
+sqlQuery(wrsa1314, sprintf(CREATEstr,'tblCOMMENTS',#table name
                            ',TRANSECT       nvarchar (10)  NOT NULL,
                 COMMENT             nvarchar(2000)  NULL,
                 PAGE                int             NOT NULL',#added fields
@@ -147,7 +151,7 @@ sqlQuery(nrsa1314, sprintf(CREATEstr,'tblCOMMENTS',#table name
                            ',TRANSECT ASC ,FLAG ASC ,PAGE ASC'))#added constraints
 #SWJ to do: what is "PAGE" in comments? why is it in the constraint?
 COM=read.csv('tblCOMMENTSOct312013.csv'); SAM=SAM[-1]
-sqlSave(nrsa1314,dat=COM,tablename='tblCOMMENTS',rownames=F, append=TRUE)#,fast=FALSE)
+sqlSave(wrsa1314,dat=COM,tablename='tblCOMMENTS',rownames=F, append=TRUE)#,fast=FALSE)
 #SWJ to do: combine SAMPLES and VERIFICATION into below structure
 }#end MODE if
 
@@ -178,7 +182,7 @@ if(length(FileSETS)==length(TableSETS) & length(FileSETS)==length(VarSETS)){
       TBL=read.csv(sprintf('%s%s', Files[f],ifelse(length(grep('.csv',Files[f]))==0,'.csv',''))); 
       TBL=ColCheck(TBL)# #EPA export files in 2013 have a dummy row number column; this assumes APPin and EPAin are mutually exclusive!##old solution: if('EPAin' %in% MODE){TBL=TBL[-1]}
       #SWJ to do: need to update point and other names (done manually in SQL for first import) --> LEFT=LF, LF=LF, L=LF, RIGHT=RT, RT=RT, R=RT
-      sqlSave(nrsa1314,dat=TBL,tablename=dbTable,rownames=F, append=TRUE)
+      sqlSave(wrsa1314,dat=TBL,tablename=dbTable,rownames=F, append=TRUE)
   }}
 } else {
   print('Import failed. Different numbers of files, tables, or columns. Verify lists in FileSETS and TableSETS and column names in VAR.')
@@ -187,7 +191,7 @@ if(length(FileSETS)==length(TableSETS) & length(FileSETS)==length(VarSETS)){
 
 #SWJ to do: could loop further over each db table
 
-odbcClose(nrsa1314)
+odbcClose(wrsa1314)
 
 
 
