@@ -64,3 +64,6 @@ aggregate(cbind(petal.width,length)) #cbind column bind rbind row bind
 getAnywhere()# gets background code for function
 install.packages()
 %s # place holder
+
+length(which(v<7))# counts values in v that are less than 7 and excludes NAs
+
