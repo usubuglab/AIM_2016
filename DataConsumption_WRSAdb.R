@@ -44,12 +44,9 @@ wrsa1314=odbcDriverConnect(connection = wrsaConnectSTR)
 
 #SQL assistance functions
 #loaded from a separate R script
+source('FNC_tblRetrievePVT.R')
 #common sQL strings that need to be incorporated:
 ##(select * from tblVERIFICATION where PARAMETER='site_id') v on v.UID=tblPOINT.uid
-
-
-source('FNC_tblRetrievePVT.R')
-
 
 
 #--------------------------------------------------------SQL RETRIEVE--------------------------------------------------------#
