@@ -1,11 +1,15 @@
-
+##test push222
 ##test push
 #-------------------------------------------------------INPUTS--------------------------------------------------------#
 #In the ideal world, users should only need to put inputs here and be able to get results out of the 'black box' below using existing functions.
 DBpassword=''#Always leave blank when saving for security and because changes annually. Contact Sarah Judson for current password.
+DBuser=''#ditto as with DBpassword
+DBserver=''#ditto as with DBpassword
+#this is a change
 
 #FILTERS
 ##from most to least specific
+AllData='Y'#set to 'Y' (meaning 'yes') if you want to query all sites (note this is quite time consuming and large, use provided filters wherever possible)
 sitecodes=c('AR-LS-8003','AR-LS-8007', 'TP-LS-8240')
 dates=c('05/05/2005')
 hitchs=c('')#NOT WORKING YET
@@ -14,6 +18,7 @@ projects=c('NRSA')#NOT WORKING YET
 
 #PARAMETERS
 #specify if desired (will make queries less intensive):
+AllParam='Y'#set to 'Y' (meaning 'yes') if you want to query all parameters
 testP=c('ANGLE','APPEALING','ALGAE')#test, one from each level of table
 bankP=c('ANGLE','UNDERCUT','EROSION','COVER','STABLE')
 
@@ -152,11 +157,15 @@ sqlQuery(wrsa1314,"select * from tblPOINT where PARAMETER='slope' and RESULT='0'
 
 sqlQuery(wrsa1314, "select * from tblPOINT where PARAMETER='slope'")##### display all slope values; not to hard to look at because only 1 result per transect, why is slope in point instead of transect?
 
+
+
 ####select min and max values as well as 25% and 75% values to give range of expected values for next year
 
 #bank QA#
 ####bank angle
 #--------------check all bank angles for missing values but will need to exclude NA at inbetween transects
+####trying to use subset but having difficulties 
+
 #--------------check all bank angles to make sure between 0-360
 ##--------------------see if min(bank angle result) < 0 or if max(bank angle) > 360 if so run a query on that value to see what site and transect it goes with
 ####bank stability
@@ -168,19 +177,26 @@ sqlQuery(wrsa1314, "select * from tblPOINT where PARAMETER='slope'")##### displa
 
 sitecodes=c('AR-LS-8003','AR-LS-8007', 'TP-LS-8240')######how do I run any functions without this filter and get all sites?
 erosionalP<-c('angle','cover','stable')
-tblerosional<-tblRetrieve('tblPOINT',erosionalP)####gives a warning message "only first element will be used"###do you have to concatenate the values first or could you skip that step and input them in this statment? ###why does the table need quotes around it?
-#FIRST ATTEMPT
-erosionalpvt<-PVTconstruct(parameters=erosionalP,tblTYPE='tblPOINT',filter="POINT in ('LF','RT')");print(erosionalpvt)##what does the print function do?# added the point in (lf and rt) to filter out what?????###why is there no parameter called stability-----lf and rt are not unique to stability 
-wrsa1314_2=odbcDriverConnect(connection = wrsaConnectSTR)
-tblPOINTerosional=sqlQuery(wrsa1314_2,erosionalpvt)
-odbcClose(wrsa1314_2)
-#SECOND ATTEMPT####why does this not create a dataframe?????
-erosionalpvt2<-PVTconstruct(parameters=erosionalP,tblTYPE='tblPOINT',filter="POINT in ('LF','RT') and Stable='E'");print(erosionalpvt2)# added E to limit results to only banks that were erosional
+tblerosional<-tblRetrieve('tblPOINT',erosionalP)# note table needs quotes around it
+erosionalpvt2<-PVTconstruct(parameters=erosionalP,tblTYPE='tblPOINT',filter="POINT in ('LF','RT') and Stable='E'");print(erosionalpvt2)# why is lf and rt necessary? #added E to limit results to only banks that were erosional
 wrsa1314_2=odbcDriverConnect(connection = wrsaConnectSTR)
 tblPOINTerosional2=sqlQuery(wrsa1314_2,erosionalpvt2)
-odbcClose(wrsa1314_2)
 
 #----------or a better option would be "count if bank angle is not between 80-100 and cover=U and stable=E"
+#Can't figure out how to do a count if. You would need to make the if table first and then run the cast function but then have to figure out how to get the UID and bank that the sample was from
+#Since there should be few odd samples like these, it would be best simply to make a pivot table with the desired if statement and check by hand
+qastatsBANK_CNTerosional=cast(tblerosional, UID ~ PARAMETER, value='RESULT', fun.aggregate=length)###still need to add additional angle, cover and stable filters
+
+####----------the second line works as a check and there are 6 banks that are significantly less than 80 degrees but were considered eroding##additionally 10 banks were NA but they were all inbetween transects
+erosionalpvt3<-PVTconstruct(parameters=erosionalP,tblTYPE='tblPOINT',filter="POINT in ('LF','RT') and Stable='E' and Cover='U'and Angle<80 and Angle>100");print(erosionalpvt3)###gives an error possibly because of the NA values and it looks like angle is not numeric...see Sarah's conversion below but I don't think it will work here 
+erosionalpvt3<-PVTconstruct(parameters=erosionalP,tblTYPE='tblPOINT',filter="POINT in ('LF','RT') and Stable='E'and cover='U'");print(erosionalpvt3)wrsa1314_2=odbcDriverConnect(connection = wrsaConnectSTR)# this requires scanning values by hand but works ok #note this brings up all sites 
+wrsa1314_2=odbcDriverConnect(connection = wrsaConnectSTR)
+tblPOINTerosional3=sqlQuery(wrsa1314_2,erosionalpvt3)
+
+#----------Are there covered banks that were considered erosional?
+#Yes there are 2 banks
+erosionalpvt4<-PVTconstruct(parameters=erosionalP,tblTYPE='tblPOINT',filter="POINT in ('LF','RT') and Stable='E'and cover='C'");print(erosionalpvt4)wrsa1314_2=odbcDriverConnect(connection = wrsaConnectSTR)
+tblPOINTerosional4=sqlQuery(wrsa1314_2,erosionalpvt4)
 
 ####undercut
 #------------check all undercuts for missing values but will need to exclude NA at inbetween transects
@@ -195,12 +211,14 @@ qastatsBANK_CNTcast=cast(tblPOINTbank, UID ~ PARAMETER, value='RESULT', fun.aggr
 qastatsBANK_CNTagg=aggregate(tblPOINTbank,FUN='length', by=list(tblPOINTbank$UID,tblPOINTbank$TRANSECT,tblPOINTbank$POINT))
 #cast seems like the more elegant solution
 
-qastatsBANK_CNTerosional=cast(tblerosional, UID ~ PARAMETER, value='RESULT', fun.aggregate=length)
+
 
 #convert numerics before performing stats
 tblPOINTbankNUM=subset(tblPOINTbank,subset= is.na(as.numeric(as.character(tblPOINTbank$RESULT)))==FALSE);tblPOINTbankNUM$RESULT=as.numeric(as.character(tblPOINTbankNUM$RESULT))
 qastatsBANK_MEANcast=cast(tblPOINTbankNUM, UID ~ PARAMETER, value='RESULT', fun.aggregate=mean)
 
+###trying to convert angle to number and get rid of na### next step try same approach with tblPOINTerosional3 but instead of result put angle!
+riddna<-subset(tblerosional,subset=is.na(as.numeric(as.character(tblerosional$RESULT)))==FALSE);riddna$RESULT=as.numeric(as.character(riddna$RESULT)))
 ##GRTS adjusted weights##
 #TBD# Pull from UTBLM
 
