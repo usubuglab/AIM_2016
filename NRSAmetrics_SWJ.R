@@ -96,7 +96,7 @@ CanopyDensiometer <- metsCanopyDensiometer(channelcover)
 print(head(CanopyDensiometer))
 write.csv(CanopyDensiometer, "metsCanopyDensiometer.csv")
 
-cat("\n\nChannel Characteristic:\n\n")
+cat("\n\nChannel Characteristic:\n\n")##SWJ in progress (DONE for wadeable) - channelchar parameters and bankgeo (boatable) parameters matched but not run for boatable - bankgeo only seems to be incorporated if boatable, otherwise only populated by channel constraint; WRSA/NRSA tables that boatable bankgeo data will be provided in is unknown (recorded as "UNK" in tblXWalk)
 ChannelChar <- metsChannelChar(bankgeometry, channelchar)
 print(head(ChannelChar))
 write.csv(ChannelChar, "metsChannelChar.csv")
@@ -169,7 +169,7 @@ SubstrateCharacterization <- metsSubstrateCharacterization(channelcrosssection,
 print(head(SubstrateCharacterization))
 write.csv(SubstrateCharacterization, "metsSubstrateCharacterization.csv")
 
-cat("\n\nSubstrate Embeddedness:\n\n")#SWJ in progress - seems to have run, but had no final results
+cat("\n\nSubstrate Embeddedness:\n\n")#done SWJ 
 SubstrateEmbed <- metsSubstrateEmbed(channelcrosssection)#SWJ: Input = Embeddedness
 print(head(SubstrateEmbed))
 write.csv(SubstrateEmbed, "metsSubstrateEmbed.csv")
