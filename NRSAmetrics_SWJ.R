@@ -6,7 +6,8 @@ library(aquamet)#need R 2... version, not 3.0
 sink("NRSAmetrics.txt")
 cat("NRSA 2008-2009 Physical Habitat Metrics\n")
 
-setwd("M:\\buglab\\Research Projects\\BLM_WRSA_Stream_Surveys\\Results and Reports\\NorCal_2013\\AquametTEST")
+wd="M:\\buglab\\Research Projects\\BLM_WRSA_Stream_Surveys\\Results and Reports\\NorCal_2013\\AquametTEST"
+setwd(wd)
 
 #SWJ to do: at the end, consume the metrics outputs back in and pivot them for readability and prepare filtering them for figure processing
 
@@ -127,7 +128,7 @@ HumanInfluence <- metsHumanInfluence(visrip)
 print(head(HumanInfluence))
 write.csv(HumanInfluence, "metsHumanInfluence.csv")
 
-cat("\n\nInvasive Species:\n\n")#not relevant to NAM
+cat("\n\nInvasive Species:\n\n")#not relevant to NAMC
 InvasiveSpecies <- metsInvasiveSpecies(invasivelegacy)
 print(head(InvasiveSpecies))
 write.csv(InvasiveSpecies, "metsInvasiveSpecies.csv")
@@ -175,3 +176,33 @@ print(head(SubstrateEmbed))
 write.csv(SubstrateEmbed, "metsSubstrateEmbed.csv")
 
 sink()
+
+
+#Bring in aquamet results to do second tier calcs
+METfiles=list.files(wd, pattern='mets*.')
+for(i in 1:length(METfiles)) {
+  cat("\n\n", METfiles[i], ":\n\n", sep="")
+  eval(parse(text=paste(METfiles[i], " <- read.csv('", METfiles[i], "', row.names=1)", sep="")))
+  eval(parse(text=paste("print(head(", METfiles[i], "))", sep="")))
+  if(i==1){METmaster=eval(parse(text=METfiles[i]))} else {METmaster=rbind(METmaster,eval(parse(text=METfiles[i])))}
+}
+
+METmaster$RESULT=as.numeric(METmaster$RESULT)
+unique(METmaster$METRIC)
+
+##QR1
+QRmets=subset(METmaster, subset=METRIC %in% c('w1_hall','xcmgw','xcdenbk')) #pivot or merge? if the metrics get stored in the database (with a timestamp), then switch to pivot, but merge for now
+QRmets=cast(QRmets, UID ~ METRIC, value='RESULT', fun.aggregate=mean)#fun.aggregate=count #count to make sure only 1 record per pivot cell
+QRmets$QRDIST1=1/ (1+QRmets$w1_hall)
+QRmets$QRVeg2= 0.1 + (0.9*(QRmets$xcdenbk/100))
+QRmets$QRVeg1=ifelse(QRmets$xcmgw<=2.00, .1+(.9 * (QRmets$xcmgw/2.00)),1)
+QRmets$QR1='TBD' # {(QRVeg1) (QRVeg2) (QRDIST1)} 0.333#is this the same as divide by three
+
+#xcmg check
+tempMETS=subset(METmaster, subset=METRIC %in% c('xcmg','xcl','xcs','xmh','xgw','xgh','xmw')) 
+tempMETS=cast(tempMETS,UID ~ METRIC, value='RESULT', fun.aggregate=mean)
+tempMETS$xcmg2=tempMETS$xcl+tempMETS$xcs+tempMETS$xmw+tempMETS$xgh+tempMETS$xgw+tempMETS$xmh
+
+#Nicole TO DO
+#LRBS
+#LINCS
