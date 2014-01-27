@@ -1,7 +1,7 @@
 #-------------------------------------------------------INPUTS--------------------------------------------------------#
 #In the ideal world, users should only need to put inputs here and be able to get results out of the 'black box' below using existing functions.
 DBpassword=''#Always leave blank when saving for security and because changes annually. Contact Sarah Judson for current password.
-,
+,,
 #FILTERS
 ##from most to least specific
 sitecodes=c('AR-LS-8003','AR-LS-8007', 'TP-LS-8240')
@@ -127,6 +127,92 @@ qastatsBANK_CNTagg=aggregate(tblPOINTbank,FUN='length', by=list(tblPOINTbank$UID
 #convert numerics before performing stats
 tblPOINTbankNUM=subset(tblPOINTbank,subset= is.na(as.numeric(as.character(tblPOINTbank$RESULT)))==FALSE);tblPOINTbankNUM$RESULT=as.numeric(as.character(tblPOINTbankNUM$RESULT))
 qastatsBANK_MEANcast=cast(tblPOINTbankNUM, UID ~ PARAMETER, value='RESULT', fun.aggregate=mean)
+##########
+###########
+######
+##########
+###########
+#####
+#
+#
+#
+#
+#
+#
+#
+##COPIED FROM WRSA MAIN
+#--------------------------------------------------------ANALYSIS--------------------------------------------------------#
+##AGGREGATION##
+#EXAMPLES#
+#count number of records per parameter to check for missing data
+qastatsBANK_CNTcast=cast(tblPOINTbank, UID ~ PARAMETER, value='RESULT', fun.aggregate=length)#should this filter out NULLs or flags? does EPA write a line for each record even if no value recorded?
+qastatsBANK_CNTagg=aggregate(tblPOINTbank,FUN='length', by=list(tblPOINTbank$UID,tblPOINTbank$TRANSECT,tblPOINTbank$POINT))
+#cast seems like the more elegant solution
+#convert numerics before performing stats
+tblPOINTbankNUM=subset(tblPOINTbank,subset= is.na(as.numeric(as.character(tblPOINTbank$RESULT)))==FALSE);tblPOINTbankNUM$RESULT=as.numeric(as.character(tblPOINTbankNUM$RESULT))
+qastatsBANK_MEANcast=cast(tblPOINTbankNUM, UID ~ PARAMETER, value='RESULT', fun.aggregate=mean)
+
+##QA checks##
+for (p in 1:length(unique(paste(UnionTBL$SAMPLE_TYPE,UnionTBL$PARAMETER)))){#this is a standard loop for iterating, could put it in a function that allows you to plug in a string for the most nested middle
+  typeparam=strsplit(unique(paste(UnionTBL$SAMPLE_TYPE,UnionTBL$PARAMETER))[p]," ")
+  type=typeparam[[1]][[1]]; param=typeparam[[1]][[2]]
+  paramTBL=subset(UnionTBL,subset=PARAMETER==param & SAMPLE_TYPE==type)
+  paramTBL$CHAR=as.character(paramTBL$RESULT)
+  paramTBL$NUM=as.numeric(paramTBL$CHAR)
+  #iterate over strata: sites, all values combined, ecoregion/climatic, size
+  #example: extract size from SITE_ID - UnionTBL$SIZE=substr(UnionTBL$SITE_ID,4,5)
+  if(is.na(min(paramTBL$NUM)) & is.na(max(paramTBL$NUM))){paramTBL$PARAMRES=paramTBL$CHAR
+                                                          print (sprintf("%s is CHARACTER format",param))
+                                                          hist(paramres)#histogram - inclu "pseudo categorical" (densiom, visrip)                                                      
+  } else{paramTBL$PARAMRES=paramTBL$NUM#write.csv(paramTBL,'PARAMRES_NUM_WETWIDTH.csv')
+         print (sprintf("%s is NUMBER format",param))
+        
+         #Make boxplots for each strata using reach averages of paramres and paramres values
+         #Examples:
+         #1. Boxplot for each ecoregion using reach averages
+         #2. Boxplot for each stream size using reach averages
+         #3. Boxplot for each site using paramres values. 
+         boxplot(PARAMRES, xlab=unique(PARAMETER))   
+         
+         
+         #boxplot 
+         
+         #outlier detection - percentile flags
+  }
+}
+
+
+#iteration example
+list=c(1,2,4,6,7)
+for (i in 1:length(list)){
+  if(list[i]<5){
+    print(list[i] + 2)
+  } else {print(list[i] *5 )}
+}
+
+#Nicole's Iteration ex
+n.list=c(1,3,5,7,9)
+for(i in 1:legth(list)){ 
+  if (list[i]<5){
+    print(list[i]+2) 
+    else{print(list[i]+3)}}}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 ##GRTS adjusted weights##
 #TBD# Pull from UTBLM
