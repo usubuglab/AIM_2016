@@ -236,8 +236,48 @@ riddna<-subset(tblerosional,subset=is.na(as.numeric(as.character(tblerosional$RE
 
 ##GIS connections##
 #TBD#
+##QA checks##
+for (p in 1:length(unique(paste(UnionTBL$SAMPLE_TYPE,UnionTBL$PARAMETER)))){#this is a standard loop for iterating, could put it in a function that allows you to plug in a string for the most nested middle
+  typeparam=strsplit(unique(paste(UnionTBL$SAMPLE_TYPE,UnionTBL$PARAMETER))[p]," ")
+  type=typeparam[[1]][[1]]; param=typeparam[[1]][[2]]
+  paramTBL=subset(UnionTBL,subset=PARAMETER==param & SAMPLE_TYPE==type)
+  paramTBL$CHAR=as.character(paramTBL$RESULT)
+  paramTBL$NUM=as.numeric(paramTBL$CHAR)
+  #iterate over strata: sites, all values combined, ecoregion/climatic, size
+  #example: extract size from SITE_ID - UnionTBL$SIZE=substr(UnionTBL$SITE_ID,4,5)
+  if(is.na(min(paramTBL$NUM)) & is.na(max(paramTBL$NUM))){paramTBL$PARAMRES=paramTBL$CHAR
+                                                          print (sprintf("%s is CHARACTER format",param))
+                                                         hist(PARAMRES) #histogram - inclu "pseudo categorical" (densiom, visrip)                                                      
+  } else{paramTBL$PARAMRES=paramTBL$NUM#write.csv(paramTBL,'PARAMRES_NUM_WETWIDTH.csv')
+         print (sprintf("%s is NUMBER format",param))
+         boxplot(PARMRES)#boxplot
+         #outlier detection - percentile flags
+  }
+}
 
 
+#iteration example
+list=c(1,2,4,6,7)
+for (i in 1:length(list)){
+  if(list[i]<5){
+    print(list[i] + 2)
+  } else {print(list[i] *5 )}
+}
+
+
+subset(PARMRES_CAT_DESIOM, select=unique(UID),)
+for each site { hist(PARAMRES,main="",xlab=unique(PARAMETER)) #main = siteid
+
+#For each ecoregion make a histogram of the average center densiometer reading at each site
+#For each ecoregion make a histogram of the average bank deniometer reading at each site
+#For each site make a histogram of the average center densiometer
+#For each site make a histogram of the average bank densiometer
+                
+####aquamet solutions?
+#for each site average the each layer of the visual riparian except for the base layer exclude the "bare" (multparameters)
+#for each site average the fish cover except the maro and algae (multiple parameters)
+#For each ecoregion make a histogram of the average center densiometer reading at each site
+#For each ecoregion make a histogram of the average bank deniometer reading at each site
 #--------------------------------------------------------REPORTING--------------------------------------------------------#
 ##Figures and Tables##
 #TBD# Pull from UTBLM
