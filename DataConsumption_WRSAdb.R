@@ -26,7 +26,7 @@ bankP=c('ANGLE','UNDERCUT','EROSION','COVER','STABLE')
 
 #--------------------------------------------------------SETUP--------------------------------------------------------#
 #LOAD required packages#
-requiredPACKAGES=c('reshape', 'RODBC')
+requiredPACKAGES=c('reshape', 'RODBC','ggplot2')
 for (r in 1:length(requiredPACKAGES)){
   if ((requiredPACKAGES[r] %in% installed.packages()[,1])==FALSE){install.packages(requiredPACKAGES[r])}#auto-install if not present
   library(requiredPACKAGES[r],character.only = TRUE)
@@ -91,6 +91,8 @@ from (
 ) UnionTBL
 where ACTIVE='TRUE'
 ")
+#SWJ to do: limit this by UIDs ("select samples)
+UnionTBL=merge(UnionTBL,UIDs)
 #append sitecode instead of UID to make the table more readable --> migrate this into tblRetrieve or some kind of "convert" function
 Sites=subset(UnionTBL,select=c(UID,RESULT),subset=PARAMETER=='SITE_ID'); colnames(Sites)=c('UID','SITE_ID')
 UnionTBL=merge(UnionTBL,Sites)
@@ -180,11 +182,50 @@ for (p in 1:length(unique(paste(UnionTBL$SAMPLE_TYPE,UnionTBL$PARAMETER)))){#thi
   #example: extract size from SITE_ID - UnionTBL$SIZE=substr(UnionTBL$SITE_ID,4,5)
   if(is.na(min(paramTBL$NUM)) & is.na(max(paramTBL$NUM))){paramTBL$PARAMRES=paramTBL$CHAR
                                                           print (sprintf("%s is CHARACTER format",param))
-     #histogram - inclu "pseudo categorical" (densiom, visrip)                                                      
+      # hist(PARAMRES) #histogram - inclu "pseudo categorical" (densiom, visrip)                                                      
   } else{paramTBL$PARAMRES=paramTBL$NUM#write.csv(paramTBL,'PARAMRES_NUM_WETWIDTH.csv')
          print (sprintf("%s is NUMBER format",param))
      #boxplot
       #outlier detection - percentile flags
+         #EXAMPLE: see values that are ACTIVE='FALSE' to see common transctiprion errors and if outlier scans would catch them
+         
+         #NC
+         #Make boxplots for each strata using reach averages of paramres and paramres values
+         #Examples:
+         #1. Boxplot for each ecoregion using reach averages
+         #2. Boxplot for each stream size using reach averages
+         #3. Boxplot for each site using paramres values. 
+         #boxplot(PARAMRES, xlab=unique(PARAMETER))  
+
+         typestrata=c('EcoReg','Size')#define strata
+         numstrata=length(typestrata)
+         #set strata
+         paramTBL$EcoReg=unique(substr(paramTBL$SITE_ID,1,2))#may need to explicitly join an ecoregion column if sitecodes change over different projects, this works for NRSA only; also needs to be more expandable for additional strata
+         paramTBL$Size=unique(substr(paramTBL$SITE_ID,4,5))
+         for (n in 1:numstrata) {
+           paramTBL3=paramTBL
+           paramTBL3$STRATA='UNK'
+           paramTBL3$STRATA=unlist(paramTBL3[typestrata[n]])
+           if (n==1) { paramTBL2=paramTBL3
+           } else { 
+             paramTBL2=rbind(paramTBL2,paramTBL3)
+           }}
+         rm(paramTBL3)
+                  
+for (t in 1:length(unique(paramTBL2$STRATA))){
+   #if numeric, boxplot of reach avg, if character, boxplot of frequency of each individual parameter
+   #use ggplot for later recall
+  aggregate(paramTBL2,by)
+  if(is.numeric(paramTBL2$PARAMRES)){
+    ggplot(paramTBL2,aes(y=PARAMRES, x=PARAMETER)) + geom_boxplot()
+  }
+ }
+ for (s in 1:length(unique(paramTBL$SITE_ID))){#may need to explicitly join an ecoregion column if sitecodes change over different projects, this works for NRSA only
+   #if numeric, boxplot of reach avg, if character, histogram
+ }
+         
+  
+  
   }
 }
 
