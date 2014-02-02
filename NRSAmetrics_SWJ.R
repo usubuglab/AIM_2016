@@ -197,6 +197,7 @@ QRmets$QRDIST1=1/ (1+QRmets$w1_hall)
 QRmets$QRVeg2= 0.1 + (0.9*(QRmets$xcdenbk/100))
 QRmets$QRVeg1=ifelse(QRmets$xcmgw<=2.00, .1+(.9 * (QRmets$xcmgw/2.00)),1)
 QRmets$QR1='TBD' # {(QRVeg1) (QRVeg2) (QRDIST1)} 0.333#is this the same as divide by three
+###Nicole: Sarah, this is: {(QRVeg1) (QRVeg2) (QRDIST1)} ^ 0.333 I also fixed this in the Excel Indicator Analysis table.
 
 #xcmg check
 tempMETS=subset(METmaster, subset=METRIC %in% c('xcmg','xcl','xcs','xmh','xgw','xgh','xmw')) 
@@ -204,5 +205,8 @@ tempMETS=cast(tempMETS,UID ~ METRIC, value='RESULT', fun.aggregate=mean)
 tempMETS$xcmg2=tempMETS$xcl+tempMETS$xcs+tempMETS$xmw+tempMETS$xgh+tempMETS$xgw+tempMETS$xmh
 
 #Nicole TO DO
-#LRBS
+#LRBS: Need to do some work here.  Put off until after 7 Feb.Need geometric mean substrate diameter, and several metrics that need to be looked into.
+
 #LINCS
+##Log(Average incision height-average bankfull height+0.1)
+###Why "+0.1"???
