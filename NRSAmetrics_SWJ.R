@@ -209,4 +209,10 @@ tempMETS$xcmg2=tempMETS$xcl+tempMETS$xcs+tempMETS$xmw+tempMETS$xgh+tempMETS$xgw+
 
 #LINCS
 ##Log(Average incision height-average bankfull height+0.1)
-###Why "+0.1"???
+###First need to get the avg incision and bankful heights. 
+####Subset the data in the tblTRANSECT table so that I only get information for INCISED and BANKHT
+LINCIS_H=subset(tblTRANSECT, subset= PARAMETER=="BANKHT"|PARAMETER=="INCISED")
+trycast=cast(LINCIS_H, UID~PARAMETER, mean)#This gives the below error
+#Using REASON as value column.  Use the value argument to cast to override this choice
+trycast=cast(LINCIS_H, UID~PARAMETER, mean, value=RESULT)# Trying to tell it which column to take the mean of. Also gives an error. See below. 
+#Error in cast(LINCIS_H, UID ~ PARAMETER, mean, value = RESULT) : object 'RESULT' not found
