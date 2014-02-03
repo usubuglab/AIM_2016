@@ -214,5 +214,6 @@ tempMETS$xcmg2=tempMETS$xcl+tempMETS$xcs+tempMETS$xmw+tempMETS$xgh+tempMETS$xgw+
 LINCIS_H=subset(tblTRANSECT, subset= PARAMETER=="BANKHT"|PARAMETER=="INCISED")
 trycast=cast(LINCIS_H, UID~PARAMETER, mean)#This gives the below error
 #Using REASON as value column.  Use the value argument to cast to override this choice
-trycast=cast(LINCIS_H, UID~PARAMETER, mean, value=RESULT)# Trying to tell it which column to take the mean of. Also gives an error. See below. 
+trycast=cast(LINCIS_H, UID~PARAMETER, mean, value=RESULT)# Trying to tell it which column to take the mean of. Also gives an error. See below. Also tried with simgle and double quotes
 #Error in cast(LINCIS_H, UID ~ PARAMETER, mean, value = RESULT) : object 'RESULT' not found
+#Try trycast=cast(LINCIS_H, UID~PARAMETER, fun.aggregate='RESULT', mean)
