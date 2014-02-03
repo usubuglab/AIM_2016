@@ -196,7 +196,7 @@ QRmets=cast(QRmets, UID ~ METRIC, value='RESULT', fun.aggregate=mean)#fun.aggreg
 QRmets$QRDIST1=1/ (1+QRmets$w1_hall)
 QRmets$QRVeg2= 0.1 + (0.9*(QRmets$xcdenbk/100))
 QRmets$QRVeg1=ifelse(QRmets$xcmgw<=2.00, .1+(.9 * (QRmets$xcmgw/2.00)),1)
-QRmets$QR1='TBD' # {(QRVeg1) (QRVeg2) (QRDIST1)} 0.333#is this the same as divide by three
+QRmets$QR1=((QRVeg1)*(QRVeg2)*(QRDIST1))^0.333
 
 #xcmg check
 tempMETS=subset(METmaster, subset=METRIC %in% c('xcmg','xcl','xcs','xmh','xgw','xgh','xmw')) 
