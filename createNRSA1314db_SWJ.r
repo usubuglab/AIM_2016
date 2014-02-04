@@ -10,7 +10,7 @@ DBserver=''#ditto as with DBpassword
 
 
 #RUN PARAMETERS#
-setwd('M:\\buglab\\Research Projects\\BLM_WRSA_Stream_Surveys\\Results and Reports\\NorCal_2013')
+setwd('M:\\buglab\\Research Projects\\BLM_WRSA_Stream_Surveys\\Technology')
 MODE=c('CREATE','EPAin')#options: 'CREATE','EPAin', 'APPin' #rule: EPAin and APPin are mutually exclusive
 #SWJ to do: add a test mode to run test select queries and truncate the imports for testing
 #SWJ to do: add a "NAMCin" mode for bank stability and photo import
@@ -39,11 +39,8 @@ CREATEstr="create table %s
   			(UID                 int             NOT NULL
 				,SAMPLE_TYPE         nvarchar(50)    NOT NULL
         %s
-				,PARAMETER           nvarchar(50)    NOT NULL
-		    ,RESULT              nvarchar(50)    NULL
-        ,FLAG                nvarchar (50)   NULL
-        ,IND                 int  NOT NULL
-        ,ACTIVE              nvarchar(50)    NULL
+				,IND                 int  NOT NULL
+        ,ACTIVE              nvarchar(50)    NOT NULL
         ,OPERATION           nvarchar(50)    NULL
         ,INSERTION           datetime        NULL
         ,DEPRECATION         datetime        NULL
@@ -52,7 +49,7 @@ CREATEstr="create table %s
         PRIMARY KEY CLUSTERED (
         UID ASC
         ,SAMPLE_TYPE ASC
-        ,IND ASC
+        ,IND ASC, ACTIVE ASC
         %s
 				) )
 				"
@@ -113,14 +110,24 @@ ColCheck = function(TBL){
 #SWJ: combine Site level (1 measurement per site visit) tables
 #EPA tables combined in REACH: tblASSESSMENT, tblCHANNELCONST,  tblTORRENT
 if('CREATE' %in% MODE){
-sqlQuery(wrsa1314, sprintf(CREATEstr,'tblREACH','','[PK_tblREACH]',''))
+sqlQuery(wrsa1314, sprintf(CREATEstr,'tblREACH',
+                           ',PARAMETER           nvarchar(50)    NOT NULL
+                            ,RESULT              nvarchar(50)    NULL
+                           ,FLAG                nvarchar (50)   NULL',
+                           '[PK_tblREACH]',''))
 sqlQuery(wrsa1314, sprintf(CREATEstr,'tblTRANSECT',
-                           ',TRANSECT         nvarchar(5)    NOT NULL',
+                           ',TRANSECT         nvarchar(5)    NOT NULL
+                            ,PARAMETER           nvarchar(50)    NOT NULL
+                            ,RESULT              nvarchar(50)    NULL
+                           ,FLAG                nvarchar (50)   NULL',
                            '[PK_tblTRANSECT]',
                            ',TRANSECT ASC,PARAMETER ASC'))
 sqlQuery(wrsa1314, sprintf(CREATEstr,'tblPOINT',
                            ',TRANSECT         nvarchar(5)    NOT NULL,
-                           POINT        nvarchar(5)    NOT NULL',
+                           POINT        nvarchar(5)    NOT NULL
+                            ,PARAMETER           nvarchar(50)    NOT NULL
+                            ,RESULT              nvarchar(50)    NULL
+                           ,FLAG                nvarchar (50)   NULL',
                            '[PK_tblPOINT]',
                            ',TRANSECT ASC,PARAMETER ASC, POINT ASC'))
 #SWJ to do: needs cleanup
@@ -146,12 +153,14 @@ sqlSave(wrsa1314,dat=SAM,tablename='tblSAMPLES',rownames=F, append=TRUE)#,fast=F
 sqlQuery(wrsa1314, sprintf(CREATEstr,'tblCOMMENTS',#table name
                            ',TRANSECT       nvarchar (10)  NOT NULL,
                 COMMENT             nvarchar(2000)  NULL,
-                PAGE                int             NOT NULL',#added fields
+                PAGE                int             NOT NULL
+                ,FLAG                nvarchar (50)   NOT NULL',#added fields
                            '[PK_tblCOMMENTS]', #constraint name
                            ',TRANSECT ASC ,FLAG ASC ,PAGE ASC'))#added constraints
 #SWJ to do: what is "PAGE" in comments? why is it in the constraint?
-COM=read.csv('tblCOMMENTSOct312013.csv'); SAM=SAM[-1]
+COM=read.csv('tblCOMMENTSDec22013.csv'); COM=COM[-1]
 sqlSave(wrsa1314,dat=COM,tablename='tblCOMMENTS',rownames=F, append=TRUE)#,fast=FALSE)
+#had to manually paste COM into table, not sure why sqlSAVE would not work
 #SWJ to do: combine SAMPLES and VERIFICATION into below structure
 }#end MODE if
 
@@ -194,10 +203,28 @@ if(length(FileSETS)==length(TableSETS) & length(FileSETS)==length(VarSETS)){
 odbcClose(wrsa1314)
 
 
+#Filemaker import consumption
+library(reshape)
+tables=list.files(getwd(),pattern='*.csv')#tables=read.csv('RelationalTest.csv')
+importcols=c(VAR,'TRANSECT','POINT')
+importmaster=data.frame(t(rep(NA,length(importcols))))
+names(importmaster)=importcols;importmaster=subset(importmaster,subset=is.na(UID)==FALSE)
+for (t in 1:length(tables)){
+table=read.csv(tables[t])
+cols=subset(colnames(table),subset=colnames(table) %in% importcols==TRUE) 
+# for (c in 1:length(cols)) #using melt instead
+tableFLAT=melt(table,id.vars=cols,variable_name='PARAMETER')
+tableFLAT$PARAMETER=toupper(tableFLAT$PARAMETER)
+tableFLAT$SAMPLE_TYPE=sub('.csv','',tables[t])#or other way to indicate the protocol (could look up to tblMetadata via tblCrosswalk, most matches are 1:1, but would need to be careful about flagging boatable)
+tableFLAT$RESULT=tableFLAT$value;
+VAR=importcols;tableFLAT=ColCheck(tableFLAT)
+importmaster=rbind(importmaster,tableFLAT)
+}
+#check for duplicates
+#paritiion mastertable between tblPOINT, TRANSECT, and REACH based on Nulls, comments based on parameter=comments
 
 
-
-
+##see DataConsumption_WRSAdb.R for more up to date versions
 #generate SQL views (possibly pass via ODBC too)
 bankP=c('ANGLE','UNDERCUT','EROSION','COVER','STABLE')
 veriP=c('SITE_ID','SITESAMP','DATE_COL','LAT_DD','LON_DD')
