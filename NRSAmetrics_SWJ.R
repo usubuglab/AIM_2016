@@ -211,9 +211,11 @@ tempMETS$xcmg2=tempMETS$xcl+tempMETS$xcs+tempMETS$xmw+tempMETS$xgh+tempMETS$xgw+
 ##Log(Average incision height-average bankfull height+0.1)
 ###First need to get the avg incision and bankful heights. 
 ####Subset the data in the tblTRANSECT table so that I only get information for INCISED and BANKHT
-LINCIS_H=subset(tblTRANSECT, subset= PARAMETER=="BANKHT"|PARAMETER=="INCISED")
-trycast=cast(LINCIS_H, UID~PARAMETER, mean)#This gives the below error
-#Using REASON as value column.  Use the value argument to cast to override this choice
-trycast=cast(LINCIS_H, UID~PARAMETER, mean, value=RESULT)# Trying to tell it which column to take the mean of. Also gives an error. See below. Also tried with simgle and double quotes
-#Error in cast(LINCIS_H, UID ~ PARAMETER, mean, value = RESULT) : object 'RESULT' not found
-#Try trycast=cast(LINCIS_H, UID~PARAMETER, fun.aggregate='RESULT', mean)
+LINCIS_H_subset=subset(tblTRANSECT, subset= PARAMETER=="BANKHT"|PARAMETER=="INCISED", select=c(UID, PARAMETER,RESULT))
+View(LINCIS_H_subset)
+write.csv(LINCIS_H_subset, file="LINCIS_H_Process2.csv")
+LINCIS_H_Process2 <- read.csv("C:/Users/Nicole/Desktop/TrialForGIT/WRSA/LINCIS_H_Process2.csv")
+View(LINCIS_H_Process2)
+LINCIS_H_Means=cast(LINCIS_H_Process2, UID~PARAMETER, mean)
+LINCIS_H_Means
+### Now I need to: log(XINC_H-XBKF_H+0.1) Maybe do one logged and one not? Why +0.1?? 
