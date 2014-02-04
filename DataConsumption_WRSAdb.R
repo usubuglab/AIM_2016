@@ -130,14 +130,19 @@ for (t in 1:nrow(dbTBL)){
       assign(sprintf('%s_pvtMISSINGcnt_%s',tblNAME,dbTYPE[s]),tblPVTm)
     #summarized categorical data (counted values per pivot cell which is per site per parameter+result)
     tblCAT=subset(tblTYPE,subset=PARAMETER %in% params_C$PARAMETER)
-    pvtCOL3=paste(pvtCOLdefault,"+ RESULT")
-    tblPVTc=cast(tblCAT, eval(parse(text=pvtCOL3)),fun.aggregate='length', value='POINT')
-      assign(sprintf('%s_pvtCATdistb_%s',tblNAME,dbTYPE[s]),tblPVTc)
+      if(nrow(tblCAT)>1){#only assign pivot to variable if not empty and only dive into subsequent if not empty
+        pvtCOL3=paste(pvtCOLdefault,"+ RESULT")
+        tblCAT$CNT=1
+        tblPVTc=cast(tblCAT, eval(parse(text=pvtCOL3)),fun.aggregate='length', value='CNT')
+        assign(sprintf('%s_pvtCATdistb_%s',tblNAME,dbTYPE[s]),tblPVTc)
+      }
     #summarzied quantitative data (average values per pivot cell which is per site per parameter)
     tblNUM=subset(tblTYPE,subset=PARAMETER %in% params_N$PARAMETER)
-    tblNUM$RESULT=as.numeric(tblNUM$RESULT)
-    tblPVTn=cast(tblNUM, eval(parse(text=pvtCOLdefault)),fun.aggregate='mean')
-      assign(sprintf('%s_pvtQUANTmean_%s',tblNAME,dbTYPE[s]),tblPVTn)
+      if(nrow(tblNUM)>1){#only assign pivot to variable if not empty and only dive into subsequent if not empty
+        tblNUM$RESULT=as.numeric(tblNUM$RESULT)
+        tblPVTn=cast(tblNUM, eval(parse(text=pvtCOLdefault)),fun.aggregate='mean')
+        assign(sprintf('%s_pvtQUANTmean_%s',tblNAME,dbTYPE[s]),tblPVTn)
+      }
     }
   }
 }
@@ -179,7 +184,7 @@ numstrata=length(typestrata)
 UnionTBL$EcoReg=substr(UnionTBL$SITE_ID,1,2)#-- Switch to climatic rather than ecoreg?  ; ; may need to explicitly join an ecoregion column if sitecodes change over different projects, this works for NRSA only; also needs to be more expandable for additional strata
 UnionTBL$Size=substr(UnionTBL$SITE_ID,4,5)
 give.n <- function(x){#function for adding sample size to boxplots
-  return(data.frame(y = max(x)+1, label = paste("n =",length(x))))
+  return(data.frame(y = max(x)+1, label = paste("n =",length(x))))#SWJ to do: improve to handle the multiple classes for Categorical
 }
 
 allparams=unique(paste(UnionTBL$SAMPLE_TYPE,UnionTBL$PARAMETER,sep=" "))#numeric: allparams=c("BANKW INCISED", "BANKW WETWID" )#categorical: allparams=c("CROSSSECW SIZE_CLS","HUMINFLUW WALL")
