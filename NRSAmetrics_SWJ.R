@@ -218,4 +218,4 @@ LINCIS_H_Process2 <- read.csv("C:/Users/Nicole/Desktop/TrialForGIT/WRSA/LINCIS_H
 View(LINCIS_H_Process2)
 LINCIS_H_Means=cast(LINCIS_H_Process2, UID~PARAMETER, mean)
 LINCIS_H_Means
-### Now I need to: log(XINC_H-XBKF_H+0.1) Maybe do one logged and one not? Why +0.1?? 
+### Now I need to: log(XINC_H-XBKF_H+0.1) Maybe do one logged and one not? Why +0.1?? Where XINC_H is mean incision height and XBKF_H mean bankfull height
