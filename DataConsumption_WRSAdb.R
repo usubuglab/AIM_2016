@@ -188,6 +188,7 @@ give.n <- function(x){#function for adding sample size to boxplots
   return(data.frame(y = max(x)+1, label = paste("n =",length(x))))#SWJ to do: improve to handle the multiple classes for Categorical
 }
 
+subcol=c('SITE_ID','PARAMETER','STRATATYPE','STRATA','PARAMRES','PARAMCAT')
 allparams=unique(paste(UnionTBL$SAMPLE_TYPE,UnionTBL$PARAMETER,sep=" "))#numeric: allparams=c("BANKW INCISED", "BANKW WETWID" )#categorical: allparams=c("CROSSSECW SIZE_CLS","HUMINFLUW WALL")
 for (p in 1:length(allparams)){#this is a standard loop for iterating, could put it in a function that allows you to plug in a string for the most nested middle
   typeparam=strsplit(allparams[p]," ")
@@ -199,10 +200,12 @@ for (p in 1:length(allparams)){#this is a standard loop for iterating, could put
   #example: extract size from SITE_ID - UnionTBL$SIZE=substr(UnionTBL$SITE_ID,4,5)
   if(is.na(min(paramTBL$NUM)) & is.na(max(paramTBL$NUM))){paramTBL$PARAMRES=paramTBL$CHAR
                                                           print (sprintf("%s is CHARACTER format",param))
+                                                                 paramSTATUS='CHAR'
       # hist(PARAMRES) #histogram - inclu "pseudo categorical" (densiom, visrip)           --> use params_C  + all LWD ; ; also need a way to assign levels (especially for pebbles) and to combine a few categories (namely LWD, and (x)SIZE_CLS)
                                                           #commented snippets of code below for categorical that needs to find it's most organized happy home and most consilence with existing results for continuous data
   } else{paramTBL$PARAMRES=paramTBL$NUM#write.csv(paramTBL,'PARAMRES_NUM_WETWIDTH.csv')
-         print (sprintf("%s is NUMBER format",param))}
+         print (sprintf("%s is NUMBER format",param))
+         paramSTATUS='NUM'}
      #boxplot
       #outlier detection - percentile flags
          #EXAMPLE: see values that are ACTIVE='FALSE' to see common transctiprion errors and if outlier scans would catch them
@@ -214,80 +217,68 @@ for (p in 1:length(allparams)){#this is a standard loop for iterating, could put
          #2. Boxplot for each stream size using reach averages
          #3. Boxplot for each site using paramres values. 
          #boxplot(PARAMRES, xlab=unique(PARAMETER))  
-
-        for (n in 1:numstrata) {
+        if(paramSTATUS=='CHAR') {numstrata3=numstrata+1;typestrata3=c('SITE_ID',typestrata)} else{numstrata3=numstrata;typestrata3=typestrata}
+        for (n in 1:numstrata3) {
            paramTBL3=paramTBL
-           paramTBL3$STRATATYPE=typestrata[n]
-           paramTBL3$STRATA=unlist(paramTBL3[typestrata[n]])#paramTBL3$STRATA='UNK'
+           paramTBL3$STRATATYPE=typestrata3[n]
+           paramTBL3$STRATA=unlist(paramTBL3[typestrata3[n]])#paramTBL3$STRATA='UNK'
            if (n==1) { paramTBL2=paramTBL3
            } else { 
              paramTBL2=rbind(paramTBL2,paramTBL3)
            } }
          strata=unique(paste(paramTBL2$STRATATYPE,paramTBL2$STRATA,sep="_" ))
-         paramTBL3=aggregate(PARAMRES~SITE_ID+PARAMETER+STRATATYPE+STRATA,data=paramTBL2,FUN=mean)#if(is.numeric(paramTBL3$PARAMRES)){}
-#          paramTBL3a=aggregate(IND~PARAMRES+SITE_ID+PARAMETER+STRATATYPE+STRATA,data=paramTBL2,FUN=length)#if(is.char)
-#          paramTBL3b=aggregate(IND~SITE_ID+PARAMETER+STRATATYPE+STRATA,data=paramTBL2,FUN=length)#if(is.char)
-#          paramTBL3=merge(paramTBL3a,paramTBL3b,by=c('SITE_ID','STRATATYPE','STRATA','PARAMETER'))#if(is.char)
-#          paramTBL3$PARAMCAT=paramTBL3$PARAMRES;paramTBL3$PARAMRES=paramTBL3$IND.x/paramTBL3$IND.y#if(is.char)
-         
+           if(paramSTATUS=='NUM'){
+             paramTBL3=aggregate(PARAMRES~SITE_ID+PARAMETER+STRATATYPE+STRATA,data=paramTBL2,FUN=mean)
+             paramTBL3$PARAMCAT=NA
+           } else if(paramSTATUS=='CHAR'){
+        #bin (or order) PARAMRES if in specified list
+         paramTBL3a=aggregate(IND~PARAMRES+SITE_ID+PARAMETER+STRATATYPE+STRATA,data=paramTBL2,FUN=length)
+         paramTBL3b=aggregate(IND~SITE_ID+PARAMETER+STRATATYPE+STRATA,data=paramTBL2,FUN=length)
+         paramTBL3=merge(paramTBL3a,paramTBL3b,by=c('SITE_ID','STRATATYPE','STRATA','PARAMETER'))
+         paramTBL3$PARAMCAT=paramTBL3$PARAMRES;paramTBL3$PARAMRES=paramTBL3$IND.x/paramTBL3$IND.y
+           }
+                 
          for (n in 1:numstrata) {#re-enter for loop now that all STRATA are complete and aggregated
            paramTBL4=subset(paramTBL3,subset=STRATATYPE==typestrata[n])
-           stratabox=ggplot(paramTBL4,aes(y=PARAMRES, x=STRATA)) 
-#            stratabox=ggplot(paramTBL4,aes(y=PARAMRES, x=STRATA,fill=PARAMCAT))#if(is.char)
+           stratabox=ggplot(paramTBL4,aes(y=PARAMRES, x=STRATA,fill=PARAMCAT)) 
            stratabox=stratabox+ geom_boxplot(outlier.colour = "red", outlier.size = 10)+#for reviewing all data by strata
            stat_summary(fun.data =give.n, geom = "text") +
             labs (title=sprintf('STRATA: %s ~ PARAM: %s',typestrata[n],param))
           #save jpeg or # assign(sprintf('box_STRATA_%s_%s',typestrata[n],param),stratabox)
          }
 allsites=unique(paramTBL$SITE_ID)
- for (s in 1:length(allsites)){#may need to explicitly join an ecoregion column if sitecodes change over different projects, this works for NRSA only
-   #if numeric, boxplot of reach avg, if character, histogram
-   paramTBL$STRATATYPE='Site';paramTBL$STRATA=paramTBL$SITE; paramTBL$STRATA=factor(paramTBL$STRATA,levels=unique(paramTBL$STRATA))
-   paramTBL6=subset(paramTBL,select=c('SITE_ID','PARAMETER','STRATATYPE','STRATA','PARAMRES'))
-   paramTBL6=rbind(paramTBL6,paramTBL3)
+ for (s in 1:length(allsites)){
+   paramTBL3=subset(paramTBL3,select=subcol)
+   if(paramSTATUS=='NUM'){
+     paramTBL$STRATATYPE='SITE_ID';paramTBL$STRATA=paramTBL$SITE;paramTBL$PARAMCAT=NA; paramTBL$STRATA=factor(paramTBL$STRATA,levels=unique(paramTBL$STRATA))
+     paramTBL6=subset(paramTBL,select=subcol)
+     paramTBL6=rbind(paramTBL6,paramTBL3)
+   } else if(paramSTATUS=='CHAR'){paramTBL6=paramTBL3}
    stratas=unique(subset(paramTBL6,select=STRATA,subset=SITE_ID==allsites[s]))
    paramTBL6=subset(paramTBL6,subset=STRATA %in% stratas$STRATA)
-   paramTBL6$STRATATYPE=factor(paramTBL6$STRATATYPE,levels=c("Site",typestrata))
-   siteavg=unique(subset(paramTBL6,subset=STRATATYPE !="Site" & SITE_ID==allsites[s] , select=PARAMRES))
-    #for reviewing all data by a particular site at the site and across all strata
-#     #if categorical
-#    paramTBL6=subset(paramTBL6,subset=STRATATYPE=='Site')
-#    sitehist=ggplot(paramTBL6,aes(x=PARAMRES)) +geom_histogram() #--> or just apply above box plots (results will be single lines for sites)
-#     ##grid arrange with boxplots
-   #if numeric
-   
+   paramTBL6$STRATATYPE=factor(paramTBL6$STRATATYPE,levels=c("SITE_ID",typestrata))
+   paramTBL6$PARAMCAT=factor(paramTBL6$PARAMCAT)
+   siteavg=unique(subset(paramTBL6,subset=STRATATYPE !="SITE_ID" & SITE_ID==allsites[s] , select=c('PARAMRES', 'PARAMCAT')))#add PARAMCAT
    #label extreme outliers with SiteCode
    low=as.numeric(quantile(paramTBL6$PARAMRES,probs=0.05))
    high=as.numeric(quantile(paramTBL6$PARAMRES,probs=0.95))
    paramTBL6$SiteLabelOUT=ifelse(paramTBL6$PARAMRES<low,paramTBL6$SITE_ID,ifelse(paramTBL6$PARAMRES>high,paramTBL6$SITE_ID,ifelse(paramTBL6$STRATATYPE=='Site',NA,NA)))
    #generate box plot in ggplot2
-   sitebox=ggplot(paramTBL6,aes(y=PARAMRES, x=STRATATYPE)) +geom_boxplot(outlier.colour='red',outlier.size=10) +
-     geom_hline(aes(yintercept=PARAMRES),siteavg,color='blue')  + #mark the average for the site
-     stat_summary(fun.data =give.n, geom = "text") + #annotate: n(sites) for strata plots and n(points) for site  (function defined above)
+   sitebox=ggplot(paramTBL6,aes(y=PARAMRES, x=STRATATYPE,fill=PARAMCAT)) +geom_boxplot(outlier.colour='red',outlier.size=10) +
+     geom_hline(aes(yintercept=PARAMRES, colour=PARAMCAT),siteavg,size=1)  + #mark the average for the site
+     scale_colour_discrete(drop=FALSE) + scale_fill_discrete()+#sync colors between lines and boxplots (especially important for categorical)
+     stat_summary(fun.data =give.n, geom = "text") + #annotate: n(sites) for strata plots and n(points) for site  (function defined above) #messy for categorical
      labs(title=sprintf('SITE: %s ~ PARAM: %s',allsites[s],param)) +
      geom_text(aes(label=SiteLabelOUT),size=3)#,position= position_jitter(width = 0.1, height=0.3)
    #save jpeg or assign var
  } } 
-rm(paramTBL3,paramTBL4,paramTBL5,paramTBL6,paramTBL3a,paramTBL3b)
+rm(paramTBL3,paramTBL4,paramTBL6,paramTBL3a,paramTBL3b)
 
-#better resolved by adding "stratatype" to the site level data rather than dividing and recombining
-# for (s in 1:length(allsites)){
-#   for (p in 1:length(allparams)){  
-#     typeparam=strsplit(allparams[p]," ");param=typeparam[[1]][[2]]#type=typeparam[[1]][[1]]
-#     sitebox=eval(parse(text=sprintf('box_SITE_%s_%s',gsub("-","",allsites[s]),param)))
-#     strata1=textGrob('NONE'); strata2=textGrob('NONE'); strata3=textGrob('NONE'); strata4=textGrob('NONE')
-#     strata1I=textGrob('NONE'); strata2I=textGrob('NONE'); strata3I=textGrob('NONE'); strata4I=textGrob('NONE')
-#     if(numstrata>4){print('only the first 4 strata will be displayed')}
-#   for (n in 1:numstrata) { 
-#     strataTXT=as.character(unique(subset(UnionTBL[c('SITE_ID',typestrata[n])],subset=SITE_ID==allsites[s]))[2])
-#     stratabox=eval(parse(text=sprintf('box_STRATA_%s_%s',typestrata[n],param)))
-#     strataboxI=eval(parse(text=sprintf('box_STRATA_%s_%s_%s',typestrata[n],strataTXT,param)))
-#     assign(sprintf('strata%s',n),stratabox);assign(sprintf('strata%sI',n),strataboxI)
-#     if(n==numstrata) {grid.arrange(strata1,strata2,strata3,strata4,nrow=numstrata,ncol=1)}#this level produces duplicates more than needed
-#    }
-# grid.arrange(sitebox,strata1I,strata2I,strata3I,strata4I, nrow=1,ncol=numstrata+1)
-# }}
-
+#SWJ to do (2/11/14):
+#fix sample size annotation to work for categorical
+#bin
+#list of "numeric" categorical variables
+#troubleshoot outlier labelling
 
 
 #iteration example
