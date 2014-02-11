@@ -45,6 +45,7 @@ wrsa1314=odbcDriverConnect(connection = wrsaConnectSTR)
 #SWJ to do: throw this into a function that also prompts for server and password if missing (='')
 #SWJ to do: throw the function into a separate referenced script because multiple files are using this
 
+options(stringsAsFactors=F)#general option, otherwise default read is as factors which assigns arbitrary number behind the scenes to most columns
 
 #SQL assistance functions
 #loaded from a separate R script
@@ -254,10 +255,17 @@ allsites=unique(paramTBL$SITE_ID)
 #    sitehist=ggplot(paramTBL6,aes(x=PARAMRES)) +geom_histogram() #--> or just apply above box plots (results will be single lines for sites)
 #     ##grid arrange with boxplots
    #if numeric
+   
+   #label extreme outliers with SiteCode
+   low=as.numeric(quantile(paramTBL6$PARAMRES,probs=0.05))
+   high=as.numeric(quantile(paramTBL6$PARAMRES,probs=0.95))
+   paramTBL6$SiteLabelOUT=ifelse(paramTBL6$PARAMRES<low,paramTBL6$SITE_ID,ifelse(paramTBL6$PARAMRES>high,paramTBL6$SITE_ID,ifelse(paramTBL6$STRATATYPE=='Site',NA,NA)))
+   #generate box plot in ggplot2
    sitebox=ggplot(paramTBL6,aes(y=PARAMRES, x=STRATATYPE)) +geom_boxplot(outlier.colour='red',outlier.size=10) +
      geom_hline(aes(yintercept=PARAMRES),siteavg,color='blue')  + #mark the average for the site
      stat_summary(fun.data =give.n, geom = "text") + #annotate: n(sites) for strata plots and n(points) for site  (function defined above)
-     labs(title=sprintf('SITE: %s ~ PARAM: %s',allsites[s],param))
+     labs(title=sprintf('SITE: %s ~ PARAM: %s',allsites[s],param)) +
+     geom_text(aes(label=SiteLabelOUT),size=3)#,position= position_jitter(width = 0.1, height=0.3)
    #save jpeg or assign var
  } } 
 rm(paramTBL3,paramTBL4,paramTBL5,paramTBL6,paramTBL3a,paramTBL3b)
