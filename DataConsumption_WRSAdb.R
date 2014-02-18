@@ -58,7 +58,7 @@ source('FNC_tblRetrievePVT.R')
 #SQL tables are created and imports managed via an independent R scripts (createNRSA1314db_SWJ.r)
 dbTBL=sqlTables(wrsa1314, tableType="TABLE")#all possible tables
 dbCOL=sqlColumns(wrsa1314,"tblPOINT")#column names (similar structure for each tbl since flat)
-dbPARAM=sqlQuery(wrsa1314,'Select SAMPLE_TYPE, PARAMETER, LABEL,VAR_TYPE from tblMETADATA')#parameter names (SWJ to do: iterate over Sample_Type groups to generate pivots)
+dbPARAM=sqlQuery(wrsa1314,"Select SAMPLE_TYPE, PARAMETER, LABEL,VAR_TYPE from tblMETADATA where ACTIVE='TRUE'")#parameter names (SWJ to do: iterate over Sample_Type groups to generate pivots)
 tmpTYPE=as.character(unique(dbPARAM$SAMPLE_TYPE))
 dbTYPE=substr(tmpTYPE,1,nchar(tmpTYPE) - 1)#substr to get rid of the random "x" at the end of each name
 #UID and parameter prep (SWJ to do: could roll into a selectUID function and into the final sql call function (i.e. the winner btwn tblRetrieve and PvTconstruct))
@@ -112,7 +112,7 @@ tblPOINTbank=tblRetrieve('tblPOINT',bankP)
 tblCOL=c('UID', 'PARAMETER','RESULT')
 pvtCOL='UID %s ~ PARAMETER';pvtCOLdefault=sprintf(pvtCOL,'')
 params_N=subset(dbPARAM, subset=VAR_TYPE=='NUMERIC')
-params_C=subset(dbPARAM, subset=VAR_TYPE=='CHARACTER')
+params_C=subset(dbPARAM, subset=VAR_TYPE=='CHARACTER')#also used in boxplot QA (with some modifications)
 for (t in 1:nrow(dbTBL)){
   tblNAME=dbTBL$TABLE_NAME[t]
   tbl=tblRetrieve(tblNAME)
@@ -189,22 +189,43 @@ give.n <- function(x){#function for adding sample size to boxplots
 }
 
 subcol=c('SITE_ID','PARAMETER','STRATATYPE','STRATA','PARAMRES','PARAMCAT')
+#compile parameter list
 allparams=unique(paste(UnionTBL$SAMPLE_TYPE,UnionTBL$PARAMETER,sep=" "))#numeric: allparams=c("BANKW INCISED", "BANKW WETWID" )#categorical: allparams=c("CROSSSECW SIZE_CLS","HUMINFLUW WALL")
-for (p in 1:length(allparams)){#this is a standard loop for iterating, could put it in a function that allows you to plug in a string for the most nested middle
-  typeparam=strsplit(allparams[p]," ")
+excludeparams=c(grep("VERIF",allparams,value=T),grep("CALIB",allparams,value=T),grep("BERW",allparams,value=T),"SLOPEW METHOD","FIELDMEAS LOCATION","FIELDMEAS TIME" ,"FIELDMEAS CORRECTED",'CROSSSECW DIST_LB','SLOPEW SLOPE_UNITS','CROSSSECW SUB_5_7','THALW INCREMENT')
+combineparams=c('CROSSSECW XSIZE_CLS',grep("LWD",allparams,value=T),grep("HUMINFLU",allparams,value=T),grep("VISRIP",allparams,value=T),grep("FISHCOV",allparams,value=T),grep("ASSESS",allparams,value=T),grep("TORR",allparams,value=T))#need to exclude originals from allparams list and add new names back; some of these may be useable, just want to ponder them a bit more (run a few examples through the existing framework)
+allparams1=setdiff(allparams,c(excludeparams,combineparams))
+UnionTBL1=UnionTBL#consider removing this duplicate once code complete IF using UnionTBL in different ways in subsequent analysis where do not want these parameter changes applied
+UnionTBL1$PARAMETER=ifelse(UnionTBL1$PARAMETER=='XSIZE_CLS','SIZE_CLS',UnionTBL1$PARAMETER)#for all our analysis purposes, these are the same
+UnionTBL1$PARAMETER=ifelse(UnionTBL1$SAMPLE_TYPE=='LWDW','LWDtally',UnionTBL1$PARAMETER)#for preliminary analysis purposes, these are the same
+combineparamNEW=c('CROSSSECW SIZE_CLS','LWDW LWDtally')##still need to ponder HUMINFLU, VISRIP, FISHCOV, and ASSESS and add back in here
+allparams1=union(allparams1,combineparamNEW)
+#binned parameters
+bin='Y'#'Y' if would like to apply specified binning to parameters in binparams
+binparams=c("CANCOVERW DENSIOM","CROSSSECW SIZE_CLS",grep("LWD",allparams1,value=T))#also list any parameters that should be treated as categorical that are otherwise in params_N
+binMETA=read.csv('binMETADATAtemp.csv')##feed in from SQL once solified in FM, R, SQL; also used to order categoricals
+for (p in 1:length(allparams1)){#this is a standard loop for iterating, could put it in a function that allows you to plug in a string for the most nested middle
+  typeparam=strsplit(allparams1[p]," ")
   type=typeparam[[1]][[1]]; param=typeparam[[1]][[2]]
-  paramTBL=subset(UnionTBL,subset=PARAMETER==param & SAMPLE_TYPE==type)
+  paramTBL=subset(UnionTBL1,subset=PARAMETER==param & SAMPLE_TYPE==type)
   paramTBL$CHAR=as.character(paramTBL$RESULT)
   paramTBL$NUM=as.numeric(paramTBL$CHAR)
   #iterate over strata: sites, all values combined, ecoregion/climatic, size
   #example: extract size from SITE_ID - UnionTBL$SIZE=substr(UnionTBL$SITE_ID,4,5)
-  if(is.na(min(paramTBL$NUM)) & is.na(max(paramTBL$NUM))){paramTBL$PARAMRES=paramTBL$CHAR
-                                                          print (sprintf("%s is CHARACTER format",param))
-                                                                 paramSTATUS='CHAR'
-      # hist(PARAMRES) #histogram - inclu "pseudo categorical" (densiom, visrip)           --> use params_C  + all LWD ; ; also need a way to assign levels (especially for pebbles) and to combine a few categories (namely LWD, and (x)SIZE_CLS)
-                                                          #commented snippets of code below for categorical that needs to find it's most organized happy home and most consilence with existing results for continuous data
-  } else{paramTBL$PARAMRES=paramTBL$NUM#write.csv(paramTBL,'PARAMRES_NUM_WETWIDTH.csv')
-         print (sprintf("%s is NUMBER format",param))
+  if(allparams1[p]%in%paste(substr(params_C$SAMPLE_TYPE,1,nchar(params_C$SAMPLE_TYPE)-1),params_C$PARAMETER,sep=" ") |allparams1[p] %in% binparams){
+         paramTBL$PARAMRES=paramTBL$CHAR#previous if statement: is.na(min(paramTBL$NUM)) & is.na(max(paramTBL$NUM))
+         paramSTATUS='CHAR'
+         paramMATCH=param %in% binMETA$PARAMETER
+         typeMATCH=type %in% as.character(unlist(subset(binMETA,select=SAMPLE_TYPE,subset=is.na(PARAMETER)|PARAMETER=='')))
+         if(bin=='Y' & (paramMATCH=='TRUE'|typeMATCH=='TRUE')){#if match in binMETA
+           if(paramMATCH=='TRUE'){temp=merge(paramTBL,binMETA,by=c('SAMPLE_TYPE','PARAMETER','RESULT'))
+           }else if (typeMATCH=='TRUE'){temp=merge(paramTBL,binMETA,by=c('SAMPLE_TYPE','RESULT')); temp$PARAMETER=param}
+              if(nrow(paramTBL) != nrow(temp)) {print(sprintf('WARNING: categories are missing from binMETA for %s and are excluded.',typeparam))}##need to determine standard way of reporting what they are once we run into one
+              paramTBL=temp
+              paramTBL$PARAMRES=factor(paramTBL$Bin,levels=unique(paramTBL$Bin[order(paramTBL$Order,paramTBL$Bin)]),ordered=TRUE)##bin may be blank if only feeding in order (not yet doing this), determine how to handle depending on final binMETA structure #this method did not work: paramTBL=paramTBL[with(paramTBL,order(Order)),]##will order be retained? ##resetting paramTBL$PARAMRES to paramTBL$Bin automatically made it a factor...this is turned off in options and was problematic for quantiative summaries, not sure implications for boxplots##alternative way may be to order the factor list and apply to the factor levels (but this may be more complicate for ones with no binning, only ordering, unless specifying bin=result (instead of blank))
+              rm(temp)
+           # order and/or bin 
+         } else{print(sprintf('Sorting Order and Binning unknown for %s',typeparam))}
+        } else{paramTBL$PARAMRES=paramTBL$NUM
          paramSTATUS='NUM'}
      #boxplot
       #outlier detection - percentile flags
@@ -244,14 +265,15 @@ for (p in 1:length(allparams)){#this is a standard loop for iterating, could put
            stratabox=stratabox+ geom_boxplot(outlier.colour = "red", outlier.size = 10)+#for reviewing all data by strata
            stat_summary(fun.data =give.n, geom = "text") +
             labs (title=sprintf('STRATA: %s ~ PARAM: %s',typestrata[n],param))
-          #save jpeg or # assign(sprintf('box_STRATA_%s_%s',typestrata[n],param),stratabox)
+           assign(stratabox$labels$title,stratabox)#save jpeg or # assign(sprintf('box_STRATA_%s_%s',typestrata[n],param),stratabox)
          }
-allsites=unique(paramTBL$SITE_ID)
- for (s in 1:length(allsites)){
+allsites=unique(paramTBL$SITE_ID)##would be nice if this  linked to UIDs to narrow down sites, but still feed all sites through the aggregations
+ for (s in 1:2){#length(allsites)){
    paramTBL3=subset(paramTBL3,select=subcol)
+   paramTBL3$TRANSECT='ALL';paramTBL3$POINT='ALL'
    if(paramSTATUS=='NUM'){
      paramTBL$STRATATYPE='SITE_ID';paramTBL$STRATA=paramTBL$SITE;paramTBL$PARAMCAT=NA; paramTBL$STRATA=factor(paramTBL$STRATA,levels=unique(paramTBL$STRATA))
-     paramTBL6=subset(paramTBL,select=subcol)
+     paramTBL6=subset(paramTBL,select=c(subcol,"TRANSECT",'POINT'))
      paramTBL6=rbind(paramTBL6,paramTBL3)
    } else if(paramSTATUS=='CHAR'){paramTBL6=paramTBL3}
    stratas=unique(subset(paramTBL6,select=STRATA,subset=SITE_ID==allsites[s]))
@@ -260,25 +282,33 @@ allsites=unique(paramTBL$SITE_ID)
    paramTBL6$PARAMCAT=factor(paramTBL6$PARAMCAT)
    siteavg=unique(subset(paramTBL6,subset=STRATATYPE !="SITE_ID" & SITE_ID==allsites[s] , select=c('PARAMRES', 'PARAMCAT')))#add PARAMCAT
    #label extreme outliers with SiteCode
-   low=as.numeric(quantile(paramTBL6$PARAMRES,probs=0.05))
-   high=as.numeric(quantile(paramTBL6$PARAMRES,probs=0.95))
-   paramTBL6$SiteLabelOUT=ifelse(paramTBL6$PARAMRES<low,paramTBL6$SITE_ID,ifelse(paramTBL6$PARAMRES>high,paramTBL6$SITE_ID,ifelse(paramTBL6$STRATATYPE=='Site',NA,NA)))
+   paramquant=aggregate(PARAMRES~STRATATYPE,data=paramTBL6,FUN='quantile',probs=c(0.05,0.95),names=FALSE);colnames(paramquant)=c('STRATATYPE','Quant')
+   paramTBL6=merge(paramTBL6,paramquant,by=c('STRATATYPE'))
+   #low=as.numeric(quantile(paramTBL6$PARAMRES~paramTBL6$STRATATYPE,probs=0.05))
+   #high=as.numeric(quantile(paramTBL6$PARAMRES,probs=0.95))
+   paramTBL6$SiteLabelOUT=ifelse(paramTBL6$PARAMRES<paramTBL6$Quant[,1],paramTBL6$SITE_ID,ifelse(paramTBL6$PARAMRES>paramTBL6$Quant[,2],paramTBL6$SITE_ID,NA))#create a site label if an outlier
+   paramTBL6$SiteLabelOUT=ifelse(paramTBL6$STRATATYPE=="SITE_ID" & is.na(paramTBL6$SiteLabelOUT)==FALSE,paste(paramTBL6$TRANSECT,paramTBL6$POINT,sep=":"), paramTBL6$SiteLabelOUT)#change site label to transect if raw data
    #generate box plot in ggplot2
    sitebox=ggplot(paramTBL6,aes(y=PARAMRES, x=STRATATYPE,fill=PARAMCAT)) +geom_boxplot(outlier.colour='red',outlier.size=10) +
      geom_hline(aes(yintercept=PARAMRES, colour=PARAMCAT),siteavg,size=1)  + #mark the average for the site
      scale_colour_discrete(drop=FALSE) + scale_fill_discrete()+#sync colors between lines and boxplots (especially important for categorical)
      stat_summary(fun.data =give.n, geom = "text") + #annotate: n(sites) for strata plots and n(points) for site  (function defined above) #messy for categorical
      labs(title=sprintf('SITE: %s ~ PARAM: %s',allsites[s],param)) +
-     geom_text(aes(label=SiteLabelOUT),size=3)#,position= position_jitter(width = 0.1, height=0.3)
-   #save jpeg or assign var
+     geom_text(aes(label=SiteLabelOUT),size=3,position= position_jitter(width = 0.3, height=0.3))#jitter a little strange, but makes it readable
+    assign(sitebox$labels$title,sitebox)#save jpeg or assign var (need to refine naming)
  } } 
 rm(paramTBL3,paramTBL4,paramTBL6,paramTBL3a,paramTBL3b)
 
 #SWJ to do (2/11/14):
 #fix sample size annotation to work for categorical
-#bin
-#list of "numeric" categorical variables
-#troubleshoot outlier labelling
+#DONE#bin - allow toggle on or off
+#DONE#list of "numeric" categorical variables
+#troubleshoot outlier labelling (especially for categorical) #DONE for numeric# print figures by print(`SITE: AR-LS-8007 ~ PARAM: EROSION`)
+#hiccuping on BANKW:STABLE (full loop run on 2/18/14)
+#fix all sites to match UIDs (see comment on allsites)
+#consider outlier significance testing (Scott)
+#print cv or other metric as a warning for the spread? compare cv of site to avg cv of all/strata sites? (Scott)
+#excel export of "problem" sites and parameters (so can narrow down search)
 
 
 #iteration example
