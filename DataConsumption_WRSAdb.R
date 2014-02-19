@@ -12,7 +12,7 @@ sitecodes=c('AR-LS-8003','AR-LS-8007', 'TP-LS-8240')
 dates=c('05/05/2005')
 hitchs=c('')#NOT WORKING YET
 crews=c('R1')#NOT WORKING YET
-projects=c('NRSA')#NOT WORKING YET
+projects=c('NRSA')#NOT WORKING YET, most useful for separating NorCal and WRSA
 years=c(2013)#NOT WORKING YET
 
 
@@ -92,11 +92,11 @@ from (
 ) UnionTBL
 where ACTIVE='TRUE'
 ")
-UnionTBL=merge(UnionTBL,UIDs)#limit by UIDs ("select samples)
-#append sitecode instead of UID to make the table more readable --> migrate this into tblRetrieve or some kind of "convert" function
-Sites=subset(UnionTBL,select=c(UID,RESULT),subset=PARAMETER=='SITE_ID'); colnames(Sites)=c('UID','SITE_ID')
+
+Sites=subset(UnionTBL,select=c(UID,RESULT),subset=PARAMETER=='SITE_ID'); colnames(Sites)=c('UID','SITE_ID')#append sitecode instead of UID to make the table more readable --> migrate this into tblRetrieve or some kind of "convert" function
 UnionTBL=merge(UnionTBL,Sites)
 UnionTBL$SITE_ID=as.character(UnionTBL$SITE_ID)
+UnionTBL1=merge(UnionTBL,UIDs)#limit by UIDs ("select samples)
 
 #retrieve desired tables
 #EXAMPLES of tblRetrieve function# (note: parameter lists were specified in the "Inputs" section at the beginning of this script)
@@ -184,18 +184,20 @@ typestrata=c('EcoReg','Size')#must match column names that are created
 numstrata=length(typestrata)
 UnionTBL$EcoReg=substr(UnionTBL$SITE_ID,1,2)#-- Switch to climatic rather than ecoreg?  ; ; may need to explicitly join an ecoregion column if sitecodes change over different projects, this works for NRSA only; also needs to be more expandable for additional strata
 UnionTBL$Size=substr(UnionTBL$SITE_ID,4,5)
+#this section is highly dependent on WRSA siteID naming structure and GRTS strata
 
 
+give.n <- function(x){return(data.frame(y = max(x)+1,x = max(x)+1, label = paste("n =",length(x))))}#SWJ to do: improve to handle the multiple classes for Categorical 
 subcol=c('SITE_ID','PARAMETER','STRATATYPE','STRATA','PARAMRES','PARAMCAT','TRANSECT','POINT')
 #compile parameter list
 allparams=unique(paste(UnionTBL$SAMPLE_TYPE,UnionTBL$PARAMETER,sep=" "))#numeric: allparams=c("BANKW INCISED", "BANKW WETWID" )#categorical: allparams=c("CROSSSECW SIZE_CLS","HUMINFLUW WALL")
-excludeparams=c(grep("VERIF",allparams,value=T),grep("CALIB",allparams,value=T),grep("BERW",allparams,value=T),"SLOPEW METHOD","FIELDMEAS LOCATION","FIELDMEAS TIME" ,"FIELDMEAS CORRECTED",'CROSSSECW DIST_LB','SLOPEW SLOPE_UNITS','CROSSSECW SUB_5_7','THALW INCREMENT')
+excludeparams=c("FIELDMEAS DO",grep("VERIF",allparams,value=T),grep("CALIB",allparams,value=T),grep("BERW",allparams,value=T),"SLOPEW METHOD","FIELDMEAS LOCATION","FIELDMEAS TIME" ,"FIELDMEAS CORRECTED",'CROSSSECW DIST_LB','SLOPEW SLOPE_UNITS','CROSSSECW SUB_5_7','THALW INCREMENT')
 combineparams=c("CANCOVERW DENSIOM",'CROSSSECW XSIZE_CLS',grep("LWD",allparams,value=T),grep("HUMINFLU",allparams,value=T),grep("VISRIP",allparams,value=T),grep("FISHCOV",allparams,value=T),grep("ASSESS",allparams,value=T),grep("TORR",allparams,value=T))#need to exclude originals from allparams list and add new names back; some of these may be useable, just want to ponder them a bit more (run a few examples through the existing framework)
 allparams1=setdiff(allparams,c(excludeparams,combineparams))
-UnionTBL1=UnionTBL#consider removing this duplicate once code complete IF using UnionTBL in different ways in subsequent analysis where do not want these parameter changes applied
-UnionTBL1$PARAMETER=ifelse(UnionTBL1$PARAMETER=='XSIZE_CLS','SIZE_CLS',UnionTBL1$PARAMETER)#for all our analysis purposes, these are the same
-UnionTBL1$PARAMETER=ifelse(UnionTBL1$SAMPLE_TYPE=='LWDW','LWDtally',UnionTBL1$PARAMETER)#for preliminary analysis purposes, these are the same
-UnionTBL1$PARAMETER=ifelse(UnionTBL1$PARAMETER=='DENSIOM' & UnionTBL1$POINT %in% c('LF','RT'),'DENSIOMbank',ifelse(UnionTBL1$PARAMETER=='DENSIOM' & (UnionTBL1$POINT  %in% c('LF','RT')==FALSE),'DENSIOMcenter',UnionTBL1$PARAMETER)#for preliminary analysis purposes, these need to be divided (and are believed to be separated in aquamet)
+UnionTBL2=UnionTBL#subset data here if do not want all db results (UnionTBL is not filtered by UIDs, UnionTBL1 is); most likely scenario is intensifications (NorCal, CoPlateau, NV), other designs with diff strata; see second round of filtering at the allsites variable
+UnionTBL2$PARAMETER=ifelse(UnionTBL2$PARAMETER=='XSIZE_CLS','SIZE_CLS',UnionTBL2$PARAMETER)#for all our analysis purposes, these are the same
+UnionTBL2$PARAMETER=ifelse(UnionTBL2$SAMPLE_TYPE=='LWDW','LWDtally',UnionTBL2$PARAMETER)#for preliminary analysis purposes, these are the same
+UnionTBL2$PARAMETER=ifelse(UnionTBL2$PARAMETER=='DENSIOM' & UnionTBL2$POINT %in% c('LF','RT'),'DENSIOMbank',ifelse(UnionTBL2$PARAMETER=='DENSIOM' & (UnionTBL2$POINT  %in% c('LF','RT')==FALSE),'DENSIOMcenter',UnionTBL2$PARAMETER)#for preliminary analysis purposes, these need to be divided (and are believed to be separated in aquamet)
 combineparamNEW=c("CANCOVERW DENSIOMbank","CANCOVERW DENSIOMcenter",'CROSSSECW SIZE_CLS','LWDW LWDtally')##still need to ponder HUMINFLU, VISRIP, FISHCOV, and ASSESS and add back in here
 allparams1=union(allparams1,combineparamNEW)
 #binned parameters
@@ -205,7 +207,7 @@ binMETA=read.csv('binMETADATAtemp.csv')##feed in from SQL once solified in FM, R
 for (p in 1:length(allparams1)){#this is a standard loop for iterating, could put it in a function that allows you to plug in a string for the most nested middle
   typeparam=strsplit(allparams1[p]," ")
   type=typeparam[[1]][[1]]; param=typeparam[[1]][[2]]
-  paramTBL=subset(UnionTBL1,subset=PARAMETER==param & SAMPLE_TYPE==type)
+  paramTBL=subset(UnionTBL2,subset=PARAMETER==param & SAMPLE_TYPE==type)
   paramTBL$CHAR=as.character(paramTBL$RESULT)
   paramTBL$NUM=as.numeric(paramTBL$CHAR)
   if(allparams1[p]%in%paste(substr(params_C$SAMPLE_TYPE,1,nchar(params_C$SAMPLE_TYPE)-1),params_C$PARAMETER,sep=" ") |allparams1[p] %in% binparams){
@@ -252,16 +254,16 @@ for (p in 1:length(allparams1)){#this is a standard loop for iterating, could pu
             labs (title=sprintf('STRATA: %s ~ PARAM: %s',typestrata[n],param))
            assign(stratabox$labels$title,stratabox)#save jpeg or # assign(sprintf('box_STRATA_%s_%s',typestrata[n],param),stratabox)
          }
-allsites=unique(paramTBL$SITE_ID)##would be nice if this  linked to UIDs to narrow down sites, but still feed all sites through the aggregations
- for (s in 1:length(allsites)){#2){
+allsites=intersect(unique(paramTBL$SITE_ID),unique(UnionTBL1$SITE_ID))##would be nice if this  linked to a second set of UIDs to narrow down sites, but still feed all sites through the aggregations; interim solution is to match UnionTBL (all data) to UnionTBL1 (UID restricted) which will still run all data if alldata='Y'
+ for (s in 1:2){#length(allsites)){#2){
    paramTBL3$TRANSECT='ALL';paramTBL3$POINT='ALL'
    paramTBL3$POINT=ifelse(paramSTATUS=='CHAR' & paramTBL3$STRATATYPE=='SITE_ID',paramTBL3$IND.y,paramTBL3$POINT)#set up for later N (sample size) use
-   paramTBL3=subset(paramTBL3,select=subcol)
+   paramTBL5=subset(paramTBL3,select=subcol)
    if(paramSTATUS=='NUM'){
      paramTBL$STRATATYPE='SITE_ID';paramTBL$STRATA=paramTBL$SITE;paramTBL$PARAMCAT='None'; paramTBL$STRATA=factor(paramTBL$STRATA,levels=unique(paramTBL$STRATA))
      paramTBL6=subset(paramTBL,select=subcol)
-     paramTBL6=rbind(paramTBL6,paramTBL3)
-   } else if(paramSTATUS=='CHAR'){paramTBL6=paramTBL3}
+     paramTBL6=rbind(paramTBL6,paramTBL5)
+   } else if(paramSTATUS=='CHAR'){paramTBL6=paramTBL5}
    stratas=unique(subset(paramTBL6,select=STRATA,subset=SITE_ID==allsites[s]))
    paramTBL6=subset(paramTBL6,subset=STRATA %in% stratas$STRATA)
    paramTBL6$STRATATYPE=factor(paramTBL6$STRATATYPE,levels=c("SITE_ID",typestrata))
@@ -282,21 +284,21 @@ allsites=unique(paramTBL$SITE_ID)##would be nice if this  linked to UIDs to narr
    sitebox=ggplot(paramTBL6,aes(y=PARAMRES, x=PARAMCAT,fill=PARAMCAT,colour=PARAMCAT)) + geom_boxplot(outlier.colour='red',outlier.size=10,colour='black') + facet_grid(.~STRATATYPE)+
      geom_hline(aes(yintercept=PARAMRES, colour=PARAMCAT),siteavg,size=1)  + #mark the average for the site
      scale_colour_brewer(drop=FALSE,palette='Set1') + scale_fill_brewer(palette='Set1')+#sync colors between lines and boxplots (especially important for categorical)
-     geom_text(data=paramN,aes(label=sprintf('n=%s',PARAMRES),x=(length(unique(paramTBL6$PARAMCAT))/2)+0.5,y=max(paramTBL6$PARAMRES)+0.25),inherit.aes=FALSE, parse=FALSE)+#annotate("text",x=2,y=max(paramTBL6$PARAMRES)+0.5,label=sprintf('n=%s',paramN$PARAMRES)) +#annotate: n(sites) for strata plots and n(points) for site  (function defined above) #messy for categorical#previous (not working as anticipated, particularly for categorical): #stat_summary(fun.data =give.n, geom = "text") + #function for adding sample size to boxplots #give.n <- function(x){return(data.frame(y = max(x)+1,x = max(x)+1, label = paste("n =",length(x))))}#SWJ to do: improve to handle the multiple classes for Categorical #y = max(x)+1
+     geom_text(data=paramN,aes(label=sprintf('n=%s',PARAMRES),x=(length(unique(paramTBL6$PARAMCAT))/2)+0.5,y=max(paramTBL6$PARAMRES)+0.25),inherit.aes=FALSE, parse=FALSE)+#annotate("text",x=2,y=max(paramTBL6$PARAMRES)+0.5,label=sprintf('n=%s',paramN$PARAMRES)) +#annotate: n(sites) for strata plots and n(points) for site  (function defined above) #messy for categorical#previous (not working as anticipated, particularly for categorical): #stat_summary(fun.data =give.n, geom = "text") + #function for adding sample size to boxplots #
      labs(title=sprintf('SITE: %s ~ PARAM: %s',allsites[s],param)) +
      geom_text(data=paramQ,aes(label=SiteLabelOUT),show_guide=F,size=3,position= position_jitter(width = 0.5, height=0))+#jitter a little strange, but makes it readable
      theme(axis.text.x=element_blank(),axis.ticks.x=element_blank(),axis.title.x=element_blank())  #remove x axis 
     assign(sitebox$labels$title,sitebox)#save jpeg or assign var (need to refine naming)
  } } 
-rm(paramTBL3,paramTBL4,paramTBL6,paramTBL3a,paramTBL3b)
+rm(paramTBL3,paramTBL4,paramTBL6,paramTBL5,paramTBL3a,paramTBL3b)
 
 #SWJ to do (2/11/14):
 #DONE#fix sample size annotation to work for categorical
 #DONE#bin - allow toggle on or off
 #DONE#list of "numeric" categorical variables
 #DONE#troubleshoot outlier labelling (especially for categorical) #DONE for numeric# print figures by print(`SITE: AR-LS-8007 ~ PARAM: EROSION`)
-#hiccuping on BANKW:STABLE (full loop run on 2/18/14)
-#fix all sites to match UIDs (see comment on allsites)
+#DONE#hiccuping on BANKW:STABLE (full loop run on 2/18/14)
+#DONE#fix all sites to match UIDs (see comment on allsites)
 #consider outlier significance testing (Scott) or  #EXAMPLE: see values that are ACTIVE='FALSE' to see common transctiprion errors and if outlier scans would catch them
 #print cv or other metric as a warning for the spread? compare cv of site to avg cv of all/strata sites? (Scott)
 #excel export of "problem" sites and parameters (so can narrow down search)
