@@ -186,7 +186,7 @@ UnionTBL$EcoReg=substr(UnionTBL$SITE_ID,1,2)#-- Switch to climatic rather than e
 UnionTBL$Size=substr(UnionTBL$SITE_ID,4,5)
 #this section is highly dependent on WRSA siteID naming structure and GRTS strata
 
-
+#QA boxplots
 give.n <- function(x){return(data.frame(y = max(x)+1,x = max(x)+1, label = paste("n =",length(x))))}#SWJ to do: improve to handle the multiple classes for Categorical 
 subcol=c('SITE_ID','PARAMETER','STRATATYPE','STRATA','PARAMRES','PARAMCAT','TRANSECT','POINT')
 #compile parameter list
@@ -274,23 +274,35 @@ allsites=intersect(unique(paramTBL$SITE_ID),unique(UnionTBL1$SITE_ID))##would be
    #label sample size
    paramN=aggregate(PARAMRES~STRATATYPE,data=paramTBL6,FUN='length')#paramN$STRATATYPE=factor(paramN$STRATATYPE,levels=levels(paramTBL6$STRATATYPE))#might be needed to keep in the same order, unsure
    if(paramSTATUS=='CHAR'){paramN$PARAMRES=ifelse(paramN$STRATATYPE=='SITE_ID',min(paramTBL6$POINT),round(paramN$PARAMRES/length(unique(paramTBL6$PARAMCAT)),0))}
-   #label extreme outliers with SiteCode
+   #label quantiles with SiteCode
    paramquant=aggregate(PARAMRES~STRATATYPE+PARAMCAT,data=paramTBL6,FUN='quantile',probs=c(0.05,0.95),names=FALSE);colnames(paramquant)=c('STRATATYPE','PARAMCAT','Quant')
    paramTBL6=merge(paramTBL6,paramquant,by=c('STRATATYPE','PARAMCAT'))
    paramTBL6$SiteLabelOUT=ifelse(paramTBL6$PARAMRES<paramTBL6$Quant[,1],paramTBL6$SITE_ID,ifelse(paramTBL6$PARAMRES>paramTBL6$Quant[,2],paramTBL6$SITE_ID,NA))#create a site label if an outlier
    paramTBL6$SiteLabelOUT=ifelse(paramTBL6$STRATATYPE=="SITE_ID"& paramSTATUS=='CHAR',NA, ifelse(paramTBL6$STRATATYPE=="SITE_ID" & is.na(paramTBL6$SiteLabelOUT)==FALSE,paste(paramTBL6$TRANSECT,paramTBL6$POINT,sep=":"),paramTBL6$SiteLabelOUT))#change site label to transect if raw data
    paramQ=subset(paramTBL6,is.na(SiteLabelOUT)==FALSE)
+   #label outliers with SiteCode
+   paramoutlrM=aggregate(PARAMRES~STRATATYPE+PARAMCAT,data=paramTBL6,FUN='mean');colnames(paramoutlrM)=c('STRATATYPE','PARAMCAT','Mean')
+   paramoutlrS=aggregate(PARAMRES~STRATATYPE+PARAMCAT,data=paramTBL6,FUN='sd');colnames(paramoutlrS)=c('STRATATYPE','PARAMCAT','SD')
+   paramTBL6=merge(paramTBL6,paramoutlrM,by=c('STRATATYPE','PARAMCAT'));paramTBL6=merge(paramTBL6,paramoutlrS,by=c('STRATATYPE','PARAMCAT'))
+   paramTBL6$SiteLabelOUT2=ifelse(paramTBL6$PARAMRES>(paramTBL6$Mean + (2*paramTBL6$SD)),paramTBL6$SITE_ID,ifelse(paramTBL6$PARAMRES<(paramTBL6$Mean - (2*paramTBL6$SD)),paramTBL6$SITE_ID,NA))#create a site label if an outlier
+   paramTBL6$SiteLabelOUT2=ifelse(paramTBL6$STRATATYPE=="SITE_ID"& paramSTATUS=='CHAR',NA, ifelse(paramTBL6$STRATATYPE=="SITE_ID" & is.na(paramTBL6$SiteLabelOUT2)==FALSE,paste(paramTBL6$TRANSECT,paramTBL6$POINT,sep=":"),paramTBL6$SiteLabelOUT2))#change site label to transect if raw data
+   paramMSD=subset(paramTBL6,is.na(SiteLabelOUT2)==FALSE)
    #generate box plot in ggplot2
-   sitebox=ggplot(paramTBL6,aes(y=PARAMRES, x=PARAMCAT,fill=PARAMCAT,colour=PARAMCAT)) + geom_boxplot(outlier.colour='red',outlier.size=10,colour='black') + facet_grid(.~STRATATYPE)+
+   sitebox=ggplot(paramTBL6,aes(y=PARAMRES, x=PARAMCAT,fill=PARAMCAT,colour=PARAMCAT)) + geom_boxplot(outlier.colour='darkred',outlier.size=10,colour='black') + facet_grid(.~STRATATYPE)+
      geom_hline(aes(yintercept=PARAMRES, colour=PARAMCAT),siteavg,size=1)  + #mark the average for the site
      scale_colour_brewer(drop=FALSE,palette='Set1') + scale_fill_brewer(palette='Set1')+#sync colors between lines and boxplots (especially important for categorical)
      geom_text(data=paramN,aes(label=sprintf('n=%s',PARAMRES),x=(length(unique(paramTBL6$PARAMCAT))/2)+0.5,y=max(paramTBL6$PARAMRES)+0.25),inherit.aes=FALSE, parse=FALSE)+#annotate("text",x=2,y=max(paramTBL6$PARAMRES)+0.5,label=sprintf('n=%s',paramN$PARAMRES)) +#annotate: n(sites) for strata plots and n(points) for site  (function defined above) #messy for categorical#previous (not working as anticipated, particularly for categorical): #stat_summary(fun.data =give.n, geom = "text") + #function for adding sample size to boxplots #
      labs(title=sprintf('SITE: %s ~ PARAM: %s',allsites[s],param)) +
-     geom_text(data=paramQ,aes(label=SiteLabelOUT),show_guide=F,size=3,position= position_jitter(width = 0.5, height=0))+#jitter a little strange, but makes it readable
+     #geom_text(data=paramQ,aes(label=SiteLabelOUT),show_guide=F,size=3,position= position_jitter(width = 0.5, height=0))+#jitter a little strange, but makes it readable
+     geom_text(data=paramMSD,aes(label=SiteLabelOUT2),show_guide=F,size=3,position= position_jitter(width = 0.25, height=0))+
      theme(axis.text.x=element_blank(),axis.ticks.x=element_blank(),axis.title.x=element_blank())  #remove x axis 
     assign(sitebox$labels$title,sitebox)#save jpeg or assign var (need to refine naming)
+   if(p==1 & s==1){outlierTBL=paramMSD} else {outlierTBL=rbind(outlierTBL,paramMSD)}
  } } 
 rm(paramTBL3,paramTBL4,paramTBL6,paramTBL5,paramTBL3a,paramTBL3b)
+                           
+outlierTBL=unique(subset(outlierTBL,select=c('STRATATYPE','STRATA','SITE_ID','PARAMETER','PARAMCAT','TRANSECT','POINT','PARAMRES','Mean','SD')))
+write.csv(outlierTBL,file='Outliers2SDmean.csv')
 
 #SWJ to do (2/11/14):
 #DONE#fix sample size annotation to work for categorical
@@ -299,8 +311,9 @@ rm(paramTBL3,paramTBL4,paramTBL6,paramTBL5,paramTBL3a,paramTBL3b)
 #DONE#troubleshoot outlier labelling (especially for categorical) #DONE for numeric# print figures by print(`SITE: AR-LS-8007 ~ PARAM: EROSION`)
 #DONE#hiccuping on BANKW:STABLE (full loop run on 2/18/14)
 #DONE#fix all sites to match UIDs (see comment on allsites)
-#consider outlier significance testing (Scott) or  #EXAMPLE: see values that are ACTIVE='FALSE' to see common transctiprion errors and if outlier scans would catch them
-#print cv or other metric as a warning for the spread? compare cv of site to avg cv of all/strata sites? (Scott)
+#DONE:#consider outlier significance testing (Scott-->simple Mean + SD (1 or 2)) or  #EXAMPLE: see values that are ACTIVE='FALSE' to see common transctiprion errors and if outlier scans would catch them
+#print cv or other metric as a warning for the spread? compare cv of site to avg cv of all/strata sites? (Scott--> cv only for repeatable data, didn't give alternate spread)
+#determine combos for HumanInfl, VisRip, Assesment, and Torrent
 #excel export of "problem" sites and parameters (so can narrow down search)
 
 
