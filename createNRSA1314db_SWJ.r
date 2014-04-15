@@ -145,9 +145,9 @@ sqlSave(wrsa1314, dat=XWALK,tablename='tblXWALK',rownames=F, append=TRUE)
 #SAMPLE_TYPE= (CHEM, PERI, SEDE, BERW, BELG) 
 #SWJ: Sample Table kept separate because tracks primary keys, doesn't store data
 
-sqlQuery(wrsa1314, sprintf(CREATEstr,'tblSAMPLES','','[PK_tblSAMPLES]',',PARAMETER ASC'))
-SAM=read.csv('tblSAMPLESOct312013.csv'); SAM=SAM[-1]
-sqlSave(wrsa1314,dat=SAM,tablename='tblSAMPLES',rownames=F, append=TRUE)#,fast=FALSE)
+# sqlQuery(wrsa1314, sprintf(CREATEstr,'tblSAMPLES','','[PK_tblSAMPLES]',',PARAMETER ASC'))
+# SAM=read.csv('tblSAMPLESOct312013.csv'); SAM=SAM[-1]
+# sqlSave(wrsa1314,dat=SAM,tablename='tblSAMPLES',rownames=F, append=TRUE)#,fast=FALSE) ---> send to tblREACH instead
 
 
 sqlQuery(wrsa1314, sprintf(CREATEstr,'tblCOMMENTS',#table name
@@ -167,13 +167,17 @@ sqlSave(wrsa1314,dat=COM,tablename='tblCOMMENTS',rownames=F, append=TRUE)#,fast=
 
 #SWJ to do: in imports below, need to add to "VAR" for transect and point columns
 if('EPAin' %in% MODE){
-  ReachFiles=c('tblASSESSMENTDec22013', 'tblTORRENTDec22013','tblCHANNELCONSTDec22013','tblFIELDDec22013')
-  TransectFiles=c('tblBENTSAMPDec22013','tblCHANNELDec22013')
-  PointFiles=c('tblCHANRIPDec22013','tblCHANCROSSSECDec22013','tblSLOPEDec22013','tblTHALWEGDec22013')
+  #tblverification
+  ReachFiles=c('tblASSESSMENTApr2014', 'tblTORRENTApr2014','tblCHANNELCONSTApr2014','tblFIELDApr2014','tblSAMPLESApr2014')#NorCal2013 # c('tblASSESSMENTDec22013', 'tblTORRENTDec22013','tblCHANNELCONSTDec22013','tblFIELDDec22013','tblSAMPLESDec22013')
+  TransectFiles=c('tblBENTSAMPApr2014','tblCHANNELApr2014','tblINVASIVEApr2014')#NorCal2013 # c('tblBENTSAMPDec22013','tblCHANNELDec22013')
+  PointFiles= c('tblCHANRIPApr2014','tblCHANCROSSSECApr2014','tblSLOPEApr2014','tblTHALWEGApr2014','tblLITTORALApr2014')#NorCal2013 #  c('tblCHANRIPDec22013','tblCHANCROSSSECDec22013','tblSLOPEDec22013','tblTHALWEGDec22013')
+  #still need to handle comments (imported by copy paste for NorCal) and crew/tracking (currently handled in more detail in UTBLM.accdb)
+  #could make this fancier using file lookups using grep from the xwalk between nrsa and wrsa, but only planning on doing this manually twice (while documenting the xwalk) and possible minor touchups if paper forms used in 2014
 }
 if('APPin' %in% MODE){ #this double if assumes APPin and EPAin are mutually exclusive!
   ReachFiles=('M:\\buglab\\Research Projects\\BLM_WRSA_Stream_Surveys\\Technology\\Database\\DB_appLITE.csv')
   PointFiles=('BankStab_ExportToSQLserverXN')#SWJ to do: photo will be a "point" with a neighboring transect and a photo number for point
+  #see FM import below (in progress)
   #during import, update Transect in BankSTB as follows: TBL$TRANSECT=sub("-","",TBL$TRANSECT)
   #SWJ to do: 'TEMP_NAMC' comment added to help flag that UID needs updated  #TBL$FLAG=ifelse((TBL$FLAG)=='','TEMP_NAMC',substr(as.character(TBL$FLAG),0,49))
   #TransectFiles=TBD#if not one file just juggling nulls, also need to handle below loops and VARS a little differently depending on structure (or could structure the null elimination here)
@@ -205,12 +209,14 @@ odbcClose(wrsa1314)
 
 #Filemaker import consumption
 library(reshape)
-tables=list.files(getwd(),pattern='*.csv')#tables=read.csv('RelationalTest.csv')
+library(xlsx)
+setwd('C:\\Users\\Sarah\\Documents')#default export location for desktop version of FM
+tables=list.files(getwd(),pattern='*.xlsx')#tables=read.csv('RelationalTest.csv')
 importcols=c(VAR,'TRANSECT','POINT')
 importmaster=data.frame(t(rep(NA,length(importcols))))
 names(importmaster)=importcols;importmaster=subset(importmaster,subset=is.na(UID)==FALSE)
 for (t in 1:length(tables)){
-table=read.csv(tables[t])
+table=read.xlsx(tables[t])
 cols=subset(colnames(table),subset=colnames(table) %in% importcols==TRUE) 
 # for (c in 1:length(cols)) #using melt instead
 tableFLAT=melt(table,id.vars=cols,variable_name='PARAMETER')

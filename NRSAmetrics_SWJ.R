@@ -96,6 +96,7 @@ cat("\n\ngpsBasedCalculations_asOf201203008:\n\n")
 gisCalcs <- read.csv("gpsBasedCalculations_asOf201203008.csv")##SWJ: need to know how to generate this
 head(gisCalcs)
 #not provided with example data set
+#Ryan lokteff adapted the EPA script M:\GIS\GIS_Stats\Slope\Python\Slope_Endpoints1.py
 
 cat("\n\nBank Morphology:\n\n")#DONE SWJ
 BankMorphology <- metsBankMorphology(bankgeometry, visits)

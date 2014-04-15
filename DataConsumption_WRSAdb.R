@@ -26,7 +26,7 @@ bankP=c('ANGLE','UNDERCUT','EROSION','COVER','STABLE')
 
 #--------------------------------------------------------SETUP--------------------------------------------------------#
 #LOAD required packages#
-requiredPACKAGES=c('reshape', 'RODBC','ggplot2','grid','gridExtra')
+requiredPACKAGES=c('reshape', 'RODBC','ggplot2','grid','gridExtra','xlsx')
 for (r in 1:length(requiredPACKAGES)){
   if ((requiredPACKAGES[r] %in% installed.packages()[,1])==FALSE){install.packages(requiredPACKAGES[r])}#auto-install if not present
   library(requiredPACKAGES[r],character.only = TRUE)
@@ -63,7 +63,7 @@ tmpTYPE=as.character(unique(dbPARAM$SAMPLE_TYPE))
 dbTYPE=substr(tmpTYPE,1,nchar(tmpTYPE) - 1)#substr to get rid of the random "x" at the end of each name
 #UID and parameter prep (SWJ to do: could roll into a selectUID function and into the final sql call function (i.e. the winner btwn tblRetrieve and PvTconstruct))
 UIDall=ifelse(AllData=='Y','%','')#swj to do: add | (or) for if all possible filters ==''
-parameters=ifelse(AllParam='Y','',NULL)#functions interpret '' as all parameters, otherwise it is a specified list in the function input
+parameters=ifelse(AllParam=='Y','',NULL)#functions interpret '' as all parameters, otherwise it is a specified list in the function input
 
 #select samples
 UIDs=sqlQuery(wrsa1314, sprintf("select distinct UID from tblVERIFICATION 
@@ -115,12 +115,12 @@ params_N=subset(dbPARAM, subset=VAR_TYPE=='NUMERIC')
 params_C=subset(dbPARAM, subset=VAR_TYPE=='CHARACTER')#also used in boxplot QA (with some modifications)
 for (t in 1:nrow(dbTBL)){
   tblNAME=dbTBL$TABLE_NAME[t]
-  tbl=tblRetrieve(tblNAME)
+  tbl=tblRetrieve(tblNAME)#could simplify and use UnionTBL
   if(min(c('SAMPLE_TYPE',tblCOL) %in% colnames(tbl))==1){#if minimum needed columns are present, proceed, otherwise assume it is a pivoted or otherwise human readable table
       if(tblNAME=='tblPOINT'){tblCOL2=append(tblCOL,c('TRANSECT','POINT'), after=1); pvtCOL2=sprintf(pvtCOL,'+ TRANSECT + POINT')
   } else if (tblNAME=='tblTRANSECT'){tblCOL2=append(tblCOL,'TRANSECT', after=1); pvtCOL2=sprintf(pvtCOL,'+ TRANSECT')
   } else {tblCOL2=tblCOL; pvtCOL2=pvtCOLdefault}
-  for(s in 1:length(dbTYPE)){
+  for(s in 1:length(dbTYPE)){#this hits it with a hammer, could narrow down via xwalk to only the relevant sample_types
     #raw data (one value per pivot cell which is per transect/point per parameter)
     tblTYPE=subset(tbl,select=tblCOL2, subset=SAMPLE_TYPE %in% dbTYPE[s])
     tblPVT=cast(tblTYPE, eval(parse(text=pvtCOL2)))#very predictable structure except for the input table and whether transect and point need to be included in the columns = possibly plug into function
@@ -138,13 +138,19 @@ for (t in 1:nrow(dbTBL)){
         assign(sprintf('%s_pvtCATdistb_%s',tblNAME,dbTYPE[s]),tblPVTc)
       }
     #summarzied quantitative data (average values per pivot cell which is per site per parameter)
-    tblNUM=subset(tblTYPE,subset=PARAMETER %in% params_N$PARAMETER)
+    tblNUM=subset(tblTYPE,subset=PARAMETER %in% params_N$PARAMETER )
       if(nrow(tblNUM)>1){#only assign pivot to variable if not empty and only dive into subsequent if not empty
         tblNUM$RESULT=as.numeric(tblNUM$RESULT)
+        tblNUM=subset(tblNUM,subset= is.na(RESULT)==FALSE)#apparently not removing NAs during pivot aggregation, so done manually because causing errors - have to do after conversion to number
         tblPVTn=cast(tblNUM, eval(parse(text=pvtCOLdefault)),fun.aggregate='mean')
-        tblPVTnSUM=cast(tblNUM, PARAMETER~.,fun.aggregate=c(length,mean,median,min,max,sd))
+        tblPVTnSUM1=cast(tblNUM, PARAMETER~.,fun.aggregate=c(length,mean,median,min,max,sd))
+        tblPVTnSUM2=aggregate(RESULT~PARAMETER,data=tblNUM,FUN='quantile',probs=c(0.25,0.75),names=FALSE)
+        tblPVTnSUM2=data.frame(cbind(tblPVTnSUM2$PARAMETER,tblPVTnSUM2$RESULT[,1],tblPVTnSUM2$RESULT[,2]));colnames(tblPVTnSUM2)=c('PARAMETER','Quant1','Quant2')
+        tblPVTnSUM=merge(tblPVTnSUM1,tblPVTnSUM2,by=c('PARAMETER'))
+        #need to do this by UID for WRSA13 QA duplicate comparison
         assign(sprintf('%s_pvtQUANTmean_%s',tblNAME,dbTYPE[s]),tblPVTn)
         assign(sprintf('%s_pvtSUMMARYn_%s',tblNAME,dbTYPE[s]),tblPVTnSUM)
+        
       }
     }
   }
@@ -157,10 +163,13 @@ for (t in 1:length(QUANTtbls)){
   write.csv(eval(parse(text=QUANTtbls[t])),sprintf('%s.csv',QUANTtbls[t]))#could merge-pvtQUANTmean_, but I like them grouped by categories
 }
 #could export _pvtCATdistrb_, but I find the Categorical variables not to be readily interpretable (also didn't make a summary table for them yet because of this)
+rm(pvtSUMMARYn)
 nSUMtbls=grep('pvtSUMMARYn',ls(),value=T)
 for (t in 1:length(nSUMtbls)){
   tblPVTnSUM=eval(parse(text=nSUMtbls[t]))
-  if (t==1) {pvtSUMMARYn=tblPVTnSUM} else {pvtSUMMARYn=rbind(pvtSUMMARYn,tblPVTnSUM)}
+  if( ncol(tblPVTnSUM)==1) {} else{
+    if (t==1) {pvtSUMMARYn=tblPVTnSUM} else {pvtSUMMARYn=rbind(pvtSUMMARYn,tblPVTnSUM)}
+  }
   write.csv(pvtSUMMARYn,'pvtSUMMARYn.csv')
 }
 
@@ -225,16 +234,17 @@ UnionTBL2$PARAMETER=ifelse(UnionTBL2$SAMPLE_TYPE=='TORR' & UnionTBL2$PARAMETER!=
 UnionTBL2$PARAMETER=ifelse(UnionTBL2$PARAMETER=='BARE','BARE',UnionTBL2$PARAMETER)
 UnionTBL2$PARAMETER=ifelse(UnionTBL2$PARAMETER=='CANBTRE'|UnionTBL2$PARAMETER=='CANSTRE','CAN_TREE',UnionTBL2$PARAMETER)
 UnionTBL2$PARAMETER=ifelse(UnionTBL2$PARAMETER=='CANVEG'|UnionTBL2$PARAMETER=='UNDERVEG','VEG_TYPE',UnionTBL2$PARAMETER)##
+UnionTBL2$SAMPLE_TYPE=ifelse(UnionTBL2$PARAMETER=='VEG_TYPE','VISRIP2W',UnionTBL2$SAMPLE_TYPE)
 UnionTBL2$PARAMETER=ifelse(UnionTBL2$PARAMETER=='GCNWDY'|UnionTBL2$PARAMETER=='UNDNWDY','NONWOOD',UnionTBL2$PARAMETER)
 UnionTBL2$PARAMETER=ifelse(UnionTBL2$PARAMETER=='GCWDY'|UnionTBL2$PARAMETER=='UNDWDY','WOODY',UnionTBL2$PARAMETER)
 UnionTBL2$PARAMETER=ifelse(UnionTBL2$PARAMETER=='DENSIOM' & UnionTBL2$POINT %in% c('LF','RT'),'DENSIOMbank',ifelse(UnionTBL2$PARAMETER=='DENSIOM' & (UnionTBL2$POINT  %in% c('LF','RT')==FALSE),'DENSIOMcenter',UnionTBL2$PARAMETER))#for preliminary analysis purposes, these need to be divided (and are believed to be separated in aquamet)
-combineparamNEW=c('CANCOVERW DENSIOMbank','CANCOVERW DENSIOMcenter','CROSSSECW SIZE_CLS','LWDW LWDtally','TORR Torrent','ASSESS AGRicultural','ASSESS INDustrial','ASSESS MANagement','ASSESS RECreation','ASSESS RESidential','HUMINFLUW HumanPresence','VISRIPW BARE','VISRIPW CAN_TREE','VISRIPW VEG_TYPE','VISRIPW NONWOOD','VISRIPW WOODY')##still need to ponder HUMINFLU, VISRIP, FISHCOV, and ASSESS and add back in here
+combineparamNEW=c('CANCOVERW DENSIOMbank','CANCOVERW DENSIOMcenter','CROSSSECW SIZE_CLS','LWDW LWDtally','TORR Torrent','ASSESS AGRicultural','ASSESS INDustrial','ASSESS MANagement','ASSESS RECreation','ASSESS RESidential','HUMINFLUW HumanPresence','VISRIPW BARE','VISRIPW CAN_TREE','VISRIP2W VEG_TYPE','VISRIPW NONWOOD','VISRIPW WOODY')##still need to ponder HUMINFLU, VISRIP, FISHCOV, and ASSESS and add back in here
 allparams1=union(allparams1,combineparamNEW)
 #binned parameters
 bin='Y'#'Y' if would like to apply specified binning to parameters in binparams
-binparams=c("CROSSSECW SIZE_CLS",grep("LWD",allparams1,value=T),grep("CANCOVER",allparams1,value=T),'TORR Torrent','HUMINFLUW HumanPresence',grep("ASSESS",allparams1,value=T),grep("VISRIP",allparams1,value=T))#also list any parameters that should be treated as categorical that are otherwise in params_N
+binparams=c("CROSSSECW SIZE_CLS",grep("LWD",allparams1,value=T),grep("CANCOVER",allparams1,value=T),'VISRIP2W VEG_TYPE','TORR Torrent','HUMINFLUW HumanPresence',grep("ASSESS",allparams1,value=T),grep("VISRIP",allparams1,value=T))#also list any parameters that should be treated as categorical that are otherwise in params_N
 binMETA=read.csv('binMETADATAtemp.csv')##feed in from SQL once solified in FM, R, SQL; also used to order categoricals
-for (p in 35:length(allparams1)){#this is a standard loop for iterating, could put it in a function that allows you to plug in a string for the most nested middle
+for (p in 1:length(allparams1)){#this is a standard loop for iterating, could put it in a function that allows you to plug in a string for the most nested middle
   typeparam=strsplit(allparams1[p]," ")
   type=typeparam[[1]][[1]]; param=typeparam[[1]][[2]]
   paramTBL=subset(UnionTBL2,subset=PARAMETER==param & SAMPLE_TYPE==type)
@@ -333,7 +343,11 @@ allsites=intersect(unique(paramTBL$SITE_ID),unique(UnionTBL1$SITE_ID))##would be
 rm(paramTBL3,paramTBL4,paramTBL6,paramTBL5,paramTBL3a,paramTBL3b)
                            
 outlierTBL=unique(subset(outlierTBL,select=c('STRATATYPE','STRATA','SITE_ID','PARAMETER','PARAMCAT','TRANSECT','POINT','PARAMRES','Mean','SD')))
-write.csv(outlierTBL,file='Outliers2SDmean.csv')
+stratat=unique(outlierTBL$STRATATYPE)
+for (s in 1:length(stratat)){
+  outlierTBLst=subset(outlierTBL,subset=STRATATYPE==stratat[s])
+  write.csv(outlierTBLst,file=sprintf('Outliers_2SDmean_%s.csv',stratat[s]))#could export as a single table, but a bit overwhelming
+}
 
 #SWJ to do (2/11/14):
 #DONE#fix sample size annotation to work for categorical
@@ -344,8 +358,10 @@ write.csv(outlierTBL,file='Outliers2SDmean.csv')
 #DONE#fix all sites to match UIDs (see comment on allsites)
 #DONE:#consider outlier significance testing (Scott-->simple Mean + SD (1 or 2)) or  #EXAMPLE: see values that are ACTIVE='FALSE' to see common transctiprion errors and if outlier scans would catch them
 #print cv or other metric as a warning for the spread? compare cv of site to avg cv of all/strata sites? (Scott--> cv only for repeatable data, didn't give alternate spread)
-#determine combos for HumanInfl, VisRip, Assesment, and Torrent
-#excel export of "problem" sites and parameters (so can narrow down search)
+#DONE:determine combos for HumanInfl, VisRip, Assesment, and Torrent
+#DONE:excel export of "problem" sites and parameters (so can narrow down search)
+#mimic labelling of site boxplots in strata
+#add "all" boxplot in strata
 
 
 #iteration example
