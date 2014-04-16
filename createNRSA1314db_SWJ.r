@@ -11,7 +11,7 @@ DBserver=''#ditto as with DBpassword
 
 #RUN PARAMETERS#
 setwd('M:\\buglab\\Research Projects\\BLM_WRSA_Stream_Surveys\\Technology')
-MODE=c('CREATE','EPAin')#options: 'CREATE','EPAin', 'APPin' #rule: EPAin and APPin are mutually exclusive
+MODE=c('CREATE','EPAin')#options: 'CREATE','EPAin', 'REVISE', APPin' #rule: EPAin and APPin are mutually exclusive
 #SWJ to do: add a test mode to run test select queries and truncate the imports for testing
 #SWJ to do: add a "NAMCin" mode for bank stability and photo import
 ##SWJ to do: add an if statement that either creates the tables or just imports them depending on whether "new" or "existing" db (call it "MODES" - CREATE, EPAimport, APPimport)
@@ -56,6 +56,42 @@ CREATEstr="create table %s
 #replace %s in the following order: TableName, addition of [Transect] or [Point] for finer resolution tables, ConstraintName, addition to constraints
 #,IND   int IDENTITY(1,1) NOT NULL ##SWJ changed to nvarchar(50) throughout this script since EPA provides this value and likely wants it if they ever need to cross walk the data back; reimplement on the AIM database once independent from EPA
 #end TABLE STRINGS#
+
+#DEPRECATION/ACTIVE checks
+#if importing revised data, export these so can add back in if needed (REVISE mode)
+#otherwise, simply use this to look at deprecated values and their corresponding revisions 
+DEPstr="select * from 
+(select * from %s where ACTIVE='FALSE') Dep
+join (select * from %s where ACTIVE='TRUE' and 
+      exists (select * from %s AS Dep 
+              where ACTIVE='FALSE' 
+              and DEP.UID=%s.UID 
+              and DEP.Sample_Type=%s.SAMPLE_TYPE
+              and DEP.Parameter=%s.Parameter
+              %s--add transect and point
+              --could also assume required match between insertion and deprecation dates, but that's if trying to trace multiple revisions which we haven't yet encountered (currently would see a line for each deprecation with the current active comment...should be sufficient with sorting)
+      )
+) as Cor
+on DEP.UID=cor.UID 
+and DEP.Sample_Type=cor.SAMPLE_TYPE
+and DEP.Parameter=cor.Parameter
+%s--add transect and point
+--add deprec/insertion date match if desired
+order by Cor.UID, Cor.SAMPLE_TYPE, Cor.PARAMETER -- add transect and point"
+#replace %s in the following order: (table,table,table,table,table,table,transect/point DEP-> table join (or blank),transect/point DEP->COR join (or blank))"
+if('REVISE' %in% MODE){
+  tbls=c('tblVERIFICATION', 'tblREACH', 'tblCOMMENTS', 'tblTRANSECT', 'tblPOINT')
+  for (t in 1:length(tbls)){
+    if (tbls[t] =='tblTRANSECT' ){DEPjoin='and DEP.TRANSECT=tblTRANSECT.TRANSECT'; CORjoin='and DEP.TRANSECT=COR.TRANSECT' 
+    } else if (tbls[t] =='tblPOINT') {DEPjoin='and DEP.TRANSECT=tblPOINT.TRANSECT and DEP.POINT=tblPOINT.POINT'; CORjoin='and DEP.TRANSECT=COR.TRANSECT and DEP.POINT=COR.POINT'
+    } else {DEPjoin=''; CORjoin=''}
+  tblDEP=sqlQuery(wrsa1314, sprintf(DEPstr,tbls[t],tbls[t],tbls[t],tbls[t],tbls[t],tbls[t], DEPjoin, CORjoin))
+  outTBL=sprintf('DEP_%s',tbls[t])
+  assign(outTBL,tblDEP)
+  write.csv(tblDEP,sprintf('%s.csv',outTBL))
+}
+}
+
 
 #COLUMN CHECKING FUNCTION#
 VAR=c("UID" , "SAMPLE_TYPE", "PARAMETER" ,  "RESULT"  ,  "FLAG",  "IND" , "ACTIVE", "OPERATION" ,"INSERTION", "DEPRECATION" ,"REASON")
@@ -167,6 +203,7 @@ sqlSave(wrsa1314,dat=COM,tablename='tblCOMMENTS',rownames=F, append=TRUE)#,fast=
 
 #SWJ to do: in imports below, need to add to "VAR" for transect and point columns
 if('EPAin' %in% MODE){
+  #Apr2014 data includes revisions to NorCAl - wipe DB and reimport from scratch, keeping Deprecation records and bankstability
   #tblverification
   ReachFiles=c('tblASSESSMENTApr2014', 'tblTORRENTApr2014','tblCHANNELCONSTApr2014','tblFIELDApr2014','tblSAMPLESApr2014')#NorCal2013 # c('tblASSESSMENTDec22013', 'tblTORRENTDec22013','tblCHANNELCONSTDec22013','tblFIELDDec22013','tblSAMPLESDec22013')
   TransectFiles=c('tblBENTSAMPApr2014','tblCHANNELApr2014','tblINVASIVEApr2014')#NorCal2013 # c('tblBENTSAMPDec22013','tblCHANNELDec22013')
