@@ -10,8 +10,8 @@ DBserver=''#ditto as with DBpassword
 
 
 #RUN PARAMETERS#
-setwd('M:\\buglab\\Research Projects\\BLM_WRSA_Stream_Surveys\\Technology')
-MODE=c('CREATE','EPAin')#options: 'CREATE','EPAin', 'REVISE', APPin' #rule: EPAin and APPin are mutually exclusive
+setwd('M:\\buglab\\Research Projects\\BLM_WRSA_Stream_Surveys\\Results and Reports\\WRSA_2013\\EPAexport')
+MODE=c('EPAin')#options: 'CREATE','EPAin', 'REVISE', APPin' #rule: EPAin and APPin are mutually exclusive
 #SWJ to do: add a test mode to run test select queries and truncate the imports for testing
 #SWJ to do: add a "NAMCin" mode for bank stability and photo import
 ##SWJ to do: add an if statement that either creates the tables or just imports them depending on whether "new" or "existing" db (call it "MODES" - CREATE, EPAimport, APPimport)
@@ -94,7 +94,7 @@ if('REVISE' %in% MODE){
 
 
 #COLUMN CHECKING FUNCTION#
-VAR=c("UID" , "SAMPLE_TYPE", "PARAMETER" ,  "RESULT"  ,  "FLAG",  "IND" , "ACTIVE", "OPERATION" ,"INSERTION", "DEPRECATION" ,"REASON")
+VAR=c("UID" , "SAMPLE_TYPE",  "FLAG",  "IND" , "ACTIVE", "OPERATION" ,"INSERTION", "DEPRECATION" ,"REASON")
 IndMax=sqlQuery(wrsa1314, 'select max(IND) from tblREACH');IndMax=ifelse(is.na(IndMax),1,IndMax)#SWJ to do: should this be unioned between all tables?YES -- does it only apply to incoming app data? investigate index in the EPA tables
 ##SWJ to do: index cleanup (only change index for NAMC data; create new record and deprecate old for EPA data)
 # select IND, COUNT(result) as CR 
@@ -110,7 +110,7 @@ IndMax=sqlQuery(wrsa1314, 'select max(IND) from tblREACH');IndMax=ifelse(is.na(I
 # group by IND
 # having COUNT(result)>1
 
-ColCheck = function(TBL){
+ColCheck = function(TBL,VAR){
   MissingCheck=setdiff(VAR,colnames(TBL))
   if(length(MissingCheck)>0){
     for (c in 1: length(MissingCheck)){
@@ -118,11 +118,15 @@ ColCheck = function(TBL){
       else if(MissingCheck[c]=='DEPRECATION'){TBL$NEW='9999-12-31'}#may need to format as date
       else if(MissingCheck[c]=='ACTIVE'){TBL$NEW=TRUE}
       else if(MissingCheck[c]=='OPERATION'){TBL$NEW='O'}
+      else if(MissingCheck[c]=='TRANSECT'){
+        if(max(colnames(TBL) %in% 'LINE')==1){TBL$NEW=TBL$LINE}
+      }
       else if(MissingCheck[c]=='POINT'){
         if(max(colnames(TBL) %in% 'BANK')==1){TBL$NEW=TBL$BANK}
         else if(max(colnames(TBL) %in% 'TRANSDIR')==1){TBL$NEW=TBL$TRANSDIR}
         else if(max(colnames(TBL) %in% 'REP')==1){TBL$NEW=TBL$REP}
         else if(max(colnames(TBL) %in% 'STATION')==1){TBL$NEW=TBL$STATION}
+        else if(max(colnames(TBL) %in% 'LINE')==1){TBL$NEW=TBL$LINE}
               }
       else if(MissingCheck[c]=='IND'){TBL$NEW=seq(from=unlist(IndMax),to=unlist(IndMax)+nrow(TBL)-1)}#this needs to retrieve the max index number
       else{
@@ -204,10 +208,11 @@ sqlSave(wrsa1314,dat=COM,tablename='tblCOMMENTS',rownames=F, append=TRUE)#,fast=
 #SWJ to do: in imports below, need to add to "VAR" for transect and point columns
 if('EPAin' %in% MODE){
   #Apr2014 data includes revisions to NorCAl - wipe DB and reimport from scratch, keeping Deprecation records and bankstability
-  #tblverification
+  VerificationFiles=c('tblVERIFICATIONApr2014')#tblverification
   ReachFiles=c('tblASSESSMENTApr2014', 'tblTORRENTApr2014','tblCHANNELCONSTApr2014','tblFIELDApr2014','tblSAMPLESApr2014')#NorCal2013 # c('tblASSESSMENTDec22013', 'tblTORRENTDec22013','tblCHANNELCONSTDec22013','tblFIELDDec22013','tblSAMPLESDec22013')
   TransectFiles=c('tblBENTSAMPApr2014','tblCHANNELApr2014','tblINVASIVEApr2014')#NorCal2013 # c('tblBENTSAMPDec22013','tblCHANNELDec22013')
-  PointFiles= c('tblCHANRIPApr2014','tblCHANCROSSSECApr2014','tblSLOPEApr2014','tblTHALWEGApr2014','tblLITTORALApr2014')#NorCal2013 #  c('tblCHANRIPDec22013','tblCHANCROSSSECDec22013','tblSLOPEDec22013','tblTHALWEGDec22013')
+  PointFiles= c('tblCHANRIPApr2014','tblCHANCROSSSECApr2014','tblSLOPEApr2014','tblTHALWEGApr2014','tblLITTORALApr2014','NAMC_BankStability')#NorCal2013 #  c('tblCHANRIPDec22013','tblCHANCROSSSECDec22013','tblSLOPEDec22013','tblTHALWEGDec22013')
+  CommentFiles=c('tblCOMMENTSApr2014')
   #still need to handle comments (imported by copy paste for NorCal) and crew/tracking (currently handled in more detail in UTBLM.accdb)
   #could make this fancier using file lookups using grep from the xwalk between nrsa and wrsa, but only planning on doing this manually twice (while documenting the xwalk) and possible minor touchups if paper forms used in 2014
 }
@@ -220,24 +225,26 @@ if('APPin' %in% MODE){ #this double if assumes APPin and EPAin are mutually excl
   #TransectFiles=TBD#if not one file just juggling nulls, also need to handle below loops and VARS a little differently depending on structure (or could structure the null elimination here)
   }
 
-FileSETS=c('ReachFiles', 'TransectFiles','PointFiles')# less --> more spatial resolution
-TableSETS=c('tblREACH','tblTRANSECT','tblPOINT')#matching database table for each file set
-VarSETS=c(NA,'TRANSECT','POINT')#gradual additions to Var as tables expand from less to more spatial resolution
+FileSETS=c('VerificationFiles','CommentFiles','ReachFiles', 'TransectFiles','PointFiles')# less --> more spatial resolution
+TableSETS=c('tblVERIFICATION','tblCOMMENTS','tblREACH','tblTRANSECT','tblPOINT')#matching database table for each file set
+PR=c("PARAMETER" ,  "RESULT" )
+VarSETS=list(PR,c('TRANSECT','COMMENT','PAGE'),PR,c(PR,'TRANSECT'),c(PR,'TRANSECT','POINT'))#gradual additions to Var as tables expand from less to more spatial resolution
 if(length(FileSETS)==length(TableSETS) & length(FileSETS)==length(VarSETS)){
   for (s in 1:length(FileSETS)){
     Files=eval(parse(text=FileSETS[s]))
     dbTable=TableSETS[s]
-    if(s>1){VAR=c(VAR,VarSETS[s])}#assumes Transect and Point are always added sequentially and that Point is only added if Transect is already present
+    if(is.na(VarSETS[s])==FALSE){VAR2=c(VAR,unlist(VarSETS[s]))}
     for (f in 1:length(Files)) {  
       TBL=read.csv(sprintf('%s%s', Files[f],ifelse(length(grep('.csv',Files[f]))==0,'.csv',''))); 
-      TBL=ColCheck(TBL)# #EPA export files in 2013 have a dummy row number column; this assumes APPin and EPAin are mutually exclusive!##old solution: if('EPAin' %in% MODE){TBL=TBL[-1]}
+      #if having date issues (need to add to ColCheck fx) -# TBL$INSERTION=as.Date(TBL$INSERTION,"%m/%d/%Y")#TBL$DEPRECATION=replace(substr(TBL$DEPRECATION,1, nchar(TBL$DEPRECATION)-5), " ","")[-6166]
+      TBL=ColCheck(TBL,VAR2)# #EPA export files in 2013 have a dummy row number column; this assumes APPin and EPAin are mutually exclusive!##old solution: if('EPAin' %in% MODE){TBL=TBL[-1]}
       #SWJ to do: need to update point and other names (done manually in SQL for first import) --> LEFT=LF, LF=LF, L=LF, RIGHT=RT, RT=RT, R=RT
       sqlSave(wrsa1314,dat=TBL,tablename=dbTable,rownames=F, append=TRUE)
   }}
 } else {
   print('Import failed. Different numbers of files, tables, or columns. Verify lists in FileSETS and TableSETS and column names in VAR.')
 }
-
+#s=1 and 2 failed
 
 #SWJ to do: could loop further over each db table
 
@@ -260,6 +267,7 @@ tableFLAT=melt(table,id.vars=cols,variable_name='PARAMETER')
 tableFLAT$PARAMETER=toupper(tableFLAT$PARAMETER)
 tableFLAT$SAMPLE_TYPE=sub('.csv','',tables[t])#or other way to indicate the protocol (could look up to tblMetadata via tblCrosswalk, most matches are 1:1, but would need to be careful about flagging boatable)
 tableFLAT$RESULT=tableFLAT$value;
+#need to flatten and match flags and comments (abbreviate flags (Letter:FieldSuffix:Transect - ex: U_Wid_B), port comments to separate table with flag, match flag to rows based on protocol (xwalk))
 VAR=importcols;tableFLAT=ColCheck(tableFLAT)
 importmaster=rbind(importmaster,tableFLAT)
 }
