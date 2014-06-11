@@ -256,23 +256,93 @@ library(reshape)
 library(xlsx)
 setwd('C:\\Users\\Sarah\\Documents')#default export location for desktop version of FM
 tables=list.files(getwd(),pattern='*.xlsx')#tables=read.csv('RelationalTest.csv')
-importcols=c(VAR,'TRANSECT','POINT')
+tables=c('FMout_tbl_yr2014doy156Sarah-PC_Hitch.xlsx')#test table
+importcols=c(VAR,'TRANSECT','POINT','PARAMETER','RESULT')
 importmaster=data.frame(t(rep(NA,length(importcols))))
 names(importmaster)=importcols;importmaster=subset(importmaster,subset=is.na(UID)==FALSE)
 for (t in 1:length(tables)){
-table=read.xlsx(tables[t])
-cols=subset(colnames(table),subset=colnames(table) %in% importcols==TRUE) 
-# for (c in 1:length(cols)) #using melt instead
-tableFLAT=melt(table,id.vars=cols,variable_name='PARAMETER')
+table=read.xlsx(tables[t],1)
+#if(dim(table)[2]>100){#large single table export vs. files named for each app table subprotocol; 
+  tblgroups=unique(substr(names(table),1,regexpr("[.]{2}",names(table))-1))#maybe do this regardless of single or multiple table import, can't hurt = if brackets commented out
+  #}
+for (g in 1:length(tblgroups)){
+  if(tblgroups[g]==""){##alternatively, could find these and set them to be TRACK_REACH, but that table name doesn't matter in the long run
+    matchtest='TRUE'
+    grepSTR="[.]{2}" 
+    #!need to combine GRTS_SITEinfo into this...run the colnames(tableSUB) regexp splitting early in an elseif (may need a list of reach level tables this applies to)
+  } else {matchtest='FALSE'
+          grepSTR=sprintf("%s[.]{2}",tblgroups[g])        
+  }
+groupcol=grep(grepSTR,colnames(table),value=T,invert=matchtest)
+tableSUB=subset(table,select= groupcol);orgCNT=nrow(tableSUB)
+tableSUB=tableSUB[rowSums(is.na(tableSUB)) != ncol(tableSUB),];blankCNT=nrow(tableSUB)#remove Nulls,
+tableSUB=unique(tableSUB);uniqueCNT=nrow(tableSUB)
+  if(orgCNT!=blankCNT){print(sprintf('%s blank rows omitted',orgCNT-blankCNT))
+  } else if (blankCNT!=uniqueCNT){print(sprintf('WARNING! %s DUPLICATES omitted',blankCNT-uniqueCNT))} #do we want these sent to a table for review?
+colnames(tableSUB)=toupper(substr(names(tableSUB),regexpr("[.]{2}",names(tableSUB))+2,nchar(colnames(tableSUB))))
+cols=subset(colnames(tableSUB),subset=colnames(tableSUB) %in% importcols==TRUE) 
+tableFLAT=melt(tableSUB,id.vars=cols,variable_name='PARAMETER')# for (c in 1:length(cols)) #using melt instead
 tableFLAT$PARAMETER=toupper(tableFLAT$PARAMETER)
-tableFLAT$SAMPLE_TYPE=sub('.csv','',tables[t])#or other way to indicate the protocol (could look up to tblMetadata via tblCrosswalk, most matches are 1:1, but would need to be careful about flagging boatable)
+tableFLAT$SAMPLE_TYPE=tblgroups[g]#!actually assign later, but may need a dummy here which varies depending on multi or single table import, leaning towards only allowing single once verified to many;tableFLAT$SAMPLE_TYPE=sub('.csv','',tables[t])#!or other way to indicate the protocol (could look up to tblMetadata via tblCrosswalk, most matches are 1:1, but would need to be careful about flagging boatable)
 tableFLAT$RESULT=tableFLAT$value;
-#need to flatten and match flags and comments (abbreviate flags (Letter:FieldSuffix:Transect - ex: U_Wid_B), port comments to separate table with flag, match flag to rows based on protocol (xwalk))
-VAR=importcols;tableFLAT=ColCheck(tableFLAT)
+tableFLAT=ColCheck(tableFLAT,importcols);flatCNT=nrow(tableFLAT)
+tableFLAT=subset(tableFLAT,subset=is.na(RESULT)==FALSE);nullCNT=nrow(tableFLAT)
+  if(flatCNT!=nullCNT){print(sprintf('%s NULLS omitted',flatCNT-nullCNT)) } #do we want these sent to a table for review?
 importmaster=rbind(importmaster,tableFLAT)
 }
-#check for duplicates
-#paritiion mastertable between tblPOINT, TRANSECT, and REACH based on Nulls, comments based on parameter=comments
+}
+
+#!screen null and duplicate values that are warned about
+#!save all warning messages to a table for export/reference (right now, all are printed to the console; how is error handling supposed to be done in R packages, a lot of times, they say, "type WARN to see all warnings")
+
+importmaster$TRANSECT=ifelse(nchar(importmaster$TRANSECT)>3,NA,importmaster$TRANSECT)#!need to be careful with artificially named transects (WaterQuality, O, etc for FM tracking) - in the app, make O longer!
+importmaster$TRANSECT=ifelse(importmaster$TRANSECT %in% c('NULL','NA'),NA,importmaster$TRANSECT)
+importmaster$POINT=ifelse(importmaster$POINT %in% c('NULL','NA'),NA,importmaster$POINT)
+##START comments##
+#separate and match flags and comments (abbreviate and number flags (Letter:FieldSuffix:Transect - ex: U_Wid_B), port comments to separate table with flag, match flag to rows based on protocol (xwalk))
+tblCOMMENTStmp=subset(importmaster,subset= substr(PARAMETER,1,nchar('COMMENT'))=='COMMENT');tblCOMMENTStmp$COMMENT=tblCOMMENTStmp$RESULT;tblCOMMENTStmp$PARAMETER=substr(tblCOMMENTStmp$PARAMETER,nchar('COMMENT_')+1,nchar(tblCOMMENTStmp$PARAMETER))
+tblFLAGStmp=subset(importmaster,subset= substr(PARAMETER,1,nchar('FLAG'))=='FLAG');tblFLAGStmp$PARAMETER=substr(tblFLAGStmp$PARAMETER,nchar('FLAG_')+1,nchar(tblFLAGStmp$PARAMETER))
+tblFLAGStmp$FLAG=sprintf('%s_%s%s%s',
+                         tblFLAGStmp$RESULT,
+                         tblFLAGStmp$PARAMETER,
+                         ifelse(is.na(tblFLAGStmp$TRANSECT),'',sprintf('_%s',tblFLAGStmp$TRANSECT)),
+                         ifelse(is.na(tblFLAGStmp$POINT),'',sprintf('_%s',tblFLAGStmp$POINT)))
+flagCNT=nrow(tblFLAGStmp);flagdupCNT=nrow(unique(cbind(tblFLAGStmp$FLAG,tblFLAGStmp$UID)))
+if(flagCNT!=flagdupCNT){sprintf('WARNING! %s identical flags',flagCNT-flagdupCNT)}
+tblCOMMENTStmp=tblCOMMENTStmp[,!(names(tblCOMMENTStmp) %in% c('FLAG','RESULT','IND'))];tblFLAGStmp=tblFLAGStmp[,!(names(tblFLAGStmp) %in% c('RESULT','IND'))];
+tblCOMMENTSin=merge(tblCOMMENTStmp,tblFLAGStmp,all=T)#in theory, shouldn't get any comments without flags and shouldn't get many flags without comments
+flagonlyCNT=nrow(subset(tblCOMMENTSin,is.na(COMMENT)));commentonlyCNT=nrow(subset(tblCOMMENTSin,is.na(FLAG)));sprintf('WARNING! %s Comments without Flags and %s Flags without Comments',commentonlyCNT,flagonlyCNT)
+tblCOMMENTSin$PAGE=tblCOMMENTSin$POINT#!should PAGE (EPA format) be formally switched to point here and in WRSAdb....always 1 in old EPA data
+#apply comments to master table
+tblCOMMENTSin=tblCOMMENTSin[,!(names(tblCOMMENTSin) %in% c('IND'))];importmaster=importmaster[,!(names(importmaster) %in% c('FLAG'))]
+CommentMatch=data.frame(cbind(c('ANGLE','COVER','CANSTRE','BANKHT'),c('Comment_Bank','Comment_Bank','Comment_Bank','Comment_HT')));names(CommentMatch)=c('PARAMETERMATCH','PARAMETER')#!test only, need pull in actual Xwalk with tblMetadata
+CommentMatch$PARAMETER=toupper(substr(CommentMatch$PARAMETER,nchar('COMMENT_')+1,nchar(CommentMatch$PARAMETER)))
+tblCOMMENTmulti=merge(tblCOMMENTSin,CommentMatch)#multiply the comment via tblMetadata::CommentMatch to multiple applicable parameters
+commentfailCNT=nrow(subset(merge(tblCOMMENTSin,CommentMatch,all.x=T),subset=is.na(PARAMETERMATCH)))
+tblCOMMENTmulti=tblCOMMENTmulti[,!(names(tblCOMMENTmulti) %in% c('PARAMETER'))];tblCOMMENTmulti$PARAMETER=tblCOMMENTmulti$PARAMETERMATCH#drop parameter and reassign as parametermatch
+importmaster=merge(importmaster,tblCOMMENTmulti,all.x=T)#!does this match null transect/point properly?; by default: intersect(names(importmaster),names(tblCOMMENTmulti))
+commentnullCNT=nrow(subset(merge(importmaster,tblCOMMENTmulti,all.y=T),is.na(RESULT)))
+importmaster=subset(importmaster,subset= substr(PARAMETER,1,nchar('COMMENT'))!='COMMENT'& substr(PARAMETER,1,nchar('FLAG'))!='FLAG')#remove Comments and Flags since these have already been extracted
+tblCOMMENTSin=ColCheck(tblCOMMENTSin,c(VAR,'COMMENT','TRANSECT',"PAGE"))#!should PAGE (EPA format) be formally switched to point here and in WRSAdb....always 1 in old EPA data
+importmaster=ColCheck(importmaster,importcols)
+commentCNT=nrow(tblCOMMENTSin);
+if (commentCNT>commentfailCNT|commentCNT>commentnullCNT){sprintf('%s comments with unknown parameter match and %s comments with no result match (null result i.e. comment to indicate missing data)',commentfailCNT,commentnullCNT)}
+##END comments##
+
+#!Xwalk all parameters to non-FM names and assign proper Sample_Type (don't think it needs to be assigned earlier)
+
+tblPOINTin=subset(importmaster,subset=is.na(POINT)==FALSE  )
+tblTRANSECTin=subset(importmaster,is.na(POINT)==TRUE & is.na(TRANSECT)==FALSE )
+tblFAILUREin='TBD'
+tblQAin='TBD'#TRACK_REACH, TRACK_TRANSECT
+tblVERIFICATIONin='TBD' #verification based on WRSA xwalk
+tblREACHin='TBD' #any remaining with not in  tblVERIFICATIONin and parameter <> comment/flag
+masterCNT=nrow(importmaster);pointCNT=nrow(tblPOINTin);transectCNT=nrow(tblTRANSECTin);failCNT=nrow(tblFAILUREin);qaCNT=nrow(tblQAin);reachCNT=nrow(tblREACHin);verifCNT=nrow(tblVERIFICATIONin);
+unacctCNT=masterCNT-#total rows expected
+  sum(pointCNT,transectCNT,reachCNT,commentCNT,verifCNT,failCNT,qaCNT)-#total rows accounted for in partitioned tables
+  (commentCNT-flagonlyCNT-commentonlyCNT)#double count the overlap between flags and comments
+sprintf('wARNING! %s rows unaccounted for after table partitioning',unacctCNT)
+if(unacctCNT=0){print('#!send to WRSAdb (except FAILURE)! send VERIF + Failure + QA to Access')}
 
 
 ##see DataConsumption_WRSAdb.R for more up to date versions
