@@ -114,12 +114,13 @@ ColCheck = function(TBL,VAR){
   MissingCheck=setdiff(VAR,colnames(TBL))
   if(length(MissingCheck)>0){
     for (c in 1: length(MissingCheck)){
-      if(MissingCheck[c]=='INSERTION'){TBL$NEW=Sys.Date()}
+      if(MissingCheck[c]=='INSERTION'){TBL$NEW=as.character(Sys.Date())}
       else if(MissingCheck[c]=='DEPRECATION'){TBL$NEW='9999-12-31'}#may need to format as date
       else if(MissingCheck[c]=='ACTIVE'){TBL$NEW=TRUE}
       else if(MissingCheck[c]=='OPERATION'){TBL$NEW='O'}
       else if(MissingCheck[c]=='TRANSECT'){
         if(max(colnames(TBL) %in% 'LINE')==1){TBL$NEW=TBL$LINE}
+        else {TBL$NEW=NA}
       }
       else if(MissingCheck[c]=='POINT'){
         if(max(colnames(TBL) %in% 'BANK')==1){TBL$NEW=TBL$BANK}
@@ -127,6 +128,7 @@ ColCheck = function(TBL,VAR){
         else if(max(colnames(TBL) %in% 'REP')==1){TBL$NEW=TBL$REP}
         else if(max(colnames(TBL) %in% 'STATION')==1){TBL$NEW=TBL$STATION}
         else if(max(colnames(TBL) %in% 'LINE')==1){TBL$NEW=TBL$LINE}
+        else {TBL$NEW=NA}
               }
       else if(MissingCheck[c]=='IND'){TBL$NEW=seq(from=unlist(IndMax),to=unlist(IndMax)+nrow(TBL)-1)}#this needs to retrieve the max index number
       else{
@@ -254,10 +256,11 @@ odbcClose(wrsa1314)
 #Filemaker import consumption
 library(reshape)
 library(xlsx)
+datetest <- function(x) c(ifelse(is.numeric(x),FALSE,ifelse(is.character(x),FALSE,TRUE)))
 setwd('C:\\Users\\Sarah\\Documents')#default export location for desktop version of FM
 tables=list.files(getwd(),pattern='*.xlsx')#tables=read.csv('RelationalTest.csv')
 tables=c('FMout_tbl_yr2014doy156Sarah-PC_Hitch.xlsx')#test table
-importcols=c(VAR,'TRANSECT','POINT','PARAMETER','RESULT')
+importcols=c(VAR,'TRANSECT','POINT','PARAMETER','RESULT');#importcols=setdiff(importcols,c('REASON'))
 importmaster=data.frame(t(rep(NA,length(importcols))))
 names(importmaster)=importcols;importmaster=subset(importmaster,subset=is.na(UID)==FALSE)
 for (t in 1:length(tables)){
@@ -269,6 +272,7 @@ for (g in 1:length(tblgroups)){
   if(tblgroups[g]==""){##alternatively, could find these and set them to be TRACK_REACH, but that table name doesn't matter in the long run
     matchtest='TRUE'
     grepSTR="[.]{2}" 
+    tblgroups[g]='REACH'
     #!need to combine GRTS_SITEinfo into this...run the colnames(tableSUB) regexp splitting early in an elseif (may need a list of reach level tables this applies to)
   } else {matchtest='FALSE'
           grepSTR=sprintf("%s[.]{2}",tblgroups[g])        
@@ -281,19 +285,23 @@ tableSUB=unique(tableSUB);uniqueCNT=nrow(tableSUB)
   } else if (blankCNT!=uniqueCNT){print(sprintf('WARNING! %s DUPLICATES omitted',blankCNT-uniqueCNT))} #do we want these sent to a table for review?
 colnames(tableSUB)=toupper(substr(names(tableSUB),regexpr("[.]{2}",names(tableSUB))+2,nchar(colnames(tableSUB))))
 cols=subset(colnames(tableSUB),subset=colnames(tableSUB) %in% importcols==TRUE) 
+dt=sapply(tableSUB, datetest);  tableSUB[dt] <- lapply( tableSUB[dt], as.character)#convert dates to character (custom function above)
 tableFLAT=melt(tableSUB,id.vars=cols,variable_name='PARAMETER')# for (c in 1:length(cols)) #using melt instead
 tableFLAT$PARAMETER=toupper(tableFLAT$PARAMETER)
 tableFLAT$SAMPLE_TYPE=tblgroups[g]#!actually assign later, but may need a dummy here which varies depending on multi or single table import, leaning towards only allowing single once verified to many;tableFLAT$SAMPLE_TYPE=sub('.csv','',tables[t])#!or other way to indicate the protocol (could look up to tblMetadata via tblCrosswalk, most matches are 1:1, but would need to be careful about flagging boatable)
 tableFLAT$RESULT=tableFLAT$value;
 tableFLAT=ColCheck(tableFLAT,importcols);flatCNT=nrow(tableFLAT)
+importmaster=ColCheck(importmaster,importcols)
 tableFLAT=subset(tableFLAT,subset=is.na(RESULT)==FALSE);nullCNT=nrow(tableFLAT)
   if(flatCNT!=nullCNT){print(sprintf('%s NULLS omitted',flatCNT-nullCNT)) } #do we want these sent to a table for review?
 importmaster=rbind(importmaster,tableFLAT)
 }
 }
 
+#importmaster2=importmaster #save copy of first import test that successfully went through the  loop
 #!screen null and duplicate values that are warned about
 #!save all warning messages to a table for export/reference (right now, all are printed to the console; how is error handling supposed to be done in R packages, a lot of times, they say, "type WARN to see all warnings")
+#! water quality calibration comments are not linked to a UID, so either need to assign it to all relevant UIDS or set UID=CAL_INST_ID; also deosn't assign a flag on default = doesn't get matched to the CAL_INST_ID record
 
 importmaster$TRANSECT=ifelse(nchar(importmaster$TRANSECT)>3,NA,importmaster$TRANSECT)#!need to be careful with artificially named transects (WaterQuality, O, etc for FM tracking) - in the app, make O longer!
 importmaster$TRANSECT=ifelse(importmaster$TRANSECT %in% c('NULL','NA'),NA,importmaster$TRANSECT)
@@ -315,26 +323,44 @@ flagonlyCNT=nrow(subset(tblCOMMENTSin,is.na(COMMENT)));commentonlyCNT=nrow(subse
 tblCOMMENTSin$PAGE=tblCOMMENTSin$POINT#!should PAGE (EPA format) be formally switched to point here and in WRSAdb....always 1 in old EPA data
 #apply comments to master table
 tblCOMMENTSin=tblCOMMENTSin[,!(names(tblCOMMENTSin) %in% c('IND'))];importmaster=importmaster[,!(names(importmaster) %in% c('FLAG'))]
-CommentMatch=data.frame(cbind(c('ANGLE','COVER','CANSTRE','BANKHT'),c('Comment_Bank','Comment_Bank','Comment_Bank','Comment_HT')));names(CommentMatch)=c('PARAMETERMATCH','PARAMETER')#!test only, need pull in actual Xwalk with tblMetadata
-CommentMatch$PARAMETER=toupper(substr(CommentMatch$PARAMETER,nchar('COMMENT_')+1,nchar(CommentMatch$PARAMETER)))
-tblCOMMENTmulti=merge(tblCOMMENTSin,CommentMatch)#multiply the comment via tblMetadata::CommentMatch to multiple applicable parameters
+CommentMatch=sqlQuery(wrsa1314, "select * from tblxwalk where Name_Xwalk='fmstr'")
+CommentMatch$Parameter_Xwalk=toupper(substr(CommentMatch$Parameter_Xwalk,nchar('COMMENT_')+1,nchar(CommentMatch$Parameter_Xwalk)))
+CommentMatch$PARAMETERMATCH=CommentMatch$PARAMETER;CommentMatch$PARAMETER=CommentMatch$Parameter_Xwalk
+tblCOMMENTmulti=unique(merge(tblCOMMENTSin,CommentMatch))#multiply the comment via tblMetadata::CommentMatch to multiple applicable parameters
 commentfailCNT=nrow(subset(merge(tblCOMMENTSin,CommentMatch,all.x=T),subset=is.na(PARAMETERMATCH)))
 tblCOMMENTmulti=tblCOMMENTmulti[,!(names(tblCOMMENTmulti) %in% c('PARAMETER'))];tblCOMMENTmulti$PARAMETER=tblCOMMENTmulti$PARAMETERMATCH#drop parameter and reassign as parametermatch
 importmaster=merge(importmaster,tblCOMMENTmulti,all.x=T)#!does this match null transect/point properly?; by default: intersect(names(importmaster),names(tblCOMMENTmulti))
 commentnullCNT=nrow(subset(merge(importmaster,tblCOMMENTmulti,all.y=T),is.na(RESULT)))
 importmaster=subset(importmaster,subset= substr(PARAMETER,1,nchar('COMMENT'))!='COMMENT'& substr(PARAMETER,1,nchar('FLAG'))!='FLAG')#remove Comments and Flags since these have already been extracted
-tblCOMMENTSin=ColCheck(tblCOMMENTSin,c(VAR,'COMMENT','TRANSECT',"PAGE"))#!should PAGE (EPA format) be formally switched to point here and in WRSAdb....always 1 in old EPA data
+tblCOMMENTSin=ColCheck(tblCOMMENTSin,setdiff(c(VAR,'COMMENT','TRANSECT',"PAGE"),c('RESULT',"PARAMETER")))#!should PAGE (EPA format) be formally switched to point here and in WRSAdb....always 1 in old EPA data
 importmaster=ColCheck(importmaster,importcols)
 commentCNT=nrow(tblCOMMENTSin);
-if (commentCNT>commentfailCNT|commentCNT>commentnullCNT){sprintf('%s comments with unknown parameter match and %s comments with no result match (null result i.e. comment to indicate missing data)',commentfailCNT,commentnullCNT)}
+if (commentCNT>commentfailCNT|commentCNT>commentnullCNT){sprintf('%s comments with unknown parameter match and %s comments with no result match (null result i.e. a comment was used to indicate missing data)',commentfailCNT,commentnullCNT)}
 ##END comments##
 
 #!Xwalk all parameters to non-FM names and assign proper Sample_Type (don't think it needs to be assigned earlier)
+XwalkFM=sqlQuery(wrsa1314, "select * from tblxwalk where Name_Xwalk='fm'")
+XwalkFM$SAMPLE_TYPE=substr(XwalkFM$SAMPLE_TYPE,1,nchar(XwalkFM$SAMPLE_TYPE)-1)
+XwalkFM$Parameter_Xwalk=toupper(XwalkFM$Parameter_Xwalk)
+#match sample_type for comments (not done earlier because original parameter names need to be retained for comment matching)
+tblCOMMENTSin$Table_Xwalk=tblCOMMENTSin$SAMPLE_TYPE;tblCOMMENTSin=tblCOMMENTSin[,!(names(tblCOMMENTSin) %in% c('SAMPLE_TYPE'))]
+tblCOMMENTSin=merge(tblCOMMENTSin,XwalkFM,by=c('Table_Xwalk'),all.x=T)
+tblCOMMENTSin=ColCheck(tblCOMMENTSin,setdiff(c(VAR,'COMMENT','TRANSECT',"PAGE"),c('RESULT','POINT',"PARAMETER")))#!should PAGE (EPA format) be formally switched to point here and in WRSAdb....always 1 in old EPA data
+##match sample_type for main data
+importmaster$SAMPLE_TYPE_Xwalk=importmaster$SAMPLE_TYPE;importmaster=importmaster[,!(names(importmaster) %in% c('SAMPLE_TYPE'))]
+importmaster$Parameter_Xwalk=importmaster$PARAMETER;importmaster=importmaster[,!(names(importmaster) %in% c('PARAMETER'))]
+importmaster=merge(importmaster,XwalkFM,by=c('Parameter_Xwalk'),all.x=T)
+importmaster=subset(importmaster,subset=PARAMETER!='OMIT'|is.na(PARAMETER))#Omit tracking and other unnecessary fields
+unmatchedPARAM=unique(subset(importmaster,select=c('SAMPLE_TYPE','PARAMETER','SAMPLE_TYPE_Xwalk','Parameter_Xwalk'),subset=is.na(PARAMETER)))
+if (nrow(unmatchedPARAM)>0){print("WARNING! Unmatched parameters. Reconcile before proceeding with import."); print(unmatchedPARAM)}
+importmaster=ColCheck(importmaster,importcols)
 
 tblPOINTin=subset(importmaster,subset=is.na(POINT)==FALSE  )
 tblTRANSECTin=subset(importmaster,is.na(POINT)==TRUE & is.na(TRANSECT)==FALSE )
+FAILUREtype=c('Failure')
 tblFAILUREin='TBD'
-tblQAin='TBD'#TRACK_REACH, TRACK_TRANSECT
+QAtype=c('Tracking')
+tblQAin='TBD'#TRACK_REACH, TRACK_TRANSECT, and otherwise not in Xwalk
 tblVERIFICATIONin='TBD' #verification based on WRSA xwalk
 tblREACHin='TBD' #any remaining with not in  tblVERIFICATIONin and parameter <> comment/flag
 masterCNT=nrow(importmaster);pointCNT=nrow(tblPOINTin);transectCNT=nrow(tblTRANSECTin);failCNT=nrow(tblFAILUREin);qaCNT=nrow(tblQAin);reachCNT=nrow(tblREACHin);verifCNT=nrow(tblVERIFICATIONin);
