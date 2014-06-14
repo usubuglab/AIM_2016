@@ -284,6 +284,8 @@ tableSUB=unique(tableSUB);uniqueCNT=nrow(tableSUB)
   if(orgCNT!=blankCNT){print(sprintf('%s blank rows omitted',orgCNT-blankCNT))
   } else if (blankCNT!=uniqueCNT){print(sprintf('WARNING! %s DUPLICATES omitted',blankCNT-uniqueCNT))} #do we want these sent to a table for review?
 colnames(tableSUB)=toupper(substr(names(tableSUB),regexpr("[.]{2}",names(tableSUB))+2,nchar(colnames(tableSUB))))
+if(tblgroups[g]=='TRACK_Transect'){tableSUB$TRANSECT=tableSUB$CURTRANSECT;tableSUB=tableSUB[,!(names(tableSUB) %in% c('CURTRANSECT'))]}# caveat for curtransect (too intertwined in fm to change there)
+if(tblgroups[g]=='WaterQuality_CALIB'){tableSUB$UID=sprintf('%s%s',tableSUB$CAL_INST_ID , gsub("-","",as.character(tableSUB$CAL_INST_DATE)))}# caveats for water quality
 cols=subset(colnames(tableSUB),subset=colnames(tableSUB) %in% importcols==TRUE) 
 dt=sapply(tableSUB, datetest);  tableSUB[dt] <- lapply( tableSUB[dt], as.character)#convert dates to character (custom function above)
 tableFLAT=melt(tableSUB,id.vars=cols,variable_name='PARAMETER')# for (c in 1:length(cols)) #using melt instead
@@ -301,7 +303,7 @@ importmaster=rbind(importmaster,tableFLAT)
 #importmaster2=importmaster #save copy of first import test that successfully went through the  loop
 #!screen null and duplicate values that are warned about
 #!save all warning messages to a table for export/reference (right now, all are printed to the console; how is error handling supposed to be done in R packages, a lot of times, they say, "type WARN to see all warnings")
-#! water quality calibration comments are not linked to a UID, so either need to assign it to all relevant UIDS or set UID=CAL_INST_ID; also deosn't assign a flag on default = doesn't get matched to the CAL_INST_ID record
+#! pending testing - water quality calibration handling changed and comment/flags updated in FM
 
 importmaster$TRANSECT=ifelse(nchar(importmaster$TRANSECT)>3,NA,importmaster$TRANSECT)#!need to be careful with artificially named transects (WaterQuality, O, etc for FM tracking) - in the app, make O longer!
 importmaster$TRANSECT=ifelse(importmaster$TRANSECT %in% c('NULL','NA'),NA,importmaster$TRANSECT)
@@ -338,6 +340,8 @@ commentCNT=nrow(tblCOMMENTSin);
 if (commentCNT>commentfailCNT|commentCNT>commentnullCNT){sprintf('%s comments with unknown parameter match and %s comments with no result match (null result i.e. a comment was used to indicate missing data)',commentfailCNT,commentnullCNT)}
 ##END comments##
 
+
+
 #!Xwalk all parameters to non-FM names and assign proper Sample_Type (don't think it needs to be assigned earlier)
 XwalkFM=sqlQuery(wrsa1314, "select * from tblxwalk where Name_Xwalk='fm'")
 XwalkFM$SAMPLE_TYPE=substr(XwalkFM$SAMPLE_TYPE,1,nchar(XwalkFM$SAMPLE_TYPE)-1)
@@ -351,24 +355,26 @@ importmaster$SAMPLE_TYPE_Xwalk=importmaster$SAMPLE_TYPE;importmaster=importmaste
 importmaster$Parameter_Xwalk=importmaster$PARAMETER;importmaster=importmaster[,!(names(importmaster) %in% c('PARAMETER'))]
 importmaster=merge(importmaster,XwalkFM,by=c('Parameter_Xwalk'),all.x=T)
 importmaster=subset(importmaster,subset=PARAMETER!='OMIT'|is.na(PARAMETER))#Omit tracking and other unnecessary fields
+omitCNT=nrow(subset(importmaster,subset=PARAMETER=='OMIT'))
 unmatchedPARAM=unique(subset(importmaster,select=c('SAMPLE_TYPE','PARAMETER','SAMPLE_TYPE_Xwalk','Parameter_Xwalk'),subset=is.na(PARAMETER)))
 if (nrow(unmatchedPARAM)>0){print("WARNING! Unmatched parameters. Reconcile before proceeding with import."); print(unmatchedPARAM)}
 importmaster=ColCheck(importmaster,importcols)
 
+
+
 tblPOINTin=subset(importmaster,subset=is.na(POINT)==FALSE  )
 tblTRANSECTin=subset(importmaster,is.na(POINT)==TRUE & is.na(TRANSECT)==FALSE )
-FAILUREtype=c('Failure')
-tblFAILUREin='TBD'
-QAtype=c('Tracking')
-tblQAin='TBD'#TRACK_REACH, TRACK_TRANSECT, and otherwise not in Xwalk
-tblVERIFICATIONin='TBD' #verification based on WRSA xwalk
-tblREACHin='TBD' #any remaining with not in  tblVERIFICATIONin and parameter <> comment/flag
+tblFAILUREin=subset(importmaster,SAMPLE_TYPE=='Failure');#unique(tblFAILUREin$PARAMETER)
+tblQAin=subset(importmaster,SAMPLE_TYPE=='Tracking')#unique(tblQAin$PARAMETER)
+tblVERIFICATIONin=subset(importmaster,SAMPLE_TYPE=='VERIF')
+tblREACHin=subset(importmaster,is.na(POINT)==TRUE & is.na(TRANSECT)==TRUE & SAMPLE_TYPE!='Failure' & SAMPLE_TYPE!='Tracking' & SAMPLE_TYPE!='VERIF') #any remaining with not in  tblVERIFICATIONin and parameter <> comment/flag
 masterCNT=nrow(importmaster);pointCNT=nrow(tblPOINTin);transectCNT=nrow(tblTRANSECTin);failCNT=nrow(tblFAILUREin);qaCNT=nrow(tblQAin);reachCNT=nrow(tblREACHin);verifCNT=nrow(tblVERIFICATIONin);
 unacctCNT=masterCNT-#total rows expected
   sum(pointCNT,transectCNT,reachCNT,commentCNT,verifCNT,failCNT,qaCNT)-#total rows accounted for in partitioned tables
-  (commentCNT-flagonlyCNT-commentonlyCNT)#double count the overlap between flags and comments
+  (commentCNT-flagonlyCNT-commentonlyCNT)- #double count the overlap between flags and comments
+  omitCNT #tracking parameters that were omitted
 sprintf('wARNING! %s rows unaccounted for after table partitioning',unacctCNT)
-if(unacctCNT=0){print('#!send to WRSAdb (except FAILURE)! send VERIF + Failure + QA to Access')}
+if(unacctCNT==0){print('#!send to WRSAdb (except FAILURE)! send VERIF + Failure + QA to Access')}
 
 
 ##see DataConsumption_WRSAdb.R for more up to date versions

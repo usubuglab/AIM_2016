@@ -7,8 +7,8 @@ DBserver=''#ditto as with DBpassword
 
 #FILTERS
 ##from most to least specific
-AllData='Y'#set to 'Y' (meaning 'yes') if you want to query all sites (note this is quite time consuming and large, use provided filters wherever possible)
-sitecodes=c('AR-LS-8003','AR-LS-8007', 'TP-LS-8240')
+AllData='N'#set to 'Y' (meaning 'yes') if you want to query all sites (note this is quite time consuming and large, use provided filters wherever possible)
+sitecodes=c('EL-LS-8134','EL-SS-8127','MN-LS-1004','MN-SS-1104','MS-SS-3103','XE-RO-5086','XN-LS-4016','XN-SS-4128','XS-LS-6029' )#QAduplicateSites#c('AR-LS-8003','AR-LS-8007', 'TP-LS-8240')#sites for NorCalTesting
 dates=c('05/05/2005')
 hitchs=c('')#NOT WORKING YET
 crews=c('R1')#NOT WORKING YET
@@ -111,6 +111,7 @@ tblPOINTbank=tblRetrieve('tblPOINT',bankP)
 #for exploratory purposes to review data and determine expected values, not intended to replace modular SQL solutions for multiple tools
 tblCOL=c('UID', 'PARAMETER','RESULT')
 pvtCOL='UID %s ~ PARAMETER';pvtCOLdefault=sprintf(pvtCOL,'')
+AggLevel='Site'#options = Site, All
 params_N=subset(dbPARAM, subset=VAR_TYPE=='NUMERIC')
 params_C=subset(dbPARAM, subset=VAR_TYPE=='CHARACTER')#also used in boxplot QA (with some modifications)
 for (t in 1:nrow(dbTBL)){
@@ -140,16 +141,17 @@ for (t in 1:nrow(dbTBL)){
     #summarzied quantitative data (average values per pivot cell which is per site per parameter)
     tblNUM=subset(tblTYPE,subset=PARAMETER %in% params_N$PARAMETER )
       if(nrow(tblNUM)>1){#only assign pivot to variable if not empty and only dive into subsequent if not empty
+        if(AggLevel=='Site'){pvtCOL4='UID + PARAMETER ~.'; pvtCOL5='RESULT~UID + PARAMETER'; colUID='tblPVTnSUM2$UID';nameUID=c('UID','PARAMETER','Quant1','Quant2')} else if (AggLevel=='All') {pvtCOL4='PARAMETER ~.';pvtCOL5='RESULT~PARAMETER';colUID='';nameUID=c('PARAMETER','Quant1','Quant2')}
         tblNUM$RESULT=as.numeric(tblNUM$RESULT)
         tblNUM=subset(tblNUM,subset= is.na(RESULT)==FALSE)#apparently not removing NAs during pivot aggregation, so done manually because causing errors - have to do after conversion to number
-        tblPVTn=cast(tblNUM, eval(parse(text=pvtCOLdefault)),fun.aggregate='mean')
-        tblPVTnSUM1=cast(tblNUM, PARAMETER~.,fun.aggregate=c(length,mean,median,min,max,sd))
-        tblPVTnSUM2=aggregate(RESULT~PARAMETER,data=tblNUM,FUN='quantile',probs=c(0.25,0.75),names=FALSE)
-        tblPVTnSUM2=data.frame(cbind(tblPVTnSUM2$PARAMETER,tblPVTnSUM2$RESULT[,1],tblPVTnSUM2$RESULT[,2]));colnames(tblPVTnSUM2)=c('PARAMETER','Quant1','Quant2')
-        tblPVTnSUM=merge(tblPVTnSUM1,tblPVTnSUM2,by=c('PARAMETER'))
+        tblPVTn=cast(tblNUM, eval(parse(text=pvtCOLdefault)),fun.aggregate='mean')#pivot reach average by site
+        tblPVTnSUM1=cast(tblNUM, eval(parse(text=pvtCOL4)),fun.aggregate=c(length,mean,median,min,max,sd),fill='NA') # pivot summary stats by all sites combined or individual sites
+        tblPVTnSUM2=aggregate(eval(parse(text=pvtCOL5)),data=tblNUM,FUN='quantile',probs=c(0.25,0.75),names=FALSE)
+        tblPVTnSUM2=data.frame(cbind(eval(parse(text=colUID)),tblPVTnSUM2$PARAMETER,tblPVTnSUM2$RESULT[,1],tblPVTnSUM2$RESULT[,2]));colnames(tblPVTnSUM2)=nameUID
+        tblPVTnSUM=merge(tblPVTnSUM1,tblPVTnSUM2,by=setdiff(nameUID,c('Quant1','Quant2')))
         #need to do this by UID for WRSA13 QA duplicate comparison
         assign(sprintf('%s_pvtQUANTmean_%s',tblNAME,dbTYPE[s]),tblPVTn)
-        assign(sprintf('%s_pvtSUMMARYn_%s',tblNAME,dbTYPE[s]),tblPVTnSUM)
+        assign(sprintf('%s_pvtSUMMARYn_%s_%s',tblNAME,dbTYPE[s],AggLevel),tblPVTnSUM)
         
       }
     }
@@ -165,12 +167,13 @@ for (t in 1:length(QUANTtbls)){
 #could export _pvtCATdistrb_, but I find the Categorical variables not to be readily interpretable (also didn't make a summary table for them yet because of this)
 rm(pvtSUMMARYn)
 nSUMtbls=grep('pvtSUMMARYn',ls(),value=T)
+nSUMtbls=grep(AggLevel,nSUMtbls,value=T)
 for (t in 1:length(nSUMtbls)){
   tblPVTnSUM=eval(parse(text=nSUMtbls[t]))
   if( ncol(tblPVTnSUM)==1) {} else{
     if (t==1) {pvtSUMMARYn=tblPVTnSUM} else {pvtSUMMARYn=rbind(pvtSUMMARYn,tblPVTnSUM)}
   }
-  write.csv(pvtSUMMARYn,'pvtSUMMARYn.csv')
+  write.csv(pvtSUMMARYn,sprintf('pvtSUMMARYn_%s.csv',AggLevel))
 }
 
 
@@ -215,7 +218,7 @@ UnionTBL$Size=substr(UnionTBL$SITE_ID,4,5)
 
 #QA boxplots
 give.n <- function(x){return(data.frame(y = max(x)+1, label = paste("n =",length(x))))}#SWJ to do: improve to handle the multiple classes for Categorical 
-subcol=c('SITE_ID','PARAMETER','STRATATYPE','STRATA','PARAMRES','PARAMCAT','TRANSECT','POINT')
+subcol=c('UID','SITE_ID','PARAMETER','STRATATYPE','STRATA','PARAMRES','PARAMCAT','TRANSECT','POINT')
 #compile parameter list
 allparams=unique(paste(UnionTBL$SAMPLE_TYPE,UnionTBL$PARAMETER,sep=" "))#numeric: allparams=c("BANKW INCISED", "BANKW WETWID" )#categorical: allparams=c("CROSSSECW SIZE_CLS","HUMINFLUW WALL")
 excludeparams=c("FIELDMEAS DO",'THALW BAR_PRES',"THALW SIDCHN" ,"THALW BACKWATER",grep("VERIF",allparams,value=T),grep("CALIB",allparams,value=T),grep("BERW",allparams,value=T),"SLOPEW METHOD","FIELDMEAS LOCATION","FIELDMEAS TIME" ,"FIELDMEAS CORRECTED",'CROSSSECW DIST_LB','SLOPEW SLOPE_UNITS','CROSSSECW SUB_5_7','THALW INCREMENT')
@@ -278,12 +281,12 @@ for (p in 1:length(allparams1)){#this is a standard loop for iterating, could pu
            } }
          strata=unique(paste(paramTBL2$STRATATYPE,paramTBL2$STRATA,sep="_" ))
            if(paramSTATUS=='NUM'){
-             paramTBL3=aggregate(PARAMRES~SITE_ID+PARAMETER+STRATATYPE+STRATA,data=paramTBL2,FUN=mean)
+             paramTBL3=aggregate(PARAMRES~UID+SITE_ID+PARAMETER+STRATATYPE+STRATA,data=paramTBL2,FUN=mean)
              paramTBL3$PARAMCAT='None'
            } else if(paramSTATUS=='CHAR'){
-         paramTBL3a=aggregate(IND~PARAMRES+SITE_ID+PARAMETER+STRATATYPE+STRATA,data=paramTBL2,FUN=length)
-         paramTBL3b=aggregate(IND~SITE_ID+PARAMETER+STRATATYPE+STRATA,data=paramTBL2,FUN=length)
-         paramTBL3=merge(paramTBL3a,paramTBL3b,by=c('SITE_ID','STRATATYPE','STRATA','PARAMETER'))
+         paramTBL3a=aggregate(IND~PARAMRES+UID+SITE_ID+PARAMETER+STRATATYPE+STRATA,data=paramTBL2,FUN=length)
+         paramTBL3b=aggregate(IND~UID+SITE_ID+PARAMETER+STRATATYPE+STRATA,data=paramTBL2,FUN=length)
+         paramTBL3=merge(paramTBL3a,paramTBL3b,by=c('UID','SITE_ID','STRATATYPE','STRATA','PARAMETER'))
          paramTBL3$PARAMCAT=paramTBL3$PARAMRES;paramTBL3$PARAMRES=paramTBL3$IND.x/paramTBL3$IND.y
            }
                  
@@ -295,45 +298,45 @@ for (p in 1:length(allparams1)){#this is a standard loop for iterating, could pu
             labs (title=sprintf('STRATA- %s ~ PARAM- %s',typestrata[n],param))
            ggsave(filename=sprintf('%s.jpg',stratabox$labels$title),plot=stratabox)#assign(stratabox$labels$title,stratabox)#save jpeg or # assign(sprintf('box_STRATA_%s_%s',typestrata[n],param),stratabox)
          }
-allsites=intersect(unique(paramTBL$SITE_ID),unique(UnionTBL1$SITE_ID))##would be nice if this  linked to a second set of UIDs to narrow down sites, but still feed all sites through the aggregations; interim solution is to match UnionTBL (all data) to UnionTBL1 (UID restricted) which will still run all data if alldata='Y'
+allsites=intersect(unique(paramTBL$UID),unique(UnionTBL1$UID))##would be nice if this  linked to a second set of UIDs to narrow down sites, but still feed all sites through the aggregations; interim solution is to match UnionTBL (all data) to UnionTBL1 (UID restricted) which will still run all data if alldata='Y'
  for (s in 1:length(allsites)){#2){
    paramTBL3$TRANSECT='ALL';paramTBL3$POINT='ALL'
    paramTBL3$POINT=ifelse(paramSTATUS=='CHAR' & paramTBL3$STRATATYPE=='SITE_ID',paramTBL3$IND.y,paramTBL3$POINT)#set up for later N (sample size) use
    paramTBL5=subset(paramTBL3,select=subcol)
    if(paramSTATUS=='NUM'){
-     paramTBL$STRATATYPE='SITE_ID';paramTBL$STRATA=paramTBL$SITE;paramTBL$PARAMCAT='None'; paramTBL$STRATA=factor(paramTBL$STRATA,levels=unique(paramTBL$STRATA))
+     paramTBL$STRATATYPE='UID';paramTBL$STRATA=paramTBL$SITE;paramTBL$PARAMCAT='None'; paramTBL$STRATA=factor(paramTBL$STRATA,levels=unique(paramTBL$STRATA))
      paramTBL6=subset(paramTBL,select=subcol)
      paramTBL6=rbind(paramTBL6,paramTBL5)
    } else if(paramSTATUS=='CHAR'){paramTBL6=paramTBL5}
-   stratas=unique(subset(paramTBL6,select=STRATA,subset=SITE_ID==allsites[s]))
+   stratas=unique(subset(paramTBL6,select=STRATA,subset=UID==allsites[s]))
    paramTBL6=subset(paramTBL6,subset=STRATA %in% stratas$STRATA)
-   paramTBL6$STRATATYPE=factor(paramTBL6$STRATATYPE,levels=c("SITE_ID",typestrata))
+   paramTBL6$STRATATYPE=factor(paramTBL6$STRATATYPE,levels=c("UID",typestrata))
    paramTBL6$PARAMCAT=factor(paramTBL6$PARAMCAT)
    #label prep#
    #label site average
-   siteavg=unique(subset(paramTBL6,subset=STRATATYPE !="SITE_ID" & SITE_ID==allsites[s] , select=c('PARAMRES', 'PARAMCAT')))
+   siteavg=unique(subset(paramTBL6,subset=STRATATYPE !="UID" & UID==allsites[s] , select=c('PARAMRES', 'PARAMCAT')))
    #label sample size
    paramN=aggregate(PARAMRES~STRATATYPE,data=paramTBL6,FUN='length')#paramN$STRATATYPE=factor(paramN$STRATATYPE,levels=levels(paramTBL6$STRATATYPE))#might be needed to keep in the same order, unsure
-   if(paramSTATUS=='CHAR'){paramN$PARAMRES=ifelse(paramN$STRATATYPE=='SITE_ID',min(paramTBL6$POINT),round(paramN$PARAMRES/length(unique(paramTBL6$PARAMCAT)),0))}
+   if(paramSTATUS=='CHAR'){paramN$PARAMRES=ifelse(paramN$STRATATYPE=='UID',min(paramTBL6$POINT),round(paramN$PARAMRES/length(unique(paramTBL6$PARAMCAT)),0))}
    #label quantiles with SiteCode
    paramquant=aggregate(PARAMRES~STRATATYPE+PARAMCAT,data=paramTBL6,FUN='quantile',probs=c(0.05,0.95),names=FALSE);colnames(paramquant)=c('STRATATYPE','PARAMCAT','Quant')
    paramTBL6=merge(paramTBL6,paramquant,by=c('STRATATYPE','PARAMCAT'))
    paramTBL6$SiteLabelOUT=ifelse(paramTBL6$PARAMRES<paramTBL6$Quant[,1],paramTBL6$SITE_ID,ifelse(paramTBL6$PARAMRES>paramTBL6$Quant[,2],paramTBL6$SITE_ID,NA))#create a site label if an outlier
-   paramTBL6$SiteLabelOUT=ifelse(paramTBL6$STRATATYPE=="SITE_ID"& paramSTATUS=='CHAR',NA, ifelse(paramTBL6$STRATATYPE=="SITE_ID" & is.na(paramTBL6$SiteLabelOUT)==FALSE,paste(paramTBL6$TRANSECT,paramTBL6$POINT,sep=":"),paramTBL6$SiteLabelOUT))#change site label to transect if raw data
+   paramTBL6$SiteLabelOUT=ifelse(paramTBL6$STRATATYPE=="UID"& paramSTATUS=='CHAR',NA, ifelse(paramTBL6$STRATATYPE=="UID" & is.na(paramTBL6$SiteLabelOUT)==FALSE,paste(paramTBL6$TRANSECT,paramTBL6$POINT,sep=":"),paramTBL6$SiteLabelOUT))#change site label to transect if raw data
    paramQ=subset(paramTBL6,is.na(SiteLabelOUT)==FALSE)
    #label outliers with SiteCode
    paramoutlrM=aggregate(PARAMRES~STRATATYPE+PARAMCAT,data=paramTBL6,FUN='mean');colnames(paramoutlrM)=c('STRATATYPE','PARAMCAT','Mean')
    paramoutlrS=aggregate(PARAMRES~STRATATYPE+PARAMCAT,data=paramTBL6,FUN='sd');colnames(paramoutlrS)=c('STRATATYPE','PARAMCAT','SD')
    paramTBL6=merge(paramTBL6,paramoutlrM,by=c('STRATATYPE','PARAMCAT'));paramTBL6=merge(paramTBL6,paramoutlrS,by=c('STRATATYPE','PARAMCAT'))
    paramTBL6$SiteLabelOUT2=ifelse(paramTBL6$PARAMRES>(paramTBL6$Mean + (2*paramTBL6$SD)),paramTBL6$SITE_ID,ifelse(paramTBL6$PARAMRES<(paramTBL6$Mean - (2*paramTBL6$SD)),paramTBL6$SITE_ID,NA))#create a site label if an outlier
-   paramTBL6$SiteLabelOUT2=ifelse(paramTBL6$STRATATYPE=="SITE_ID"& paramSTATUS=='CHAR',NA, ifelse(paramTBL6$STRATATYPE=="SITE_ID" & is.na(paramTBL6$SiteLabelOUT2)==FALSE,paste(paramTBL6$TRANSECT,paramTBL6$POINT,sep=":"),paramTBL6$SiteLabelOUT2))#change site label to transect if raw data
+   paramTBL6$SiteLabelOUT2=ifelse(paramTBL6$STRATATYPE=="UID"& paramSTATUS=='CHAR',NA, ifelse(paramTBL6$STRATATYPE=="UID" & is.na(paramTBL6$SiteLabelOUT2)==FALSE,paste(paramTBL6$TRANSECT,paramTBL6$POINT,sep=":"),paramTBL6$SiteLabelOUT2))#change site label to transect if raw data
    paramMSD=subset(paramTBL6,is.na(SiteLabelOUT2)==FALSE);paramMSDpres=nrow(paramMSD); if(paramMSDpres==0){paramMSD=paramTBL6[1,]}#geom_text will fail if no rows are present
    #generate box plot in ggplot2
    sitebox=ggplot(paramTBL6,aes(y=PARAMRES, x=PARAMCAT,fill=PARAMCAT,colour=PARAMCAT)) + geom_boxplot(outlier.colour='darkred',outlier.size=10,colour='black') + facet_grid(.~STRATATYPE)+
      geom_hline(aes(yintercept=PARAMRES, colour=PARAMCAT),siteavg,size=1)  + #mark the average for the site
      scale_colour_brewer(drop=FALSE,palette='Set1') + scale_fill_brewer(palette='Set1')+#sync colors between lines and boxplots (especially important for categorical)
      geom_text(data=paramN,aes(label=sprintf('n=%s',PARAMRES),x=(length(unique(paramTBL6$PARAMCAT))/2)+0.5,y=max(paramTBL6$PARAMRES)+0.25),inherit.aes=FALSE, parse=FALSE)+#annotate("text",x=2,y=max(paramTBL6$PARAMRES)+0.5,label=sprintf('n=%s',paramN$PARAMRES)) +#annotate: n(sites) for strata plots and n(points) for site  (function defined above) #messy for categorical#previous (not working as anticipated, particularly for categorical): #stat_summary(fun.data =give.n, geom = "text") + #function for adding sample size to boxplots #
-     labs(title=sprintf('SITE- %s ~ PARAM- %s',allsites[s],param)) +
+     labs(title=sprintf('SITE- %s (%s) ~ PARAM- %s',unique(subset(paramTBL6, subset=STRATATYPE=='UID', select=SITE_ID)),allsites[s],param)) +
      #geom_text(data=paramQ,aes(label=SiteLabelOUT),show_guide=F,size=3,position= position_jitter(width = 0.5, height=0))+#jitter a little strange, but makes it readable
      geom_text(data=paramMSD,aes(label=SiteLabelOUT2),show_guide=F,size=3,position= position_jitter(width = 0.25, height=0))+
      theme(axis.text.x=element_blank(),axis.ticks.x=element_blank(),axis.title.x=element_blank())  #remove x axis 
@@ -342,7 +345,7 @@ allsites=intersect(unique(paramTBL$SITE_ID),unique(UnionTBL1$SITE_ID))##would be
  } } }
 rm(paramTBL3,paramTBL4,paramTBL6,paramTBL5,paramTBL3a,paramTBL3b)
                            
-outlierTBL=unique(subset(outlierTBL,select=c('STRATATYPE','STRATA','SITE_ID','PARAMETER','PARAMCAT','TRANSECT','POINT','PARAMRES','Mean','SD')))
+outlierTBL=unique(subset(outlierTBL,select=c('STRATATYPE','STRATA','SITE_ID','UID','PARAMETER','PARAMCAT','TRANSECT','POINT','PARAMRES','Mean','SD')))
 stratat=unique(outlierTBL$STRATATYPE)
 for (s in 1:length(stratat)){
   outlierTBLst=subset(outlierTBL,subset=STRATATYPE==stratat[s])
