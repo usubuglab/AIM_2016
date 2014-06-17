@@ -11,7 +11,7 @@ DBserver=''#ditto as with DBpassword
 
 #RUN PARAMETERS#
 setwd('M:\\buglab\\Research Projects\\BLM_WRSA_Stream_Surveys\\Results and Reports\\WRSA_2013\\EPAexport')
-MODE=c('EPAin')#options: 'CREATE','EPAin', 'REVISE', APPin' #rule: EPAin and APPin are mutually exclusive
+MODE=c('FMGOin')#options: 'CREATE','EPAin', 'REVISE', APPin','FMGOin' #rule: EPAin and APPin are mutually exclusive
 #SWJ to do: add a test mode to run test select queries and truncate the imports for testing
 #SWJ to do: add a "NAMCin" mode for bank stability and photo import
 ##SWJ to do: add an if statement that either creates the tables or just imports them depending on whether "new" or "existing" db (call it "MODES" - CREATE, EPAimport, APPimport)
@@ -31,66 +31,9 @@ print ("Please enter Password")
 #the db was created in SQL Server Manager on 11/19/2013 by Sarah Judson#
 wrsaConnectSTR=sprintf("Driver={SQL Server Native Client 10.0};Server=%s;Database=WRSAdb;Uid=%s; Pwd=%s;",DBserver,DBuser, DBpassword)
 wrsa1314=odbcDriverConnect(connection = wrsaConnectSTR)
+options(stringsAsFactors=F)
 #end ODBC connection#
 
-#GENERAL TABLE STRINGS#
-#SQL TABLE CREATION#
-CREATEstr="create table %s
-  			(UID                 int             NOT NULL
-				,SAMPLE_TYPE         nvarchar(50)    NOT NULL
-        %s
-				,IND                 int  NOT NULL
-        ,ACTIVE              nvarchar(50)    NOT NULL
-        ,OPERATION           nvarchar(50)    NULL
-        ,INSERTION           datetime        NULL
-        ,DEPRECATION         datetime        NULL
-        ,REASON              nvarchar(500)   NULL
-        ,CONSTRAINT %s
-        PRIMARY KEY CLUSTERED (
-        UID ASC
-        ,SAMPLE_TYPE ASC
-        ,IND ASC, ACTIVE ASC
-        %s
-				) )
-				"
-#replace %s in the following order: TableName, addition of [Transect] or [Point] for finer resolution tables, ConstraintName, addition to constraints
-#,IND   int IDENTITY(1,1) NOT NULL ##SWJ changed to nvarchar(50) throughout this script since EPA provides this value and likely wants it if they ever need to cross walk the data back; reimplement on the AIM database once independent from EPA
-#end TABLE STRINGS#
-
-#DEPRECATION/ACTIVE checks
-#if importing revised data, export these so can add back in if needed (REVISE mode)
-#otherwise, simply use this to look at deprecated values and their corresponding revisions 
-DEPstr="select * from 
-(select * from %s where ACTIVE='FALSE') Dep
-join (select * from %s where ACTIVE='TRUE' and 
-      exists (select * from %s AS Dep 
-              where ACTIVE='FALSE' 
-              and DEP.UID=%s.UID 
-              and DEP.Sample_Type=%s.SAMPLE_TYPE
-              and DEP.Parameter=%s.Parameter
-              %s--add transect and point
-              --could also assume required match between insertion and deprecation dates, but that's if trying to trace multiple revisions which we haven't yet encountered (currently would see a line for each deprecation with the current active comment...should be sufficient with sorting)
-      )
-) as Cor
-on DEP.UID=cor.UID 
-and DEP.Sample_Type=cor.SAMPLE_TYPE
-and DEP.Parameter=cor.Parameter
-%s--add transect and point
---add deprec/insertion date match if desired
-order by Cor.UID, Cor.SAMPLE_TYPE, Cor.PARAMETER -- add transect and point"
-#replace %s in the following order: (table,table,table,table,table,table,transect/point DEP-> table join (or blank),transect/point DEP->COR join (or blank))"
-if('REVISE' %in% MODE){
-  tbls=c('tblVERIFICATION', 'tblREACH', 'tblCOMMENTS', 'tblTRANSECT', 'tblPOINT')
-  for (t in 1:length(tbls)){
-    if (tbls[t] =='tblTRANSECT' ){DEPjoin='and DEP.TRANSECT=tblTRANSECT.TRANSECT'; CORjoin='and DEP.TRANSECT=COR.TRANSECT' 
-    } else if (tbls[t] =='tblPOINT') {DEPjoin='and DEP.TRANSECT=tblPOINT.TRANSECT and DEP.POINT=tblPOINT.POINT'; CORjoin='and DEP.TRANSECT=COR.TRANSECT and DEP.POINT=COR.POINT'
-    } else {DEPjoin=''; CORjoin=''}
-  tblDEP=sqlQuery(wrsa1314, sprintf(DEPstr,tbls[t],tbls[t],tbls[t],tbls[t],tbls[t],tbls[t], DEPjoin, CORjoin))
-  outTBL=sprintf('DEP_%s',tbls[t])
-  assign(outTBL,tblDEP)
-  write.csv(tblDEP,sprintf('%s.csv',outTBL))
-}
-}
 
 
 #COLUMN CHECKING FUNCTION#
@@ -99,7 +42,7 @@ IndMax=sqlQuery(wrsa1314, 'select max(IND) from tblREACH');IndMax=ifelse(is.na(I
 ##SWJ to do: index cleanup (only change index for NAMC data; create new record and deprecate old for EPA data)
 # select IND, COUNT(result) as CR 
 # from (select 
-#       UID  ,SAMPLE_TYPE	,PARAMETER,	RESULT	,FLAG,	IND	,ACTIVE	,OPERATION	,INSERTION	,DEPRECATION	,REASON
+#       UID  ,SAMPLE_TYPE  ,PARAMETER,	RESULT	,FLAG,	IND	,ACTIVE	,OPERATION	,INSERTION	,DEPRECATION	,REASON
 #       from tblPOINT 
 #       union 
 #       select UID	,SAMPLE_TYPE	,PARAMETER,	RESULT	,FLAG,	IND	,ACTIVE	,OPERATION	,INSERTION	,DEPRECATION	,REASON
@@ -129,7 +72,7 @@ ColCheck = function(TBL,VAR){
         else if(max(colnames(TBL) %in% 'STATION')==1){TBL$NEW=TBL$STATION}
         else if(max(colnames(TBL) %in% 'LINE')==1){TBL$NEW=TBL$LINE}
         else {TBL$NEW=NA}
-              }
+      }
       else if(MissingCheck[c]=='IND'){TBL$NEW=seq(from=unlist(IndMax),to=unlist(IndMax)+nrow(TBL)-1)}#this needs to retrieve the max index number
       else{
         TBL$NEW=NA
@@ -144,14 +87,73 @@ ColCheck = function(TBL,VAR){
 #end COLUMN CHECKING FUNCTION#
 
 
-#now the tables for the data packets:  tblVERIFICATION  (SAMPLE_TYPE = VERIF)
 
 
+
+if('REVISE' %in% MODE){
+  #DEPRECATION/ACTIVE checks
+  #if importing revised data, export these so can add back in if needed (REVISE mode)
+  #otherwise, simply use this to look at deprecated values and their corresponding revisions 
+  DEPstr="select * from 
+(select * from %s where ACTIVE='FALSE') Dep
+join (select * from %s where ACTIVE='TRUE' and 
+      exists (select * from %s AS Dep 
+              where ACTIVE='FALSE' 
+              and DEP.UID=%s.UID 
+              and DEP.Sample_Type=%s.SAMPLE_TYPE
+              and DEP.Parameter=%s.Parameter
+              %s--add transect and point
+              --could also assume required match between insertion and deprecation dates, but that's if trying to trace multiple revisions which we haven't yet encountered (currently would see a line for each deprecation with the current active comment...should be sufficient with sorting)
+      )
+) as Cor
+on DEP.UID=cor.UID 
+and DEP.Sample_Type=cor.SAMPLE_TYPE
+and DEP.Parameter=cor.Parameter
+%s--add transect and point
+--add deprec/insertion date match if desired
+order by Cor.UID, Cor.SAMPLE_TYPE, Cor.PARAMETER -- add transect and point"
+  #replace %s in the following order: (table,table,table,table,table,table,transect/point DEP-> table join (or blank),transect/point DEP->COR join (or blank))"
+  
+  tbls=c('tblVERIFICATION', 'tblREACH', 'tblCOMMENTS', 'tblTRANSECT', 'tblPOINT')
+  for (t in 1:length(tbls)){
+    if (tbls[t] =='tblTRANSECT' ){DEPjoin='and DEP.TRANSECT=tblTRANSECT.TRANSECT'; CORjoin='and DEP.TRANSECT=COR.TRANSECT' 
+    } else if (tbls[t] =='tblPOINT') {DEPjoin='and DEP.TRANSECT=tblPOINT.TRANSECT and DEP.POINT=tblPOINT.POINT'; CORjoin='and DEP.TRANSECT=COR.TRANSECT and DEP.POINT=COR.POINT'
+    } else {DEPjoin=''; CORjoin=''}
+  tblDEP=sqlQuery(wrsa1314, sprintf(DEPstr,tbls[t],tbls[t],tbls[t],tbls[t],tbls[t],tbls[t], DEPjoin, CORjoin))
+  outTBL=sprintf('DEP_%s',tbls[t])
+  assign(outTBL,tblDEP)
+  write.csv(tblDEP,sprintf('%s.csv',outTBL))
+}
+}
 
 
 #SWJ: combine Site level (1 measurement per site visit) tables
 #EPA tables combined in REACH: tblASSESSMENT, tblCHANNELCONST,  tblTORRENT
 if('CREATE' %in% MODE){
+  #GENERAL TABLE STRINGS#
+  #SQL TABLE CREATION#
+  CREATEstr="create table %s
+    		(UID                 int             NOT NULL
+				,SAMPLE_TYPE         nvarchar(50)    NOT NULL
+        %s
+				,IND                 int  NOT NULL
+        ,ACTIVE              nvarchar(50)    NOT NULL
+        ,OPERATION           nvarchar(50)    NULL
+        ,INSERTION           datetime        NULL
+        ,DEPRECATION         datetime        NULL
+        ,REASON              nvarchar(500)   NULL
+        ,CONSTRAINT %s
+        PRIMARY KEY CLUSTERED (
+        UID ASC
+        ,SAMPLE_TYPE ASC
+        ,IND ASC, ACTIVE ASC
+        %s
+				) )
+				"
+  #replace %s in the following order: TableName, addition of [Transect] or [Point] for finer resolution tables, ConstraintName, addition to constraints
+  #,IND   int IDENTITY(1,1) NOT NULL ##SWJ changed to nvarchar(50) throughout this script since EPA provides this value and likely wants it if they ever need to cross walk the data back; reimplement on the AIM database once independent from EPA
+  #end TABLE STRINGS#
+  
 sqlQuery(wrsa1314, sprintf(CREATEstr,'tblREACH',
                            ',PARAMETER           nvarchar(50)    NOT NULL
                             ,RESULT              nvarchar(50)    NULL
@@ -204,7 +206,7 @@ COM=read.csv('tblCOMMENTSDec22013.csv'); COM=COM[-1]
 sqlSave(wrsa1314,dat=COM,tablename='tblCOMMENTS',rownames=F, append=TRUE)#,fast=FALSE)
 #had to manually paste COM into table, not sure why sqlSAVE would not work
 #SWJ to do: combine SAMPLES and VERIFICATION into below structure
-}#end MODE if
+}#end create MODE if
 
 
 #SWJ to do: in imports below, need to add to "VAR" for transect and point columns
@@ -252,14 +254,13 @@ if(length(FileSETS)==length(TableSETS) & length(FileSETS)==length(VarSETS)){
 
 odbcClose(wrsa1314)
 
-
 #Filemaker import consumption
+if('FMGOin' %in% MODE){
 library(reshape)
 library(xlsx)
 datetest <- function(x) c(ifelse(is.numeric(x),FALSE,ifelse(is.character(x),FALSE,TRUE)))
-setwd('C:\\Users\\Sarah\\Documents')#default export location for desktop version of FM
-tables=list.files(getwd(),pattern='*.xlsx')#tables=read.csv('RelationalTest.csv')
-tables=c('FMout_tbl_yr2014doy156Sarah-PC_Hitch.xlsx')#test table
+setwd('M:\\buglab\\Research Projects\\BLM_WRSA_Stream_Surveys\\Field Work\\Post Sample\\iPad backup')#setwd('C:\\Users\\Sarah\\Documents')#default export location for desktop version of FM
+tables=list.files(getwd(),pattern='*.xlsx')#tables=read.csv('RelationalTest.csv')#tables=c('FMout_tbl_yr2014doy156Sarah-PC_Hitch.xlsx')#test table
 importcols=c(VAR,'TRANSECT','POINT','PARAMETER','RESULT');#importcols=setdiff(importcols,c('REASON'))
 importmaster=data.frame(t(rep(NA,length(importcols))))
 names(importmaster)=importcols;importmaster=subset(importmaster,subset=is.na(UID)==FALSE)
@@ -304,10 +305,37 @@ importmaster=rbind(importmaster,tableFLAT)
 #!screen null and duplicate values that are warned about
 #!save all warning messages to a table for export/reference (right now, all are printed to the console; how is error handling supposed to be done in R packages, a lot of times, they say, "type WARN to see all warnings")
 #! pending testing - water quality calibration handling changed and comment/flags updated in FM
+#! export failure and QA (pivoted) and samplelist to AccessDB
 
+
+#! exclude UIDs used by Sarah in testing
+UIDSremove=unique(subset(importmaster,select=UID,subset= (PARAMETER=='DB' & RESULT =='WRSA_AIM')|(PARAMETER=='DEVICE' & RESULT =='ProAdvanced 13.0v3/C:/Users/Sarah/Documents/')))
+UIDSexist=sqlQuery(wrsa1314, "select distinct UID from tblVerification where parameter='SITE_ID'")
+UIDSremoveLIST=c(UIDSremove$UID,UIDSexist$UID,'10445148556604496')#'10445148556604496' = duplicate site that crew entered in both app versions, confirmed with crew and Jennifer Courtwright
+importmaster=subset(importmaster,subset= (UID %in% UIDSremoveLIST)== FALSE)
+#!check for duplicate siteIDS
+SITEdup=subset(importmaster, subset=PARAMETER %in% c('SITE_ID') & SAMPLE_TYPE=='SampleEvent');SITEdup$SITE=SITEdup$RESULT;SITEdup=SITEdup[,!(names(SITEdup) %in% c('RESULT','IND','PARAMETER'))]
+DATEdup=subset(importmaster, subset=PARAMETER %in% c('DATE_COL') & SAMPLE_TYPE=='SampleEvent');DATEdup$DATE=DATEdup$RESULT;DATEdup=DATEdup[,!(names(DATEdup) %in% c('RESULT','IND','PARAMETER'))]
+SITEdup=merge(SITEdup,DATEdup)
+SITEcnt=aggregate(SITEdup,by=list(SITEdup$SITE),FUN=length)
+if(max(SITEcnt$UID)>1){
+SITEdup2=subset(SITEcnt,subset=UID>1)
+SITEcntDATE=aggregate(SITEdup,by=list(SITEdup$SITE,SITEdup$DATE),FUN=length)
+DATEdup2=subset(SITEcntDATE,subset=UID>1)
+DUPuid=subset(importmaster,select=UID,subset= PARAMETER=='SITE_ID' & RESULT %in% SITEdup2$Group.1 & SAMPLE_TYPE=='SampleEvent')
+DUPverif=subset(importmaster, subset=UID %in% DUPuid$UID & SAMPLE_TYPE=='SampleEvent')#provides verification information for comparison
+DUPwq=subset(importmaster, subset=UID %in% DUPuid$UID & SAMPLE_TYPE=='WaterQuality')#provides times for comparison
+DUPtran=subset(importmaster, subset=UID %in% DUPuid$UID & SAMPLE_TYPE %in% c('Tran','Bank','CrossSection') & TRANSECT %in% c('A','F','K'))#look at a few transects
+DUPfail=subset(importmaster, subset=UID %in% DUPuid$UID & SAMPLE_TYPE=='FailedSite')#look at any failures
+DUPcomment=subset(importmaster, subset=UID %in% DUPuid$UID & substr(PARAMETER,1,nchar('COMMENT'))=='COMMENT')
+print('WARNING! Duplicate site. Review outputs throughly before proceeding. If UIDs should be omitted, added to UIDSremove and re-subset importmaster.');print(SITEdup2);print(DATEdup2);View(DUPcomment);View(DUPverif);View(DUPtran);View(DUPwq);View(DUPfail)
+}
+
+importmaster$POINT=ifelse(importmaster$SAMPLE_TYPE %in% c('TRACK_Transect','REACH'),importmaster$TRANSECT,importmaster$POINT)
 importmaster$TRANSECT=ifelse(nchar(importmaster$TRANSECT)>3,NA,importmaster$TRANSECT)#!need to be careful with artificially named transects (WaterQuality, O, etc for FM tracking) - in the app, make O longer!
 importmaster$TRANSECT=ifelse(importmaster$TRANSECT %in% c('NULL','NA'),NA,importmaster$TRANSECT)
 importmaster$POINT=ifelse(importmaster$POINT %in% c('NULL','NA'),NA,importmaster$POINT)
+importmaster$PARAMETER=ifelse(importmaster$PARAMETER =='CAL_REASON','COMMENT_REASON',importmaster$PARAMETER)#!temporary, will be corrected in app by July 2014
 ##START comments##
 #separate and match flags and comments (abbreviate and number flags (Letter:FieldSuffix:Transect - ex: U_Wid_B), port comments to separate table with flag, match flag to rows based on protocol (xwalk))
 tblCOMMENTStmp=subset(importmaster,subset= substr(PARAMETER,1,nchar('COMMENT'))=='COMMENT');tblCOMMENTStmp$COMMENT=tblCOMMENTStmp$RESULT;tblCOMMENTStmp$PARAMETER=substr(tblCOMMENTStmp$PARAMETER,nchar('COMMENT_')+1,nchar(tblCOMMENTStmp$PARAMETER))
@@ -339,6 +367,7 @@ importmaster=ColCheck(importmaster,importcols)
 commentCNT=nrow(tblCOMMENTSin);
 if (commentCNT>commentfailCNT|commentCNT>commentnullCNT){sprintf('%s comments with unknown parameter match and %s comments with no result match (null result i.e. a comment was used to indicate missing data)',commentfailCNT,commentnullCNT)}
 ##END comments##
+#!need to clean up duplicates and distinguish the different verification comments
 
 
 
@@ -374,56 +403,68 @@ unacctCNT=masterCNT-#total rows expected
   (commentCNT-flagonlyCNT-commentonlyCNT)- #double count the overlap between flags and comments
   omitCNT #tracking parameters that were omitted
 sprintf('wARNING! %s rows unaccounted for after table partitioning',unacctCNT)
-if(unacctCNT==0){print('#!send to WRSAdb (except FAILURE)! send VERIF + Failure + QA to Access')}
+if(unacctCNT==0){print('#!send to WRSAdb (except FAILURE)! send VERIF + Failure + QA to Access')
+#repivot tables going to Access
+probsurv14=odbcConnect("ProbSurveyDB")#have to run on remote desktop (gisUser3) or machine which has 64bit R and 64bit Access
+#sample numbering
+ maxSamp=sqlQuery(probsurv14,'select max(SampleNumber) from SampleTracking where Year(SampleDate)=Year(Now())')
+maxSamp=as.numeric(ifelse(is.na(maxSamp),1,1+maxSamp))
+sampletmp=subset(importmaster,PARAMETER=='SAMPLE_ID' & SAMPLE_TYPE=='BERW')
+sampletmp$PARAMETER='SampleNumber'
+for (s in 1:nrow(sampletmp)){sampletmp$RESULT[s]=maxSamp;maxSamp=maxSamp+1}
+#prep fields for SampleEvent
+commenttmp=unique(subset(tblCOMMENTSin,SAMPLE_TYPE=='VERIF'))
+commentUID=unique(subset(commenttmp, select='UID'));commenttmp4=data.frame()
+ for (u in 1:nrow(commentUID)){commenttmp2=as.character(subset(commenttmp,select=COMMENT,UID==commentUID$UID[u]));commenttmp3=subset(commenttmp,UID==commentUID$UID[u])[1,];commenttmp3$RESULT=commenttmp2;commenttmp4=rbind(commenttmp4,commenttmp3)}
+commenttmp4$PARAMETER='Comments';commenttmp4=commenttmp4[,!(names(commenttmp4) %in% c('PAGE','COMMENT'))];commenttmp4$POINT=NA
+XwalkACCst=sqlQuery(wrsa1314, "select * from tblxwalk where Name_Xwalk='ProbSurveyDB' and Table_Xwalk='SampleTracking'")#strongly consider making a function for Xwalks in which name is specified and then it does the column dropping and merging
+XwalkACCst$PARAMETER=toupper(XwalkACCst$PARAMETER);XwalkACCst$SAMPLE_TYPE=substr(XwalkACCst$SAMPLE_TYPE,1,nchar(XwalkACCst$SAMPLE_TYPE)-1)
+eventtmp=subset(importmaster,is.na(UID)==FALSE & PARAMETER %in% XwalkACCst$PARAMETER )
+eventtmp=merge(eventtmp,XwalkACCst,by=c('PARAMETER','SAMPLE_TYPE'),all.x=T);eventtmp=eventtmp[,!(names(eventtmp) %in% c('PARAMETER'))];eventtmp$PARAMETER=eventtmp$Parameter_Xwalk;eventtmp=ColCheck(eventtmp,importcols)
+eventtmp2=rbind(eventtmp,rbind(sampletmp,commenttmp4))
+pvtEVENT= cast(eventtmp2, 'UID ~ PARAMETER',value='RESULT')  
+pvtFAIL= cast(tblFAILUREin, 'UID ~ PARAMETER',value='RESULT')                 
+pvtQA= cast(subset(tblQAin,is.na(UID)==FALSE), 'UID + TRANSECT + POINT ~ PARAMETER',value='RESULT')
+}
 
+}#end FMGO MODE
 
 ##see DataConsumption_WRSAdb.R for more up to date versions
 #generate SQL views (possibly pass via ODBC too)
-bankP=c('ANGLE','UNDERCUT','EROSION','COVER','STABLE')
-veriP=c('SITE_ID','SITESAMP','DATE_COL','LAT_DD','LON_DD')
+#bankP=c('ANGLE','UNDERCUT','EROSION','COVER','STABLE')
+#veriP=c('SITE_ID','SITESAMP','DATE_COL','LAT_DD','LON_DD')
 
 
-parameters=bankP
-tblTYPE='tblPOINT'
-filter="POINT in ('LF','RT')"
+#parameters=bankP
+#tblTYPE='tblPOINT'
+#filter="POINT in ('LF','RT')"
 # parameters=veriP
 # tblTYPE='tblVERIFICATION'
 # filter="SITESAMP='Y'"
 #SWJ to do: looks like this should be converted into a "PIVOT" funciton
 
 
+# 
+# PVTloop=function(parameters=c('SITE_ID'), tblTYPE=tblVERIFICATION, filter=''){
+#   tblPVTstr="select UID %s %s,
+# FROM (SELECT UID %s,Parameter, Result
+# FROM %s) p PIVOT (min(Result) FOR Parameter IN (%s)) AS pvt
+# WHERE %s
+# "
+#   if(tblTYPE %in% c('tblVERIFICATION', 'tblREACH')){ParamResolution=''
+#                                                     } else if(tblTYPE=='tblTRANSECT'){ParamResolution=',Transect'
+#                                                     } else if(tblTYPE=='tblPOINT'){ParamResolution=',Transect, Point'
+#                                                     } else{ParamResolution=''}
+#   for (p in 1:length(parameters)){
+#     comma=ifelse(p==length(parameters),'',',')
+#     Pas=sprintf("[%s] AS %s%s",parameters[p],parameters[p],comma)
+#     Psq=sprintf("[%s]%s",parameters[p],comma)
+#     if(p==1){loopPas=Pas; loopPsq=Psq} else{loopPas=paste(loopPas,Pas); loopPsq=paste(loopPsq,Psq)}
+# }
+#   sqlTEXT=sprintf(tblPVTstr, ParamResolution, loopPas, ParamResolution,tblTYPE,loopPsq,filter)
+#   return(sqlTEXT)
+# }
 
-PVTloop=function(parameters=c('SITE_ID'), tblTYPE=tblVERIFICATION, filter=''){
-  tblPVTstr="select UID %s %s,
-FROM (SELECT UID %s,Parameter, Result
-FROM %s) p PIVOT (min(Result) FOR Parameter IN (%s)) AS pvt
-WHERE %s
-"
-  if(tblTYPE %in% c('tblVERIFICATION', 'tblREACH')){ParamResolution=''
-                                                    } else if(tblTYPE=='tblTRANSECT'){ParamResolution=',Transect'
-                                                    } else if(tblTYPE=='tblPOINT'){ParamResolution=',Transect, Point'
-                                                    } else{ParamResolution=''}
-  for (p in 1:length(parameters)){
-    comma=ifelse(p==length(parameters),'',',')
-    Pas=sprintf("[%s] AS %s%s",parameters[p],parameters[p],comma)
-    Psq=sprintf("[%s]%s",parameters[p],comma)
-    if(p==1){loopPas=Pas; loopPsq=Psq} else{loopPas=paste(loopPas,Pas); loopPsq=paste(loopPsq,Psq)}
-}
-  sqlTEXT=sprintf(tblPVTstr, ParamResolution, loopPas, ParamResolution,tblTYPE,loopPsq,filter)
-  return(sqlTEXT)
-}
-
-##example populate: 
-  
-
-
-  
-  
-  
-  
-  
-  
-  
   
 
 
