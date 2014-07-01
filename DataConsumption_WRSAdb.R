@@ -26,7 +26,7 @@ bankP=c('ANGLE','UNDERCUT','EROSION','COVER','STABLE')
 
 #--------------------------------------------------------SETUP--------------------------------------------------------#
 #LOAD required packages#
-requiredPACKAGES=c('reshape', 'RODBC','ggplot2','grid','gridExtra','xlsx')
+requiredPACKAGES=c('reshape', 'RODBC','ggplot2','grid','gridExtra','xlsx','sqldf')
 for (r in 1:length(requiredPACKAGES)){
   if ((requiredPACKAGES[r] %in% installed.packages()[,1])==FALSE){install.packages(requiredPACKAGES[r])}#auto-install if not present
   library(requiredPACKAGES[r],character.only = TRUE)
@@ -130,6 +130,7 @@ for (t in 1:nrow(dbTBL)){
     #missing data checks (counted values per pivot cell which is per site per parameter)
     tblPVTm=cast(tblTYPE, eval(parse(text=pvtCOLdefault)),fun.aggregate='length')
       assign(sprintf('%s_pvtMISSINGcnt_%s',tblNAME,dbTYPE[s]),tblPVTm)
+      #missing context of expected number of values...need to compare to metadata
     #summarized categorical data (counted values per pivot cell which is per site per parameter+result)
     tblCAT=subset(tblTYPE,subset=PARAMETER %in% params_C$PARAMETER)
       if(nrow(tblCAT)>1){#only assign pivot to variable if not empty and only dive into subsequent if not empty

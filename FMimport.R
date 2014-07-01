@@ -167,11 +167,20 @@ importmaster$TRANSECT=ifelse(substr(importmaster$PARAMETER,1,1)=="X",as.characte
   failedUID = subset(importmaster,select=UID,subset=PARAMETER=='VALXSITE'& RESULT %in% c('DRYVISIT','NOACCESS','INACCPERM','OTHER_NST'))
   importmaster$RESULT=ifelse(importmaster$PARAMETER=='Protocol'& importmaster$RESULT=='WRSA14'  & importmaster$UID %in% failedUID$UID ,
                              'Failed',importmaster$RESULT)#FM has been corrected for this in version July 1 2014
+  missingProtocol=setdiff(failedUID$UID,subset(importmaster,select=UID,subset=PARAMETER=='Protocol')$UID)
+  failedAppend=subset(importmaster,subset=PARAMETER=='Protocol'& RESULT %in% c('Failed')); failedAppend$UID=NA; failedAppend$IND=NA; failedAppend=unique( failedAppend)
+  failedAppendtmp=failedAppend;failedAppend=failedAppend[0,]
+  for (u in 1:length(  missingProtocol)){  #could use this in general for critical missing parameters
+    failedAppendtmp$UID= missingProtocol[u]
+    failedAppend=rbind(failedAppend,failedAppendtmp)
+  }  
+  importmaster=rbind(importmaster,failedAppend)
   Protocols=unique(subset(importmaster,select=RESULT,subset=PARAMETER=='Protocol'))
   tblMetadataProtocoltmp=sqlQuery(wrsa1314,sprintf("select * from tblMetadataProtocol"))
   emptyFulldataset=tblMetadataProtocoltmp[1,]
   emptyFulldataset$TRANSECT=NA;    emptyFulldataset$UID=NA;emptyFulldataset=emptyFulldataset[0,]
   for (p in 1:nrow(Protocols)){
+    emptyFulldatasetTmp=emptyFulldataset[0,]
     tblMetadataProtocolR=sqlQuery(wrsa1314,sprintf("select * from tblMetadataProtocol where Protocol='%s' and Active='Y'",unlist(Protocols$RESULT[p])))
     reps=unique(tblMetadataProtocolR$Reps);reps=setdiff(reps,NA)
     tran=c('A','B','C','D','E','F','G','H','I','J','K')
@@ -194,17 +203,16 @@ importmaster$TRANSECT=ifelse(substr(importmaster$PARAMETER,1,1)=="X",as.characte
             reptmp3=rbind(reptmp3,reptmp2)
           }}
       } else {reptmp3=reptmp}
-      emptyFulldataset=rbind(emptyFulldataset,reptmp3)
+      emptyFulldatasetTmp=rbind(emptyFulldatasetTmp,reptmp3)
     }
     UIDsADD=unique(subset(importmaster,select=UID,subset=RESULT==unlist(Protocols$RESULT[p])))
-    UIDtmp=emptyFulldataset
+    UIDtmp=emptyFulldatasetTmp
     for (u in 1:nrow(UIDsADD)){  
       UIDtmp$UID=UIDsADD$UID[u]
       emptyFulldataset=rbind(emptyFulldataset,UIDtmp)
     }                         
   }
-  #!problems to troubleshoot: sites in failedUID are not going into UIDsADD when protocol filter is "Failed"; empty dataset for Failed sites repeats WRSA14 AND Failed (should just be Failed)
-  
+ 
   MissingCounts=sqldf("select * from 
                       (select *, case when Transect is null then 0 else Transect end as TRE from emptyFulldataset ) as ExpectedCounts
                       outer left join 
