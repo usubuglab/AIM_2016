@@ -56,7 +56,7 @@
   #! exclude UIDs used by Sarah in testing and ones already imported, as well as monitored duplicates
   UIDSremove=unique(subset(importmaster,select=UID,subset= (PARAMETER=='DB' & RESULT =='WRSA_AIM')|(PARAMETER=='DEVICE' & RESULT =='ProAdvanced 13.0v3/C:/Users/Sarah/Documents/')))
   UIDSexist=sqlQuery(wrsa1314, "select distinct UID from tblVerification where parameter='SITE_ID'")
-  UIDSremoveLIST=c(UIDSremove$UID,UIDSexist$UID,'10445148556604496','6.22708454798246e+20','2.25618143476838e+23','8.77503374780117e+20','4.49266934743765e+21','5.64896083614649e+21')#could query intentionally removed duplicates from Office_Comments in AccessDB#'1044' = duplicate site that crew entered in both app versions, confirmed with crew and Jennifer Courtwright; 6227 and 2256 = duplicates with only default data populated
+  UIDSremoveLIST=c(UIDSremove$UID,UIDSexist$UID, '8.58443864583729e+22','7.41736074664104e+22','7.42868294554285e+24','10445148556604496','6.22708454798246e+20','2.25618143476838e+23','8.77503374780117e+20','4.49266934743765e+21','5.64896083614649e+21')#could query intentionally removed duplicates from Office_Comments in AccessDB#'1044' = duplicate site that crew entered in both app versions, confirmed with crew and Jennifer Courtwright; 6227 and 2256 = duplicates with only default data populated
   importmaster=subset(importmaster,subset= (UID %in% UIDSremoveLIST)== FALSE)
   #!check for duplicate siteIDS
   SITEdup=subset(importmaster, subset=PARAMETER %in% c('SITE_ID') & SAMPLE_TYPE=='SampleEvent');SITEdup$SITE=SITEdup$RESULT;SITEdup=SITEdup[,!(names(SITEdup) %in% c('RESULT','IND','PARAMETER'))]
@@ -76,12 +76,18 @@
     print('WARNING! Duplicate site. Review outputs throughly before proceeding. If UIDs should be omitted, added to UIDSremove and re-subset importmaster.');print(SITEdup2);print(DATEdup2);View(DUPcomment);View(DUPverif);View(DUPtran);View(DUPwq);View(DUPfail)
   }
   
+##convert transects for middle station thalweg (similar to thalweg dup in filemaker)##
+middletranlist=list(A="AB",B="BC",C="CD",D="DE",E="EF",F="FG",G="GH",H="HI",I="IJ",J="JK",K="KX")
+importmaster$TRANSECT=ifelse(substr(importmaster$PARAMETER,1,1)=="X",as.character(middletranlist[as.character(importmaster$TRANSECT) ]),importmaster$TRANSECT)
+  
+  
+##START comments##
   importmaster$POINT=ifelse(importmaster$SAMPLE_TYPE %in% c('TRACK_Transect','REACH'),importmaster$TRANSECT,importmaster$POINT)
   importmaster$TRANSECT=ifelse(nchar(importmaster$TRANSECT)>3,NA,importmaster$TRANSECT)#!need to be careful with artificially named transects (WaterQuality, O, etc for FM tracking) - in the app, make O longer!
   importmaster$TRANSECT=ifelse(importmaster$TRANSECT %in% c('NULL','NA'),NA,importmaster$TRANSECT)
   importmaster$POINT=ifelse(importmaster$POINT %in% c('NULL','NA'),NA,importmaster$POINT)
   importmaster$PARAMETER=ifelse(importmaster$PARAMETER =='CAL_REASON','COMMENT_REASON',importmaster$PARAMETER);importmaster$PARAMETER=ifelse(importmaster$PARAMETER =='COMMENTS','COMMENT_FAIL',importmaster$PARAMETER)#!temporary, will be corrected in app by July 2014
-  ##START comments##
+
   #separate and match flags and comments (abbreviate and number flags (Letter:FieldSuffix:Transect - ex: U_Wid_B), port comments to separate table with flag, match flag to rows based on protocol (xwalk))
   tblCOMMENTStmp=subset(importmaster,subset= substr(PARAMETER,1,nchar('COMMENT'))=='COMMENT');tblCOMMENTStmp$COMMENT=tblCOMMENTStmp$RESULT;tblCOMMENTStmp$PARAMETER=substr(tblCOMMENTStmp$PARAMETER,nchar('COMMENT_')+1,nchar(tblCOMMENTStmp$PARAMETER))
   tblFLAGStmp=subset(importmaster,subset= substr(PARAMETER,1,nchar('FLAG'))=='FLAG');tblFLAGStmp$PARAMETER=substr(tblFLAGStmp$PARAMETER,nchar('FLAG_')+1,nchar(tblFLAGStmp$PARAMETER))
@@ -155,6 +161,86 @@
     omitCNT #tracking parameters that were omitted
   sprintf('wARNING! %s rows unaccounted for after table partitioning',unacctCNT)
   
+  
+  ##missing data check
+  #simpler than the query on the backend which has to union tables
+  failedUID = subset(importmaster,select=UID,subset=PARAMETER=='VALXSITE'& RESULT %in% c('DRYVISIT','NOACCESS','INACCPERM','OTHER_NST'))
+  importmaster$RESULT=ifelse(importmaster$PARAMETER=='Protocol'& importmaster$RESULT=='WRSA14'  & importmaster$UID %in% failedUID$UID ,
+                             'Failed',importmaster$RESULT)#FM has been corrected for this in version July 1 2014
+  Protocols=unique(subset(importmaster,select=RESULT,subset=PARAMETER=='Protocol'))
+  tblMetadataProtocoltmp=sqlQuery(wrsa1314,sprintf("select * from tblMetadataProtocol"))
+  emptyFulldataset=tblMetadataProtocoltmp[1,]
+  emptyFulldataset$TRANSECT=NA;    emptyFulldataset$UID=NA;emptyFulldataset=emptyFulldataset[0,]
+  for (p in 1:nrow(Protocols)){
+    tblMetadataProtocolR=sqlQuery(wrsa1314,sprintf("select * from tblMetadataProtocol where Protocol='%s' and Active='Y'",unlist(Protocols$RESULT[p])))
+    reps=unique(tblMetadataProtocolR$Reps);reps=setdiff(reps,NA)
+    tran=c('A','B','C','D','E','F','G','H','I','J','K')
+    midtran=c('AB','BC','CD','DE','EF','FG','GH','HI','IJ','JK')
+    for (r in 1:length(reps)){
+      repcnt=reps[r]
+      reptmp=subset(tblMetadataProtocolR,subset=Reps==repcnt);reptmp$TRANSECT=NA;reptmp$UID=NA
+      reptmp3=reptmp[0,]
+      if(repcnt>1){#parameters that occur at multiple transects
+        for(t in 1:length(tran[1:ifelse(repcnt==10,10,11)])){
+          reptmp2=subset(reptmp,(PARAMETER %in% c('WETWID','BARWID') & SAMPLE_TYPE=='THALW')==FALSE)
+          reptmp2$TRANSECT=tran[t]
+          reptmp3=rbind(reptmp3,reptmp2)
+        }
+        reptmp4=subset(reptmp,(PARAMETER %in% c('STABLE','COVER','EROSION','LOC','SIZE_CLS'))| (PARAMETER %in% c('WETWID','BARWID') & SAMPLE_TYPE=='THALW'))
+        if(nrow(reptmp4)>0){#middle station additional
+          for(m in 1:length(midtran)){
+            reptmp2=reptmp4
+            reptmp2$TRANSECT=midtran[m]
+            reptmp3=rbind(reptmp3,reptmp2)
+          }}
+      } else {reptmp3=reptmp}
+      emptyFulldataset=rbind(emptyFulldataset,reptmp3)
+    }
+    UIDsADD=unique(subset(importmaster,select=UID,subset=RESULT==unlist(Protocols$RESULT[p])))
+    UIDtmp=emptyFulldataset
+    for (u in 1:nrow(UIDsADD)){  
+      UIDtmp$UID=UIDsADD$UID[u]
+      emptyFulldataset=rbind(emptyFulldataset,UIDtmp)
+    }                         
+  }
+  #!problems to troubleshoot: sites in failedUID are not going into UIDsADD when protocol filter is "Failed"; empty dataset for Failed sites repeats WRSA14 AND Failed (should just be Failed)
+  
+  MissingCounts=sqldf("select * from 
+                      (select *, case when Transect is null then 0 else Transect end as TRE from emptyFulldataset ) as ExpectedCounts
+                      outer left join 
+                      (select Sample_Type STO, Parameter PO, [UID] as UIDo, case when Transect is null then 0 else Transect end as TR, COUNT(Result) MissingCount from importmaster
+                      group by Sample_Type, Parameter, [UID], Transect) as ObservedCounts
+                      on ExpectedCounts.Sample_Type=ObservedCounts.STO and ExpectedCounts.Parameter=ObservedCounts.PO and ExpectedCounts.TRE=ObservedCounts.TR and ExpectedCounts.UID=ObservedCounts.UIDo
+                      where MissingCount < Points or MissingCount is null")
+  #!adapt SQL statement to work with backend, but still utilize emptyfulldataset
+  
+  MissingTotals=sqldf('select UID,count(*) from MissingCounts group by UID')
+  
+  print("Warning! The following sites failed missing data checks for the specified number of parameters.")
+  print(MissingTotals)    
+  #checking individual sites#View(subset(MissingCounts,subset=UID==''))#View(subset(importmaster,subset=UID==''))# View(subset(tblCOMMENTSin,subset=UID==''))
+  
+  
+  #custom missing data check for thalweg since flexible
+  ThalwegCheck=sqldf("select Station.UID, StationDUPLICATES,StationCNT,DepthCNT from 
+                     (select distinct UID, (result*2)-1 as StationCNT from importmaster where parameter='SUB_5_7') as station
+                     join
+                     (select UID,count(result) as StationDUPLICATES from (select distinct UID, result from importmaster where parameter='SUB_5_7') as stcnt group by UID) as stationcount
+                     on station.uid=stationcount.uid
+                     join 
+                     (select UID, max(point)*1 as DepthCNT from importmaster where parameter='DEPTH' group by UID) as depth
+                     on station.uid=depth.uid
+                     where StationCNT <> DepthCNT or stationDUPLICATES>1
+                     order by Station.UID")
+  
+  print("Warning! Number of Thalweg depths does not match the number expected from the widths/stations!")
+  print(ThalwegCheck)  
+  
+  ##outlier check
+  
+  
+  ##if pass (missing, accounted, outlier), migrate to WRSAdb and access db
+  
   if(unacctCNT==0){print('#!send to WRSAdb (except FAILURE)! send VERIF + Failure + QA to Access')
                    #repivot tables going to Access
                    #since has to be done on remote desktop, easier to run here, export tables, re-consume and import on remote (remote can't talkt so SQL and Sarah local can't talk to Access)
@@ -195,79 +281,5 @@
   }
   
   
-  ##missing data check
-  #simpler than the query on the backend which has to union tables
-  Protocols=unique(subset(importmaster,select=RESULT,subset=PARAMETER=='Protocol'))
-  #!loop over protocols
-  for (p in 1:nrow(Protocols)){
-  tblMetadataProtocolR=sqlQuery(wrsa1314,sprintf("select * from tblMetadataProtocol where Protocol='%s' and Active='Y'",unlist(Protocols[p])))
-  emptyFulldataset=tblMetadataProtocolR[1,]
-        emptyFulldataset$TRANSECT=NA;emptyFulldataset=emptyFulldataset[0,]
-        reps=unique(tblMetadataProtocolR$Reps)
-        tran=c('A','B','C','D','E','F','G','H','I','J','K')
-        midtran=c('AB','BC','CD','DE','EF','FG','GH','HI','IJ','JK')
-        for (r in 1:length(reps)){
-          repcnt=reps[r]
-          reptmp=subset(tblMetadataProtocolR,subset=Reps==repcnt);reptmp$TRANSECT=NA
-          reptmp3=reptmp[0,]
-          if(repcnt>1){#parameters that occur at multiple transects
-            for(t in 1:length(tran[1:repcnt])){
-              reptmp2=reptmp
-              reptmp2$TRANSECT=tran[t]
-              reptmp3=rbind(reptmp3,reptmp2)
-            }
-            reptmp4=subset(reptmp,PARAMETER %in% c('STABLE','COVER','EROSION','LOC','SIZE_CLS','WETWID','BARWID'))
-            if(nrow(reptmp4)>0){#middle station additional
-              for(m in 1:length(midtran)){
-                reptmp2=reptmp4
-                reptmp2$TRANSECT=midtran[m]
-                reptmp3=rbind(reptmp3,reptmp2)
-              }}
-          }
-          else {reptmp3=reptmp}
-          emptyFulldataset=rbind(emptyFulldataset,reptmp3)
-        }
-      UIDsADD=unique(subset(importmaster,select=UID,subset=RESULT==unlist(Protocols[p])))
-      emptyFulldataset$UID=NA
-      UIDtmp=emptyFulldataset
-      for (u in 1:nrow(UIDsADD)){  
-        UIDtmp$UID=UIDsADD$UID[u]
-        emptyFulldataset=rbind(emptyFulldataset,UIDtmp)
-      }                         
-  }
   
-  MissingCounts=sqldf("select * from 
-                      (select *, case when Transect is null then 0 else Transect end as TRE from emptyFulldataset ) as ExpectedCounts
-                      outer left join 
-                    (select Sample_Type STO, Parameter PO, [UID] as UIDo, case when Transect is null then 0 else Transect end as TR, COUNT(Result) MissingCount from importmaster
-                      group by Sample_Type, Parameter, [UID], Transect) as ObservedCounts
-                      on ExpectedCounts.Sample_Type=ObservedCounts.STO and ExpectedCounts.Parameter=ObservedCounts.PO and ExpectedCounts.TRE=ObservedCounts.TR and ExpectedCounts.UID=ObservedCounts.UIDo
-                      where MissingCount < Points or MissingCount is null")
-  
-    
-MissingTotals=sqldf('select UID,count(*) from MissingCounts group by UID')
-
-print("Warning! The following parameters do not meet the expected counts!")
-print(ThalwegCheck)    
-  
-  
-#custom missing data check for thalweg since flexible
-ThalwegCheck=sqldf("select Station.UID, StationDUPLICATES,StationCNT,DepthCNT from 
-                   (select distinct UID, (result*2)-1 as StationCNT from importmaster where parameter='SUB_5_7') as station
-                   join
-                  (select UID,count(result) as StationDUPLICATES from (select distinct UID, result from importmaster where parameter='SUB_5_7') as stcnt group by UID) as stationcount
-                  on station.uid=stationcount.uid
-                    join 
-                     (select UID, max(point)*1 as DepthCNT from importmaster where parameter='DEPTH' group by UID) as depth
-                  on station.uid=depth.uid
-                   where StationCNT <> DepthCNT or stationDUPLICATES>1
-                   order by Station.UID")
-  
-print("Warning! Number of Thalweg depths does not match the number expected from the widths/stations!")
-print(ThalwegCheck)  
-  
-  ##outlier check
-  
-  
-  ##if pass, migrate to WRSAdb
   
