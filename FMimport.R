@@ -27,6 +27,7 @@
       tableSUB=subset(table,select= groupcol);orgCNT=nrow(tableSUB)
       tableSUB=tableSUB[rowSums(is.na(tableSUB)) != ncol(tableSUB),];blankCNT=nrow(tableSUB)#remove Nulls,
       tableSUB=unique(tableSUB);uniqueCNT=nrow(tableSUB)
+      if(nrow(tableSUB)>0){
       if(orgCNT!=blankCNT){print(sprintf('%s blank rows omitted',orgCNT-blankCNT))
       } else if (blankCNT!=uniqueCNT){print(sprintf('WARNING! %s DUPLICATES omitted',blankCNT-uniqueCNT))} #do we want these sent to a table for review?
       colnames(tableSUB)=toupper(substr(names(tableSUB),regexpr("[.]{2}",names(tableSUB))+2,nchar(colnames(tableSUB))))
@@ -43,10 +44,12 @@
       tableFLAT=subset(tableFLAT,subset=is.na(RESULT)==FALSE);nullCNT=nrow(tableFLAT)
       if(flatCNT!=nullCNT){print(sprintf('%s NULLS omitted',flatCNT-nullCNT)) } #do we want these sent to a table for review?
       importmaster=rbind(importmaster,tableFLAT)
+      }
     }
   }
   
   #importmaster2=importmaster #save copy of first import test that successfully went through the  loop
+  #importmaster14Jul14=importmaster;importloopr14Jul14=list(t,tables,g,tblgroups); names(importloopr14Jul14)=c('t','tables','g','tblgroups');# running into problems on photo  table with more recent exports
   #!screen null and duplicate values that are warned about
   #!save all warning messages to a table for export/reference (right now, all are printed to the console; how is error handling supposed to be done in R packages, a lot of times, they say, "type WARN to see all warnings")
   #! pending testing - water quality calibration handling changed and comment/flags updated in FM
@@ -56,7 +59,10 @@
   #! exclude UIDs used by Sarah in testing and ones already imported, as well as monitored duplicates
   UIDSremove=unique(subset(importmaster,select=UID,subset= (PARAMETER=='DB' & RESULT =='WRSA_AIM')|(PARAMETER=='DEVICE' & RESULT =='ProAdvanced 13.0v3/C:/Users/Sarah/Documents/')))
   UIDSexist=sqlQuery(wrsa1314, "select distinct UID from tblVerification where parameter='SITE_ID'")
-  UIDSremoveLIST=c(UIDSremove$UID,UIDSexist$UID, '8.58443864583729e+22','7.41736074664104e+22','7.42868294554285e+24','10445148556604496','6.22708454798246e+20','2.25618143476838e+23','8.77503374780117e+20','4.49266934743765e+21','5.64896083614649e+21')#could query intentionally removed duplicates from Office_Comments in AccessDB#'1044' = duplicate site that crew entered in both app versions, confirmed with crew and Jennifer Courtwright; 6227 and 2256 = duplicates with only default data populated
+  UIDSmanualOMIT=c('8.58443864583729e+22','9.79114249176033e+20','7.467934950944e+19','7.1001238480827e+19','7.41736074664104e+22','7.42868294554285e+24','10445148556604496','6.22708454798246e+20','2.25618143476838e+23','8.77503374780117e+20','4.49266934743765e+21','5.64896083614649e+21',
+                   '15371499864863700', '6289849184966886400','4.86796721145911e+21','36066246794627100','36066246794627104','3281462015442028544','15371499864863704','7.08938994416638e+23','4.57921803104368e+25','18934588289520738304','9.72630743819978e+21','850630406814675200','850630406814675000','18934588289520700000','4.86796721145911E+21','6289849184966880000','324224919440318000','6.34916723436864e+21','7.03114033341499E+21','7.03114033341499e+21','4.57921803104368E+25', '3281462015442020000', '88015264382921100000','88015264382921129984','6.34916723436864E+21', '9.72630743819978E+21','7.08938994416638E+23'#beta testing
+                   )#! auto remove sites with less than 10 lines of data (app defaults)
+  UIDSremoveLIST=c(UIDSremove$UID,UIDSexist$UID, UIDSmanualOMIT)#could query intentionally removed duplicates from Office_Comments in AccessDB#'1044' = duplicate site that crew entered in both app versions, confirmed with crew and Jennifer Courtwright; 6227 and 2256 = duplicates with only default data populated
   importmaster=subset(importmaster,subset= (UID %in% UIDSremoveLIST)== FALSE)
   #!check for duplicate siteIDS
   SITEdup=subset(importmaster, subset=PARAMETER %in% c('SITE_ID') & SAMPLE_TYPE=='SampleEvent');SITEdup$SITE=SITEdup$RESULT;SITEdup=SITEdup[,!(names(SITEdup) %in% c('RESULT','IND','PARAMETER'))]
@@ -76,9 +82,12 @@
     print('WARNING! Duplicate site. Review outputs throughly before proceeding. If UIDs should be omitted, added to UIDSremove and re-subset importmaster.');print(SITEdup2);print(DATEdup2);View(DUPcomment);View(DUPverif);View(DUPtran);View(DUPwq);View(DUPfail)
   }
   
+  
+#! there are a lot of null UIDs...need to see what these are!!
+  
 ##convert transects for middle station thalweg (similar to thalweg dup in filemaker)##
 middletranlist=list(A="AB",B="BC",C="CD",D="DE",E="EF",F="FG",G="GH",H="HI",I="IJ",J="JK",K="KX")
-importmaster$TRANSECT=ifelse(substr(importmaster$PARAMETER,1,1)=="X",as.character(middletranlist[as.character(importmaster$TRANSECT) ]),importmaster$TRANSECT)
+importmaster$TRANSECT=ifelse(substr(importmaster$PARAMETER,1,1)=="X"|(substring(PARAMETER,1,3)=="COM" & SAMPLE_TYPE='Thalweg_Inter'),as.character(middletranlist[as.character(importmaster$TRANSECT) ]),importmaster$TRANSECT)
   
   
 ##START comments##
@@ -109,7 +118,8 @@ importmaster$TRANSECT=ifelse(substr(importmaster$PARAMETER,1,1)=="X",as.characte
   CommentMatch$Parameter_Xwalk=toupper(substr(CommentMatch$Parameter_Xwalk,nchar('COMMENT_')+1,nchar(CommentMatch$Parameter_Xwalk)))
   CommentMatch$PARAMETERMATCH=CommentMatch$PARAMETER;CommentMatch$PARAMETER=CommentMatch$Parameter_Xwalk
   tblCOMMENTmulti=unique(merge(tblCOMMENTSin,CommentMatch))#multiply the comment via tblMetadata::CommentMatch to multiple applicable parameters
-  commentfailCNT=nrow(subset(merge(tblCOMMENTSin,CommentMatch,all.x=T),subset=is.na(PARAMETERMATCH)))
+  commentfail=subset(merge(tblCOMMENTSin,CommentMatch,all.x=T),subset=is.na(PARAMETERMATCH))
+  commentfailCNT=nrow(commentfail)
   tblCOMMENTmulti=tblCOMMENTmulti[,!(names(tblCOMMENTmulti) %in% c('PARAMETER'))];tblCOMMENTmulti$PARAMETER=tblCOMMENTmulti$PARAMETERMATCH#drop parameter and reassign as parametermatch
   tblCOMMENTmulti$SAMPLE_TYPE=ifelse(tblCOMMENTmulti$SAMPLE_TYPE=='FailedSite','SampleEvent',tblCOMMENTmulti$SAMPLE_TYPE)#seems to overcome the matching for this particular sitation in a way that FMstr and previous matching can't, try to find a better solution.
   importmaster=merge(importmaster,tblCOMMENTmulti,all.x=T)#!does this match null transect/point properly?; by default: intersect(names(importmaster),names(tblCOMMENTmulti))
@@ -120,12 +130,13 @@ importmaster$TRANSECT=ifelse(substr(importmaster$PARAMETER,1,1)=="X",as.characte
   commentCNT=nrow(tblCOMMENTSin);
   if (commentCNT>commentfailCNT|commentCNT>commentnullCNT){sprintf('%s comments with unknown parameter match and %s comments with no result match (null result i.e. a comment was used to indicate missing data)',commentfailCNT,commentnullCNT)}
   ##END comments##
-  #!need to clean up duplicates - issue was with Xwalk, make sure not affecting main body of data (shouldn't bc matching sample_type+parameter)
+  #need to clean up duplicates - issue was with Xwalk, make sure not affecting main body of data (shouldn't bc matching sample_type+parameter)
+  #!fix thalweg_inter comments...having problems because of transect conversion? noticed 7/15/2014: commentfail11Jul14=commentfail --> 7/16/14 added to middletran conversion
   #! consider adding first point for comments that don't have a match due to a null parameter (i.e. comment explains why parameter was not collected)
   
   
   
-  #!Xwalk all parameters to non-FM names and assign proper Sample_Type (don't think it needs to be assigned earlier)
+  #Xwalk all parameters to non-FM names and assign proper Sample_Type (don't think it needs to be assigned earlier)
   XwalkFM=sqlQuery(wrsa1314, "select * from tblxwalk where Name_Xwalk='fm'")
   XwalkFM$SAMPLE_TYPE=substr(XwalkFM$SAMPLE_TYPE,1,nchar(XwalkFM$SAMPLE_TYPE)-1)
   XwalkFM$Parameter_Xwalk=toupper(XwalkFM$Parameter_Xwalk)
@@ -135,6 +146,8 @@ importmaster$TRANSECT=ifelse(substr(importmaster$PARAMETER,1,1)=="X",as.characte
   #!merge tblCOMMENTSmulti to tblCOMMENTSin and reduce to unique after ColCheck (below)
   tblCOMMENTst=unique(ColCheck(tblCOMMENTmulti,c('UID','FLAG','SAMPLE_TYPE')))
   #!merge tblCOMMENTSst to tblCOMMENTSin using UID and FLAG and reduce to unique after ColCheck (below)
+  tblCOMMENTSin$STold=tblCOMMENTSin$SAMPLE_TYPE;tblCOMMENTSin= tblCOMMENTSin[,!(names( tblCOMMENTSin) %in% c('SAMPLE_TYPE'))]
+  tblCOMMENTSin=unique(merge(tblCOMMENTSin, tblCOMMENTst,by=c('UID','FLAG'),all.x=T))
   tblCOMMENTSin=ColCheck(tblCOMMENTSin,setdiff(c(VAR,'COMMENT','TRANSECT',"PAGE"),c('RESULT','POINT',"PARAMETER")))#!should PAGE (EPA format) be formally switched to point here and in WRSAdb....always 1 in old EPA data
   ##match sample_type for main data
   importmaster$SAMPLE_TYPE_Xwalk=importmaster$SAMPLE_TYPE;importmaster=importmaster[,!(names(importmaster) %in% c('SAMPLE_TYPE'))]
@@ -145,7 +158,7 @@ importmaster$TRANSECT=ifelse(substr(importmaster$PARAMETER,1,1)=="X",as.characte
   unmatchedPARAM=unique(subset(importmaster,select=c('SAMPLE_TYPE','PARAMETER','SAMPLE_TYPE_Xwalk','Parameter_Xwalk'),subset=is.na(PARAMETER)))
   if (nrow(unmatchedPARAM)>0){print("WARNING! Unmatched parameters. Reconcile before proceeding with import."); print(unmatchedPARAM)}
   importmaster=ColCheck(importmaster,importcols)
-  #! there are a lot of null UIDs...need to see what these are!!
+  
   
   
   tblPOINTin=subset(importmaster,subset=is.na(POINT)==FALSE  )
@@ -242,6 +255,7 @@ importmaster$TRANSECT=ifelse(substr(importmaster$PARAMETER,1,1)=="X",as.characte
                      order by Station.UID")
   
   print("Warning! Number of Thalweg depths does not match the number expected from the widths/stations!")
+  #conflicts happen (i.e. multiple sub_5_7 values per site) when crews forget their reach widths on the first few transects, missing data check added in FM to warn them
   print(ThalwegCheck)  
   
   ##outlier check
