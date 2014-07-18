@@ -82,13 +82,52 @@
     print('WARNING! Duplicate site. Review outputs throughly before proceeding. If UIDs should be omitted, added to UIDSremove and re-subset importmaster.');print(SITEdup2);print(DATEdup2);View(DUPcomment);View(DUPverif);View(DUPtran);View(DUPwq);View(DUPfail)
   }
   
-  
-#! there are a lot of null UIDs...need to see what these are!!
+  #! there are a lot of null UIDs...need to see what these are!!
+  #importmaster=unique(importmaster)#! need to remove index before doing this, should index just be added later?; without index, could accidentally omit "0" point with identical size class;with index: perpetuates duplicates of Calibration comments (since the same record persists over the whole field season)
+
   
 ##convert transects for middle station thalweg (similar to thalweg dup in filemaker)##
 middletranlist=list(A="AB",B="BC",C="CD",D="DE",E="EF",F="FG",G="GH",H="HI",I="IJ",J="JK",K="KX")
-importmaster$TRANSECT=ifelse(substr(importmaster$PARAMETER,1,1)=="X"|(substring(PARAMETER,1,3)=="COM" & SAMPLE_TYPE='Thalweg_Inter'),as.character(middletranlist[as.character(importmaster$TRANSECT) ]),importmaster$TRANSECT)
+importmaster$TRANSECT=ifelse(substr(importmaster$PARAMETER,1,1)=="X"|importmaster$PARAMETER=="COMMENT_WIDTH"|importmaster$PARAMETER=="FLAG_WIDTH"|((substring(importmaster$PARAMETER,1,3)=="COM"|substring(importmaster$PARAMETER,1,3)=="FLA") & importmaster$SAMPLE_TYPE=='Thalweg_Inter'),as.character(middletranlist[as.character(importmaster$TRANSECT) ]),importmaster$TRANSECT)
   
+##revisions for early app deployments (#!continue to screen for these issues)
+#comment corrections
+importmaster$PARAMETER=ifelse( importmaster$UID=='9.90634514616468e+20' & importmaster$SAMPLE_TYPE=='Thalweg_Inter' &  importmaster$RESULT=='thick algae mat','COMMENT_PEBBLE2',importmaster$PARAMETER)
+importmaster$PARAMETER=ifelse( importmaster$UID=='9.90634514616468e+20' & importmaster$SAMPLE_TYPE=='Thalweg_Inter' &  importmaster$RESULT=='see misc. pictures','COMMENT_BANK2',importmaster$PARAMETER)
+importmaster$PARAMETER=ifelse( importmaster$UID=='9.90634514616468e+20' & importmaster$SAMPLE_TYPE=='Thalweg_Inter' & importmaster$PARAMETER=='FLAG_PEBBLE','FLAG_PEBBLE2',importmaster$PARAMETER)
+importmaster$PARAMETER=ifelse( importmaster$UID=='9.90634514616468e+20' & importmaster$SAMPLE_TYPE=='Thalweg_Inter' & importmaster$PARAMETER=='FLAG_BANK','FLAG_BANK2',importmaster$PARAMETER)
+importmaster$PARAMETER=ifelse( importmaster$UID=='228284433826712128' & importmaster$SAMPLE_TYPE=='Thalweg_Inter' &  substr(importmaster$PARAMETER,1,3)=='FLA','FLAG_PEBBLE2',importmaster$PARAMETER)
+#uncopied temporary comments
+uu=unique(subset(importmaster,select=UID,subset=substr(PARAMETER,1,4)=="LAT_"));#unique(subset(importmaster,select=UID,subset=substr(PARAMETER,1,5)=="WYPT_"))
+cc=c('LAT_','LON_','WYPT','ELEV')
+for (u in 1:nrow(uu)){
+  latcnt=nrow(subset(importmaster,select=PARAMETER,subset=UID==uu$UID[u] & substr(PARAMETER,1,4)=="LAT_" & substr(PARAMETER,nchar(PARAMETER)-3,nchar(PARAMETER))!="TEMP"))
+  tempcnt=nrow(subset(importmaster,select=PARAMETER,subset=UID==uu$UID[u] & substr(PARAMETER,1,4)=="LAT_" & substr(PARAMETER,nchar(PARAMETER)-3,nchar(PARAMETER))=="TEMP"))
+  if(latcnt<tempcnt){
+    for (c in 1:length(cc)) {
+    tempsub=subset(importmaster,subset=UID==uu$UID[u] & substr(PARAMETER,1,4)==cc[c] & substr(PARAMETER,nchar(PARAMETER)-3,nchar(PARAMETER))=="TEMP")
+    tempsub$PARAMETER=gsub('_TEMP','',tempsub$PARAMETER)
+    importmaster=rbind(importmaster,tempsub)
+    }
+  }
+}#! need to reconcile duplicates
+#'0' station pebbles (assumes multiple parameters are roughly in the same order...only matters if trying to match rows)
+uu=unique(subset(importmaster,select=UID,subset=substr(PARAMETER,1,5)=="XSIZE" & POINT==0))
+cc=c('XSIZE_CLS','XLOC','COMMENT_PEBBLE2','FLAG_PEBBLE2')
+for (u in 1:nrow(uu)){
+  for (c in 1:length(cc)) {
+  tempsub=subset(importmaster,UID==uu$UID[u] & PARAMETER==cc[c] & (POINT==0|is.na(POINT)))
+  trans=unique(tempsub$TRANSECT)
+  if(nrow(tempsub)>0){
+  for (t in 1:length(trans)){
+  tempsub1=subset(tempsub,TRANSECT==trans[t])
+  minrow=min(as.integer(rownames(tempsub1)))#as.integer(rownames(cars[34:50,]))
+  importmaster$POINT=ifelse(importmaster$UID==uu$UID[u] & importmaster$PARAMETER==cc[c] & importmaster$TRANSECT==trans[t] & (importmaster$POINT==0|is.na(importmaster$POINT)),paste("0", (as.integer(rownames(importmaster))-minrow),sep='.'),importmaster$POINT)
+}}}}
+  
+
+#importmaster14Jul14clean=importmaster
+ 
   
 ##START comments##
   importmaster$POINT=ifelse(importmaster$SAMPLE_TYPE %in% c('TRACK_Transect','REACH'),importmaster$TRANSECT,importmaster$POINT)
@@ -96,7 +135,8 @@ importmaster$TRANSECT=ifelse(substr(importmaster$PARAMETER,1,1)=="X"|(substring(
   importmaster$TRANSECT=ifelse(importmaster$TRANSECT %in% c('NULL','NA'),NA,importmaster$TRANSECT)
   importmaster$POINT=ifelse(importmaster$POINT %in% c('NULL','NA'),NA,importmaster$POINT)
   importmaster$PARAMETER=ifelse(importmaster$PARAMETER =='CAL_REASON','COMMENT_REASON',importmaster$PARAMETER);importmaster$PARAMETER=ifelse(importmaster$PARAMETER =='COMMENTS','COMMENT_FAIL',importmaster$PARAMETER)#!temporary, will be corrected in app by July 2014
-
+  #!need to reconcile assign flags to YSI readings (FIELDMEAS) if calibration failed (like probes, probably do this processing at the end of the season)
+  
   #separate and match flags and comments (abbreviate and number flags (Letter:FieldSuffix:Transect - ex: U_Wid_B), port comments to separate table with flag, match flag to rows based on protocol (xwalk))
   tblCOMMENTStmp=subset(importmaster,subset= substr(PARAMETER,1,nchar('COMMENT'))=='COMMENT');tblCOMMENTStmp$COMMENT=tblCOMMENTStmp$RESULT;tblCOMMENTStmp$PARAMETER=substr(tblCOMMENTStmp$PARAMETER,nchar('COMMENT_')+1,nchar(tblCOMMENTStmp$PARAMETER))
   tblFLAGStmp=subset(importmaster,subset= substr(PARAMETER,1,nchar('FLAG'))=='FLAG');tblFLAGStmp$PARAMETER=substr(tblFLAGStmp$PARAMETER,nchar('FLAG_')+1,nchar(tblFLAGStmp$PARAMETER))
@@ -105,7 +145,7 @@ importmaster$TRANSECT=ifelse(substr(importmaster$PARAMETER,1,1)=="X"|(substring(
                            tblFLAGStmp$PARAMETER,
                            ifelse(is.na(tblFLAGStmp$TRANSECT),'',sprintf('_%s',tblFLAGStmp$TRANSECT)),
                            ifelse(is.na(tblFLAGStmp$POINT),'',sprintf('_%s',tblFLAGStmp$POINT)))
-  flagCNT=nrow(tblFLAGStmp);flagdupCNT=nrow(unique(cbind(tblFLAGStmp$FLAG,tblFLAGStmp$UID)))
+  flagCNT=nrow(tblFLAGStmp);flagdupCNT=nrow(unique(cbind(tblFLAGStmp$FLAG,tblFLAGStmp$UID,tblFLAGStmp$TRANSECT)))
   if(flagCNT!=flagdupCNT){sprintf('WARNING! %s identical flags',flagCNT-flagdupCNT)}
   tblCOMMENTStmp=tblCOMMENTStmp[,!(names(tblCOMMENTStmp) %in% c('FLAG','RESULT','IND'))];tblFLAGStmp=tblFLAGStmp[,!(names(tblFLAGStmp) %in% c('RESULT','IND'))];
   tblCOMMENTSin=merge(tblCOMMENTStmp,tblFLAGStmp,all=T)#in theory, shouldn't get any comments without flags and shouldn't get many flags without comments
@@ -116,7 +156,7 @@ importmaster$TRANSECT=ifelse(substr(importmaster$PARAMETER,1,1)=="X"|(substring(
   tblCOMMENTSin=tblCOMMENTSin[,!(names(tblCOMMENTSin) %in% c('IND'))];importmaster=importmaster[,!(names(importmaster) %in% c('FLAG'))]
   CommentMatch=sqlQuery(wrsa1314, "select * from tblxwalk where Name_Xwalk='fmstr'")
   CommentMatch$Parameter_Xwalk=toupper(substr(CommentMatch$Parameter_Xwalk,nchar('COMMENT_')+1,nchar(CommentMatch$Parameter_Xwalk)))
-  CommentMatch$PARAMETERMATCH=CommentMatch$PARAMETER;CommentMatch$PARAMETER=CommentMatch$Parameter_Xwalk
+  CommentMatch$PARAMETERMATCH=toupper(CommentMatch$PARAMETER);CommentMatch$PARAMETER=CommentMatch$Parameter_Xwalk
   tblCOMMENTmulti=unique(merge(tblCOMMENTSin,CommentMatch))#multiply the comment via tblMetadata::CommentMatch to multiple applicable parameters
   commentfail=subset(merge(tblCOMMENTSin,CommentMatch,all.x=T),subset=is.na(PARAMETERMATCH))
   commentfailCNT=nrow(commentfail)
@@ -134,7 +174,7 @@ importmaster$TRANSECT=ifelse(substr(importmaster$PARAMETER,1,1)=="X"|(substring(
   #!fix thalweg_inter comments...having problems because of transect conversion? noticed 7/15/2014: commentfail11Jul14=commentfail --> 7/16/14 added to middletran conversion
   #! consider adding first point for comments that don't have a match due to a null parameter (i.e. comment explains why parameter was not collected)
   
-  
+  #tblCOMMENTSin14Jul14=tblCOMMENTSin
   
   #Xwalk all parameters to non-FM names and assign proper Sample_Type (don't think it needs to be assigned earlier)
   XwalkFM=sqlQuery(wrsa1314, "select * from tblxwalk where Name_Xwalk='fm'")
@@ -143,7 +183,6 @@ importmaster$TRANSECT=ifelse(substr(importmaster$PARAMETER,1,1)=="X"|(substring(
   #match sample_type for comments (not done earlier because original parameter names need to be retained for comment matching)
   tblCOMMENTmulti$Parameter_Xwalk=tblCOMMENTmulti$PARAMETER;tblCOMMENTmulti=tblCOMMENTmulti[,!(names(tblCOMMENTmulti) %in% c('PARAMETER','SAMPLE_TYPE'))]#use tblCOMMENTmulti to bring in the parameter match to avoid duplicates#tblCOMMENTSin$Table_Xwalk=tblCOMMENTSin$SAMPLE_TYPE;tblCOMMENTSin=tblCOMMENTSin[,!(names(tblCOMMENTSin) %in% c('SAMPLE_TYPE'))]
   tblCOMMENTmulti=merge(tblCOMMENTmulti,XwalkFM,by=c('Parameter_Xwalk'),all.x=T)#tblCOMMENTSin=merge(tblCOMMENTSin,unique(subset(XwalkFM,select=c(SAMPLE_TYPE,Table_Xwalk))),by=c('Table_Xwalk'),all.x=T)
-  #!merge tblCOMMENTSmulti to tblCOMMENTSin and reduce to unique after ColCheck (below)
   tblCOMMENTst=unique(ColCheck(tblCOMMENTmulti,c('UID','FLAG','SAMPLE_TYPE')))
   #!merge tblCOMMENTSst to tblCOMMENTSin using UID and FLAG and reduce to unique after ColCheck (below)
   tblCOMMENTSin$STold=tblCOMMENTSin$SAMPLE_TYPE;tblCOMMENTSin= tblCOMMENTSin[,!(names( tblCOMMENTSin) %in% c('SAMPLE_TYPE'))]
@@ -163,7 +202,7 @@ importmaster$TRANSECT=ifelse(substr(importmaster$PARAMETER,1,1)=="X"|(substring(
   
   tblPOINTin=subset(importmaster,subset=is.na(POINT)==FALSE  )
   tblTRANSECTin=subset(importmaster,is.na(POINT)==TRUE & is.na(TRANSECT)==FALSE )
-  tblFAILUREin=subset(importmaster,SAMPLE_TYPE=='Failure');#unique(tblFAILUREin$PARAMETER)
+  tblFAILUREin=subset(importmaster,SAMPLE_TYPE=='Failure'|PARAMETER=='Proximity');#unique(tblFAILUREin$PARAMETER)
   tblQAin=subset(importmaster,SAMPLE_TYPE=='Tracking')#unique(tblQAin$PARAMETER)
   tblVERIFICATIONin=subset(importmaster,SAMPLE_TYPE=='VERIF')
   tblREACHin=subset(importmaster,is.na(POINT)==TRUE & is.na(TRANSECT)==TRUE & SAMPLE_TYPE!='Failure' & SAMPLE_TYPE!='Tracking' & SAMPLE_TYPE!='VERIF') #any remaining with not in  tblVERIFICATIONin and parameter <> comment/flag
@@ -188,7 +227,7 @@ importmaster$TRANSECT=ifelse(substr(importmaster$PARAMETER,1,1)=="X"|(substring(
     failedAppend=rbind(failedAppend,failedAppendtmp)
   }  
   importmaster=rbind(importmaster,failedAppend)
-  Protocols=unique(subset(importmaster,select=RESULT,subset=PARAMETER=='Protocol'))
+  Protocols=unique(subset(importmaster,select=RESULT,subset=PARAMETER=='PROTOCOL'))
   tblMetadataProtocoltmp=sqlQuery(wrsa1314,sprintf("select * from tblMetadataProtocol"))
   emptyFulldataset=tblMetadataProtocoltmp[1,]
   emptyFulldataset$TRANSECT=NA;    emptyFulldataset$UID=NA;emptyFulldataset=emptyFulldataset[0,]
@@ -293,8 +332,11 @@ importmaster$TRANSECT=ifelse(substr(importmaster$PARAMETER,1,1)=="X"|(substring(
                    eventtmp=subset(importmaster,is.na(UID)==FALSE & PARAMETER %in% XwalkACCst$PARAMETER )
                    eventtmp=merge(eventtmp,XwalkACCst,by=c('PARAMETER','SAMPLE_TYPE'),all.x=T);eventtmp=eventtmp[,!(names(eventtmp) %in% c('PARAMETER'))];eventtmp$PARAMETER=eventtmp$Parameter_Xwalk;eventtmp=ColCheck(eventtmp,importcols)
                    eventtmp2=rbind(eventtmp,rbind(sampletmp,commenttmp4))
+                   eventtmp2=unique(eventtmp2[,!(names(eventtmp2) %in% c('IND'))])#!temporary fix for duplicate lat/longs from early FM versions
+                   eventtmp2=subset(eventtmp2,RESULT!='38.298293' & RESULT !='-111.952851' & RESULT !='41.212761' & RESULT !='-119.788766')#!temporary fix for duplicate lat/longs from early FM versions - removing duplicate for specific site: UID=='3822530414932466688' & 535384124962793152
                    pvtEVENT= cast(eventtmp2, 'UID ~ PARAMETER',value='RESULT') 
                    pvtEVENT=pvtEVENT[rowSums(is.na(pvtEVENT)) != ncol(pvtEVENT)-3,]#remove Nulls,
+                   pvtEVENT=subset(pvtEVENT,is.na(SiteCode)==F)
                    write.xlsx(pvtEVENT,'AccessImport//pvtEVENT.xlsx')
                    write.xlsx(pvtFAIL,'AccessImport//pvtFAIL.xlsx')
                    write.xlsx(pvtQArch,'AccessImport//pvtQArch.xlsx')#QA tables will likely be revised to have more readable text in memo fields and to included 1st vs. last check of the data
