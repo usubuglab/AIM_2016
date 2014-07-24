@@ -48,6 +48,8 @@
     }
   }
   
+  
+  importmasterTEMP=importmaster#temporary copy saved after import
   #importmaster2=importmaster #save copy of first import test that successfully went through the  loop
   #importmaster14Jul14=importmaster;importloopr14Jul14=list(t,tables,g,tblgroups); names(importloopr14Jul14)=c('t','tables','g','tblgroups');# running into problems on photo  table with more recent exports
   #!screen null and duplicate values that are warned about
@@ -56,15 +58,16 @@
   #! export failure and QA (pivoted) and samplelist to AccessDB
   
   
-  #! exclude UIDs used by Sarah in testing and ones already imported, as well as monitored duplicates
-  UIDSremove=unique(subset(importmaster,select=UID,subset= (PARAMETER=='DB' & RESULT =='WRSA_AIM')|(PARAMETER=='DEVICE' & RESULT =='ProAdvanced 13.0v3/C:/Users/Sarah/Documents/')))
+  
+
+  UIDSremove=unique(subset(importmaster,select=UID,subset= (PARAMETER=='DB' & RESULT =='WRSA_AIM')|(PARAMETER=='DEVICE' & RESULT =='ProAdvanced 13.0v3/C:/Users/Sarah/Documents/')))#exclude UIDs used by Sarah in testing and ones already imported, as well as monitored duplicates
   UIDSexist=sqlQuery(wrsa1314, "select distinct UID from tblVerification where parameter='SITE_ID'")
-  UIDSmanualOMIT=c('8.58443864583729e+22','9.79114249176033e+20','7.467934950944e+19','7.1001238480827e+19','7.41736074664104e+22','7.42868294554285e+24','10445148556604496','6.22708454798246e+20','2.25618143476838e+23','8.77503374780117e+20','4.49266934743765e+21','5.64896083614649e+21',
+  UIDSmanualOMIT=c('8.58443864583729e+22','585759337742704256','324224919440318080','1.00590424753275e+20','3.12445349814274e+20','30317561401913393152','85565470919978896','9.79114249176033e+20','2.42573446594801e+21','7.467934950944e+19','7.1001238480827e+19','7.41736074664104e+22','7.42868294554285e+24','10445148556604496','6.22708454798246e+20','2.25618143476838e+23','8.77503374780117e+20','4.49266934743765e+21','5.64896083614649e+21',
                    '15371499864863700', '6289849184966886400','4.86796721145911e+21','36066246794627100','36066246794627104','3281462015442028544','15371499864863704','7.08938994416638e+23','4.57921803104368e+25','18934588289520738304','9.72630743819978e+21','850630406814675200','850630406814675000','18934588289520700000','4.86796721145911E+21','6289849184966880000','324224919440318000','6.34916723436864e+21','7.03114033341499E+21','7.03114033341499e+21','4.57921803104368E+25', '3281462015442020000', '88015264382921100000','88015264382921129984','6.34916723436864E+21', '9.72630743819978E+21','7.08938994416638E+23'#beta testing
                    )#! auto remove sites with less than 10 lines of data (app defaults)
   UIDSremoveLIST=c(UIDSremove$UID,UIDSexist$UID, UIDSmanualOMIT)#could query intentionally removed duplicates from Office_Comments in AccessDB#'1044' = duplicate site that crew entered in both app versions, confirmed with crew and Jennifer Courtwright; 6227 and 2256 = duplicates with only default data populated
   importmaster=subset(importmaster,subset= (UID %in% UIDSremoveLIST)== FALSE)
-  #!check for duplicate siteIDS
+  #check for duplicate siteIDS
   SITEdup=subset(importmaster, subset=PARAMETER %in% c('SITE_ID') & SAMPLE_TYPE=='SampleEvent');SITEdup$SITE=SITEdup$RESULT;SITEdup=SITEdup[,!(names(SITEdup) %in% c('RESULT','IND','PARAMETER'))]
   DATEdup=subset(importmaster, subset=PARAMETER %in% c('DATE_COL') & SAMPLE_TYPE=='SampleEvent');DATEdup$DATE=DATEdup$RESULT;DATEdup=DATEdup[,!(names(DATEdup) %in% c('RESULT','IND','PARAMETER'))]
   SITEdup=merge(SITEdup,DATEdup)
@@ -81,6 +84,8 @@
     DUPcomment=subset(importmaster, subset=UID %in% DUPuid$UID & substr(PARAMETER,1,nchar('COMMENT'))=='COMMENT')
     print('WARNING! Duplicate site. Review outputs throughly before proceeding. If UIDs should be omitted, added to UIDSremove and re-subset importmaster.');print(SITEdup2);print(DATEdup2);View(DUPcomment);View(DUPverif);View(DUPtran);View(DUPwq);View(DUPfail)
   }
+  statusAC=subset(importmaster,toupper(PARAMETER)=='STATUS' & RESULT=='AC')#! check for AC status, but be careful of ones that are duplicates (skip to tblQAstatcnt of Access import to investigate)
+  if(nrow(statusAC)>0){print('WARNING! Possible blank sites!'); print (statusAC)}
   
   #! there are a lot of null UIDs...need to see what these are!!
   #importmaster=unique(importmaster)#! need to remove index before doing this, should index just be added later?; without index, could accidentally omit "0" point with identical size class;with index: perpetuates duplicates of Calibration comments (since the same record persists over the whole field season)
@@ -101,16 +106,19 @@ importmaster$PARAMETER=ifelse( importmaster$UID=='228284433826712128' & importma
 uu=unique(subset(importmaster,select=UID,subset=substr(PARAMETER,1,4)=="LAT_"));#unique(subset(importmaster,select=UID,subset=substr(PARAMETER,1,5)=="WYPT_"))
 cc=c('LAT_','LON_','WYPT','ELEV')
 for (u in 1:nrow(uu)){
-  latcnt=nrow(subset(importmaster,select=PARAMETER,subset=UID==uu$UID[u] & substr(PARAMETER,1,4)=="LAT_" & substr(PARAMETER,nchar(PARAMETER)-3,nchar(PARAMETER))!="TEMP"))
-  tempcnt=nrow(subset(importmaster,select=PARAMETER,subset=UID==uu$UID[u] & substr(PARAMETER,1,4)=="LAT_" & substr(PARAMETER,nchar(PARAMETER)-3,nchar(PARAMETER))=="TEMP"))
-  if(latcnt<tempcnt){
-    for (c in 1:length(cc)) {
-    tempsub=subset(importmaster,subset=UID==uu$UID[u] & substr(PARAMETER,1,4)==cc[c] & substr(PARAMETER,nchar(PARAMETER)-3,nchar(PARAMETER))=="TEMP")
+  mainsub=subset(importmaster,subset=UID==uu$UID[u] & substr(PARAMETER,1,4) %in% cc & substr(PARAMETER,nchar(PARAMETER)-3,nchar(PARAMETER))!="TEMP" & substr(PARAMETER,nchar(PARAMETER)-4,nchar(PARAMETER))!="UNITS")
+  maincnt=nrow(mainsub)
+  tempsub=subset(importmaster,subset=UID==uu$UID[u] & substr(PARAMETER,1,4) %in% cc & substr(PARAMETER,nchar(PARAMETER)-3,nchar(PARAMETER))=="TEMP")
+  tempcnt=nrow(tempsub)
+  if(maincnt<tempcnt){
+    #for (c in 1:length(cc)) {
+    #tempsub=subset(importmaster,subset=UID==uu$UID[u] & substr(PARAMETER,1,4) %in% cc & substr(PARAMETER,nchar(PARAMETER)-3,nchar(PARAMETER))=="TEMP")
     tempsub$PARAMETER=gsub('_TEMP','',tempsub$PARAMETER)
+    tempsub=subset(tempsub,(PARAMETER %in% mainsub$PARAMETER)==F)
     importmaster=rbind(importmaster,tempsub)
-    }
+    #}
   }
-}#! need to reconcile duplicates
+}
 #'0' station pebbles (assumes multiple parameters are roughly in the same order...only matters if trying to match rows)
 uu=unique(subset(importmaster,select=UID,subset=substr(PARAMETER,1,5)=="XSIZE" & POINT==0))
 cc=c('XSIZE_CLS','XLOC','COMMENT_PEBBLE2','FLAG_PEBBLE2')
@@ -175,6 +183,7 @@ for (u in 1:nrow(uu)){
   #! consider adding first point for comments that don't have a match due to a null parameter (i.e. comment explains why parameter was not collected)
   
   #tblCOMMENTSin14Jul14=tblCOMMENTSin
+  #importmaster14Jul14nocomm=importmaster
   
   #Xwalk all parameters to non-FM names and assign proper Sample_Type (don't think it needs to be assigned earlier)
   XwalkFM=sqlQuery(wrsa1314, "select * from tblxwalk where Name_Xwalk='fm'")
@@ -198,12 +207,12 @@ for (u in 1:nrow(uu)){
   if (nrow(unmatchedPARAM)>0){print("WARNING! Unmatched parameters. Reconcile before proceeding with import."); print(unmatchedPARAM)}
   importmaster=ColCheck(importmaster,importcols)
   
-  
+  #importmaster14Jul14xwalk=importmaster
   
   tblPOINTin=subset(importmaster,subset=is.na(POINT)==FALSE  )
   tblTRANSECTin=subset(importmaster,is.na(POINT)==TRUE & is.na(TRANSECT)==FALSE )
   tblFAILUREin=subset(importmaster,SAMPLE_TYPE=='Failure'|PARAMETER=='Proximity');#unique(tblFAILUREin$PARAMETER)
-  tblQAin=subset(importmaster,SAMPLE_TYPE=='Tracking')#unique(tblQAin$PARAMETER)
+  tblQAin=subset(importmaster,SAMPLE_TYPE=='Tracking' & toupper(PARAMETER)!='OMIT')#unique(tblQAin$PARAMETER)
   tblVERIFICATIONin=subset(importmaster,SAMPLE_TYPE=='VERIF')
   tblREACHin=subset(importmaster,is.na(POINT)==TRUE & is.na(TRANSECT)==TRUE & SAMPLE_TYPE!='Failure' & SAMPLE_TYPE!='Tracking' & SAMPLE_TYPE!='VERIF') #any remaining with not in  tblVERIFICATIONin and parameter <> comment/flag
   masterCNT=nrow(importmaster);pointCNT=nrow(tblPOINTin);transectCNT=nrow(tblTRANSECTin);failCNT=nrow(tblFAILUREin);qaCNT=nrow(tblQAin);reachCNT=nrow(tblREACHin);verifCNT=nrow(tblVERIFICATIONin);
@@ -214,9 +223,12 @@ for (u in 1:nrow(uu)){
   sprintf('wARNING! %s rows unaccounted for after table partitioning',unacctCNT)
   
   
+  ##! sync metadata between FM and SQL -> odbcConnect() # FM set up to share, but need to setup DSN
+  
+  
   ##missing data check
   #simpler than the query on the backend which has to union tables
-  failedUID = subset(importmaster,select=UID,subset=PARAMETER=='VALXSITE'& RESULT %in% c('DRYVISIT','NOACCESS','INACCPERM','OTHER_NST'))
+  failedUID = subset(importmaster,select=UID,subset=PARAMETER=='VALXSITE'& RESULT %in% c('DRYVISIT','NOACCESS','DRYNOVISIT','INACCPERM','NOTWADE','OTHER_NST','OTHER_NOACCESS','INACCTEMP'))
   importmaster$RESULT=ifelse(importmaster$PARAMETER=='Protocol'& importmaster$RESULT=='WRSA14'  & importmaster$UID %in% failedUID$UID ,
                              'Failed',importmaster$RESULT)#FM has been corrected for this in version July 1 2014
   missingProtocol=setdiff(failedUID$UID,subset(importmaster,select=UID,subset=PARAMETER=='Protocol')$UID)
@@ -227,7 +239,7 @@ for (u in 1:nrow(uu)){
     failedAppend=rbind(failedAppend,failedAppendtmp)
   }  
   importmaster=rbind(importmaster,failedAppend)
-  Protocols=unique(subset(importmaster,select=RESULT,subset=PARAMETER=='PROTOCOL'))
+  Protocols=unique(subset(importmaster,select=RESULT,subset=toupper(PARAMETER)=='PROTOCOL'))
   tblMetadataProtocoltmp=sqlQuery(wrsa1314,sprintf("select * from tblMetadataProtocol"))
   emptyFulldataset=tblMetadataProtocoltmp[1,]
   emptyFulldataset$TRANSECT=NA;    emptyFulldataset$UID=NA;emptyFulldataset=emptyFulldataset[0,]
@@ -257,7 +269,8 @@ for (u in 1:nrow(uu)){
       } else {reptmp3=reptmp}
       emptyFulldatasetTmp=rbind(emptyFulldatasetTmp,reptmp3)
     }
-    UIDsADD=unique(subset(importmaster,select=UID,subset=RESULT==unlist(Protocols$RESULT[p])))
+    #testingUID=c('1.6444949915002e+19','34978445900951396','5.22341843044643e+20','6.05725564046426e+21','6.57547054447886e+26','745880431965292672','9.33867144639421e+23','96984648251121344','1.28761064109694e+21','333543271296521','4.72713814328789e+22','1708915464110931968','2.54415932043491e+20','3546443591531088896','8.6938972431891e+19','6.88074369254182e+25','535384124962793152','573854465591678','3795875273449409024','8.0204662147438e+20','26528638400395079680')
+    UIDsADD=unique(subset(importmaster,select=UID,subset=RESULT==unlist(Protocols$RESULT[p]) )) #& UID %in% testingUID))
     UIDtmp=emptyFulldatasetTmp
     for (u in 1:nrow(UIDsADD)){  
       UIDtmp$UID=UIDsADD$UID[u]
@@ -265,32 +278,49 @@ for (u in 1:nrow(uu)){
     }                         
   }
  
-  MissingCounts=sqldf("select * from 
-                      (select *, case when Transect is null then 0 else Transect end as TRE from emptyFulldataset ) as ExpectedCounts
+#emptytest=emptyFulldataset;empty14Jul14=emptyFulldataset
+  
+MissingCounts=sqldf("select *, case when MissingCount is null then Points else Points-MissingCount end MissingCNT from 
+                      (select *, case when Transect is null then 'O' else Transect end as TRE from emptyFulldataset where Points>0) as ExpectedCounts
                       outer left join 
-                      (select Sample_Type STO, Parameter PO, [UID] as UIDo, case when Transect is null then 0 else Transect end as TR, COUNT(Result) MissingCount from importmaster
+                      (select Sample_Type STO, Parameter PO, [UID] as UIDo, case when Transect is null then 'O' else Transect end as TR, COUNT(Result) MissingCount from importmaster
                       group by Sample_Type, Parameter, [UID], Transect) as ObservedCounts
                       on ExpectedCounts.Sample_Type=ObservedCounts.STO and ExpectedCounts.Parameter=ObservedCounts.PO and ExpectedCounts.TRE=ObservedCounts.TR and ExpectedCounts.UID=ObservedCounts.UIDo
                       where MissingCount < Points or MissingCount is null")
   #!adapt SQL statement to work with backend, but still utilize emptyfulldataset
   
-  MissingTotals=sqldf('select UID,count(*) from MissingCounts group by UID')
+MissingTotals=sqldf('select UID,count(*) ParamCNT from MissingCounts group by UID')
+MissingTotals2=sqldf("select UID,Sample_Type,TRE as Transect,MC ObservedCNT, PT ExpectedCNT, cast(ifnull(round(MC/PT,2) ,0) as float) MissingPCT from
+                      (select UID, Sample_Type,count(*) PTC, cast(sum(Points) as float) PT, case when Transect is null then 'O' else Transect end as TRE
+                        from emptyFulldataset group by UID, SAMPLE_TYPE, Transect) as ExpectedCounts
+                       outer left join 
+                       (select UID as UIDo, Sample_Type STO,case when Transect is null then 'O' else Transect end as TR, count(*) MCC, cast(sum(MissingCNT) as float) MC 
+                        from MissingCounts group by UID, SAMPLE_TYPE, Transect) as ObservedCounts
+                       on ExpectedCounts.UID=ObservedCounts.UIDo and ExpectedCounts.Sample_Type=ObservedCounts.STO  and ExpectedCounts.TRE=ObservedCounts.TR 
+                       ")
+MissingTotals3=sqldf("select UID, Sample_Type, 'O' Transect,sum(ObservedCNT) ObservedCNT, sum(ExpectedCNT) ExpectedCNT , cast(ifnull(round(ObservedCNT/ExpectedCNT,2) ,0) as float) MissingPCT from MissingTotals2 group by UID, Sample_Type")
+MissingTotals5=sqldf("select UID, 'REACH' Sample_Type,  'O' Transect, ParamCNT,ObservedCNT,  ExpectedCNT, MissingPCT  from MissingTotals 
+                       join 
+                       (select UID as UIDm,  sum(ObservedCNT) ObservedCNT, sum(ExpectedCNT) ExpectedCNT,sum(ObservedCNT)/sum(ExpectedCNT) MissingPCT from MissingTotals2 group by UID) as Totals
+                        on MissingTotals.UID=Totals.UIDm
+                       ");MissingTotals6=MissingTotals5[,!(names(MissingTotals5) %in% c('ParamCNT'))];MissingTotals7=MissingTotals5;MissingTotals7$MissingPCT=MissingTotals7$ParamCNT;MissingTotals7$Sample_Type='Param';MissingTotals7=MissingTotals7[,!(names(MissingTotals7) %in% c('ParamCNT'))]
+MissingTotals4=unique(rbind(MissingTotals2,MissingTotals3,MissingTotals6,MissingTotals7)  );MissingTotals4$RESULT=MissingTotals4$MissingPCT;MissingTotals4$PARAMETER=paste("PCT_",MissingTotals4$Sample_Type,"_QA",sep='');MissingTotals4$SAMPLE_TYPE=MissingTotals4$Sample_Type;MissingTotals4$TRANSECT=ifelse(MissingTotals4$Transect=='O',NA,MissingTotals4$Transect);MissingTotals4=ColCheck(MissingTotals4,importcols)
   
   print("Warning! The following sites failed missing data checks for the specified number of parameters.")
-  print(MissingTotals)    
+  print(MissingTotals5)    
   #checking individual sites#View(subset(MissingCounts,subset=UID==''))#View(subset(importmaster,subset=UID==''))# View(subset(tblCOMMENTSin,subset=UID==''))
   
   
   #custom missing data check for thalweg since flexible
   ThalwegCheck=sqldf("select Station.UID, StationDUPLICATES,StationCNT,DepthCNT from 
-                     (select distinct UID, (result*2)-1 as StationCNT from importmaster where parameter='SUB_5_7') as station
+                     (select distinct UID, cast((result*2)-1 as numeric) as StationCNT from importmaster where parameter='SUB_5_7') as station
                      join
                      (select UID,count(result) as StationDUPLICATES from (select distinct UID, result from importmaster where parameter='SUB_5_7') as stcnt group by UID) as stationcount
                      on station.uid=stationcount.uid
                      join 
-                     (select UID, max(point)*1 as DepthCNT from importmaster where parameter='DEPTH' group by UID) as depth
+                     (select UID, max(cast(point as numeric)) as DepthCNT from importmaster where parameter='DEPTH' group by UID) as depth
                      on station.uid=depth.uid
-                     where StationCNT <> DepthCNT or stationDUPLICATES>1
+                     where StationCNT > DepthCNT or stationDUPLICATES>1
                      order by Station.UID")
   
   print("Warning! Number of Thalweg depths does not match the number expected from the widths/stations!")
@@ -298,6 +328,8 @@ for (u in 1:nrow(uu)){
   print(ThalwegCheck)  
   
   ##outlier check
+  
+  
   
   
   ##if pass (missing, accounted, outlier), migrate to WRSAdb and access db
@@ -308,6 +340,12 @@ for (u in 1:nrow(uu)){
                    tblFAILUREcomments=subset(tblCOMMENTSin,FLAG=='FAIL');tblFAILUREcomments$SAMPLE_TYPE='Failure';tblFAILUREcomments=unique(tblFAILUREcomments);tblFAILUREcomments$PARAMETER='COMMENTS';tblFAILUREcomments$RESULT=tblFAILUREcomments$COMMENT;tblFAILUREcomments=ColCheck(tblFAILUREcomments,colnames(tblFAILUREin))
                    pvtFAIL= cast(rbind(tblFAILUREin,tblFAILUREcomments), 'UID ~ PARAMETER',value='RESULT') #! use options to decode VALXSITE subcategories, etc  
                    pvtFAIL=pvtFAIL[rowSums(is.na(pvtFAIL)) != ncol(pvtFAIL)-2,]#remove Nulls,
+                   tblQAin=rbind(tblQAin,MissingTotals4)#add percent missing
+                   tblQAin=unique(tblQAin[,!(names(tblQAin) %in% c('IND'))])
+                   tblQAstat=subset(tblQAin,PARAMETER=='Status')
+                   tblQAstatcnt=cast(tblQAstat,'UID + TRANSECT + POINT ~ PARAMETER',value='RESULT' ) 
+                   tblQAstatcnt=subset(tblQAstatcnt,select=UID,Status==2)
+                   tblQAin=subset(tblQAin,(PARAMETER=='Status' & RESULT=='AC' & UID %in% tblQAstatcnt$UID)==FALSE)#eliminate duplicate status - all seem to have an extra "Active" status
                    pvtQA= cast(subset(tblQAin,is.na(UID)==FALSE), 'UID + TRANSECT + POINT ~ PARAMETER',value='RESULT' ) 
                    pvtQAtran=subset(pvtQA,is.na(POINT)==FALSE)
                    pvtQArch=subset(pvtQA,is.na(POINT)) 
@@ -316,9 +354,10 @@ for (u in 1:nrow(uu)){
                      probsurv14=odbcConnect("ProbSurveyDB")#have to run on remote desktop (gisUser3) or machine which has 64bit R and 64bit Access
                      #alternate more generic path based method to test:  channel <- odbcConnectAccess("C:/Documents/Name_Of_My_Access_Database")
                      #sample numbering
+                     #!this needs to account for two main projects: norcal vs. WRSA+intensifications
                      maxSamp=sqlQuery(probsurv14,'select max(SampleNumber) from SampleTracking where Year(SampleDate)=Year(Now())')
                    } else {print('Run on Remote Desktop and set maxSamp here');maxSamp=NA}
-                   maxSamp=as.numeric(ifelse(is.na(maxSamp),1,1+maxSamp))
+                   maxSamp=as.numeric(ifelse(exists("maxSamp")==F,1,1+maxSamp))
                    sampletmp=subset(importmaster,PARAMETER=='SAMPLE_ID' & SAMPLE_TYPE=='BERW')
                    sampletmp$PARAMETER='SampleNumber'
                    for (s in 1:nrow(sampletmp)){sampletmp$RESULT[s]=maxSamp;maxSamp=maxSamp+1}
@@ -332,8 +371,8 @@ for (u in 1:nrow(uu)){
                    eventtmp=subset(importmaster,is.na(UID)==FALSE & PARAMETER %in% XwalkACCst$PARAMETER )
                    eventtmp=merge(eventtmp,XwalkACCst,by=c('PARAMETER','SAMPLE_TYPE'),all.x=T);eventtmp=eventtmp[,!(names(eventtmp) %in% c('PARAMETER'))];eventtmp$PARAMETER=eventtmp$Parameter_Xwalk;eventtmp=ColCheck(eventtmp,importcols)
                    eventtmp2=rbind(eventtmp,rbind(sampletmp,commenttmp4))
-                   eventtmp2=unique(eventtmp2[,!(names(eventtmp2) %in% c('IND'))])#!temporary fix for duplicate lat/longs from early FM versions
-                   eventtmp2=subset(eventtmp2,RESULT!='38.298293' & RESULT !='-111.952851' & RESULT !='41.212761' & RESULT !='-119.788766')#!temporary fix for duplicate lat/longs from early FM versions - removing duplicate for specific site: UID=='3822530414932466688' & 535384124962793152
+                   #eventtmp2=unique(eventtmp2[,!(names(eventtmp2) %in% c('IND'))])#!temporary fix for duplicate lat/longs from early FM versions
+                   #eventtmp2=subset(eventtmp2,RESULT!='38.298293' & RESULT !='-111.952851' & RESULT !='41.212761' & RESULT !='-119.788766')#!temporary fix for duplicate lat/longs from early FM versions - removing duplicate for specific site: UID=='3822530414932466688' & 535384124962793152
                    pvtEVENT= cast(eventtmp2, 'UID ~ PARAMETER',value='RESULT') 
                    pvtEVENT=pvtEVENT[rowSums(is.na(pvtEVENT)) != ncol(pvtEVENT)-3,]#remove Nulls,
                    pvtEVENT=subset(pvtEVENT,is.na(SiteCode)==F)
