@@ -38,7 +38,12 @@ options(stringsAsFactors=F)
 
 #COLUMN CHECKING FUNCTION#
 VAR=c("UID" , "SAMPLE_TYPE",  "FLAG",  "IND" , "ACTIVE", "OPERATION" ,"INSERTION", "DEPRECATION" ,"REASON")
-IndMax=sqlQuery(wrsa1314, 'select max(IND) from tblREACH');IndMax=ifelse(is.na(IndMax),1,IndMax)#SWJ to do: should this be unioned between all tables?YES -- does it only apply to incoming app data? investigate index in the EPA tables
+TableNAMES=c('tblVERIFICATION','tblCOMMENTS','tblREACH','tblTRANSECT','tblPOINT')
+IndMax=1
+for (t in 1:length(TableNAMES)){
+  IndMaxTMP=sqlQuery(wrsa1314, sprintf('select max(IND) from %s',TableNAMES[t]));
+  IndMax=ifelse(IndMaxTMP>IndMax,IndMaxTMP+1,IndMax)
+}
 ##SWJ to do: index cleanup (only change index for NAMC data; create new record and deprecate old for EPA data)
 # select IND, COUNT(result) as CR 
 # from (select 

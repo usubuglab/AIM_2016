@@ -51,7 +51,7 @@
   
   importmasterTEMP=importmaster#temporary copy saved after import
   #importmaster2=importmaster #save copy of first import test that successfully went through the  loop
-  #importmaster14Jul14=importmaster;importloopr14Jul14=list(t,tables,g,tblgroups); names(importloopr14Jul14)=c('t','tables','g','tblgroups');# running into problems on photo  table with more recent exports
+  #importmaster14Jul14=importmasterTEMP;importloopr14Jul14=list(t,tables,g,tblgroups); names(importloopr14Jul14)=c('t','tables','g','tblgroups');# running into problems on photo  table with more recent exports
   #!screen null and duplicate values that are warned about
   #!save all warning messages to a table for export/reference (right now, all are printed to the console; how is error handling supposed to be done in R packages, a lot of times, they say, "type WARN to see all warnings")
   #! pending testing - water quality calibration handling changed and comment/flags updated in FM
@@ -102,7 +102,7 @@ importmaster$PARAMETER=ifelse( importmaster$UID=='9.90634514616468e+20' & import
 importmaster$PARAMETER=ifelse( importmaster$UID=='9.90634514616468e+20' & importmaster$SAMPLE_TYPE=='Thalweg_Inter' & importmaster$PARAMETER=='FLAG_PEBBLE','FLAG_PEBBLE2',importmaster$PARAMETER)
 importmaster$PARAMETER=ifelse( importmaster$UID=='9.90634514616468e+20' & importmaster$SAMPLE_TYPE=='Thalweg_Inter' & importmaster$PARAMETER=='FLAG_BANK','FLAG_BANK2',importmaster$PARAMETER)
 importmaster$PARAMETER=ifelse( importmaster$UID=='228284433826712128' & importmaster$SAMPLE_TYPE=='Thalweg_Inter' &  substr(importmaster$PARAMETER,1,3)=='FLA','FLAG_PEBBLE2',importmaster$PARAMETER)
-#uncopied temporary comments
+#uncopied temporary coordinates
 uu=unique(subset(importmaster,select=UID,subset=substr(PARAMETER,1,4)=="LAT_"));#unique(subset(importmaster,select=UID,subset=substr(PARAMETER,1,5)=="WYPT_"))
 cc=c('LAT_','LON_','WYPT','ELEV')
 for (u in 1:nrow(uu)){
@@ -196,6 +196,7 @@ for (u in 1:nrow(uu)){
   #!merge tblCOMMENTSst to tblCOMMENTSin using UID and FLAG and reduce to unique after ColCheck (below)
   tblCOMMENTSin$STold=tblCOMMENTSin$SAMPLE_TYPE;tblCOMMENTSin= tblCOMMENTSin[,!(names( tblCOMMENTSin) %in% c('SAMPLE_TYPE'))]
   tblCOMMENTSin=unique(merge(tblCOMMENTSin, tblCOMMENTst,by=c('UID','FLAG'),all.x=T))
+  tblCOMMENTSin=subset(tblCOMMENTSin,SAMPLE_TYPE!='Tracking')
   tblCOMMENTSin=ColCheck(tblCOMMENTSin,setdiff(c(VAR,'COMMENT','TRANSECT',"PAGE"),c('RESULT','POINT',"PARAMETER")))#!should PAGE (EPA format) be formally switched to point here and in WRSAdb....always 1 in old EPA data
   ##match sample_type for main data
   importmaster$SAMPLE_TYPE_Xwalk=importmaster$SAMPLE_TYPE;importmaster=importmaster[,!(names(importmaster) %in% c('SAMPLE_TYPE'))]
@@ -207,19 +208,23 @@ for (u in 1:nrow(uu)){
   if (nrow(unmatchedPARAM)>0){print("WARNING! Unmatched parameters. Reconcile before proceeding with import."); print(unmatchedPARAM)}
   importmaster=ColCheck(importmaster,importcols)
   
-  #importmaster14Jul14xwalk=importmaster
+  #importmaster14Jul14xwalk=importmaster;comments14Jul14xwalk=tblCOMMENTSin
   
   tblPOINTin=subset(importmaster,subset=is.na(POINT)==FALSE  )
-  tblTRANSECTin=subset(importmaster,is.na(POINT)==TRUE & is.na(TRANSECT)==FALSE )
+  tblTRANSECTin=subset(importmaster,is.na(POINT)==TRUE & is.na(TRANSECT)==FALSE );tblTRANSECTin[,!(names(tblTRANSECTin) %in% c('POINT'))]
   tblFAILUREin=subset(importmaster,SAMPLE_TYPE=='Failure'|PARAMETER=='Proximity');#unique(tblFAILUREin$PARAMETER)
   tblQAin=subset(importmaster,SAMPLE_TYPE=='Tracking' & toupper(PARAMETER)!='OMIT')#unique(tblQAin$PARAMETER)
-  tblVERIFICATIONin=subset(importmaster,SAMPLE_TYPE=='VERIF')
-  tblREACHin=subset(importmaster,is.na(POINT)==TRUE & is.na(TRANSECT)==TRUE & SAMPLE_TYPE!='Failure' & SAMPLE_TYPE!='Tracking' & SAMPLE_TYPE!='VERIF') #any remaining with not in  tblVERIFICATIONin and parameter <> comment/flag
+  tblVERIFICATIONin=subset(importmaster,SAMPLE_TYPE=='VERIF');tblVERIFICATIONin[,!(names(tblVERIFICATIONin) %in% c('POINT','TRANSECT'))]
+  tblREACHin=subset(importmaster,is.na(POINT)==TRUE & is.na(TRANSECT)==TRUE & SAMPLE_TYPE!='Failure' & SAMPLE_TYPE!='Tracking' & SAMPLE_TYPE!='VERIF');tblREACHin[,!(names(tblREACHin) %in% c('POINT','TRANSECT'))] #any remaining with not in  tblVERIFICATIONin and parameter <> comment/flag
   masterCNT=nrow(importmaster);pointCNT=nrow(tblPOINTin);transectCNT=nrow(tblTRANSECTin);failCNT=nrow(tblFAILUREin);qaCNT=nrow(tblQAin);reachCNT=nrow(tblREACHin);verifCNT=nrow(tblVERIFICATIONin);
   unacctCNT=masterCNT-#total rows expected
     sum(pointCNT,transectCNT,reachCNT,commentCNT,verifCNT,failCNT,qaCNT)-#total rows accounted for in partitioned tables
     (commentCNT-flagonlyCNT-commentonlyCNT)- #double count the overlap between flags and comments
     omitCNT #tracking parameters that were omitted
+  
+  
+  #View(cast(tblVERIFICATIONin,'UID + TRANSECT + POINT ~ PARAMETER',value='RESULT' ))
+  
   sprintf('wARNING! %s rows unaccounted for after table partitioning',unacctCNT)
   
   
@@ -304,7 +309,7 @@ MissingTotals5=sqldf("select UID, 'REACH' Sample_Type,  'O' Transect, ParamCNT,O
                        (select UID as UIDm,  sum(ObservedCNT) ObservedCNT, sum(ExpectedCNT) ExpectedCNT,sum(ObservedCNT)/sum(ExpectedCNT) MissingPCT from MissingTotals2 group by UID) as Totals
                         on MissingTotals.UID=Totals.UIDm
                        ");MissingTotals6=MissingTotals5[,!(names(MissingTotals5) %in% c('ParamCNT'))];MissingTotals7=MissingTotals5;MissingTotals7$MissingPCT=MissingTotals7$ParamCNT;MissingTotals7$Sample_Type='Param';MissingTotals7=MissingTotals7[,!(names(MissingTotals7) %in% c('ParamCNT'))]
-MissingTotals4=unique(rbind(MissingTotals2,MissingTotals3,MissingTotals6,MissingTotals7)  );MissingTotals4$RESULT=MissingTotals4$MissingPCT;MissingTotals4$PARAMETER=paste("PCT_",MissingTotals4$Sample_Type,"_QA",sep='');MissingTotals4$SAMPLE_TYPE=MissingTotals4$Sample_Type;MissingTotals4$TRANSECT=ifelse(MissingTotals4$Transect=='O',NA,MissingTotals4$Transect);MissingTotals4=ColCheck(MissingTotals4,importcols)
+MissingTotals4=unique(rbind(MissingTotals2,MissingTotals3,MissingTotals6,MissingTotals7)  );MissingTotals4$RESULT=MissingTotals4$MissingPCT;MissingTotals4$PARAMETER=paste("PCT_",MissingTotals4$Sample_Type,"_QA",sep='');MissingTotals4$SAMPLE_TYPE=MissingTotals4$Sample_Type;MissingTotals4$TRANSECT=ifelse(MissingTotals4$Transect=='O',NA,MissingTotals4$Transect);MissingTotals4$POINT=MissingTotals4$TRANSECT;MissingTotals4=ColCheck(MissingTotals4,importcols)
   
   print("Warning! The following sites failed missing data checks for the specified number of parameters.")
   print(MissingTotals5)    
@@ -340,7 +345,7 @@ MissingTotals4=unique(rbind(MissingTotals2,MissingTotals3,MissingTotals6,Missing
                    tblFAILUREcomments=subset(tblCOMMENTSin,FLAG=='FAIL');tblFAILUREcomments$SAMPLE_TYPE='Failure';tblFAILUREcomments=unique(tblFAILUREcomments);tblFAILUREcomments$PARAMETER='COMMENTS';tblFAILUREcomments$RESULT=tblFAILUREcomments$COMMENT;tblFAILUREcomments=ColCheck(tblFAILUREcomments,colnames(tblFAILUREin))
                    pvtFAIL= cast(rbind(tblFAILUREin,tblFAILUREcomments), 'UID ~ PARAMETER',value='RESULT') #! use options to decode VALXSITE subcategories, etc  
                    pvtFAIL=pvtFAIL[rowSums(is.na(pvtFAIL)) != ncol(pvtFAIL)-2,]#remove Nulls,
-                   tblQAin=rbind(tblQAin,MissingTotals4)#add percent missing
+                   tblQAin=merge(tblQAin,MissingTotals4,all=T)#rbind(tblQAin,MissingTotals4)#add percent missing
                    tblQAin=unique(tblQAin[,!(names(tblQAin) %in% c('IND'))])
                    tblQAstat=subset(tblQAin,PARAMETER=='Status')
                    tblQAstatcnt=cast(tblQAstat,'UID + TRANSECT + POINT ~ PARAMETER',value='RESULT' ) 
@@ -380,9 +385,18 @@ MissingTotals4=unique(rbind(MissingTotals2,MissingTotals3,MissingTotals6,Missing
                    write.xlsx(pvtFAIL,'AccessImport//pvtFAIL.xlsx')
                    write.xlsx(pvtQArch,'AccessImport//pvtQArch.xlsx')#QA tables will likely be revised to have more readable text in memo fields and to included 1st vs. last check of the data
                    write.xlsx(pvtQAtran,'AccessImport//pvtQAtran.xlsx')
+                   write.xlsx(tblCOMMENTSin,'AccessImport//tblCOMMENTS.xlsx')
                    print('Tables exported. Imported into ProbSurveyDB (Access) via the saved imports prefixed with Tracking or associated button under admin tasks (both methods pending setup). Export as csv and right insert loop script (like Python recipes) if want a more automated process.')
   }
   
   
+  #import to WRSAdb (SQL server)
+  TablesOUT=c('tblVERIFICATIONin','tblCOMMENTSin','tblREACHin','tblTRANSECTin','tblPOINTin')
+  TableNAMES=c('tblVERIFICATION','tblCOMMENTS','tblREACH','tblTRANSECT','tblPOINT')
+  for (t in 1:length(TablesOUT)) {  
+    TBL=eval(parse(text=TablesOUT[t]));dbTable=TableNAMES[t]
+    sqlSave(wrsa1314,dat=TBL,tablename=dbTable,rownames=F, append=TRUE)
+  }
+ 
   
   
