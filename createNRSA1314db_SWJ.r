@@ -78,7 +78,7 @@ ColCheck = function(TBL,VAR){
         else if(max(colnames(TBL) %in% 'LINE')==1){TBL$NEW=TBL$LINE}
         else {TBL$NEW=NA}
       }
-      else if(MissingCheck[c]=='IND'){TBL$NEW=seq(from=unlist(IndMax),to=unlist(IndMax)+nrow(TBL)-1)}#this needs to retrieve the max index number
+      else if(MissingCheck[c]=='IND'){TBL$NEW=seq(from=unlist(IndMax),to=unlist(IndMax)+nrow(TBL)-1);IndMax=max(TBL$NEW)+1}#this needs to retrieve the max index number
       else{
         TBL$NEW=NA
       }
@@ -102,6 +102,7 @@ if('REVISE' %in% MODE){
   #DEPRECATION/ACTIVE checks
   #if importing revised data, export these so can add back in if needed (REVISE mode)
   #otherwise, simply use this to look at deprecated values and their corresponding revisions 
+  #see also, Office_Updates for tracking in Access
   DEPstr="select * from 
 (select * from %s where ACTIVE='FALSE') Dep
 join (select * from %s where ACTIVE='TRUE' and 
@@ -141,7 +142,7 @@ if('CREATE' %in% MODE){
   #GENERAL TABLE STRINGS#
   #SQL TABLE CREATION#
   CREATEstr="create table %s
-    		(UID                 int             NOT NULL
+    		(UID                 numeric(30,0)             NOT NULL
 				,SAMPLE_TYPE         nvarchar(50)    NOT NULL
         %s
 				,IND                 int  NOT NULL
