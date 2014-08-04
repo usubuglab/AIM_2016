@@ -34,13 +34,20 @@
       } else if (blankCNT!=uniqueCNT){print(sprintf('WARNING! %s DUPLICATES omitted',blankCNT-uniqueCNT))} #do we want these sent to a table for review?
       colnames(tableSUB)=toupper(substr(names(tableSUB),regexpr("[.]{2}",names(tableSUB))+2,nchar(colnames(tableSUB))))
       if(tblgroups[g]=='TRACK_Transect'){tableSUB$TRANSECT=tableSUB$CURTRANSECT;tableSUB=tableSUB[,!(names(tableSUB) %in% c('CURTRANSECT'))]}# caveat for curtransect (too intertwined in fm to change there)
-      if(tblgroups[g]=='WaterQuality_CALIB'){tableSUB$UID=sprintf('%s%s',tableSUB$CAL_INST_ID , gsub("-","",as.character(tableSUB$CAL_INST_DATE)))}# caveats for water quality
-      if(tblgroups[g]=='Photos' & (is.na(max(tableSUB$Photos..Point))|is.null(tableSUB$Photos..Point))){#caveats for photo - sequential number set to point....likely will need to be in place until 2015 app, but this accounts for Point being populated as updated in the app 7/31/14
-        uup=unique(tableSUB$Photos..UID)
-        tableSUB$Photos..Point=NA
+      if(tblgroups[g]=='WaterQuality_CALIB'){
+        #tableSUB=subset(importmasterTEMP, PARAMETER %in% c('CAL_INST_ID','CAL_INST_DATE'));tableSUB$CAL_INST_DATE=tableSUB$RESULT;tableSUB$CAL_INST_ID=tableSUB$RESULT;#testing dataset
+        #this date reformatting is repeated for all date fields later on
+        tableSUB$CAL_INST_DATE=ifelse(is.na(as.numeric(as.character(tableSUB$CAL_INST_DATE)))==FALSE,format(as.Date(as.numeric(tableSUB$CAL_INST_DATE)-25569, origin="1970-01-01"),format='%m/%d/%Y'),as.character(tableSUB$CAL_INST_DATE))
+        tableSUB$CAL_INST_DATE=ifelse(substr(as.character(tableSUB$CAL_INST_DATE),1,3)=="201",format(as.Date(tableSUB$CAL_INST_DATE,format='%Y-%m-%d'),format='%m/%d/%Y'),tableSUB$CAL_INST_DATE)
+        tableSUB$CAL_INST_DATE=ifelse(is.na(as.Date(as.character(tableSUB$CAL_INST_DATE),format='%m/%d/%Y')),"0000",tableSUB$CAL_INST_DATE)
+        tableSUB$UID=sprintf('%s%s',gsub("NAMC ","",tableSUB$CAL_INST_ID) , gsub("/","",gsub("-","",as.character(tableSUB$CAL_INST_DATE))))
+        }# caveats for water quality
+      if(tblgroups[g]=='Photos' & (is.na(max(tableSUB$POINT))|is.null(tableSUB$POINT))){#caveats for photo - sequential number set to point....likely will need to be in place until 2015 app, but this accounts for Point being populated as updated in the app 7/31/14
+        uup=unique(tableSUB$UID)
+        tableSUB$POINT=NA
         for (u in 1:length(uup)){
-          minrownum=min(as.numeric(rownames(subset(tableSUB,Photos..UID==uup[u]))))-1
-          tableSUB$Photos..Point=ifelse(tableSUB$Photos..UID==uup[u],as.numeric(rownames(tableSUB))-minrownum,tableSUB$Photos..Point)#assumes sequential rows, which is current format of FM export
+          minrownum=min(as.numeric(rownames(subset(tableSUB,UID==uup[u]))))-1
+          tableSUB$POINT=ifelse(tableSUB$UID==uup[u],as.numeric(rownames(tableSUB))-minrownum,tableSUB$POINT)#assumes sequential rows, which is current format of FM export
           #tableSUB$Photos..Point=ifelse(tableSUB$Photos..UID==uup[u],seq(nrow(subset(tableSUB,Photos..UID==uup[u]))),tableSUB$Photos..Point)#ifelse(is.null(tableSUB$Photos..Point),NA,tableSUB$Photos..Point))#randomly out of order sometimes in unpredictable ways
         }}
       cols=subset(colnames(tableSUB),subset=colnames(tableSUB) %in% importcols==TRUE) 
@@ -65,8 +72,7 @@
   #importmaster30Jul14=importmasterTEMP #!rerun indexes once 14Jul14 import to WRSAdb complete
   #!screen null and duplicate values that are warned about
   #!save all warning messages to a table for export/reference (right now, all are printed to the console; how is error handling supposed to be done in R packages, a lot of times, they say, "type WARN to see all warnings")
-  #! pending testing - water quality calibration handling changed and comment/flags updated in FM
-  #! export failure and QA (pivoted) and samplelist to AccessDB
+  
   
   
   
@@ -74,7 +80,7 @@
   UIDSremove=unique(subset(importmaster,select=UID,subset= (PARAMETER=='DB' & RESULT =='WRSA_AIM')|(PARAMETER=='DEVICE' & RESULT =='ProAdvanced 13.0v3/C:/Users/Sarah/Documents/')))#exclude UIDs used by Sarah in testing and ones already imported, as well as monitored duplicates
   UIDSexist=sqlQuery(wrsa1314, "select distinct UID from tblVerification where parameter='SITE_ID'")
   UIDSmanualOMIT=c('8.58443864583729e+22','585759337742704256','324224919440318080','1.00590424753275e+20','3.12445349814274e+20','30317561401913393152','85565470919978896','9.79114249176033e+20','2.42573446594801e+21','7.467934950944e+19','7.1001238480827e+19','7.41736074664104e+22','7.42868294554285e+24','10445148556604496','6.22708454798246e+20','2.25618143476838e+23','8.77503374780117e+20','4.49266934743765e+21','5.64896083614649e+21',
-                   '15371499864863700', '6289849184966886400','4.86796721145911e+21','3.46298187240046e+24','4795923406292041','238904821513005888','1.56313734250996e+22','36066246794627100','36066246794627104','3281462015442028544','15371499864863704','7.08938994416638e+23','4.57921803104368e+25','18934588289520738304','9.72630743819978e+21','850630406814675200','850630406814675000','18934588289520700000','4.86796721145911E+21','6289849184966880000','324224919440318000','6.34916723436864e+21','7.03114033341499E+21','7.03114033341499e+21','4.57921803104368E+25', '3281462015442020000', '88015264382921100000','88015264382921129984','6.34916723436864E+21', '9.72630743819978E+21','7.08938994416638E+23'#beta testing
+                   '15371499864863700', '6289849184966886400','4.86796721145911e+21','40929284494044758016','3.46298187240046e+24','4795923406292041','238904821513005888','1.56313734250996e+22','36066246794627100','36066246794627104','3281462015442028544','15371499864863704','7.08938994416638e+23','4.57921803104368e+25','18934588289520738304','9.72630743819978e+21','850630406814675200','850630406814675000','18934588289520700000','4.86796721145911E+21','6289849184966880000','324224919440318000','6.34916723436864e+21','7.03114033341499E+21','7.03114033341499e+21','4.57921803104368E+25', '3281462015442020000', '88015264382921100000','88015264382921129984','6.34916723436864E+21', '9.72630743819978E+21','7.08938994416638E+23'#beta testing
                    )#! auto remove sites with less than 10 lines of data (app defaults)
   UIDSremoveLIST=c(UIDSremove$UID,UIDSexist$UID, UIDSmanualOMIT)#could query intentionally removed duplicates from Office_Comments in AccessDB#'1044' = duplicate site that crew entered in both app versions, confirmed with crew and Jennifer Courtwright; 6227 and 2256 = duplicates with only default data populated
   importmaster=subset(importmaster,subset= (UID %in% UIDSremoveLIST)== FALSE)
@@ -145,9 +151,22 @@ uu2=unique(subset(importmaster,select=UID,PARAMETER=='SUB_5_7' ))
 uu3=setdiff(uu1$UID,uu2$UID)
 importmaster=subset(importmaster,(UID %in% uu3 & PARAMETER=='INCREMENT')==FALSE)
   
-#convert dates to preferred format, not EXCEL numeric format
-importmaster$RESULT=ifelse(importmaster$PARAMETER %in% c('DATE_COL'),format(as.Date(as.numeric(importmaster$RESULT)-25569, origin="1970-01-01"),format='%m/%d/%Y'),importmaster$RESULT)
-
+#convert dates/times to preferred format, not EXCEL numeric format
+importmaster$RESULT=ifelse(importmaster$PARAMETER %in% c('DATE_COL','CAL_INST_DATE','ACTUAL_DATE_BER','ACTUAL_DATE_CHEM')  & is.na(as.numeric(importmaster$RESULT))==FALSE,format(as.Date(as.numeric(importmaster$RESULT)-25569, origin="1970-01-01"),format='%m/%d/%Y'),importmaster$RESULT)
+importmaster$RESULT=ifelse(importmaster$PARAMETER %in% c('DATE_COL','CAL_INST_DATE','ACTUAL_DATE_BER','ACTUAL_DATE_CHEM')  & substr(importmaster$RESULT,5,5)=="-",format(as.Date(importmaster$RESULT,format='%Y-%m-%d'),format='%m/%d/%Y'),importmaster$RESULT)
+importmaster$FLAG=ifelse(is.na(as.Date(importmaster$RESULT,format='%m/%d/%Y')),"U_DATE",importmaster$FLAG)#flag dates in non-standard format
+importmaster$RESULT=ifelse(importmaster$PARAMETER %in% c('PROBE_STARTTIME','PROBE_ENDTIME') ,gsub("1899-12-30 ","",importmaster$RESULT),importmaster$RESULT)
+#clean up Calibration UID (now cleaned during import)  
+importmaster$UID=ifelse(importmaster$SAMPLE_TYPE =="WaterQuality_CALIB",gsub("NAMC ","",importmaster$UID),importmaster$UID)
+  importmaster$UID=ifelse(importmaster$SAMPLE_TYPE =="WaterQuality_CALIB",gsub(" July ","07",importmaster$UID),importmaster$UID)
+  importmaster$UID=ifelse(importmaster$SAMPLE_TYPE =="WaterQuality_CALIB",gsub("41836","0716",importmaster$UID),importmaster$UID)
+  importmaster$UID=ifelse(importmaster$SAMPLE_TYPE =="WaterQuality_CALIB",gsub("NA","0000",importmaster$UID),importmaster$UID)
+  importmaster$UID=ifelse(importmaster$SAMPLE_TYPE =="WaterQuality_CALIB",sprintf("%s%s",gsub("2014","",importmaster$UID),"2014"),importmaster$UID)
+  
+  importmaster$UID=ifelse(importmaster$SAMPLE_TYPE =="WaterQuality_CALIB",gsub("00002014","0000",importmaster$UID),importmaster$UID)
+  
+  
+  
 #'0' station pebbles (assumes multiple parameters are roughly in the same order...only matters if trying to match rows--->if so, implement something like Photos during import)
 uu=unique(subset(importmaster,select=UID,subset=substr(PARAMETER,1,4) %in% c("SIZE","XSIZ") & (POINT==0|is.na(POINT))))
 cc=c('XSIZE_CLS','XLOC','COMMENT_PEBBLE2','FLAG_PEBBLE2','EMBED','LOC','SIZE_CLS','COMMENT_PEBBLE','FLAG_PEBBLE')
@@ -161,15 +180,15 @@ for (u in 1:nrow(uu)){
   minrow=min(as.integer(rownames(tempsub1)))#as.integer(rownames(cars[34:50,]))
   importmaster$POINT=ifelse(importmaster$UID==uu$UID[u] & importmaster$PARAMETER==cc[c] & importmaster$TRANSECT==trans[t] & (importmaster$POINT==0|is.na(importmaster$POINT)),paste("0", (as.integer(rownames(importmaster))-minrow),sep='.'),importmaster$POINT)
 }}}}
-#duplicate data with blank transect
+#duplicate data with blank transect (if app is working correctly, these are only omissions of default values unneeded in rows created above transect level such as for temporary reach width calculations)
   nulltran=rbind(subset(importmaster, (SAMPLE_TYPE %in% c('Thalweg','Tran','Canopy','CrossSection'  ) & substr(PARAMETER,1,4)!='COMM' & PARAMETER!='INCREMENT' & PARAMETER!='RCHW' & is.na(TRANSECT))),subset(importmaster, (SAMPLE_TYPE=='Slope'    & PARAMETER %in% c('METHOD','PROP','SLOPE_UNITS') & is.na(POINT))))
-  if(nrow(nulltran)>0){sprintf("WARNING: %s rows will be omitted because they are missing TRANSECT when expected",nrow(nulltran)); print(nulltran)}
+  if(nrow(nulltran)>0){sprintf("WARNING: %s rows will be omitted because they are missing TRANSECT when expected",nrow(nulltran)); View(nulltran)}
   importmaster=subset(importmaster, (SAMPLE_TYPE %in% c('Thalweg','Tran','Canopy','CrossSection' )  & substr(PARAMETER,1,4)!='COMM' & PARAMETER!='INCREMENT' & PARAMETER!='RCHW' & is.na(TRANSECT)) ==FALSE)
   importmaster=subset(importmaster, (SAMPLE_TYPE=='Slope'    & PARAMETER %in% c('METHOD','PROP','SLOPE_UNITS') & is.na(POINT))==FALSE)
 #blank point in habitat
   uucnt=subset(importmaster,SAMPLE_TYPE=='Habitat' & is.na(POINT))
   uucnt=cast(uucnt,'UID  ~ SAMPLE_TYPE')
-  uu5=subset(uucnt,HABITAT==5);uuhab=subset(uucnt,HABITAT!=5);View(subset(importmaster,UID %in% uuhab$UID  & importmaster$SAMPLE_TYPE=='HABITAT' & is.na(importmaster$POINT)))
+  uu5=subset(uucnt,Habitat<7);uuhab=subset(uucnt,Habitat>6);View(subset(importmaster,UID %in% uuhab$UID  & importmaster$SAMPLE_TYPE=='Habitat' & is.na(importmaster$POINT)))
   importmaster$POINT=ifelse(importmaster$UID %in% uu5$UID & importmaster$SAMPLE_TYPE=='Habitat' & is.na(importmaster$POINT),'0', importmaster$POINT)
   importmaster$POINT=ifelse(importmaster$UID %in% uuhab$UID & importmaster$SAMPLE_TYPE=='Habitat' & is.na(importmaster$POINT),'0.5', importmaster$POINT)
   importmaster$FLAG=ifelse(importmaster$UID %in% uuhab$UID & importmaster$SAMPLE_TYPE=='Habitat' & importmaster$POINT=='0.5','U_POOL',  importmaster$FLAG)
@@ -179,7 +198,7 @@ for (u in 1:nrow(uu)){
   
   
 
-#importmaster14Jul14clean=importmaster
+#importmaster14Jul14clean2=importmaster
  
   
 ##START comments##
@@ -218,20 +237,30 @@ for (u in 1:nrow(uu)){
   tblCOMMENTSin=ColCheck(tblCOMMENTSin,setdiff(c(VAR,'COMMENT','TRANSECT',"PAGE"),c('RESULT',"PARAMETER")))#!should PAGE (EPA format) be formally switched to point here and in WRSAdb....always 1 in old EPA data
   importmaster=ColCheck(importmaster,importcols)
   commentCNT=nrow(tblCOMMENTSin);
-  if (commentCNT>commentfailCNT|commentCNT>commentnullCNT){sprintf('%s comments with unknown parameter match and %s comments with no result match (null result i.e. a comment was used to indicate missing data)',commentfailCNT,commentnullCNT)}
-  #comment cleanup
+  if (commentCNT>commentfailCNT|commentCNT>commentnullCNT){sprintf('%s comments with unknown parameter match and %s comments with no result match (null result i.e. a comment was used to indicate missing data)',commentfailCNT,commentnullCNT); print(commentfail)}
+  #comment additions
   #flag multiple pools with unassigned points
   uuhabcom=subset(importmaster,UID %in% uuhab$UID & PARAMETER %in% c('LENGTH','MAXDEPTH') & POINT=='0.5')
   uuhabcom$RESULT=ifelse(uuhabcom$PARAMETER=='LENGTH','Multiple pools without assigned number','Max depth omitted because cannot be paired to multiple available pool tail depths.');uuhabcom$PAGE=uuhabcom$POINT;uuhabcom$COMMENT=uuhabcom$RESULT
-  uuhabcom=unique(uuhabcom[,!(names(uuhabcom) %in% c('IND','POINT','RESULT','PARAMETER'))]);uuhabcom$IND=seq(nrow(uuhabcom))
+  uumulti=uuhabcom;uumulti$Name_Xwalk=NA;uumulti$Table_Xwalk=NA;uumulti$Type_Xwalk=NA;uumulti$Parameter_Xwalk=NA;uumulti$Notes=NA;uumulti$PARAMETERMATCH=NA;uumulti=uumulti[,!(names(uumulti) %in% c('IND','RESULT'))]
+  tblCOMMENTmulti=rbind(tblCOMMENTmulti, uumulti)
+  uuhabcom=unique(uuhabcom[,!(names(uuhabcom) %in% c('IND','POINT','RESULT','PARAMETER'))]);uuhabcom$IND=seq(from=IndMax,to=IndMax+nrow(uuhabcom)-1);IndMax=IndMax+nrow(uuhabcom)
   tblCOMMENTSin=rbind(tblCOMMENTSin, uuhabcom)
+  #copy QA comments
+  uuqacom=subset(importmaster, toupper(substr(PARAMETER,1,5)) =='QABYP' )
+  uuqacom$PAGE=uuqacom$POINT;uuqacom$COMMENT=uuqacom$RESULT;uuqacom$FLAG=sprintf('QA_%s',substr(uuqacom$SAMPLE_TYPE,1,1))
+  uumulti=uuqacom;uumulti$Name_Xwalk=NA;uumulti$Table_Xwalk=NA;uumulti$Type_Xwalk=NA;uumulti$Parameter_Xwalk=NA;uumulti$Notes=NA;uumulti$PARAMETERMATCH=NA;uumulti=uumulti[,!(names(uumulti) %in% c('IND','RESULT'))]
+  tblCOMMENTmulti=rbind(tblCOMMENTmulti, uumulti)
+  uuqacom=unique(uuqacom[,!(names(uuqacom) %in% c('IND','POINT','RESULT','PARAMETER'))]);uuqacom$IND=seq(from=IndMax,to=IndMax+nrow(uuqacom)-1);IndMax=IndMax+nrow(uuqacom)
+  tblCOMMENTSin=rbind(tblCOMMENTSin, uuqacom)
+  
     ##END comments##
   #need to clean up duplicates - issue was with Xwalk, make sure not affecting main body of data (shouldn't bc matching sample_type+parameter)
   #!fix thalweg_inter comments...having problems because of transect conversion? noticed 7/15/2014: commentfail11Jul14=commentfail --> 7/16/14 added to middletran conversion
   #! consider adding first point for comments that don't have a match due to a null parameter (i.e. comment explains why parameter was not collected)
   
-  #tblCOMMENTSin14Jul14=tblCOMMENTSin
-  #importmaster14Jul14nocomm=importmaster
+  #tblCOMMENTSin14Jul142=tblCOMMENTSin
+  #importmaster14Jul14nocomm2=importmaster
   
   #Xwalk all parameters to non-FM names and assign proper Sample_Type (don't think it needs to be assigned earlier)
   XwalkFM=sqlQuery(wrsa1314, "select * from tblxwalk where Name_Xwalk='fm'")
@@ -244,7 +273,7 @@ for (u in 1:nrow(uu)){
   #!merge tblCOMMENTSst to tblCOMMENTSin using UID and FLAG and reduce to unique after ColCheck (below)
   tblCOMMENTSin$STold=tblCOMMENTSin$SAMPLE_TYPE;tblCOMMENTSin= tblCOMMENTSin[,!(names( tblCOMMENTSin) %in% c('SAMPLE_TYPE'))]
   tblCOMMENTSin=unique(merge(tblCOMMENTSin, tblCOMMENTst,by=c('UID','FLAG'),all.x=T))
-  tblCOMMENTSin=subset(tblCOMMENTSin,SAMPLE_TYPE!='Tracking')
+  tblCOMMENTSin=subset(tblCOMMENTSin,SAMPLE_TYPE!='Tracking'|substr(FLAG,1,2)=='QA')
   tblCOMMENTSin=ColCheck(tblCOMMENTSin,setdiff(c(VAR,'COMMENT','TRANSECT',"PAGE"),c('RESULT','POINT',"PARAMETER")))#!should PAGE (EPA format) be formally switched to point here and in WRSAdb....always 1 in old EPA data
   ##match sample_type for main data
   importmaster$SAMPLE_TYPE_Xwalk=importmaster$SAMPLE_TYPE;importmaster=importmaster[,!(names(importmaster) %in% c('SAMPLE_TYPE'))]
@@ -256,28 +285,28 @@ for (u in 1:nrow(uu)){
   if (nrow(unmatchedPARAM)>0){print("WARNING! Unmatched parameters. Reconcile before proceeding with import."); print(unmatchedPARAM)}
   importmaster=ColCheck(importmaster,importcols)
   
-  #importmaster14Jul14xwalk=importmaster;comments14Jul14xwalk=tblCOMMENTSin
+  #importmaster14Jul14xwalk2=importmaster;comments14Jul14xwalk2=tblCOMMENTSin
   
-  tblPOINTin=subset(importmaster,subset=is.na(POINT)==FALSE  )
-  tblTRANSECTin=subset(importmaster,is.na(POINT)==TRUE & is.na(TRANSECT)==FALSE );tblTRANSECTin=tblTRANSECTin[,!(names(tblTRANSECTin) %in% c('POINT'))]
+  tblCOMMENTSin$TRANSECT=ifelse(is.na(tblCOMMENTSin$TRANSECT),"ALL",tblCOMMENTSin$TRANSECT);tblCOMMENTSin$PAGE=ifelse(is.na(tblCOMMENTSin$PAGE),"1",tblCOMMENTSin$PAGE);tblCOMMENTSin=tblCOMMENTSin[with(tblCOMMENTSin,order(IND)),]
+  tblPOINTin=subset(importmaster,subset=is.na(POINT)==FALSE  );tblPOINTin=tblPOINTin[with(tblPOINTin,order(IND)),]
+  tblTRANSECTin=subset(importmaster,is.na(POINT)==TRUE & is.na(TRANSECT)==FALSE );tblTRANSECTin=tblTRANSECTin[,!(names(tblTRANSECTin) %in% c('POINT'))];tblTRANSECTin=tblTRANSECTin[with(tblTRANSECTin,order(IND)),]
   tblFAILUREin=subset(importmaster,SAMPLE_TYPE=='Failure'|PARAMETER=='Proximity');#unique(tblFAILUREin$PARAMETER)
   tblQAin=subset(importmaster,SAMPLE_TYPE=='Tracking' & toupper(PARAMETER)!='OMIT')#unique(tblQAin$PARAMETER)
-  tblVERIFICATIONin=subset(importmaster,SAMPLE_TYPE=='VERIF');tblVERIFICATIONin=tblVERIFICATIONin[,!(names(tblVERIFICATIONin) %in% c('POINT','TRANSECT'))]
-  tblREACHin=subset(importmaster,is.na(POINT)==TRUE & is.na(TRANSECT)==TRUE & SAMPLE_TYPE!='Failure' & SAMPLE_TYPE!='Tracking' & SAMPLE_TYPE!='VERIF');tblREACHin=tblREACHin[,!(names(tblREACHin) %in% c('POINT','TRANSECT'))] #any remaining with not in  tblVERIFICATIONin and parameter <> comment/flag
+  tblVERIFICATIONin=subset(importmaster,SAMPLE_TYPE=='VERIF');tblVERIFICATIONin=tblVERIFICATIONin[,!(names(tblVERIFICATIONin) %in% c('POINT','TRANSECT'))];tblVERIFICATIONin=tblVERIFICATIONin[with(tblVERIFICATIONin,order(IND)),]
+  tblREACHin=subset(importmaster,is.na(POINT)==TRUE & is.na(TRANSECT)==TRUE & SAMPLE_TYPE!='Failure' & SAMPLE_TYPE!='Tracking' & SAMPLE_TYPE!='VERIF');tblREACHin=tblREACHin[,!(names(tblREACHin) %in% c('POINT','TRANSECT'))];tblREACHin=tblREACHin[with(tblREACHin,order(IND)),] #any remaining with not in  tblVERIFICATIONin and parameter <> comment/flag
   masterCNT=nrow(importmaster);pointCNT=nrow(tblPOINTin);transectCNT=nrow(tblTRANSECTin);failCNT=nrow(tblFAILUREin);qaCNT=nrow(tblQAin);reachCNT=nrow(tblREACHin);verifCNT=nrow(tblVERIFICATIONin);
   unacctCNT=masterCNT-#total rows expected
     sum(pointCNT,transectCNT,reachCNT,commentCNT,verifCNT,failCNT,qaCNT)-#total rows accounted for in partitioned tables
     (commentCNT-flagonlyCNT-commentonlyCNT)- #double count the overlap between flags and comments
     omitCNT #tracking parameters that were omitted
-  
-  
-  
+  sprintf('wARNING! %s rows unaccounted for after table partitioning',unacctCNT)
   #problems to check for again: tblREACH - SLOPE, THAL,FISHCOV,CANCOV,LWD,CROSSSEC, HABITAT, PHOTOS ;tblTRANSECT - photos,CROSSSEC, stability *3 (Bankw; happened in single UID) , Slope
-  #View(cast(subset(tblPOINTin),'UID + TRANSECT + POINT ~ PARAMETER + SAMPLE_TYPE',value='RESULT' ))
+  #View(subset(tblREACHin,SAMPLE_TYPE %in% c('SLOPEW', 'THALW','FISHCOVW','CANCOVW','LWDW','CROSSSECW', 'HABITAT', 'PHOTOS')))
+  #View(subset(tblTRANSECTin,SAMPLE_TYPE %in% c('SLOPEW', 'CROSSSECW', 'BANKW', 'PHOTOS')))  
+  #aggcnt=aggregate(RESULT~UID + TRANSECT + POINT + SAMPLE_TYPE + PARAMETER,data=tblPOINTin,FUN=length);aggcnt=subset(aggcnt,RESULT>1);View(aggcnt)
 
   
-  sprintf('wARNING! %s rows unaccounted for after table partitioning',unacctCNT)
-  
+   
   
   ##! sync metadata between FM and SQL -> odbcConnect() # FM set up to share, but need to setup DSN
   
@@ -447,8 +476,9 @@ MissingTotals4=unique(rbind(MissingTotals2,MissingTotals3,MissingTotals6,Missing
   TableNAMES=c('tblVERIFICATION','tblCOMMENTS','tblREACH','tblTRANSECT','tblPOINT')
   for (t in 1:length(TablesOUT)) {  
     TBL=eval(parse(text=TablesOUT[t]));dbTable=TableNAMES[t]#tblVerification imported for 14Jul set on 7/30/14
-    if(is.na(max(subset(TBL, is.na(TRANSECT)==FALSE)$TRANSECT))){TBL=TBL[,!(names(TBL) %in% c('TRANSECT'))]}
-    if(is.na(max(subset(TBL, is.na(POINT)==FALSE)$POINT))){TBL=TBL[,!(names(TBL) %in% c('POINT'))]}
+    #INDexist=sqlQuery(wrsa1314,sprintf('select IND from %s',dbTable));TBL=subset(TBL,(IND %in% INDexist$IND)==FALSE)#for troubleshooting and restarting failed imports, ordered by IND at an earlier step for easier monitoring, could consolidate into single line here
+    ##if(is.na(max(subset(TBL, is.na(TRANSECT)==FALSE)$TRANSECT))){TBL=TBL[,!(names(TBL) %in% c('TRANSECT'))]}#removed earlier for individual tables, but could reomve here
+    ##if(is.na(max(subset(TBL, is.na(POINT)==FALSE)$POINT))){TBL=TBL[,!(names(TBL) %in% c('POINT'))]}#removed earlier for individual tables, but could reomve here
     sqlSave(wrsa1314,dat=TBL,tablename=dbTable,rownames=F, append=TRUE)
   }
  
