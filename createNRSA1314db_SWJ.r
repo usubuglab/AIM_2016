@@ -78,7 +78,7 @@ ColCheck = function(TBL,VAR){
         else if(max(colnames(TBL) %in% 'LINE')==1){TBL$NEW=TBL$LINE}
         else {TBL$NEW=NA}
       }
-      else if(MissingCheck[c]=='IND'){TBL$NEW=seq(from=unlist(IndMax),to=unlist(IndMax)+nrow(TBL)-1);IndMax=max(TBL$NEW)+1}#this needs to retrieve the max index number
+      else if(MissingCheck[c]=='IND'){TBL$NEW=seq(from=unlist(IndMax),to=unlist(IndMax)+nrow(TBL)-1);IndMax=max(TBL$NEW)+1;assign('IndMax',IndMax, envir = .GlobalEnv)}#this needs to retrieve the max index number
       else{
         TBL$NEW=NA
       }
@@ -179,10 +179,10 @@ sqlQuery(wrsa1314, sprintf(CREATEstr,'tblPOINT',
                            ',TRANSECT         nvarchar(5)    NOT NULL,
                            POINT        nvarchar(5)    NOT NULL
                             ,PARAMETER           nvarchar(50)    NOT NULL
-                            ,RESULT              nvarchar(50)    NULL
+                            ,RESULT              nvarchar(500)    NULL
                            ,FLAG                nvarchar (50)   NULL',
                            '[PK_tblPOINT]',
-                           ',TRANSECT ASC,PARAMETER ASC, POINT ASC'))
+                           ',TRANSECT ASC,PARAMETER ASC, POINT ASC'))#results increased to 500 for photo descriptions, could consider porting to comments
 #SWJ to do: needs cleanup
 sqlQuery(wrsa1314, sprintf(CREATEstr,'tblVERIFICATION','','[PK_tblVERIFICATION]',',PARAMETER ASC'))
 VER=read.csv('tblVERIFICATIONDec22013.csv')
@@ -206,7 +206,7 @@ sqlSave(wrsa1314, dat=XWALK,tablename='tblXWALK',rownames=F, append=TRUE)
 sqlQuery(wrsa1314, sprintf(CREATEstr,'tblCOMMENTS',#table name
                            ',TRANSECT       nvarchar (10)  NOT NULL,
                 COMMENT             nvarchar(2000)  NULL,
-                PAGE                int             NOT NULL
+                PAGE                nvarchar(10)           NOT NULL
                 ,FLAG                nvarchar (50)   NOT NULL',#added fields
                            '[PK_tblCOMMENTS]', #constraint name
                            ',TRANSECT ASC ,FLAG ASC ,PAGE ASC'))#added constraints
