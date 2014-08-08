@@ -13,7 +13,7 @@ setwd(wd)
 
 #WRSA data conversion
 #assumes DB connection remains open
-
+#!in the process of migrating to a general function in FNC_tblRetrievePVT along with UnionTBL
 XwalkUnion=sqlQuery(wrsa1314,
 "
 select  XwalkTBL.Table_Xwalk, UID, SAMPLE_TYPE=case when XwalkTBL.Type_Xwalk='' then XwalkTBL.Type2 else XwalkTBL.Type_Xwalk end, TRANSECT, POINT,XwalkTBL.Parameter_Xwalk as PARAMETER,RESULT,FLAG,IND,ACTIVE,OPERATION,INSERTION,DEPRECATION,REASON 

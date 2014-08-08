@@ -341,6 +341,12 @@ if(PROCEED<3) {print("Data ready for import. Perform any desired checkes and set
   }
   print('End import to SQL server')
   
+}#end Else Proceed=3
+  
+  if(PROCEED<4) { 
+    if(exists("MissingTotals4")){
+      tblQAin=merge(tblQAin,MissingTotals4,all=T)#rbind(tblQAin,MissingTotals4)#add percent missing
+  } else {print ("Missing Totals need to be run in DataQA_WRSA.R if want to review missing percentages in Access. Otherwise set PROCEED=4 (in console) to continue without Missing Totals.")}
   
   #import to ProbSurveydb (Access)
  #repivot tables going to Access
@@ -348,7 +354,6 @@ if(PROCEED<3) {print("Data ready for import. Perform any desired checkes and set
  tblFAILUREcomments=subset(tblCOMMENTSin,FLAG=='FAIL');tblFAILUREcomments$SAMPLE_TYPE='Failure';tblFAILUREcomments=unique(tblFAILUREcomments);tblFAILUREcomments$PARAMETER='COMMENTS';tblFAILUREcomments$RESULT=tblFAILUREcomments$COMMENT;tblFAILUREcomments=ColCheck(tblFAILUREcomments,colnames(tblFAILUREin))
  pvtFAIL= cast(rbind(tblFAILUREin,tblFAILUREcomments), 'UID ~ PARAMETER',value='RESULT') #! use options to decode VALXSITE subcategories, etc  
  pvtFAIL=pvtFAIL[rowSums(is.na(pvtFAIL)) != ncol(pvtFAIL)-2,]#remove Nulls,
- tblQAin=merge(tblQAin,MissingTotals4,all=T)#rbind(tblQAin,MissingTotals4)#add percent missing
  tblQAin=unique(tblQAin[,!(names(tblQAin) %in% c('IND'))])
  tblQAstat=subset(tblQAin,PARAMETER=='Status')
  tblQAstatcnt=cast(tblQAstat,'UID + TRANSECT + POINT ~ PARAMETER',value='RESULT' ) 
@@ -392,6 +397,6 @@ if(PROCEED<3) {print("Data ready for import. Perform any desired checkes and set
  write.xlsx(tblCOMMENTSin,'AccessImport//tblCOMMENTS.xlsx')
  print('Tables exported. Imported into ProbSurveyDB (Access) via the saved imports prefixed with Tracking or associated button under admin tasks (both methods pending setup). Export as csv and right insert loop script (like Python recipes) if want a more automated process.')
 
-  }#end Else Proceed=3
+  }#end Else Proceed=4
   
   

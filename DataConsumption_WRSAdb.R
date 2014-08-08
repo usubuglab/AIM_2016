@@ -9,12 +9,14 @@ DBserver=''#ditto as with DBpassword
 ##from most to least specific
 AllData='N'#set to 'Y' (meaning 'yes') if you want to query all sites (note this is quite time consuming and large, use provided filters wherever possible)
 sitecodes=c('EL-LS-8134','EL-SS-8127','MN-LS-1004','MN-SS-1104','MS-SS-3103','XE-RO-5086','XN-LS-4016','XN-SS-4128','XS-LS-6029' )#QAduplicateSites#c('AR-LS-8003','AR-LS-8007', 'TP-LS-8240')#sites for NorCalTesting
-dates=c('05/05/2005')
-hitchs=c('')#NOT WORKING YET
-crews=c('R1')#NOT WORKING YET
-projects=c('NRSA')#NOT WORKING YET, most useful for separating NorCal and WRSA
-years=c(2013)#NOT WORKING YET
-
+years=c('2013')#as character, not number
+dates=''##example:c('05/05/2005')
+projects=c('WRSA')# most useful for separating NorCal and WRSA, note that abbreviations differ between Access and SQL/FM
+protocols=c('WRSA14')#for separating differences in overall protocol, may not be relevant for some parameters
+hitchs=c('')#NOT WORKING YET, hitch and crew level generally maintained by Access not SQL
+crews=c('R1')#NOT WORKING YET, hitch and crew level generally maintained by Access not SQL
+filter=''#custom filter (need working knowledge of Parameter:Result pairs and SQL structure; example: "(Parameter='ANGLE' and Result>50) OR (Parameter='WETWID' and Result<=0.75))"
+UIDs='BLANK'#custom filter (need working knowledge of primary keys)
 
 #PARAMETERS
 #specify if desired (will make queries less intensive):
@@ -45,7 +47,7 @@ wrsa1314=odbcDriverConnect(connection = wrsaConnectSTR)
 #SWJ to do: throw this into a function that also prompts for server and password if missing (='')
 #SWJ to do: throw the function into a separate referenced script because multiple files are using this
 
-options(stringsAsFactors=F)#general option, otherwise default read is as factors which assigns arbitrary number behind the scenes to most columns
+options(stringsAsFactors=F,"scipen"=50)#general option, otherwise default read is as factors which assigns arbitrary number behind the scenes to most columns
 
 #SQL assistance functions
 #loaded from a separate R script
@@ -61,39 +63,18 @@ dbCOL=sqlColumns(wrsa1314,"tblPOINT")#column names (similar structure for each t
 dbPARAM=sqlQuery(wrsa1314,"Select SAMPLE_TYPE, PARAMETER, LABEL,VAR_TYPE from tblMETADATA where ACTIVE='TRUE'")#parameter names (SWJ to do: iterate over Sample_Type groups to generate pivots)
 tmpTYPE=as.character(unique(dbPARAM$SAMPLE_TYPE))
 dbTYPE=substr(tmpTYPE,1,nchar(tmpTYPE) - 1)#substr to get rid of the random "x" at the end of each name
-#UID and parameter prep (SWJ to do: could roll into a selectUID function and into the final sql call function (i.e. the winner btwn tblRetrieve and PvTconstruct))
-UIDall=ifelse(AllData=='Y','%','')#swj to do: add | (or) for if all possible filters ==''
-parameters=ifelse(AllParam=='Y','',NULL)#functions interpret '' as all parameters, otherwise it is a specified list in the function input
 
 #select samples
-UIDs=sqlQuery(wrsa1314, sprintf("select distinct UID from tblVERIFICATION 
-                                where (active='TRUE') 
-                                AND ((Parameter='SITE_ID' and Result in (%s)) OR (Parameter='DATE_COL' and Result in (%s)) OR (UID like '%s'))"
-                                ,inLOOP(sitecodes),inLOOP(dates),UIDall))
+UIDs=UIDselect(ALL=AllData,Filter=filter,UIDS='',SiteCodes=sitecodes,Dates=dates,Years=years,Projects=projects,Protocols=protocols)
 #SWJ to do: add additional filters
 #SWJ to do: prompt for data entry (mini-GUI)
 
 
 #retrieve all data as a single list table
-UnionTBL=sqlQuery(wrsa1314,#SWJ to do remove redundancy with XwalkUnion in NRSAmetrics_SWJ, likely move into tblRetrieve (if not table is specified)
-"select *
-from (
-  select  UID, SAMPLE_TYPE, TRANSECT, POINT,PARAMETER,RESULT,FLAG,IND,ACTIVE,OPERATION,INSERTION,DEPRECATION,REASON 
-  from tblPOINT
-  union
-  select   UID, SAMPLE_TYPE, TRANSECT, cast(Null as nvarchar(5)) POINT,PARAMETER,RESULT,FLAG,IND,ACTIVE,OPERATION,INSERTION,DEPRECATION,REASON  
-  from tbltransect
-  union
-  select   UID, SAMPLE_TYPE, cast(Null as nvarchar(5)) TRANSECT, cast(Null as nvarchar(5)) POINT,PARAMETER,RESULT,FLAG,IND,ACTIVE,OPERATION,INSERTION,DEPRECATION,REASON 
-  from tblreach
-  union
-  select UID, SAMPLE_TYPE, cast(Null as nvarchar(5)) TRANSECT, cast(Null as nvarchar(5)) POINT,PARAMETER,RESULT,FLAG,IND,ACTIVE,OPERATION,INSERTION,DEPRECATION,REASON 
-  from tblverification
-) UnionTBL
-where ACTIVE='TRUE'
-")
+UnionTBL=tblRetrieve(Table='',Parameters='',ALLp=AllParam,UIDS=UIDs,ALL=AllData,Filter=filter,SiteCodes=sitecodes,Dates=dates,Years=years,Projects=projects,Protocols=protocols)
 
-Sites=subset(UnionTBL,select=c(UID,RESULT),subset=PARAMETER=='SITE_ID'); colnames(Sites)=c('UID','SITE_ID')#append sitecode instead of UID to make the table more readable --> migrate this into tblRetrieve or some kind of "convert" function
+
+Sites=subset(UnionTBL,select=c(UID,RESULT),subset=PARAMETER=='SITE_ID'); colnames(Sites)=c('UID','SITE_ID')#!append sitecode instead of UID to make the table more readable --> migrate this into tblRetrieve or some kind of "convert" function
 UnionTBL=merge(UnionTBL,Sites)
 UnionTBL$SITE_ID=as.character(UnionTBL$SITE_ID)
 UnionTBL1=merge(UnionTBL,UIDs)#limit by UIDs ("select samples)
