@@ -35,61 +35,10 @@ options(stringsAsFactors=F)
 #end ODBC connection#
 
 
+#SQL assistance functions
+#loaded from a separate R script
+source('FNC_tblRetrievePVT.R')
 
-#COLUMN CHECKING FUNCTION#
-VAR=c("UID" , "SAMPLE_TYPE",  "FLAG",  "IND" , "ACTIVE", "OPERATION" ,"INSERTION", "DEPRECATION" ,"REASON")
-TableNAMES=c('tblVERIFICATION','tblCOMMENTS','tblREACH','tblTRANSECT','tblPOINT')
-IndMax=1
-for (t in 1:length(TableNAMES)){
-  IndMaxTMP=sqlQuery(wrsa1314, sprintf('select max(IND) from %s',TableNAMES[t]));
-  IndMax=ifelse(IndMaxTMP>IndMax,IndMaxTMP+1,IndMax)
-}
-##SWJ to do: index cleanup (only change index for NAMC data; create new record and deprecate old for EPA data)
-# select IND, COUNT(result) as CR 
-# from (select 
-#       UID  ,SAMPLE_TYPE  ,PARAMETER,	RESULT	,FLAG,	IND	,ACTIVE	,OPERATION	,INSERTION	,DEPRECATION	,REASON
-#       from tblPOINT 
-#       union 
-#       select UID	,SAMPLE_TYPE	,PARAMETER,	RESULT	,FLAG,	IND	,ACTIVE	,OPERATION	,INSERTION	,DEPRECATION	,REASON
-#       from tblTRANSECT 
-#       union select 
-#       UID	,SAMPLE_TYPE	,PARAMETER,	RESULT	,FLAG,	IND	,ACTIVE	,OPERATION	,INSERTION	,DEPRECATION	,REASON
-#       from tblREACH) as s
-# group by IND
-# having COUNT(result)>1
-
-ColCheck = function(TBL,VAR){
-  MissingCheck=setdiff(VAR,colnames(TBL))
-  if(length(MissingCheck)>0){
-    for (c in 1: length(MissingCheck)){
-      if(MissingCheck[c]=='INSERTION'){TBL$NEW=as.character(Sys.Date())}
-      else if(MissingCheck[c]=='DEPRECATION'){TBL$NEW='9999-12-31'}#may need to format as date
-      else if(MissingCheck[c]=='ACTIVE'){TBL$NEW=TRUE}
-      else if(MissingCheck[c]=='OPERATION'){TBL$NEW='O'}
-      else if(MissingCheck[c]=='TRANSECT'){
-        if(max(colnames(TBL) %in% 'LINE')==1){TBL$NEW=TBL$LINE}
-        else {TBL$NEW=NA}
-      }
-      else if(MissingCheck[c]=='POINT'){
-        if(max(colnames(TBL) %in% 'BANK')==1){TBL$NEW=TBL$BANK}
-        else if(max(colnames(TBL) %in% 'TRANSDIR')==1){TBL$NEW=TBL$TRANSDIR}
-        else if(max(colnames(TBL) %in% 'REP')==1){TBL$NEW=TBL$REP}
-        else if(max(colnames(TBL) %in% 'STATION')==1){TBL$NEW=TBL$STATION}
-        else if(max(colnames(TBL) %in% 'LINE')==1){TBL$NEW=TBL$LINE}
-        else {TBL$NEW=NA}
-      }
-      else if(MissingCheck[c]=='IND'){TBL$NEW=seq(from=unlist(IndMax),to=unlist(IndMax)+nrow(TBL)-1);IndMax=max(TBL$NEW)+1;assign('IndMax',IndMax, envir = .GlobalEnv)}#this needs to retrieve the max index number
-      else{
-        TBL$NEW=NA
-      }
-      #SWJ to do: if one of the date fields, populate with default (Insertion=TODAY, Deprecation=9999,) --> same with Active and Operation? Reason?
-      colnames(TBL)[length(colnames(TBL))]=MissingCheck[c]}} #add any missing columns
-  ExtraCheck=setdiff(colnames(TBL),VAR)
-  if(length(ExtraCheck)>0){TBL=subset(TBL,select=colnames(TBL) %in% VAR)}
-  if(max(colnames(TBL) %in% 'TRANSECT')==1){TBL$TRANSECT=sub('-','',TBL$TRANSECT)}#keep transect with AB not A-B for intertransect measurements
-  return(TBL)
-}
-#end COLUMN CHECKING FUNCTION#
 
 
 if('FMGOin' %in% MODE){
