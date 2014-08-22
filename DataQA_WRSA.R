@@ -9,7 +9,7 @@ CommentsCount='N'#'Y' = a comment (as represented by a flag) allows the missing 
 ##NorCal1314
 # UnionTBL=tblRetrieve(ALLp='Y',Years=c('2013','2014'),Projects='NorCal')
 # CheckAll='Y'
-# CommentsCount='Y'
+# CommentsCount='N'
 ##post hitch
 # HitchImport=Sys.Date() # Sys.Date()  for today or text string like '2014-08-18'
 # UIDhitch=UIDselect(Filter=sprintf("INSERTION='%s'",HitchImport))
@@ -141,8 +141,35 @@ write.csv(MissingCounts,"MissingCounts.csv")
   print("Warning! Number of Thalweg depths does not match the number expected from the widths/stations!")
   #conflicts happen (i.e. multiple sub_5_7 values per site) when crews forget their reach widths on the first few transects, missing data check added in FM to warn them
   print(ThalwegCheck)  
+
+##legal value checks
+#low-high pairs
+LowHigh=c("MIN,MAX","QLOWI,QHIGHI","QLOWR,QHIGHR");#original FM string: "QLOWI,QHIGHI¶QLOWR,QHIGHR¶MIN,MAX"
+UnionTBLstat=UnionTBL
+#random quirks to ignore in legal checks
+UnionTBLstat=subset(UnionTBLstat,(PARAMETER=='SIZE_CLS' & is.na(as.numeric(RESULT)))==FALSE)#remove text Size_CLS  from 2013 (eventually will not be needed)
+UnionTBLstat=subset(UnionTBLstat,(PARAMETER=='SIZE_CLS' & RESULT=='0')==FALSE)#remove wood/other SIZE_CLS particles so don't fail the check
+#loop over pairs
+for (p in 1:length(LowHigh)){
+  StatPair=strsplit(LowHigh[p],",")
+  StatLow=StatPair[[1]][1]
+  StatHigh=StatPair[[1]][2]
+  StatValues="Select Sample_Type, Parameter, Stat, Result from tblMetadataRange where ACTIVE='TRUE' and STAT='%s'"
+  Low=sqlQuery(wrsa1314,sprintf(StatValues,StatLow))
+  High=sqlQuery(wrsa1314,sprintf(StatValues,StatHigh))
+  LowHighJoin=sqldf("select * from UnionTBLstat 
+              join (select Sample_Type as ST, Parameter as PM, Stat as LowStat,Result as LowResult from Low) L on UnionTBLstat.Sample_Type=L.ST and UnionTBLstat.Parameter=L.PM
+              join (select Sample_Type as ST, Parameter as PM, Stat as HighStat,Result as HighResult from High) H on UnionTBLstat.Sample_Type=H.ST and UnionTBLstat.Parameter=H.PM
+              ")
+  LowHighFail=sqldf("select UID,Transect, Point, IND, Sample_Type,Parameter, 
+                    Result,LowResult,HighResult,LowStat,HighStat
+                    from LowHighJoin
+                    where Result<LowResult or Result>HighResult")
+  if(p==1){LowHighFailOUT=LowHighFail} else{LowHighFailOUT=rbind(LowHighFailOUT,LowHighFail)}
+}
+write.csv(LowHighFailOUT,'LegalChecks.csv')
   
-  ##outlier check
+##outlier check
 
 #set strata for later iteration
 typestrata=c('EcoReg','Size')#must match column names that are created

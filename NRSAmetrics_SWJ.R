@@ -15,6 +15,8 @@ setwd(wd)
 #assumes DB connection remains open
 tblx=Xwalk(XwalkName='Aquamet1',source='SQL')#Norcal inputs:,Years=c('2013','2014'),Projects='NorCal')
 
+#!parameters that will need to be modified from 2014 protocol changes: size_cls, angle, width/height units
+
 files <- c("tblBANKGEOMETRY2", "tblCHANCOV2", "tblCHANDEPTH2",##SWJ: none of these tables are in the 2013 output, can cross walk if given corresponding tables
            "tblCHANNELCHAR2", "tblCHANNELCROSSSECTION2", "tblCHANNELGEOMETRY2",##SWJ: no Channel Geometry
            "tblFISHCOVER2", "tblINVASIVELEGACY2", "tblLITTORAL2",##SWJ: no Littoral table (might be boatable only)
