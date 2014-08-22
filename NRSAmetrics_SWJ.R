@@ -13,28 +13,7 @@ setwd(wd)
 
 #WRSA data conversion
 #assumes DB connection remains open
-#!in the process of migrating to a general function in FNC_tblRetrievePVT along with UnionTBL
-XwalkUnion=sqlQuery(wrsa1314,
-"
-select  XwalkTBL.Table_Xwalk, UID, SAMPLE_TYPE=case when XwalkTBL.Type_Xwalk='' then XwalkTBL.Type2 else XwalkTBL.Type_Xwalk end, TRANSECT, POINT,XwalkTBL.Parameter_Xwalk as PARAMETER,RESULT,FLAG,IND,ACTIVE,OPERATION,INSERTION,DEPRECATION,REASON 
-from (
-  select  UID, SAMPLE_TYPE, TRANSECT, POINT,PARAMETER,RESULT,FLAG,IND,ACTIVE,OPERATION,INSERTION,DEPRECATION,REASON 
-  from tblPOINT
-  union
-  select   UID, SAMPLE_TYPE, TRANSECT, cast(Null as nvarchar(5)) POINT,PARAMETER,RESULT,FLAG,IND,ACTIVE,OPERATION,INSERTION,DEPRECATION,REASON  
-  from tbltransect
-  union
-  select   UID, SAMPLE_TYPE, cast(Null as nvarchar(5)) TRANSECT, cast(Null as nvarchar(5)) POINT,PARAMETER,RESULT,FLAG,IND,ACTIVE,OPERATION,INSERTION,DEPRECATION,REASON 
-  from tblreach
-  union
-  select UID, SAMPLE_TYPE, cast(Null as nvarchar(5)) TRANSECT, cast(Null as nvarchar(5)) POINT,PARAMETER,RESULT,FLAG,IND,ACTIVE,OPERATION,INSERTION,DEPRECATION,REASON 
-  from tblverification
-) UnionTBL
-JOIN (select *, left(SAMPLE_TYPE,len(SAMPLE_TYPE)-1) as Type2 from tblXWALK where Name_XWALK='Aquamet1') XwalkTBL on UnionTBL.PARAMETER= XwalkTBL.PARAMETER and UnionTBL.SAMPLE_TYPE= XwalkTBL.Type2
-where ACTIVE='TRUE'
-")#SWJ to do: clean redundancy in this query up (i.e. the UID... string is repeated), also make Name_XWALK dynamic
-#SWJ to do: could do a similar case statment for parameter and only store non-matching in tblXWALK (though it is nice to see verified matches)
-
+tblx=Xwalk(XwalkName='Aquamet1',source='SQL')#Norcal inputs:,Years=c('2013','2014'),Projects='NorCal')
 
 files <- c("tblBANKGEOMETRY2", "tblCHANCOV2", "tblCHANDEPTH2",##SWJ: none of these tables are in the 2013 output, can cross walk if given corresponding tables
            "tblCHANNELCHAR2", "tblCHANNELCROSSSECTION2", "tblCHANNELGEOMETRY2",##SWJ: no Channel Geometry

@@ -163,33 +163,30 @@ tblRetrieve=function(Table='',ALL='N',Filter='',UIDS='BLANK',SiteCodes='',Dates=
   if(class(qryRSLT)=="character"){  print('Unable to interpret the provided parameters. No table retrieved.')}#not running query because could cause overload#previous query: sqlQuery(wrsa1314, sprintf('select * from %s  %s',table, ifelse(filter=='',"where ACTIVE='TRUE'",paste("where ACTIVE='TRUE' and ", filter))))
   return(qryRSLT)#could auto return the pivoted view, but currently assuming that is for on the fly viewing and is not the easiest way to perform metrics
 }
-#XWALK
-#!convert to function with shared string
-#!XwalkUnion=function(source='SQL',XwalkName,filter='',UIDs='',SiteCodes='',Dates=''){
-#if(source='SQL){
-#run UNIONtbl
-#join to Xwalk
-#} else if {source='R'
-# merge to Xwalk as in FMimport #used for FM metadata updates
-#}
-#}
 
-XwalkUnion=sqlQuery(wrsa1314,
-                    "
-select  XwalkTBL.Table_Xwalk, UID, SAMPLE_TYPE=case when XwalkTBL.Type_Xwalk='' then XwalkTBL.Type2 else XwalkTBL.Type_Xwalk end, TRANSECT, POINT,XwalkTBL.Parameter_Xwalk as PARAMETER,RESULT,FLAG,IND,ACTIVE,OPERATION,INSERTION,DEPRECATION,REASON 
-from (
-  select  UID, SAMPLE_TYPE, TRANSECT, POINT,PARAMETER,RESULT,FLAG,IND,ACTIVE,OPERATION,INSERTION,DEPRECATION,REASON 
-  from tblPOINT
-  union
-  select   UID, SAMPLE_TYPE, TRANSECT, cast(Null as nvarchar(5)) POINT,PARAMETER,RESULT,FLAG,IND,ACTIVE,OPERATION,INSERTION,DEPRECATION,REASON  
-  from tbltransect
-  union
-  select   UID, SAMPLE_TYPE, cast(Null as nvarchar(5)) TRANSECT, cast(Null as nvarchar(5)) POINT,PARAMETER,RESULT,FLAG,IND,ACTIVE,OPERATION,INSERTION,DEPRECATION,REASON 
-  from tblreach
-  union
-  select UID, SAMPLE_TYPE, cast(Null as nvarchar(5)) TRANSECT, cast(Null as nvarchar(5)) POINT,PARAMETER,RESULT,FLAG,IND,ACTIVE,OPERATION,INSERTION,DEPRECATION,REASON 
-  from tblverification
-) UnionTBL
-JOIN (select *, left(SAMPLE_TYPE,len(SAMPLE_TYPE)-1) as Type2 from tblXWALK where Name_XWALK='Aquamet1') XwalkTBL on UnionTBL.PARAMETER= XwalkTBL.PARAMETER and UnionTBL.SAMPLE_TYPE= XwalkTBL.Type2
-where ACTIVE='TRUE'
-")
+
+#XWALK
+Xwalk=function(Source='SQL',XwalkName='WRSA',COL='',Table='',ALL='N',Filter='',UIDS='BLANK',SiteCodes='',Dates='',Years='',Projects='',Protocols='',Parameters='',ALLp='N'){
+if(Source=='SQL' | Table==''){
+TBLtmp=tblRetrieve(Table=Table,ALL=ALL,Filter=Filter,UIDS=UIDS,SiteCodes=SiteCodes,Dates=Dates,Years=Years,Projects=Projects,Protocols=Protocols,Parameters=Parameters,ALLp=ALLp)
+XwalkDirection=''#should the user be given control of direction as a function parameter? 
+} else if (Source=='R') {
+TBLtmp=eval(parse(text=Table))
+XwalkDirection='_Xwalk'
+}
+TBLtmp=ColCheck(TBLtmp,c(VAR,'PARAMETER','TRANSECT','POINT','RESULT',COL))
+XwalkParam=sqlQuery(wrsa1314,sprintf("select *, case when right(SAMPLE_TYPE,1)='X' then left(SAMPLE_TYPE,len(SAMPLE_TYPE)-1) else SAMPLE_TYPE end as 'TABLE' from tblXWALK where Name_XWALK='%s' ",XwalkName))
+XwalkTBL=sqldf(sprintf(" select  UID, TRANSECT, POINT,upper(XwalkParam.Table_Xwalk) as 'TABLE', 
+upper(case when '%s'='_Xwalk' or  XwalkParam.Type_Xwalk='' or  XwalkParam.Type_Xwalk is null then XwalkParam.SAMPLE_TYPE else XwalkParam.Type_Xwalk end) as SAMPLE_TYPE, 
+upper(case when '%s'='_Xwalk' or  XwalkParam.PARAMETER_Xwalk='' or  XwalkParam.PARAMETER_Xwalk is null then XwalkParam.PARAMETER else XwalkParam.PARAMETER_Xwalk end) as PARAMETER, 
+RESULT,FLAG,IND,ACTIVE,OPERATION,INSERTION,DEPRECATION,REASON %s
+from TBLtmp   JOIN  XwalkParam on upper(TBLtmp.PARAMETER)= upper(XwalkParam.PARAMETER%s) and upper(TBLtmp.SAMPLE_TYPE)= upper(XwalkParam.[TABLE%s])
+ ",XwalkDirection,XwalkDirection,gsub("'","]",gsub(", '",",[",paste(", " , inLOOP(COL),sep=''))),XwalkDirection,XwalkDirection))
+if(nrow(TBLtmp)!=nrow(XwalkTBL)){print(sprintf('WARNING! Different number of rows in original (%s rows) and xwalk (%s rows) tables.',nrow(TBLtmp),nrow(XwalkTBL)))
+  INDmissing=setdiff(TBLtmp$IND,XwalkTBL$IND)
+  SPmissing=unique(subset(TBLtmp,select=c(SAMPLE_TYPE,PARAMETER),subset=IND %in% INDmissing))
+  print('The following parameters do not have a xwalk match:')
+  print(SPmissing)}
+return(XwalkTBL)
+}
+

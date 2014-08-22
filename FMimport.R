@@ -20,7 +20,7 @@
       if(tblgroups[g]==""){##alternatively, could find these and set them to be TRACK_REACH, but that table name doesn't matter in the long run
         matchtest='TRUE'
         grepSTR="[.]{2}" 
-        tblgroups[g]='REACH'
+        tblgroups[g]='TRACK_REACH'
         #!need to combine GRTS_SITEinfo into this...run the colnames(tableSUB) regexp splitting early in an elseif (may need a list of reach level tables this applies to)
       } else {matchtest='FALSE'
               grepSTR=sprintf("%s[.]{2}",tblgroups[g])        
@@ -66,7 +66,7 @@
   }
   
   
-  importmasterTEMP=importmaster#temporary copy saved after import
+  importmasterTEMP=importmaster#temporary copy saved after import for easy reversion without restarting xlsx import
   #importmaster2=importmaster #save copy of first import test that successfully went through the  loop
   #importmasterTEMPboat=importmaster;importmasterTEMPboat2=importmaster
   #importmaster14Jul14=importmasterTEMP;importloopr14Jul14=list(t,tables,g,tblgroups); names(importloopr14Jul14)=c('t','tables','g','tblgroups');# running into problems on photo  table with more recent exports
@@ -80,9 +80,18 @@
 
   UIDSremove=unique(subset(importmaster,select=UID,subset= (PARAMETER=='DB' & RESULT =='WRSA_AIM')|(PARAMETER=='DEVICE' & RESULT =='ProAdvanced 13.0v3/C:/Users/Sarah/Documents/')))#exclude UIDs used by Sarah in testing and ones already imported, as well as monitored duplicates
   UIDSexist=sqlQuery(wrsa1314, "select distinct UID from tblVerification where parameter='SITE_ID'")
-  UIDSmanualOMIT=c('8.58443864583729e+22','585759337742704256','324224919440318080','1.00590424753275e+20','3.12445349814274e+20','30317561401913393152','85565470919978896','9.79114249176033e+20','2.42573446594801e+21','7.467934950944e+19','7.1001238480827e+19','7.42868294554285e+24','10445148556604496','6.22708454798246e+20','2.25618143476838e+23','8.77503374780117e+20','4.49266934743765e+21','5.64896083614649e+21',
+  UIDSmanualOMIT=c('8.58443864583729e+22','15631373425099638047420','585759337742704256','324224919440318080','452002440992807387126','56939717898642521064404','1.00590424753275e+20','3.12445349814274e+20','30317561401913393152','85565470919978896','9.79114249176033e+20','2.42573446594801e+21','7.467934950944e+19','7.1001238480827e+19','7.42868294554285e+24','10445148556604496','6.22708454798246e+20','2.25618143476838e+23','8.77503374780117e+20','4.49266934743765e+21','5.64896083614649e+21',
                    '15371499864863700', '6289849184966886400','6778495559','4.86796721145911e+21','40929284494044758016','3.46298187240046e+24','4795923406292041','238904821513005888','1.56313734250996e+22','36066246794627100','36066246794627104','3281462015442028544','15371499864863704','7.08938994416638e+23','4.57921803104368e+25','18934588289520738304','9.72630743819978e+21','850630406814675200','850630406814675000','18934588289520700000','4.86796721145911E+21','6289849184966880000','324224919440318000','6.34916723436864e+21','7.03114033341499E+21','7.03114033341499e+21','4.57921803104368E+25', '3281462015442020000', '88015264382921100000','88015264382921129984','6.34916723436864E+21', '9.72630743819978E+21','7.08938994416638E+23'#beta testing
-                   )#! auto remove sites with less than 10 lines of data (app defaults)
+                   )#! auto remove sites with less than 10 lines of data (app defaults)?; record reason in Access Office_Comments
+  
+  #! check for UIDS different scientific notation resolution with original SQL query below:
+#   select * from
+#   (select distinct UID, LEFT(UID,10) leftUID, Result, FLAG, reason
+#    from tblverification where PARAMETER='site_id') as tv
+#   join (select  LEFT(UID,10) leftUID, COUNT(*) UIDcnt from tblVERIFICATION where PARAMETER='site_id' group by LEFT(UID,10)) as uidC 
+#   on uidC.leftUID=tv.leftUID
+#   where UIDcnt>1
+#   order by tv.leftuid
   UIDSremoveLIST=c(UIDSremove$UID,UIDSexist$UID, UIDSmanualOMIT)#could query intentionally removed duplicates from Office_Comments in AccessDB#'1044' = duplicate site that crew entered in both app versions, confirmed with crew and Jennifer Courtwright; 6227 and 2256 = duplicates with only default data populated
   importmaster=subset(importmaster,subset= (UID %in% UIDSremoveLIST)== FALSE)
   #check for duplicate siteIDS
@@ -102,8 +111,8 @@
     DUPcomment=subset(importmaster, subset=UID %in% DUPuid$UID & substr(PARAMETER,1,nchar('COMMENT'))=='COMMENT');DUPcomment=DUPcomment[with(DUPcomment,order(UID)),]
     print('WARNING! Duplicate site. Review outputs throughly before proceeding. If UIDs should be omitted, added to UIDSremove and re-subset importmaster.');print(SITEdup2);print(DATEdup2);View(DUPcomment);View(DUPverif);View(DUPtran);View(DUPwq);View(DUPfail)
   }
-  statusAC=subset(importmaster,toupper(PARAMETER)=='STATUS' & RESULT=='AC')#! check for AC status, but be careful of ones that are duplicates (skip to tblQAstatcnt of Access import to investigate)
-  if(nrow(statusAC)>0){print('WARNING! Possible blank sites!'); print (statusAC);ACsites=subset(importmaster, subset=UID %in% statusAC$UID & SAMPLE_TYPE %in% c('SampleEvent','REACH'));ACsites=ACsites[with(ACsites,order(UID)),]; View(ACsites)}
+  statusAC=intersect(unlist(subset(importmaster,select=UID,toupper(PARAMETER)=='STATUS' & RESULT=='AC')),unlist(subset(importmaster,select=UID,toupper(PARAMETER)=='PROTOCOL' & RESULT!='Failed')))#! check for AC status, but be careful of ones that are duplicates (skip to tblQAstatcnt of Access import to investigate)
+  if(length(statusAC)>0){print('WARNING! Possible blank sites!'); print (statusAC);ACsites=subset(importmaster, subset=UID %in% statusAC & SAMPLE_TYPE %in% c('SampleEvent','REACH'));ACsites=ACsites[with(ACsites,order(UID)),]; View(ACsites)}
 importmaster=subset(importmaster,is.na(UID)==FALSE)#there were a lot of null UIDs...need to see what these are!! --> most appear to be null states/streams, so corrected GRTS_SITEINFO to have UID
 
 #####################################STOP###########CHECK#DUPLICATES###############################################################################################
@@ -185,7 +194,7 @@ for (u in 1:nrow(uu)){
   importmaster=subset(importmaster, (SAMPLE_TYPE %in% c('Thalweg','Tran','Canopy','CrossSection' )  & substr(PARAMETER,1,4)!='COMM' & PARAMETER!='INCREMENT' & PARAMETER!='RCHW' & is.na(TRANSECT)) ==FALSE)
   importmaster=subset(importmaster, (SAMPLE_TYPE=='Slope'    & PARAMETER %in% c('METHOD','PROP','SLOPE_UNITS') & is.na(POINT))==FALSE)
 #blank point in habitat
-  uucnt=subset(importmaster,SAMPLE_TYPE=='Habitat' & is.na(POINT));
+  uucnt=subset(importmaster,SAMPLE_TYPE=='Habitat' & is.na(POINT));uuhab=uucnt[0,]
   if(nrow(uucnt)>0){  
     uucnt=cast(uucnt,'UID  ~ SAMPLE_TYPE')
     uu5=subset(uucnt,Habitat<7)
@@ -244,14 +253,15 @@ importmaster=unique(importmaster)
   if (commentCNT>commentfailCNT|commentCNT>commentnullCNT){sprintf('%s comments with unknown parameter match and %s comments with no result match (null result i.e. a comment was used to indicate missing data)',commentfailCNT,commentnullCNT); print(commentfail)}
   #comment additions
   #flag multiple pools with unassigned points
-  uuhabcom=subset(importmaster,UID %in% uuhab$UID & PARAMETER %in% c('LENGTH','MAXDEPTH') & POINT=='0.5')
+if(nrow(uuhab)>0 ){
+uuhabcom=subset(importmaster,UID %in% uuhab$UID & PARAMETER %in% c('LENGTH','MAXDEPTH') & POINT=='0.5')
   if(nrow(uuhabcom)>0 ){
     uuhabcom$RESULT=ifelse(uuhabcom$PARAMETER=='LENGTH','Multiple pools without assigned number','Max depth omitted because cannot be paired to multiple available pool tail depths.');uuhabcom$PAGE=uuhabcom$POINT;uuhabcom$COMMENT=uuhabcom$RESULT
     uumulti=uuhabcom;uumulti$Name_Xwalk=NA;uumulti$Table_Xwalk=NA;uumulti$Type_Xwalk=NA;uumulti$Parameter_Xwalk=NA;uumulti$Notes=NA;uumulti$PARAMETERMATCH=NA;uumulti=uumulti[,!(names(uumulti) %in% c('IND','RESULT'))]
     tblCOMMENTmulti=rbind(tblCOMMENTmulti, uumulti)
     uuhabcom=unique(uuhabcom[,!(names(uuhabcom) %in% c('IND','POINT','RESULT','PARAMETER'))]);uuhabcom$IND=seq(from=IndMax,to=IndMax+nrow(uuhabcom)-1);IndMax=IndMax+nrow(uuhabcom)
     tblCOMMENTSin=rbind(tblCOMMENTSin, uuhabcom)
-  }
+  }}
   #copy QA comments
   uuqacom=subset(importmaster, toupper(substr(PARAMETER,1,5)) =='QABYP' )
   uuqacom$PAGE=uuqacom$POINT;uuqacom$COMMENT=uuqacom$RESULT;uuqacom$FLAG=sprintf('QA_%s',substr(uuqacom$SAMPLE_TYPE,1,1))
@@ -273,24 +283,22 @@ importmaster=unique(importmaster)
   XwalkFM$SAMPLE_TYPE=substr(XwalkFM$SAMPLE_TYPE,1,nchar(XwalkFM$SAMPLE_TYPE)-1)
   XwalkFM$Parameter_Xwalk=toupper(XwalkFM$Parameter_Xwalk)
   #match sample_type for comments (not done earlier because original parameter names need to be retained for comment matching)
+  #!need to change tblCOMMENTs to work with Xwalk() function and get rid of XwalkFM
   tblCOMMENTmulti$Parameter_Xwalk=tblCOMMENTmulti$PARAMETER;tblCOMMENTmulti=tblCOMMENTmulti[,!(names(tblCOMMENTmulti) %in% c('PARAMETER','SAMPLE_TYPE'))]#use tblCOMMENTmulti to bring in the parameter match to avoid duplicates#tblCOMMENTSin$Table_Xwalk=tblCOMMENTSin$SAMPLE_TYPE;tblCOMMENTSin=tblCOMMENTSin[,!(names(tblCOMMENTSin) %in% c('SAMPLE_TYPE'))]
   tblCOMMENTmulti=merge(tblCOMMENTmulti,XwalkFM,by=c('Parameter_Xwalk'),all.x=T)#tblCOMMENTSin=merge(tblCOMMENTSin,unique(subset(XwalkFM,select=c(SAMPLE_TYPE,Table_Xwalk))),by=c('Table_Xwalk'),all.x=T)
   tblCOMMENTst=unique(ColCheck(tblCOMMENTmulti,c('UID','FLAG','SAMPLE_TYPE')))
-  #!merge tblCOMMENTSst to tblCOMMENTSin using UID and FLAG and reduce to unique after ColCheck (below)
+  #merge tblCOMMENTSst to tblCOMMENTSin using UID and FLAG and reduce to unique after ColCheck (below)
   tblCOMMENTSin$STold=tblCOMMENTSin$SAMPLE_TYPE;tblCOMMENTSin= tblCOMMENTSin[,!(names( tblCOMMENTSin) %in% c('SAMPLE_TYPE'))]
   tblCOMMENTSin=unique(merge(tblCOMMENTSin, tblCOMMENTst,by=c('UID','FLAG'),all.x=T))
   tblCOMMENTSin=subset(tblCOMMENTSin,SAMPLE_TYPE!='Tracking'|substr(FLAG,1,2)=='QA')
   tblCOMMENTSin=ColCheck(tblCOMMENTSin,setdiff(c(VAR,'COMMENT','TRANSECT',"PAGE"),c('RESULT','POINT',"PARAMETER")))#!should PAGE (EPA format) be formally switched to point here and in WRSAdb....always 1 in old EPA data
   ##match sample_type for main data
-  importmaster$SAMPLE_TYPE_Xwalk=importmaster$SAMPLE_TYPE;importmaster=importmaster[,!(names(importmaster) %in% c('SAMPLE_TYPE'))]
-  importmaster$Parameter_Xwalk=importmaster$PARAMETER;importmaster=importmaster[,!(names(importmaster) %in% c('PARAMETER'))]
-  importmaster=merge(importmaster,XwalkFM,by=c('Parameter_Xwalk'),all.x=T)
-  importmaster=subset(importmaster,subset=PARAMETER!='OMIT'|is.na(PARAMETER))#Omit tracking and other unnecessary fields
-  omitCNT=nrow(subset(importmaster,subset=PARAMETER=='OMIT'))
-  unmatchedPARAM=unique(subset(importmaster,select=c('SAMPLE_TYPE','PARAMETER','SAMPLE_TYPE_Xwalk','Parameter_Xwalk'),subset=is.na(PARAMETER)))
-  if (nrow(unmatchedPARAM)>0){print("WARNING! Unmatched parameters. Reconcile before proceeding with import."); print(unmatchedPARAM)}
-  importmaster=ColCheck(importmaster,importcols)
-
+  importmaster=Xwalk(Source='R',Table="importmaster",XwalkName='FM')                                                                                              
+  importmaster$SAMPLE_TYPE=ifelse(toupper(substr(importmaster$SAMPLE_TYPE,nchar(importmaster$SAMPLE_TYPE),nchar(importmaster$SAMPLE_TYPE)))=='X',substr(importmaster$SAMPLE_TYPE,1,nchar(importmaster$SAMPLE_TYPE)-1), importmaster$SAMPLE_TYPE)#!remove x here or in function
+  importmaster=subset(importmaster,subset=toupper(PARAMETER)!='OMIT'|is.na(PARAMETER))#Omit tracking and other unnecessary fields
+  importmaster=ColCheck(importmaster,importcols)                                                                                              
+                                                                                                
+  
 
 #importmaster14Jul14xwalk2=importmaster;comments14Jul14xwalk2=tblCOMMENTSin
  }#end Else Proceed=2
@@ -318,11 +326,7 @@ if(PROCEED<3) {print("Data ready for import. Perform any desired checkes and set
   #aggcnt=aggregate(RESULT~UID + TRANSECT + POINT + SAMPLE_TYPE + PARAMETER,data=tblPOINTin,FUN=length);aggcnt=subset(aggcnt,RESULT>1);View(aggcnt)
 
   
-   
-  
-  ##! sync metadata between FM and SQL -> odbcConnect() # FM set up to share, but need to setup DSN
-  
-  ##!QA checks moved to DataQA_WRSA
+
    
   
   ##if pass (missing, accounted, outlier), migrate to WRSAdb and access db
@@ -343,6 +347,7 @@ if(PROCEED<3) {print("Data ready for import. Perform any desired checkes and set
   
 }#end Else Proceed=3
   
+  ##!QA checks moved to DataQA_WRSA  
   if(PROCEED<4) { 
     if(exists("MissingTotals4")){
       tblQAin=merge(tblQAin,MissingTotals4,all=T)#rbind(tblQAin,MissingTotals4)#add percent missing
@@ -400,3 +405,20 @@ if(PROCEED<3) {print("Data ready for import. Perform any desired checkes and set
   }#end Else Proceed=4
   
   
+if (SYNC=='Y'){
+  ##!sync metadata between FM and SQL
+  tblMetadataRange=read.xlsx("C:\\Users\\Sarah\\Desktop\\NAMCdevelopmentLocal\\tblMetadataRange_20Aug14.xlsx",1)
+  tblMetadataRange$SAMPLE_TYPE=tblMetadataRange$tblMetadata..Tbl
+  tblMetadataRange$ACTIVE=ifelse(tblMetadataRange$USE=='Y','TRUE','FALSE')
+  tblMetadataRange=subset(tblMetadataRange,USE=='Y')
+  #!rather than import for exported table, would prefer#odbcConnect() # FM set up to share, but need to setup DSN
+  #!sql query to extract tblmetadatarange='select Tbl as SAMPLE_TYPE, * from tblMetadataRange join tblMetadata on tblmetadata.parameter=tblmetadatarange.parameter'
+  tblMetadataRange=Xwalk(Source='R',Table="tblMetadataRange",XwalkName='FM',COL=c('STAT','EXPLANATION'))
+  tblMetadataRange=tblMetadataRange[,!(names(tblMetadataRange) %in% c('TABLE','POINT','TRANSECT','FLAG','UID'))]
+  #!remove final X - probably move the one from importmaster into function
+  #!need to check for existing matches, otherwise append OR always append and inactivate (similar to update functions in progress)
+  TBL=tblMetadataRange;dbTable='tblMetadataRange'#!setting these variables on the assumption that eventually will be used in for loop for all metadata tables
+  sqlSave(wrsa1314,dat=TBL,tablename=dbTable,rownames=F, append=TRUE)
+  
+  #!tables to do: tblMEtadata, tblMetadataProtocol
+}

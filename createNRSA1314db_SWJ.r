@@ -91,8 +91,8 @@ if('CREATE' %in% MODE){
   #GENERAL TABLE STRINGS#
   #SQL TABLE CREATION#
   CREATEstr="create table %s
-    		(UID                 numeric(30,0)             NOT NULL
-				,SAMPLE_TYPE         nvarchar(50)    NOT NULL
+    		(UID                 numeric(30,0)             NOT NULL,
+				SAMPLE_TYPE         nvarchar(50)    NOT NULL
         %s
 				,IND                 int  NOT NULL
         ,ACTIVE              nvarchar(50)    NOT NULL
@@ -132,7 +132,18 @@ sqlQuery(wrsa1314, sprintf(CREATEstr,'tblPOINT',
                            ,FLAG                nvarchar (50)   NULL',
                            '[PK_tblPOINT]',
                            ',TRANSECT ASC,PARAMETER ASC, POINT ASC'))#results increased to 500 for photo descriptions, could consider porting to comments
-#SWJ to do: needs cleanup
+
+  #!SWJ to do: needs cleanup
+  sqlQuery(wrsa1314, sprintf(sub('UID                 numeric(30,0)             NOT NULL,','',CREATEstr)
+                             ,'tblMetadataRange',
+                             ',PARAMETER           nvarchar(50)    NOT NULL
+                              ,STAT             nvarchar(50)    NULL
+                            ,RESULT              nvarchar(50)    NULL
+                           ,EXPLANATION                nvarchar (2000)   NULL',
+                             '[PK_tblRange]',''))#!in theory, sub() should removed UID, but wasn't working, so did it manually in SQL server
+  
+  
+  
 sqlQuery(wrsa1314, sprintf(CREATEstr,'tblVERIFICATION','','[PK_tblVERIFICATION]',',PARAMETER ASC'))
 VER=read.csv('tblVERIFICATIONDec22013.csv')
 VER=ColCheck(VER)
