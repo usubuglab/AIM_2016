@@ -80,19 +80,16 @@
 
   UIDSremove=unique(subset(importmaster,select=UID,subset= (PARAMETER=='DB' & RESULT =='WRSA_AIM')|(PARAMETER=='DEVICE' & RESULT =='ProAdvanced 13.0v3/C:/Users/Sarah/Documents/')))#exclude UIDs used by Sarah in testing and ones already imported, as well as monitored duplicates
   UIDSexist=sqlQuery(wrsa1314, "select distinct UID from tblVerification where parameter='SITE_ID'")
-  UIDSmanualOMIT=c('8.58443864583729e+22','15631373425099638047420','585759337742704256','324224919440318080','452002440992807387126','56939717898642521064404','1.00590424753275e+20','3.12445349814274e+20','30317561401913393152','85565470919978896','9.79114249176033e+20','2.42573446594801e+21','7.467934950944e+19','7.1001238480827e+19','7.42868294554285e+24','10445148556604496','6.22708454798246e+20','2.25618143476838e+23','8.77503374780117e+20','4.49266934743765e+21','5.64896083614649e+21',
+  UIDS10=unique(intersect(substr(importmaster$UID,1,10),substr(UIDSexist$UID,1,10)))
+  UIDSexist10=unique(subset(UIDSexist, select=UID,subset=substr(UID,1,10) %in% UIDS10))
+  UIDSnew10=unique(subset(importmaster, select=UID,subset=substr(UID,1,10) %in% UIDS10))
+  UIDSmatch10=setdiff(UIDSnew10$UID,UIDSexist10$UID)
+  UIDSmismatch10=subset(importmaster,subset=PARAMETER %in% c('SITE_ID','DATE_COL') & UID %in% UIDSmatch10); UIDSmismatch10= UIDSmismatch10[with(UIDSmismatch10,order(UID)),]
+  if(length(UIDSmatch10)>0){sprintf('Verify %s non-exact matches for UID (1st 10 characters match). These will be automatically omitted unless otherwise indicated.',length(UIDSmatch10));View(UIDSmismatch10); sprintf('select * from tblverification where left(cast(UID as nvarchar),10) in (%s)',inLOOP(substr(UIDSmatch10,1,10)))}
+  UIDSmanualOMIT=c('8.58443864583729e+22','4948737546099460407266','15631373425099638047420','585759337742704256','324224919440318080','452002440992807387126','56939717898642521064404','1.00590424753275e+20','3.12445349814274e+20','30317561401913393152','85565470919978896','9.79114249176033e+20','2.42573446594801e+21','7.467934950944e+19','7.1001238480827e+19','7.42868294554285e+24','10445148556604496','6.22708454798246e+20','2.25618143476838e+23','8.77503374780117e+20','4.49266934743765e+21','5.64896083614649e+21',
                    '15371499864863700', '6289849184966886400','6778495559','4.86796721145911e+21','40929284494044758016','3.46298187240046e+24','4795923406292041','238904821513005888','1.56313734250996e+22','36066246794627100','36066246794627104','3281462015442028544','15371499864863704','7.08938994416638e+23','4.57921803104368e+25','18934588289520738304','9.72630743819978e+21','850630406814675200','850630406814675000','18934588289520700000','4.86796721145911E+21','6289849184966880000','324224919440318000','6.34916723436864e+21','7.03114033341499E+21','7.03114033341499e+21','4.57921803104368E+25', '3281462015442020000', '88015264382921100000','88015264382921129984','6.34916723436864E+21', '9.72630743819978E+21','7.08938994416638E+23'#beta testing
                    )#! auto remove sites with less than 10 lines of data (app defaults)?; record reason in Access Office_Comments
-  
-  #! check for UIDS different scientific notation resolution with original SQL query below:
-#   select * from
-#   (select distinct UID, LEFT(UID,10) leftUID, Result, FLAG, reason
-#    from tblverification where PARAMETER='site_id') as tv
-#   join (select  LEFT(UID,10) leftUID, COUNT(*) UIDcnt from tblVERIFICATION where PARAMETER='site_id' group by LEFT(UID,10)) as uidC 
-#   on uidC.leftUID=tv.leftUID
-#   where UIDcnt>1
-#   order by tv.leftuid
-  UIDSremoveLIST=c(UIDSremove$UID,UIDSexist$UID, UIDSmanualOMIT)#could query intentionally removed duplicates from Office_Comments in AccessDB#'1044' = duplicate site that crew entered in both app versions, confirmed with crew and Jennifer Courtwright; 6227 and 2256 = duplicates with only default data populated
+  UIDSremoveLIST=c(UIDSremove$UID,UIDSexist$UID, UIDSmanualOMIT, UIDSmatch10)#could query intentionally removed duplicates from Office_Comments in AccessDB#'1044' = duplicate site that crew entered in both app versions, confirmed with crew and Jennifer Courtwright; 6227 and 2256 = duplicates with only default data populated
   importmaster=subset(importmaster,subset= (UID %in% UIDSremoveLIST)== FALSE)
   #check for duplicate siteIDS
   SITEdup=subset(importmaster, subset=PARAMETER %in% c('SITE_ID') & SAMPLE_TYPE=='SampleEvent');SITEdup$SITE=SITEdup$RESULT;SITEdup=SITEdup[,!(names(SITEdup) %in% c('RESULT','IND','PARAMETER'))]
@@ -209,6 +206,11 @@ for (u in 1:nrow(uu)){
     importmaster$DEPRECATION=ifelse(importmaster$UID %in% uuhab$UID & importmaster$PARAMETER %in% c('MAXDEPTH') & importmaster$POINT=='0.5',as.character(Sys.Date()),importmaster$DEPRECATION)
   }}
   
+ #!other data quirks that need global correction in existing data and prevention in future data
+ #!double records for CHANDEPTHB and CROSSSECW with the same index (should be cleared up for new xwalk funciton); check other ind duplicates
+ #!measurement units for app tweaks
+#!different angle, size_cls parameter for 2014 bc of significant protocol change
+                                                                                                
 
 importmaster=unique(importmaster)
 #importmaster14Jul14clean2=importmaster
@@ -218,13 +220,12 @@ importmaster=unique(importmaster)
 
   importmaster$PARAMETER=ifelse(importmaster$PARAMETER =='CAL_REASON','COMMENT_REASON',importmaster$PARAMETER);importmaster$PARAMETER=ifelse(importmaster$PARAMETER =='COMMENTS','COMMENT_FAIL',importmaster$PARAMETER)#!temporary, will be corrected in app by July 2014
   #!need to reconcile assign flags to YSI readings (FIELDMEAS) if calibration failed (like probes, probably do this processing at the end of the season)
-  
   #separate and match flags and comments (abbreviate and number flags (Letter:FieldSuffix:Transect - ex: U_Wid_B), port comments to separate table with flag, match flag to rows based on protocol (xwalk))
-  tblCOMMENTStmp=subset(importmaster,subset= substr(PARAMETER,1,nchar('COMMENT'))=='COMMENT');tblCOMMENTStmp$COMMENT=tblCOMMENTStmp$RESULT;tblCOMMENTStmp$PARAMETER=substr(tblCOMMENTStmp$PARAMETER,nchar('COMMENT_')+1,nchar(tblCOMMENTStmp$PARAMETER))
-  tblFLAGStmp=subset(importmaster,subset= substr(PARAMETER,1,nchar('FLAG'))=='FLAG');tblFLAGStmp$PARAMETER=substr(tblFLAGStmp$PARAMETER,nchar('FLAG_')+1,nchar(tblFLAGStmp$PARAMETER))
+  tblCOMMENTStmp=subset(importmaster,subset= substr(PARAMETER,1,nchar('COMMENT'))=='COMMENT');tblCOMMENTStmp$COMMENT=tblCOMMENTStmp$RESULT;#tblCOMMENTStmp$PARAMETER=substr(tblCOMMENTStmp$PARAMETER,nchar('COMMENT_')+1,nchar(tblCOMMENTStmp$PARAMETER))
+  tblFLAGStmp=subset(importmaster,subset= substr(PARAMETER,1,nchar('FLAG'))=='FLAG');tblFLAGStmp$PARAMETER=gsub('FLAG_','COMMENT_',tblFLAGStmp$PARAMETER)#tblFLAGStmp$PARAMETER=substr(tblFLAGStmp$PARAMETER,nchar('FLAG_')+1,nchar(tblFLAGStmp$PARAMETER))
   tblFLAGStmp$FLAG=sprintf('%s_%s%s%s',
                            tblFLAGStmp$RESULT,
-                           tblFLAGStmp$PARAMETER,
+                           gsub('COMMENT_','',tblFLAGStmp$FLAG),#substr(tblFLAGStmp$PARAMETER,nchar('COMMENT_')+1,nchar(tblFLAGStmp$PARAMETER)),#tblFLAGStmp$PARAMETER,#
                            ifelse(is.na(tblFLAGStmp$TRANSECT),'',sprintf('_%s',tblFLAGStmp$TRANSECT)),
                            ifelse(is.na(tblFLAGStmp$POINT),'',sprintf('_%s',tblFLAGStmp$POINT)))
   flagCNT=nrow(tblFLAGStmp);flagdupCNT=nrow(unique(cbind(tblFLAGStmp$FLAG,tblFLAGStmp$UID,tblFLAGStmp$TRANSECT)))
@@ -232,25 +233,20 @@ importmaster=unique(importmaster)
   tblCOMMENTStmp=tblCOMMENTStmp[,!(names(tblCOMMENTStmp) %in% c('FLAG','RESULT','IND'))];tblFLAGStmp=tblFLAGStmp[,!(names(tblFLAGStmp) %in% c('RESULT','IND'))];
   tblCOMMENTSin=merge(tblCOMMENTStmp,tblFLAGStmp,all=T)#in theory, shouldn't get any comments without flags and shouldn't get many flags without comments
   tblCOMMENTSin$FLAG=ifelse(is.na(tblCOMMENTSin$FLAG),tblCOMMENTSin$PARAMETER,tblCOMMENTSin$FLAG);tblCOMMENTSin$FLAG=ifelse(tblCOMMENTSin$FLAG=="",tblCOMMENTSin$SAMPLE_TYPE,tblCOMMENTSin$FLAG)
+  tblCOMMENTSin$FLAG=gsub('COMMENT_','',tblCOMMENTSin$FLAG)
   flagonlyCNT=nrow(subset(tblCOMMENTSin,is.na(COMMENT)));commentonlyCNT=nrow(subset(tblCOMMENTSin,is.na(FLAG)));sprintf('WARNING! %s Comments without Flags and %s Flags without Comments',commentonlyCNT,flagonlyCNT)
   tblCOMMENTSin$PAGE=tblCOMMENTSin$POINT#!should PAGE (EPA format) be formally switched to point here and in WRSAdb....always 1 in old EPA data
+  tblCOMMENTSin$SAMPLE_TYPE=ifelse(tblCOMMENTSin$SAMPLE_TYPE=='FailedSite' & tblCOMMENTSin$FLAG=='FAIL','SampleEvent',tblCOMMENTSin$SAMPLE_TYPE)##odd comment that has the result in one table and comment in another
   #apply comments to master table
-  tblCOMMENTSin=tblCOMMENTSin[,!(names(tblCOMMENTSin) %in% c('IND'))];importmaster=importmaster[,!(names(importmaster) %in% c('FLAG'))]
-  CommentMatch=sqlQuery(wrsa1314, "select * from tblxwalk where Name_Xwalk='fmstr'")
-  CommentMatch$Parameter_Xwalk=toupper(substr(CommentMatch$Parameter_Xwalk,nchar('COMMENT_')+1,nchar(CommentMatch$Parameter_Xwalk)))
-  CommentMatch$PARAMETERMATCH=toupper(CommentMatch$PARAMETER);CommentMatch$PARAMETER=CommentMatch$Parameter_Xwalk
-  tblCOMMENTmulti=unique(merge(tblCOMMENTSin,CommentMatch))#multiply the comment via tblMetadata::CommentMatch to multiple applicable parameters
-  commentfail=subset(merge(tblCOMMENTSin,CommentMatch,all.x=T),subset=is.na(PARAMETERMATCH))
-  commentfailCNT=nrow(commentfail)
-  tblCOMMENTmulti=tblCOMMENTmulti[,!(names(tblCOMMENTmulti) %in% c('PARAMETER'))];tblCOMMENTmulti$PARAMETER=tblCOMMENTmulti$PARAMETERMATCH#drop parameter and reassign as parametermatch
-  tblCOMMENTmulti$SAMPLE_TYPE=ifelse(tblCOMMENTmulti$SAMPLE_TYPE=='FailedSite','SampleEvent',tblCOMMENTmulti$SAMPLE_TYPE)#seems to overcome the matching for this particular sitation in a way that FMstr and previous matching can't, try to find a better solution.
+  tblCOMMENTmulti=Xwalk(Source='R',Table="tblCOMMENTSin",XwalkName='FMstr',COL=c('PAGE','COMMENT'));
+  tblCOMMENTmulti=unique(tblCOMMENTmulti[,!(names(tblCOMMENTmulti) %in% c('IND','RESULT','TABLE'))]);importmaster=importmaster[,!(names(importmaster) %in% c('FLAG'))];importmaster$SAMPLE_TYPE=toupper(importmaster$SAMPLE_TYPE)#tblCOMMENTSin=tblCOMMENTSin[,!(names(tblCOMMENTSin) %in% c('IND'))];
   importmaster=merge(importmaster,tblCOMMENTmulti,all.x=T)#!does this match null transect/point properly?; by default: intersect(names(importmaster),names(tblCOMMENTmulti))
   commentnullCNT=nrow(subset(merge(importmaster,tblCOMMENTmulti,all.y=T),is.na(RESULT)))
   importmaster=subset(importmaster,subset= substr(PARAMETER,1,nchar('COMMENT'))!='COMMENT'& substr(PARAMETER,1,nchar('FLAG'))!='FLAG')#remove Comments and Flags since these have already been extracted
   tblCOMMENTSin=ColCheck(tblCOMMENTSin,setdiff(c(VAR,'COMMENT','TRANSECT',"PAGE"),c('RESULT',"PARAMETER")))#!should PAGE (EPA format) be formally switched to point here and in WRSAdb....always 1 in old EPA data
-  importmaster=ColCheck(importmaster,importcols)
+  importmaster=unique(ColCheck(importmaster,importcols))
   commentCNT=nrow(tblCOMMENTSin);
-  if (commentCNT>commentfailCNT|commentCNT>commentnullCNT){sprintf('%s comments with unknown parameter match and %s comments with no result match (null result i.e. a comment was used to indicate missing data)',commentfailCNT,commentnullCNT); print(commentfail)}
+  if (commentCNT>commentnullCNT){sprintf('%s comments with no result match (null result i.e. a comment was used to indicate missing data)',commentnullCNT)}
   #comment additions
   #flag multiple pools with unassigned points
 if(nrow(uuhab)>0 ){
@@ -265,7 +261,7 @@ uuhabcom=subset(importmaster,UID %in% uuhab$UID & PARAMETER %in% c('LENGTH','MAX
   #copy QA comments
   uuqacom=subset(importmaster, toupper(substr(PARAMETER,1,5)) =='QABYP' )
   uuqacom$PAGE=uuqacom$POINT;uuqacom$COMMENT=uuqacom$RESULT;uuqacom$FLAG=sprintf('QA_%s',substr(uuqacom$SAMPLE_TYPE,1,1))
-  uumulti=uuqacom;uumulti$Name_Xwalk=NA;uumulti$Table_Xwalk=NA;uumulti$Type_Xwalk=NA;uumulti$Parameter_Xwalk=NA;uumulti$Notes=NA;uumulti$PARAMETERMATCH=NA;uumulti=uumulti[,!(names(uumulti) %in% c('IND','RESULT'))]
+  uumulti=uuqacom;uumulti=uumulti[,!(names(uumulti) %in% c('IND','RESULT'))]
   tblCOMMENTmulti=rbind(tblCOMMENTmulti, uumulti)
   uuqacom=unique(uuqacom[,!(names(uuqacom) %in% c('IND','POINT','RESULT','PARAMETER'))]);uuqacom$IND=seq(from=IndMax,to=IndMax+nrow(uuqacom)-1);IndMax=IndMax+nrow(uuqacom)
   tblCOMMENTSin=rbind(tblCOMMENTSin, uuqacom)
@@ -279,20 +275,16 @@ uuhabcom=subset(importmaster,UID %in% uuhab$UID & PARAMETER %in% c('LENGTH','MAX
   #importmaster14Jul14nocomm2=importmaster
   
   #Xwalk all parameters to non-FM names and assign proper Sample_Type (don't think it needs to be assigned earlier)
-  XwalkFM=sqlQuery(wrsa1314, "select * from tblxwalk where Name_Xwalk='fm'")
-  XwalkFM$SAMPLE_TYPE=substr(XwalkFM$SAMPLE_TYPE,1,nchar(XwalkFM$SAMPLE_TYPE)-1)
-  XwalkFM$Parameter_Xwalk=toupper(XwalkFM$Parameter_Xwalk)
   #match sample_type for comments (not done earlier because original parameter names need to be retained for comment matching)
-  #!need to change tblCOMMENTs to work with Xwalk() function and get rid of XwalkFM
-  tblCOMMENTmulti$Parameter_Xwalk=tblCOMMENTmulti$PARAMETER;tblCOMMENTmulti=tblCOMMENTmulti[,!(names(tblCOMMENTmulti) %in% c('PARAMETER','SAMPLE_TYPE'))]#use tblCOMMENTmulti to bring in the parameter match to avoid duplicates#tblCOMMENTSin$Table_Xwalk=tblCOMMENTSin$SAMPLE_TYPE;tblCOMMENTSin=tblCOMMENTSin[,!(names(tblCOMMENTSin) %in% c('SAMPLE_TYPE'))]
-  tblCOMMENTmulti=merge(tblCOMMENTmulti,XwalkFM,by=c('Parameter_Xwalk'),all.x=T)#tblCOMMENTSin=merge(tblCOMMENTSin,unique(subset(XwalkFM,select=c(SAMPLE_TYPE,Table_Xwalk))),by=c('Table_Xwalk'),all.x=T)
+  tblCOMMENTmulti=Xwalk(Source='R',Table="tblCOMMENTmulti",XwalkName='FM',COL=c('PAGE','COMMENT')) 
+  tblCOMMENTmulti$SAMPLE_TYPE=ifelse(toupper(substr(tblCOMMENTmulti$SAMPLE_TYPE,nchar(tblCOMMENTmulti$SAMPLE_TYPE),nchar(tblCOMMENTmulti$SAMPLE_TYPE)))=='X',substr(tblCOMMENTmulti$SAMPLE_TYPE,1,nchar(tblCOMMENTmulti$SAMPLE_TYPE)-1), tblCOMMENTmulti$SAMPLE_TYPE)#!remove x here or in function
   tblCOMMENTst=unique(ColCheck(tblCOMMENTmulti,c('UID','FLAG','SAMPLE_TYPE')))
   #merge tblCOMMENTSst to tblCOMMENTSin using UID and FLAG and reduce to unique after ColCheck (below)
   tblCOMMENTSin$STold=tblCOMMENTSin$SAMPLE_TYPE;tblCOMMENTSin= tblCOMMENTSin[,!(names( tblCOMMENTSin) %in% c('SAMPLE_TYPE'))]
   tblCOMMENTSin=unique(merge(tblCOMMENTSin, tblCOMMENTst,by=c('UID','FLAG'),all.x=T))
   tblCOMMENTSin=subset(tblCOMMENTSin,SAMPLE_TYPE!='Tracking'|substr(FLAG,1,2)=='QA')
   tblCOMMENTSin=ColCheck(tblCOMMENTSin,setdiff(c(VAR,'COMMENT','TRANSECT',"PAGE"),c('RESULT','POINT',"PARAMETER")))#!should PAGE (EPA format) be formally switched to point here and in WRSAdb....always 1 in old EPA data
-  ##match sample_type for main data
+   ##match sample_type for main data
   importmaster=Xwalk(Source='R',Table="importmaster",XwalkName='FM')                                                                                              
   importmaster$SAMPLE_TYPE=ifelse(toupper(substr(importmaster$SAMPLE_TYPE,nchar(importmaster$SAMPLE_TYPE),nchar(importmaster$SAMPLE_TYPE)))=='X',substr(importmaster$SAMPLE_TYPE,1,nchar(importmaster$SAMPLE_TYPE)-1), importmaster$SAMPLE_TYPE)#!remove x here or in function
   importmaster=subset(importmaster,subset=toupper(PARAMETER)!='OMIT'|is.na(PARAMETER))#Omit tracking and other unnecessary fields

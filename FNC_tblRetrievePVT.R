@@ -181,7 +181,7 @@ upper(case when '%s'='_Xwalk' or  XwalkParam.Type_Xwalk='' or  XwalkParam.Type_X
 upper(case when '%s'='_Xwalk' or  XwalkParam.PARAMETER_Xwalk='' or  XwalkParam.PARAMETER_Xwalk is null then XwalkParam.PARAMETER else XwalkParam.PARAMETER_Xwalk end) as PARAMETER, 
 RESULT,FLAG,IND,ACTIVE,OPERATION,INSERTION,DEPRECATION,REASON %s
 from TBLtmp   JOIN  XwalkParam on upper(TBLtmp.PARAMETER)= upper(XwalkParam.PARAMETER%s) and upper(TBLtmp.SAMPLE_TYPE)= upper(XwalkParam.[TABLE%s])
- ",XwalkDirection,XwalkDirection,gsub("'","]",gsub(", '",",[",paste(", " , inLOOP(COL),sep=''))),XwalkDirection,XwalkDirection))
+ ",XwalkDirection,XwalkDirection,gsub("'","]",ifelse(COL=='','',gsub(", '",",[",paste(", " , inLOOP(COL),sep='')))),XwalkDirection,ifelse(XwalkName=='FMstr','',XwalkDirection)))
 if(nrow(TBLtmp)!=nrow(XwalkTBL)){print(sprintf('WARNING! Different number of rows in original (%s rows) and xwalk (%s rows) tables.',nrow(TBLtmp),nrow(XwalkTBL)))
   INDmissing=setdiff(TBLtmp$IND,XwalkTBL$IND)
   SPmissing=unique(subset(TBLtmp,select=c(SAMPLE_TYPE,PARAMETER),subset=IND %in% INDmissing))
