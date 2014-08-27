@@ -132,7 +132,7 @@ where (active='TRUE') "
 addKEYS=function(Table,Columns){
   KEYS=tblRetrieve(Table='tblVerification',UIDS=unique(Table$UID),Parameters=Columns)
   KEYS=cast(KEYS,'UID~PARAMETER',value='RESULT')
-  Table=merge(Table,KEYS, by="UID")
+  Table=merge(Table,KEYS, by="UID",all.x=T)
   return(Table)
 }
 
@@ -166,13 +166,13 @@ tblRetrieve=function(Table='',ALL='N',Filter='',UIDS='BLANK',SiteCodes='',Dates=
 
 
 #XWALK
-Xwalk=function(Source='SQL',XwalkName='WRSA',COL='',Table='',ALL='N',Filter='',UIDS='BLANK',SiteCodes='',Dates='',Years='',Projects='',Protocols='',Parameters='',ALLp='N'){
+Xwalk=function(Source='SQL',XwalkName='WRSA',XwalkDirection='',COL='',Table='',ALL='N',Filter='',UIDS='BLANK',SiteCodes='',Dates='',Years='',Projects='',Protocols='',Parameters='',ALLp='N'){
 if(Source=='SQL' | Table==''){
 TBLtmp=tblRetrieve(Table=Table,ALL=ALL,Filter=Filter,UIDS=UIDS,SiteCodes=SiteCodes,Dates=Dates,Years=Years,Projects=Projects,Protocols=Protocols,Parameters=Parameters,ALLp=ALLp)
-XwalkDirection=''#should the user be given control of direction as a function parameter? 
+#XwalkDirection=''#user given control in the function, rather than assuming based on source
 } else if (Source=='R') {
 TBLtmp=eval(parse(text=Table))
-XwalkDirection='_Xwalk'
+#XwalkDirection='_Xwalk' #user given control in the function, rather than assuming based on source
 }
 TBLtmp=ColCheck(TBLtmp,c(VAR,'PARAMETER','TRANSECT','POINT','RESULT',COL))
 XwalkParam=sqlQuery(wrsa1314,sprintf("select *, case when right(SAMPLE_TYPE,1)='X' then left(SAMPLE_TYPE,len(SAMPLE_TYPE)-1) else SAMPLE_TYPE end as 'TABLE' from tblXWALK where Name_XWALK='%s' ",XwalkName))
@@ -182,11 +182,12 @@ upper(case when '%s'='_Xwalk' or  XwalkParam.PARAMETER_Xwalk='' or  XwalkParam.P
 RESULT,FLAG,IND,ACTIVE,OPERATION,INSERTION,DEPRECATION,REASON %s
 from TBLtmp   JOIN  XwalkParam on upper(TBLtmp.PARAMETER)= upper(XwalkParam.PARAMETER%s) and upper(TBLtmp.SAMPLE_TYPE)= upper(XwalkParam.[TABLE%s])
  ",XwalkDirection,XwalkDirection,gsub("'","]",ifelse(COL=='','',gsub(", '",",[",paste(", " , inLOOP(COL),sep='')))),XwalkDirection,ifelse(XwalkName=='FMstr','',XwalkDirection)))
+XwalkTBL$SAMPLE_TYPE=ifelse(toupper(substr(XwalkTBL$SAMPLE_TYPE,nchar(XwalkTBL$SAMPLE_TYPE),nchar(XwalkTBL$SAMPLE_TYPE)))=='X',substr(XwalkTBL$SAMPLE_TYPE,1,nchar(XwalkTBL$SAMPLE_TYPE)-1), XwalkTBL$SAMPLE_TYPE)
 if(nrow(TBLtmp)!=nrow(XwalkTBL)){print(sprintf('WARNING! Different number of rows in original (%s rows) and xwalk (%s rows) tables.',nrow(TBLtmp),nrow(XwalkTBL)))
-  INDmissing=setdiff(TBLtmp$IND,XwalkTBL$IND)
-  SPmissing=unique(subset(TBLtmp,select=c(SAMPLE_TYPE,PARAMETER),subset=IND %in% INDmissing))
-  print('The following parameters do not have a xwalk match:')
-  print(SPmissing)}
+  SPmissing=unique(setdiff(toupper(paste(TBLtmp$SAMPLE_TYPE,TBLtmp$PARAMETER,sep=':')),toupper(paste(XwalkTBL$SAMPLE_TYPE,XwalkTBL$PARAMETER,sep=':'))))
+  if(length(SPmissing)>0){print('The following parameters do not have a xwalk match:')
+  print(SPmissing)
+  }}
 return(XwalkTBL)
 }
 

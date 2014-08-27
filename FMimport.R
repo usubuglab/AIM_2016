@@ -164,9 +164,10 @@ uu3=setdiff(uu1$UID,uu2$UID)
 importmaster=subset(importmaster,(UID %in% uu3 & PARAMETER=='INCREMENT')==FALSE)
   
 #convert dates/times to preferred format, not EXCEL numeric format
-importmaster$RESULT=ifelse(importmaster$PARAMETER %in% c('DATE_COL','CAL_INST_DATE','ACTUAL_DATE_BER','ACTUAL_DATE_CHEM')  & is.na(as.numeric(importmaster$RESULT))==FALSE,format(as.Date(as.numeric(importmaster$RESULT)-25569, origin="1970-01-01"),format='%m/%d/%Y'),importmaster$RESULT)
-importmaster$RESULT=ifelse(importmaster$PARAMETER %in% c('DATE_COL','CAL_INST_DATE','ACTUAL_DATE_BER','ACTUAL_DATE_CHEM')  & substr(importmaster$RESULT,5,5)=="-",format(as.Date(importmaster$RESULT,format='%Y-%m-%d'),format='%m/%d/%Y'),importmaster$RESULT)
-importmaster$FLAG=ifelse(is.na(as.Date(importmaster$RESULT,format='%m/%d/%Y')),"U_DATE",importmaster$FLAG)#flag dates in non-standard format
+DateParams=c('DATE_COL','CAL_INST_DATE','ACTUAL_DATE_BER','ACTUAL_DATE_CHEM')
+importmaster$RESULT=ifelse(importmaster$PARAMETER %in% DateParams  & is.na(as.numeric(importmaster$RESULT))==FALSE,format(as.Date(as.numeric(importmaster$RESULT)-25569, origin="1970-01-01"),format='%m/%d/%Y'),importmaster$RESULT)
+importmaster$RESULT=ifelse(importmaster$PARAMETER %in% DateParams  & substr(importmaster$RESULT,5,5)=="-",format(as.Date(importmaster$RESULT,format='%Y-%m-%d'),format='%m/%d/%Y'),importmaster$RESULT)
+importmaster$FLAG=ifelse(is.na(as.Date(importmaster$RESULT,format='%m/%d/%Y')) & importmaster$PARAMETER %in% DateParams,"U_DATE",importmaster$FLAG)#flag dates in non-standard format
 importmaster$RESULT=ifelse(importmaster$PARAMETER %in% c('PROBE_STARTTIME','PROBE_ENDTIME') ,gsub("1899-12-30 ","",importmaster$RESULT),importmaster$RESULT)
 
 #additional calibration cleanup
@@ -225,7 +226,7 @@ importmaster=unique(importmaster)
   tblFLAGStmp=subset(importmaster,subset= substr(PARAMETER,1,nchar('FLAG'))=='FLAG');tblFLAGStmp$PARAMETER=gsub('FLAG_','COMMENT_',tblFLAGStmp$PARAMETER)#tblFLAGStmp$PARAMETER=substr(tblFLAGStmp$PARAMETER,nchar('FLAG_')+1,nchar(tblFLAGStmp$PARAMETER))
   tblFLAGStmp$FLAG=sprintf('%s_%s%s%s',
                            tblFLAGStmp$RESULT,
-                           gsub('COMMENT_','',tblFLAGStmp$FLAG),#substr(tblFLAGStmp$PARAMETER,nchar('COMMENT_')+1,nchar(tblFLAGStmp$PARAMETER)),#tblFLAGStmp$PARAMETER,#
+                           sub('COMMENT_','',tblFLAGStmp$PARAMETER),#substr(tblFLAGStmp$PARAMETER,nchar('COMMENT_')+1,nchar(tblFLAGStmp$PARAMETER)),#tblFLAGStmp$PARAMETER,#
                            ifelse(is.na(tblFLAGStmp$TRANSECT),'',sprintf('_%s',tblFLAGStmp$TRANSECT)),
                            ifelse(is.na(tblFLAGStmp$POINT),'',sprintf('_%s',tblFLAGStmp$POINT)))
   flagCNT=nrow(tblFLAGStmp);flagdupCNT=nrow(unique(cbind(tblFLAGStmp$FLAG,tblFLAGStmp$UID,tblFLAGStmp$TRANSECT)))
@@ -238,7 +239,7 @@ importmaster=unique(importmaster)
   tblCOMMENTSin$PAGE=tblCOMMENTSin$POINT#!should PAGE (EPA format) be formally switched to point here and in WRSAdb....always 1 in old EPA data
   tblCOMMENTSin$SAMPLE_TYPE=ifelse(tblCOMMENTSin$SAMPLE_TYPE=='FailedSite' & tblCOMMENTSin$FLAG=='FAIL','SampleEvent',tblCOMMENTSin$SAMPLE_TYPE)##odd comment that has the result in one table and comment in another
   #apply comments to master table
-  tblCOMMENTmulti=Xwalk(Source='R',Table="tblCOMMENTSin",XwalkName='FMstr',COL=c('PAGE','COMMENT'));
+  tblCOMMENTmulti=Xwalk(Source='R',Table="tblCOMMENTSin",XwalkName='FMstr',XwalkDirection='_Xwalk',COL=c('PAGE','COMMENT'));
   tblCOMMENTmulti=unique(tblCOMMENTmulti[,!(names(tblCOMMENTmulti) %in% c('IND','RESULT','TABLE'))]);importmaster=importmaster[,!(names(importmaster) %in% c('FLAG'))];importmaster$SAMPLE_TYPE=toupper(importmaster$SAMPLE_TYPE)#tblCOMMENTSin=tblCOMMENTSin[,!(names(tblCOMMENTSin) %in% c('IND'))];
   importmaster=merge(importmaster,tblCOMMENTmulti,all.x=T)#!does this match null transect/point properly?; by default: intersect(names(importmaster),names(tblCOMMENTmulti))
   commentnullCNT=nrow(subset(merge(importmaster,tblCOMMENTmulti,all.y=T),is.na(RESULT)))
@@ -276,8 +277,7 @@ uuhabcom=subset(importmaster,UID %in% uuhab$UID & PARAMETER %in% c('LENGTH','MAX
   
   #Xwalk all parameters to non-FM names and assign proper Sample_Type (don't think it needs to be assigned earlier)
   #match sample_type for comments (not done earlier because original parameter names need to be retained for comment matching)
-  tblCOMMENTmulti=Xwalk(Source='R',Table="tblCOMMENTmulti",XwalkName='FM',COL=c('PAGE','COMMENT')) 
-  tblCOMMENTmulti$SAMPLE_TYPE=ifelse(toupper(substr(tblCOMMENTmulti$SAMPLE_TYPE,nchar(tblCOMMENTmulti$SAMPLE_TYPE),nchar(tblCOMMENTmulti$SAMPLE_TYPE)))=='X',substr(tblCOMMENTmulti$SAMPLE_TYPE,1,nchar(tblCOMMENTmulti$SAMPLE_TYPE)-1), tblCOMMENTmulti$SAMPLE_TYPE)#!remove x here or in function
+  tblCOMMENTmulti=Xwalk(Source='R',Table="tblCOMMENTmulti",XwalkName='FM',XwalkDirection='_Xwalk',COL=c('PAGE','COMMENT')) 
   tblCOMMENTst=unique(ColCheck(tblCOMMENTmulti,c('UID','FLAG','SAMPLE_TYPE')))
   #merge tblCOMMENTSst to tblCOMMENTSin using UID and FLAG and reduce to unique after ColCheck (below)
   tblCOMMENTSin$STold=tblCOMMENTSin$SAMPLE_TYPE;tblCOMMENTSin= tblCOMMENTSin[,!(names( tblCOMMENTSin) %in% c('SAMPLE_TYPE'))]
@@ -285,8 +285,7 @@ uuhabcom=subset(importmaster,UID %in% uuhab$UID & PARAMETER %in% c('LENGTH','MAX
   tblCOMMENTSin=subset(tblCOMMENTSin,SAMPLE_TYPE!='Tracking'|substr(FLAG,1,2)=='QA')
   tblCOMMENTSin=ColCheck(tblCOMMENTSin,setdiff(c(VAR,'COMMENT','TRANSECT',"PAGE"),c('RESULT','POINT',"PARAMETER")))#!should PAGE (EPA format) be formally switched to point here and in WRSAdb....always 1 in old EPA data
    ##match sample_type for main data
-  importmaster=Xwalk(Source='R',Table="importmaster",XwalkName='FM')                                                                                              
-  importmaster$SAMPLE_TYPE=ifelse(toupper(substr(importmaster$SAMPLE_TYPE,nchar(importmaster$SAMPLE_TYPE),nchar(importmaster$SAMPLE_TYPE)))=='X',substr(importmaster$SAMPLE_TYPE,1,nchar(importmaster$SAMPLE_TYPE)-1), importmaster$SAMPLE_TYPE)#!remove x here or in function
+  importmaster=Xwalk(Source='R',Table="importmaster",XwalkName='FM',XwalkDirection='_Xwalk')                                                                                              
   importmaster=subset(importmaster,subset=toupper(PARAMETER)!='OMIT'|is.na(PARAMETER))#Omit tracking and other unnecessary fields
   importmaster=ColCheck(importmaster,importcols)                                                                                              
                                                                                                 
@@ -300,12 +299,12 @@ uuhabcom=subset(importmaster,UID %in% uuhab$UID & PARAMETER %in% c('LENGTH','MAX
 if(PROCEED<3) {print("Data ready for import. Perform any desired checkes and set PROCEED=3 (in console) to continue.")
                }  else{
   tblCOMMENTSin$TRANSECT=ifelse(is.na(tblCOMMENTSin$TRANSECT),"ALL",tblCOMMENTSin$TRANSECT);tblCOMMENTSin$PAGE=ifelse(is.na(tblCOMMENTSin$PAGE),"1",tblCOMMENTSin$PAGE);tblCOMMENTSin=tblCOMMENTSin[with(tblCOMMENTSin,order(IND)),]
-  tblPOINTin=subset(importmaster,subset=is.na(POINT)==FALSE & SAMPLE_TYPE!='Tracking' );tblPOINTin$TRANSECT=ifelse(is.na(tblPOINTin$TRANSECT) |toupper(tblPOINTin$TRANSECT)=="NA","0",tblPOINTin$TRANSECT);tblPOINTin=tblPOINTin[with(tblPOINTin,order(IND)),]
+  tblPOINTin=subset(importmaster,subset=is.na(POINT)==FALSE & toupper(SAMPLE_TYPE)!='TRACKING' );tblPOINTin$TRANSECT=ifelse(is.na(tblPOINTin$TRANSECT) |toupper(tblPOINTin$TRANSECT)=="NA","0",tblPOINTin$TRANSECT);tblPOINTin=tblPOINTin[with(tblPOINTin,order(IND)),]
   tblTRANSECTin=subset(importmaster,is.na(POINT)==TRUE & is.na(TRANSECT)==FALSE & SAMPLE_TYPE!='Tracking');tblTRANSECTin=tblTRANSECTin[,!(names(tblTRANSECTin) %in% c('POINT'))];tblTRANSECTin=tblTRANSECTin[with(tblTRANSECTin,order(IND)),]
-  tblFAILUREin=subset(importmaster,SAMPLE_TYPE=='Failure'|PARAMETER=='Proximity');#unique(tblFAILUREin$PARAMETER)
-  tblQAin=subset(importmaster,SAMPLE_TYPE=='Tracking' & toupper(PARAMETER)!='OMIT')#unique(tblQAin$PARAMETER)
-  tblVERIFICATIONin=subset(importmaster,SAMPLE_TYPE=='VERIF');tblVERIFICATIONin=tblVERIFICATIONin[,!(names(tblVERIFICATIONin) %in% c('POINT','TRANSECT'))];tblVERIFICATIONin=tblVERIFICATIONin[with(tblVERIFICATIONin,order(IND)),]
-  tblREACHin=subset(importmaster,is.na(POINT)==TRUE & is.na(TRANSECT)==TRUE & SAMPLE_TYPE!='Failure' & SAMPLE_TYPE!='Tracking' & SAMPLE_TYPE!='VERIF');tblREACHin=tblREACHin[,!(names(tblREACHin) %in% c('POINT','TRANSECT'))];tblREACHin=tblREACHin[with(tblREACHin,order(IND)),] #any remaining with not in  tblVERIFICATIONin and parameter <> comment/flag
+  tblFAILUREin=subset(importmaster,toupper(SAMPLE_TYPE)=='FAILURE'|toupper(PARAMETER)=='PROXIMITY');#unique(tblFAILUREin$PARAMETER)
+  tblQAin=subset(importmaster,toupper(SAMPLE_TYPE)=='TRACKING' & toupper(PARAMETER)!='OMIT')#unique(tblQAin$PARAMETER)
+  tblVERIFICATIONin=subset(importmaster,toupper(SAMPLE_TYPE)=='VERIF');tblVERIFICATIONin=tblVERIFICATIONin[,!(names(tblVERIFICATIONin) %in% c('POINT','TRANSECT'))];tblVERIFICATIONin=tblVERIFICATIONin[with(tblVERIFICATIONin,order(IND)),]
+  tblREACHin=subset(importmaster,is.na(POINT)==TRUE & is.na(TRANSECT)==TRUE & toupper(SAMPLE_TYPE)!='FAILURE' & toupper(SAMPLE_TYPE)!='TRACKING' & SAMPLE_TYPE!='VERIF');tblREACHin=tblREACHin[,!(names(tblREACHin) %in% c('POINT','TRANSECT'))];tblREACHin=tblREACHin[with(tblREACHin,order(IND)),] #any remaining with not in  tblVERIFICATIONin and parameter <> comment/flag
   masterCNT=nrow(importmaster);pointCNT=nrow(tblPOINTin);transectCNT=nrow(tblTRANSECTin);failCNT=nrow(tblFAILUREin);qaCNT=nrow(tblQAin);reachCNT=nrow(tblREACHin);verifCNT=nrow(tblVERIFICATIONin);
   unacctCNT=masterCNT-#total rows expected
     sum(pointCNT,transectCNT,reachCNT,commentCNT,verifCNT,failCNT,qaCNT)-#total rows accounted for in partitioned tables
@@ -352,11 +351,11 @@ if(PROCEED<3) {print("Data ready for import. Perform any desired checkes and set
  pvtFAIL= cast(rbind(tblFAILUREin,tblFAILUREcomments), 'UID ~ PARAMETER',value='RESULT') #! use options to decode VALXSITE subcategories, etc  
  pvtFAIL=pvtFAIL[rowSums(is.na(pvtFAIL)) != ncol(pvtFAIL)-2,]#remove Nulls,
  tblQAin=unique(tblQAin[,!(names(tblQAin) %in% c('IND'))])
- tblQAstat=subset(tblQAin,PARAMETER=='Status')
+ tblQAstat=subset(tblQAin,toupper(PARAMETER)=='STATUS')
  tblQAstatcnt=cast(tblQAstat,'UID + TRANSECT + POINT ~ PARAMETER',value='RESULT' ) 
- tblQAstatcnt=subset(tblQAstatcnt,select=UID,Status==2)
- tblQAin=subset(tblQAin,(PARAMETER=='Status' & RESULT=='AC' & UID %in% tblQAstatcnt$UID)==FALSE)#eliminate duplicate status - all seem to have an extra "Active" status
- #tblQAin=subset(tblQAin,(PARAMETER=='PCT_THALW_QA' & UID=='8.22121239495907e+21' & is.na(TRANSECT) & RESULT=='1')==FALSE)#unexplained duplicate in MissingTotals4 from 30 Jul import
+ if(nrow(tblQAstatcnt)>0){tblQAstatcnt=subset(tblQAstatcnt,select=UID,STATUS==2)
+ tblQAin=subset(tblQAin,(toupper(PARAMETER)=='STATUS' & RESULT=='AC' & UID %in% tblQAstatcnt$UID)==FALSE)#eliminate duplicate status - all seem to have an extra "Active" status
+ }#tblQAin=subset(tblQAin,(PARAMETER=='PCT_THALW_QA' & UID=='8.22121239495907e+21' & is.na(TRANSECT) & RESULT=='1')==FALSE)#unexplained duplicate in MissingTotals4 from 30 Jul import
  pvtQA= cast(subset(tblQAin,is.na(UID)==FALSE), 'UID + TRANSECT + POINT ~ PARAMETER',value='RESULT' ) 
  pvtQAtran=subset(pvtQA,is.na(POINT)==FALSE)
  pvtQArch=subset(pvtQA,is.na(POINT)) 
@@ -405,7 +404,7 @@ if (SYNC=='Y'){
   tblMetadataRange=subset(tblMetadataRange,USE=='Y')
   #!rather than import for exported table, would prefer#odbcConnect() # FM set up to share, but need to setup DSN
   #!sql query to extract tblmetadatarange='select Tbl as SAMPLE_TYPE, * from tblMetadataRange join tblMetadata on tblmetadata.parameter=tblmetadatarange.parameter'
-  tblMetadataRange=Xwalk(Source='R',Table="tblMetadataRange",XwalkName='FM',COL=c('STAT','EXPLANATION'))
+  tblMetadataRange=Xwalk(Source='R',Table="tblMetadataRange",XwalkName='FM',XwalkDirection='_Xwalk',COL=c('STAT','EXPLANATION'))
   tblMetadataRange=tblMetadataRange[,!(names(tblMetadataRange) %in% c('TABLE','POINT','TRANSECT','FLAG','UID'))]
   #!remove final X - probably move the one from importmaster into function
   #!need to check for existing matches, otherwise append OR always append and inactivate (similar to update functions in progress)

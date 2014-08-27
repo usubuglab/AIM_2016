@@ -118,7 +118,7 @@ MissingTotals4=unique(rbind(MissingTotals2,MissingTotals3,MissingTotals6,Missing
   #print(MissingTotals5)    
   #checking individual sites#View(subset(MissingCounts,subset=UID==''))#View(subset(importmaster,subset=UID==''))# View(subset(tblCOMMENTSin,subset=UID==''))
 
-
+#! need to fix the revisions to MissingTotals4 before this will work
 MissingTotals4=MissingTotals4[,!(names(MissingTotals4) %in% c('POINT'))]
 MissingTotalsOUT= addKEYS(cast(subset(MissingTotals4,is.na(UID)==FALSE ), 'UID + TRANSECT  ~ PARAMETER',value='RESULT' ),Columns=c('SITE_ID','DATE_COL','Protocol')) 
 MissingTotalsREACH=subset(MissingTotalsOUT,TRANSECT=='ReachTotal');write.csv(MissingTotalsREACH,"MissingDataQCr_nocom.csv")

@@ -13,7 +13,7 @@ setwd(wd)
 
 #WRSA data conversion
 #assumes DB connection remains open
-tblx=Xwalk(XwalkName='Aquamet1',source='SQL')#Norcal inputs:,Years=c('2013','2014'),Projects='NorCal')
+tblx=Xwalk(XwalkName='Aquamet1',source='SQL',XwalkDirection='')#Norcal inputs:,Years=c('2013','2014'),Projects='NorCal')
 
 #!parameters that will need to be modified from 2014 protocol changes: size_cls, angle, width/height units
 
