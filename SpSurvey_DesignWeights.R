@@ -6,13 +6,17 @@ SiteWeights=addKEYS(tblRetrieve(Table='',Parameters='VALXSITE',ALLp=AllParam,UID
         c('SITE_ID','DATE_COL','PROJECT'))
 
 ###Final Designation reconcilation###
-#reconcilation was (will be) done manually for norcal 2013-4, the following needs to be implemented for a more streamlined process:
+#reconcilation was done manually for norcal 2013-4 (took approx 1 hour, see **.xlsx at: ***), the following needs to be implemented for a more streamlined process:
 #! 1.  query used to check for norcal missing valxsite, not sure how to replicate using tblRetrieve
 # select * from  (select * from tblverification where PARAMETER='project' and RESULT like '%cal%') as pr
 # left join (select * from tblverification where tblverification.PARAMETER='valxsite') as vx on pr.UID=vx.UID
 #! 2. also not sure how to automatically bring in Access Sample_Tracking which will identify missing VALXSITE from sites pending final designation (i.e. office omissions that need to be entered into the database, some of which may be resolved by the end of the project and may have multipile records for a single site)
 #probsurv14=odbcConnect("ProbSurveyDB")#have to run on remote desktop (gisUser3) or machine which has 64bit R and 64bit Access
 #SampleTracking=sqlQuery(probsurv14,sprintf('select * from SampleTracking where Year(SampleDate) in (%s) ',inLOOP(years)))#!tblRetrieve should  be expanded to retrieve from Access too??! because here, I'm essentially reconstructing tblRetrieve/UIDselect for a particular query; would need to add a Source Parameter (WRSAdb vs. ProbSurvey_DB) and add key fields to SampleTracking (i.e. formal project rather than prefix of siteCode or hitch)
+#SampleTrackingNEW=sqlQuery(probsurv14,sprintf('select uid, sitecode,streamname,sample_date,sampleable,reason1,finaldesignation, samplecrew,evalstatus from SampleTracking where UID not in (%s) or UID is null',inLOOP(UIDSexist))) #select samples not in the database
+#SampleTrackingFINAL=sqlQuery(probsurv14,sprintf('select uid, sitecode,streamname,sample_date,sampleable,reason1,finaldesignation, samplecrew,evalstatus from SampleTracking where sampleable<>finaldesignation and (UID not in (%s) or UID is null)',inLOOP(UIDSexist))) #select samples not in the database
+#for sites with no WRSAdb record, minimum parameters are: SITE_ID,LOC_NAME,DATE_COL,VALXSITE,PROJECT,Protocol 
+#!unpivot from SampleTrackingNEW to get above parameters, add new uid, then sqlsave; also update the new uid to access sample_tracking
 #! 3. any missing VALXSITE or changed FinalDesignations should go to Office_Updates in Access and be updated via UpdateDatabase_WRSA.R; avoid duplicates for the same site code especially for failed sites (i.e. if visit 1 failed and visit 2 was successful, insert/update VALXSITE from visit 2; if visit 1 was "temporary inaccessible" and visit 2 was "permenatently inaccessible", determine what the primary reason for not getting to the site was, keeping in mind that in the subsequent translation code, it really boils down to 4 categories (uneval, sucessful, inaccessible (i.e. unknown), and non-target) )
 
 
