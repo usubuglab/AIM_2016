@@ -271,7 +271,8 @@ uuhabcom=subset(importmaster,UID %in% uuhab$UID & PARAMETER %in% c('LENGTH','MAX
   #need to clean up duplicates - issue was with Xwalk, make sure not affecting main body of data (shouldn't bc matching sample_type+parameter)
   #!fix thalweg_inter comments...having problems because of transect conversion? noticed 7/15/2014: commentfail11Jul14=commentfail --> 7/16/14 added to middletran conversion
   #! consider adding first point for comments that don't have a match due to a null parameter (i.e. comment explains why parameter was not collected)
-  
+  #! truncate all UIDS to 10 char at the end of ht efield season + fix in app
+                                                                                                
   #tblCOMMENTSin14Jul142=tblCOMMENTSin
   #importmaster14Jul14nocomm2=importmaster
   
@@ -368,6 +369,7 @@ if(PROCEED<3) {print("Data ready for import. Perform any desired checkes and set
    maxSamp=sqlQuery(probsurv14,'select max(SampleNumber) from SampleTracking where Year(SampleDate)=Year(Now())')
  } else {print('Run on Remote Desktop and set maxSamp here');maxSamp=NA}
  maxSamp=as.numeric(ifelse(exists("maxSamp")==F,1,1+maxSamp))
+#!having to manually renumber because of intensfications, consider just setting maxSamp to zero which triggers all samplenubmers to be zero, then if maxsampl>0, run the sequence code
  sampletmp=subset(importmaster,PARAMETER=='SAMPLE_ID' & SAMPLE_TYPE=='BERW')
  sampletmp$PARAMETER='SampleNumber'
  for (s in 1:nrow(sampletmp)){sampletmp$RESULT[s]=maxSamp;maxSamp=maxSamp+1}
@@ -411,5 +413,6 @@ if (SYNC=='Y'){
   TBL=tblMetadataRange;dbTable='tblMetadataRange'#!setting these variables on the assumption that eventually will be used in for loop for all metadata tables
   sqlSave(wrsa1314,dat=TBL,tablename=dbTable,rownames=F, append=TRUE)
   
-  #!tables to do: tblMEtadata, tblMetadataProtocol
+  #!tables to do: tblMEtadata, tblMetadataProtocol, Options
+  #!Options (have plans to merge and replicate + sync between app (filemaker), WRSAdb (SQL), and ProbSurveyDb(Access))
 }

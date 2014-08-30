@@ -8,7 +8,7 @@ DBserver=''#ditto as with DBpassword
 #FILTERS
 ##from most to least specific
 AllData='N'#set to 'Y' (meaning 'yes') if you want to query all sites (note this is quite time consuming and large, use provided filters wherever possible)
-sitecodes=c('EL-LS-8134','EL-SS-8127','MN-LS-1004','MN-SS-1104','MS-SS-3103','XE-RO-5086','XN-LS-4016','XN-SS-4128','XS-LS-6029' )#QAduplicateSites#c('AR-LS-8003','AR-LS-8007', 'TP-LS-8240')#sites for NorCalTesting
+sitecodes=''#c('EL-LS-8134','EL-SS-8127','MN-LS-1004','MN-SS-1104','MS-SS-3103','XE-RO-5086','XN-LS-4016','XN-SS-4128','XS-LS-6029' )#QAduplicateSites#c('AR-LS-8003','AR-LS-8007', 'TP-LS-8240')#sites for NorCalTesting
 years=c('2013')#as character, not number
 dates=''##example:c('05/05/2005')
 projects=c('WRSA')# most useful for separating NorCal and WRSA, note that abbreviations differ between Access and SQL/FM
@@ -17,6 +17,7 @@ hitchs=c('')#NOT WORKING YET, hitch and crew level generally maintained by Acces
 crews=c('R1')#NOT WORKING YET, hitch and crew level generally maintained by Access not SQL
 filter=''#custom filter (need working knowledge of Parameter:Result pairs and SQL structure; example: "(Parameter='ANGLE' and Result>50) OR (Parameter='WETWID' and Result<=0.75))"
 UIDs='BLANK'#custom filter (need working knowledge of primary keys)
+#NorCal settings: years=c('2013','2014');projects='NorCal';protocols=c('WRSA14','NRSA13')
 
 #PARAMETERS
 #specify if desired (will make queries less intensive):
