@@ -13,28 +13,9 @@ setwd(wd)
 
 #WRSA data conversion
 #assumes DB connection remains open
+tblx=Xwalk(XwalkName='Aquamet1',source='SQL',XwalkDirection='')#Norcal inputs:,Years=c('2013','2014'),Projects='NorCal')
 
-XwalkUnion=sqlQuery(wrsa1314,
-"
-select  XwalkTBL.Table_Xwalk, UID, SAMPLE_TYPE=case when XwalkTBL.Type_Xwalk='' then XwalkTBL.Type2 else XwalkTBL.Type_Xwalk end, TRANSECT, POINT,XwalkTBL.Parameter_Xwalk as PARAMETER,RESULT,FLAG,IND,ACTIVE,OPERATION,INSERTION,DEPRECATION,REASON 
-from (
-  select  UID, SAMPLE_TYPE, TRANSECT, POINT,PARAMETER,RESULT,FLAG,IND,ACTIVE,OPERATION,INSERTION,DEPRECATION,REASON 
-  from tblPOINT
-  union
-  select   UID, SAMPLE_TYPE, TRANSECT, cast(Null as nvarchar(5)) POINT,PARAMETER,RESULT,FLAG,IND,ACTIVE,OPERATION,INSERTION,DEPRECATION,REASON  
-  from tbltransect
-  union
-  select   UID, SAMPLE_TYPE, cast(Null as nvarchar(5)) TRANSECT, cast(Null as nvarchar(5)) POINT,PARAMETER,RESULT,FLAG,IND,ACTIVE,OPERATION,INSERTION,DEPRECATION,REASON 
-  from tblreach
-  union
-  select UID, SAMPLE_TYPE, cast(Null as nvarchar(5)) TRANSECT, cast(Null as nvarchar(5)) POINT,PARAMETER,RESULT,FLAG,IND,ACTIVE,OPERATION,INSERTION,DEPRECATION,REASON 
-  from tblverification
-) UnionTBL
-JOIN (select *, left(SAMPLE_TYPE,len(SAMPLE_TYPE)-1) as Type2 from tblXWALK where Name_XWALK='Aquamet1') XwalkTBL on UnionTBL.PARAMETER= XwalkTBL.PARAMETER and UnionTBL.SAMPLE_TYPE= XwalkTBL.Type2
-where ACTIVE='TRUE'
-")#SWJ to do: clean redundancy in this query up (i.e. the UID... string is repeated), also make Name_XWALK dynamic
-#SWJ to do: could do a similar case statment for parameter and only store non-matching in tblXWALK (though it is nice to see verified matches)
-
+#!parameters that will need to be modified from 2014 protocol changes: size_cls, angle, width/height units
 
 files <- c("tblBANKGEOMETRY2", "tblCHANCOV2", "tblCHANDEPTH2",##SWJ: none of these tables are in the 2013 output, can cross walk if given corresponding tables
            "tblCHANNELCHAR2", "tblCHANNELCROSSSECTION2", "tblCHANNELGEOMETRY2",##SWJ: no Channel Geometry
@@ -67,28 +48,45 @@ visrip$TRANSDIR=visrip$POINT
 visits$VALXSITE=visits$RESULT[visits$PARAMETER=='VALXSITE']
 #for running ChannelMorphology
 bankgeometry$TRANSDIR=bankgeometry$POINT
-visits$PROTOCOL=visits$VALXSITE
+bankgeometry$TRANSDIR=ifelse(is.na(bankgeometry$TRANSDIR),"NONE",bankgeometry$TRANSDIR)
+#visits$PROTOCOL=visits$VALXSITE#what was this added for?
 thalweg$UNITS=ifelse(thalweg$PARAMETER=='DEPTH',"CM","")#can only be assumed to be cm for wadeable, the boatable protocol allows FT or CM
-bankgeometry$UNITS=""
+bankgeometry$UNITS=ifelse(bankgeometry$PARAMETER=='ANGLE',"DEGRES","M")#need to sync this with tblMETADATA eventually
+
 #for SlopeBearing (also used in residual pool)
-thalweg$STATION=0#Station and Transect were given for old slope method which seems odd, just trying to push the function to work
-thalweg$UNITS.SLOPE=ifelse(thalweg$PARAMETER=='SLOPE',"CM","NONE")#can only be assumed to be cm for wadeable sites for which unique unit values were checked
-visits$UNITS='CM'
-channelgeometry$UNITS=ifelse(channelgeometry$PARAMETER=='SLOPE'|channelgeometry$PARAMETER=='INCREMNT',"CM","NONE")#SWJ - is increment the actual slope values?
-channelgeometry$LINE=NA #appears to be a dummy variable populated by ifelse statements within the function
+thalweg$STATION=thalweg$POINT; thalweg$STATION=ifelse(thalweg$POINT=='ALL',0,thalweg$STATION)#slope bearing has a very specific filter for station 0, which is now "ALL" 
+#thalweg$STATION=0#Station and Transect were given for old slope method which seems odd, just trying to push the function to work
+thalweg$UNITS=ifelse(thalweg$PARAMETER=='BARWIDTH'|thalweg$PARAMETER=='INCREMNT'|thalweg$PARAMETER=='REACHLENGTH'|thalweg$PARAMETER=='WETWIDTH',"M",
+                    ifelse(thalweg$PARAMETER=='DEPTH',"CM", "NONE"))#can only be assumed to be cm for wadeable sites for which unique unit values were checked
+#visits$UNITS='CM'#what was this added for?
+#add zero bearings to force slopeBearing function
+TRANhold=unique(paste(as.character(channelgeometry$UID) , as.character(channelgeometry$TRANSECT)))
+UIDhold=data.frame(UID=substr(TRANhold,1,5),SAMPLE_TYPE='SLOPEW',TRANSECT=substr(TRANhold,7,8),POINT=0,PARAMETER='BEARING',RESULT=0,FLAG=NA,IND=NA,ACTIVE=NA,OPERATION=NA,INSERTION=NA,DEPRECATION=NA,REASON=NA)
+ channelgeometry=rbind(channelgeometry,UIDhold)
+channelgeometry$UNITS=ifelse(channelgeometry$PARAMETER=='SLOPE',"CM",#can't assume, need to pivot from slope_units
+                            # ifelse(channelgeometry$PARAMETER=='DISTANCE',"M",#this is to help push a boatable site through
+                             ifelse(channelgeometry$PARAMETER=='PROP',"PERCENT","NONE"))
+channelgeometry$LINE=NA;channelgeometry$TRANLINE='NONE'#channelgeometry$TRANLINE=ifelse(channelgeometry$PARAMETER=='DISTANCE',"MID",'NONE') #appears to be a dummy variable populated by ifelse statements within the function - used by boatable protocol perhaps?
+channelgeometry$METHOD='TR'#need to get this from pivoting the method parameter (can't assume for boatable)
+#remove extra columns (need to do for all tables, most critical for bankgeom)
+bankgeometry=subset(bankgeometry,select=-c(IND, ACTIVE,OPERATION,INSERTION,DEPRECATION,REASON))
+bankgeometry=subset(bankgeometry,select=-c(POINT)) #remove point since it was redistributed to appropriate legacy columns
+
 
 cat("\n\ngpsBasedCalculations_asOf201203008:\n\n")
 gisCalcs <- read.csv("gpsBasedCalculations_asOf201203008.csv")##SWJ: need to know how to generate this
 head(gisCalcs)
+#not provided with example data set
+#Ryan lokteff adapted the EPA script M:\GIS\GIS_Stats\Slope\Python\Slope_Endpoints1.py
 
-cat("\n\nBank Morphology:\n\n")
+cat("\n\nBank Morphology:\n\n")#DONE SWJ
 BankMorphology <- metsBankMorphology(bankgeometry, visits)
 print(head(BankMorphology))
 write.csv(BankMorphology, "metsBankMorphology.csv")
 
+
 cat("\n\nBed Stability:\n\n")
-BedStability <- metsBedStability(bankgeometry, thalweg, visits, channelgeometry,
-   channelcrosssection, littoral, wood, fishcover, gisCalcs)
+BedStability <- metsBedStability(bankgeometry, thalweg, visits, channelgeometry,   channelcrosssection, littoral, wood, fishcover)#, gisCalcs)
 print(head(BedStability))
 write.csv(BedStability, "metsBedStability.csv")
 
@@ -102,12 +100,13 @@ ChannelChar <- metsChannelChar(bankgeometry, channelchar)
 print(head(ChannelChar))
 write.csv(ChannelChar, "metsChannelChar.csv")
 
+
 cat("\n\nChannel Habitat:\n\n")
 ChannelHabitat <- metsChannelHabitat(thalweg)
 print(head(ChannelHabitat))
 write.csv(ChannelHabitat, "metsChannelHabitat.csv")
 
-cat("\n\nChannel Morphology:\n\n") #in Progress SWJ - major format issues, awaiting input from Curt - needs particular attention when boatable added (step through source code to verify use of multiple DEPTHS and WETWID)
+cat("\n\nChannel Morphology:\n\n") #in Progress SWJ #works with example data# - major format issues, awaiting input from Curt - needs particular attention when boatable added (step through source code to verify use of multiple DEPTHS and WETWID)
 ChannelMorphology <- metsChannelMorphology(bankgeometry, thalweg, visits)
 print(head(ChannelMorphology))
 write.csv(ChannelMorphology, "metsChannelMorphology.csv")
@@ -117,8 +116,7 @@ FishCover <- metsFishCover(fishcover, visits)
 print(head(FishCover))
 write.csv(FishCover, "metsFishCover.csv")
 
-cat("\n\nGeneral:\n\n")#SWJ in progress - hard to tell if lots of variables are missing for channelgeometry or which variables belong to thalweg or channelgeometry in the old structure or if the protocols are very distinct btwn wade and boat
-#had to manually run the source code for metsGeneral() and run metsGeneral.1() without the shell function in order to eliminate the line "actransp <- subset(actransp, PARAMETER %in% c("ACTRANSP", "DISTANCE"))" because otherwise that would drop "SIDCHN" - not sure if this metric is only intended for the boatable protocol which has actransp
+cat("\n\nGeneral:\n\n")#DONE SWJ
 General <- metsGeneral(thalweg, channelgeometry)
 print(head(General))
 write.csv(General, "metsGeneral.csv")
@@ -133,11 +131,11 @@ InvasiveSpecies <- metsInvasiveSpecies(invasivelegacy)
 print(head(InvasiveSpecies))
 write.csv(InvasiveSpecies, "metsInvasiveSpecies.csv")
 
-cat("\n\nLarge Woody Debris:\n\n")
-LargeWoody <- metsLargeWoody(thalweg, channelgeometry, bankgeometry, wood,
-   visits)
+cat("\n\nLarge Woody Debris:\n\n") #works with example data set once Visits fixed
+LargeWoody <- metsLargeWoody(thalweg, channelgeometry, bankgeometry, wood, visits)
 print(head(LargeWoody))
 write.csv(LargeWoody, "metsLargeWoody.csv")
+
 
 cat("\n\nLegacy Riparian Trees:\n\n")#not relevant to NAMC
 LegacyTree <- metsLegacyTree(invasivelegacy)
@@ -149,8 +147,8 @@ LittoralDepth <- metsLittoralDepth(chandepth)
 print(head(LittoralDepth))
 write.csv(LittoralDepth, "metsLittoralDepth.csv")
 
-cat("\n\nResidual Pools:\n\n")#SWJ in progress - stuck on "LINE" column which is no longer in NRSA - need to determine what happens with null vs. actual values for gisCalcs (slope and reachlenght)
-ResidualPools <- metsResidualPools(thalweg, channelgeometry, visits, gisCalcs)
+cat("\n\nResidual Pools:\n\n")#DONE SWJ (wadeable only)
+ResidualPools <- metsResidualPools(thalweg, channelgeometry, visits)#, gisCalcs)
 print(head(ResidualPools))
 write.csv(ResidualPools, "metsResidualPools.csv")
 
@@ -159,14 +157,17 @@ RiparianVegetation <- metsRiparianVegetation(visrip)
 print(head(RiparianVegetation))
 write.csv(RiparianVegetation, "metsRiparianVegetation.csv")
 
-cat("\n\nSlope and Bearing:\n\n")#SWJ in progress- in conjuction with Residual pools
+cat("\n\nSlope and Bearing:\n\n")#SWJ in progress- in conjuction with Residual pools #works with example data set once Visits fixed# (##the additional message seems to have been corrected by adding the column VALXSITE to visits based on records present in Littoral to demarcate Boatable)
 SlopeBearing <- metsSlopeBearing(thalweg, channelgeometry, visits)#, gisCalcs) #gisCalcs allows null
 print(head(SlopeBearing))
 write.csv(SlopeBearing, "metsSlopeBearing.csv")
+# not working without bearing
+#can force with 0 bearings does not change metrics except xbearing and sinu --> make sure these aren't consumed in other functions that use channelgeometry
+#bearings isn't affecting any other outputs (residual pools, general, bed stability)
+
 
 cat("\n\nSubstrate Characterization:\n\n") #done SWJ (for wadeable, boatable not yet verified bc no example data)
-SubstrateCharacterization <- metsSubstrateCharacterization(channelcrosssection,
-   thalweg, littoral)
+SubstrateCharacterization <- metsSubstrateCharacterization(channelcrosssection,   thalweg, littoral)
 print(head(SubstrateCharacterization))
 write.csv(SubstrateCharacterization, "metsSubstrateCharacterization.csv")
 
@@ -189,6 +190,7 @@ for(i in 1:length(METfiles)) {
 
 METmaster$RESULT=as.numeric(METmaster$RESULT)
 unique(METmaster$METRIC)
+#variables to omit: xbearing, sinu  (bc bearing not collected)
 
 ##QR1
 QRmets=subset(METmaster, subset=METRIC %in% c('w1_hall','xcmgw','xcdenbk')) #pivot or merge? if the metrics get stored in the database (with a timestamp), then switch to pivot, but merge for now

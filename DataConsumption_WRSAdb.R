@@ -7,14 +7,17 @@ DBserver=''#ditto as with DBpassword
 
 #FILTERS
 ##from most to least specific
-AllData='Y'#set to 'Y' (meaning 'yes') if you want to query all sites (note this is quite time consuming and large, use provided filters wherever possible)
-sitecodes=c('AR-LS-8003','AR-LS-8007', 'TP-LS-8240')
-dates=c('05/05/2005')
-hitchs=c('')#NOT WORKING YET
-crews=c('R1')#NOT WORKING YET
-projects=c('NRSA')#NOT WORKING YET
-years=c(2013)#NOT WORKING YET
-
+AllData='N'#set to 'Y' (meaning 'yes') if you want to query all sites (note this is quite time consuming and large, use provided filters wherever possible)
+sitecodes=''#c('EL-LS-8134','EL-SS-8127','MN-LS-1004','MN-SS-1104','MS-SS-3103','XE-RO-5086','XN-LS-4016','XN-SS-4128','XS-LS-6029' )#QAduplicateSites#c('AR-LS-8003','AR-LS-8007', 'TP-LS-8240')#sites for NorCalTesting
+years=c('2013')#as character, not number
+dates=''##example:c('05/05/2005')
+projects=c('WRSA')# most useful for separating NorCal and WRSA, note that abbreviations differ between Access and SQL/FM
+protocols=c('WRSA14')#for separating differences in overall protocol, may not be relevant for some parameters
+hitchs=c('')#NOT WORKING YET, hitch and crew level generally maintained by Access not SQL
+crews=c('R1')#NOT WORKING YET, hitch and crew level generally maintained by Access not SQL
+filter=''#custom filter (need working knowledge of Parameter:Result pairs and SQL structure; example: "(Parameter='ANGLE' and Result>50) OR (Parameter='WETWID' and Result<=0.75))"
+UIDs='BLANK'#custom filter (need working knowledge of primary keys)
+#NorCal settings: years=c('2013','2014');projects='NorCal';protocols=c('WRSA14','NRSA13')
 
 #PARAMETERS
 #specify if desired (will make queries less intensive):
@@ -26,7 +29,7 @@ bankP=c('ANGLE','UNDERCUT','EROSION','COVER','STABLE')
 
 #--------------------------------------------------------SETUP--------------------------------------------------------#
 #LOAD required packages#
-requiredPACKAGES=c('reshape', 'RODBC','ggplot2','grid','gridExtra')
+requiredPACKAGES=c('reshape', 'RODBC','ggplot2','grid','gridExtra','xlsx','sqldf')
 for (r in 1:length(requiredPACKAGES)){
   if ((requiredPACKAGES[r] %in% installed.packages()[,1])==FALSE){install.packages(requiredPACKAGES[r])}#auto-install if not present
   library(requiredPACKAGES[r],character.only = TRUE)
@@ -45,6 +48,7 @@ wrsa1314=odbcDriverConnect(connection = wrsaConnectSTR)
 #SWJ to do: throw this into a function that also prompts for server and password if missing (='')
 #SWJ to do: throw the function into a separate referenced script because multiple files are using this
 
+options(stringsAsFactors=F,"scipen"=50)#general option, otherwise default read is as factors which assigns arbitrary number behind the scenes to most columns
 
 #SQL assistance functions
 #loaded from a separate R script
@@ -57,45 +61,24 @@ source('FNC_tblRetrievePVT.R')
 #SQL tables are created and imports managed via an independent R scripts (createNRSA1314db_SWJ.r)
 dbTBL=sqlTables(wrsa1314, tableType="TABLE")#all possible tables
 dbCOL=sqlColumns(wrsa1314,"tblPOINT")#column names (similar structure for each tbl since flat)
-dbPARAM=sqlQuery(wrsa1314,'Select SAMPLE_TYPE, PARAMETER, LABEL,VAR_TYPE from tblMETADATA')#parameter names (SWJ to do: iterate over Sample_Type groups to generate pivots)
+dbPARAM=sqlQuery(wrsa1314,"Select SAMPLE_TYPE, PARAMETER, LABEL,VAR_TYPE from tblMETADATA where ACTIVE='TRUE'")#parameter names (SWJ to do: iterate over Sample_Type groups to generate pivots)
 tmpTYPE=as.character(unique(dbPARAM$SAMPLE_TYPE))
 dbTYPE=substr(tmpTYPE,1,nchar(tmpTYPE) - 1)#substr to get rid of the random "x" at the end of each name
-#UID and parameter prep (SWJ to do: could roll into a selectUID function and into the final sql call function (i.e. the winner btwn tblRetrieve and PvTconstruct))
-UIDall=ifelse(AllData=='Y','%','')#swj to do: add | (or) for if all possible filters ==''
-parameters=ifelse(AllParam='Y','',NULL)#functions interpret '' as all parameters, otherwise it is a specified list in the function input
 
 #select samples
-UIDs=sqlQuery(wrsa1314, sprintf("select distinct UID from tblVERIFICATION 
-                                where (active='TRUE') 
-                                AND ((Parameter='SITE_ID' and Result in (%s)) OR (Parameter='DATE_COL' and Result in (%s)) OR (UID like '%s'))"
-                                ,inLOOP(sitecodes),inLOOP(dates),UIDall))
+UIDs=UIDselect(ALL=AllData,Filter=filter,UIDS='',SiteCodes=sitecodes,Dates=dates,Years=years,Projects=projects,Protocols=protocols)
 #SWJ to do: add additional filters
 #SWJ to do: prompt for data entry (mini-GUI)
 
 
 #retrieve all data as a single list table
-UnionTBL=sqlQuery(wrsa1314,#SWJ to do remove redundancy with XwalkUnion in NRSAmetrics_SWJ, likely move into tblRetrieve (if not table is specified)
-"select *
-from (
-  select  UID, SAMPLE_TYPE, TRANSECT, POINT,PARAMETER,RESULT,FLAG,IND,ACTIVE,OPERATION,INSERTION,DEPRECATION,REASON 
-  from tblPOINT
-  union
-  select   UID, SAMPLE_TYPE, TRANSECT, cast(Null as nvarchar(5)) POINT,PARAMETER,RESULT,FLAG,IND,ACTIVE,OPERATION,INSERTION,DEPRECATION,REASON  
-  from tbltransect
-  union
-  select   UID, SAMPLE_TYPE, cast(Null as nvarchar(5)) TRANSECT, cast(Null as nvarchar(5)) POINT,PARAMETER,RESULT,FLAG,IND,ACTIVE,OPERATION,INSERTION,DEPRECATION,REASON 
-  from tblreach
-  union
-  select UID, SAMPLE_TYPE, cast(Null as nvarchar(5)) TRANSECT, cast(Null as nvarchar(5)) POINT,PARAMETER,RESULT,FLAG,IND,ACTIVE,OPERATION,INSERTION,DEPRECATION,REASON 
-  from tblverification
-) UnionTBL
-where ACTIVE='TRUE'
-")
-UnionTBL=merge(UnionTBL,UIDs)#limit by UIDs ("select samples)
-#append sitecode instead of UID to make the table more readable --> migrate this into tblRetrieve or some kind of "convert" function
-Sites=subset(UnionTBL,select=c(UID,RESULT),subset=PARAMETER=='SITE_ID'); colnames(Sites)=c('UID','SITE_ID')
+UnionTBL=tblRetrieve(Table='',Parameters='',ALLp=AllParam,UIDS=UIDs,ALL=AllData,Filter=filter,SiteCodes=sitecodes,Dates=dates,Years=years,Projects=projects,Protocols=protocols)
+
+
+Sites=subset(UnionTBL,select=c(UID,RESULT),subset=PARAMETER=='SITE_ID'); colnames(Sites)=c('UID','SITE_ID')#!append sitecode instead of UID to make the table more readable --> migrate this into tblRetrieve or some kind of "convert" function
 UnionTBL=merge(UnionTBL,Sites)
 UnionTBL$SITE_ID=as.character(UnionTBL$SITE_ID)
+UnionTBL1=merge(UnionTBL,UIDs)#limit by UIDs ("select samples)
 
 #retrieve desired tables
 #EXAMPLES of tblRetrieve function# (note: parameter lists were specified in the "Inputs" section at the beginning of this script)
@@ -110,16 +93,17 @@ tblPOINTbank=tblRetrieve('tblPOINT',bankP)
 #for exploratory purposes to review data and determine expected values, not intended to replace modular SQL solutions for multiple tools
 tblCOL=c('UID', 'PARAMETER','RESULT')
 pvtCOL='UID %s ~ PARAMETER';pvtCOLdefault=sprintf(pvtCOL,'')
+AggLevel='Site'#options = Site, All
 params_N=subset(dbPARAM, subset=VAR_TYPE=='NUMERIC')
-params_C=subset(dbPARAM, subset=VAR_TYPE=='CHARACTER')
+params_C=subset(dbPARAM, subset=VAR_TYPE=='CHARACTER')#also used in boxplot QA (with some modifications)
 for (t in 1:nrow(dbTBL)){
   tblNAME=dbTBL$TABLE_NAME[t]
-  tbl=tblRetrieve(tblNAME)
+  tbl=tblRetrieve(tblNAME)#could simplify and use UnionTBL
   if(min(c('SAMPLE_TYPE',tblCOL) %in% colnames(tbl))==1){#if minimum needed columns are present, proceed, otherwise assume it is a pivoted or otherwise human readable table
       if(tblNAME=='tblPOINT'){tblCOL2=append(tblCOL,c('TRANSECT','POINT'), after=1); pvtCOL2=sprintf(pvtCOL,'+ TRANSECT + POINT')
   } else if (tblNAME=='tblTRANSECT'){tblCOL2=append(tblCOL,'TRANSECT', after=1); pvtCOL2=sprintf(pvtCOL,'+ TRANSECT')
   } else {tblCOL2=tblCOL; pvtCOL2=pvtCOLdefault}
-  for(s in 1:length(dbTYPE)){
+  for(s in 1:length(dbTYPE)){#this hits it with a hammer, could narrow down via xwalk to only the relevant sample_types
     #raw data (one value per pivot cell which is per transect/point per parameter)
     tblTYPE=subset(tbl,select=tblCOL2, subset=SAMPLE_TYPE %in% dbTYPE[s])
     tblPVT=cast(tblTYPE, eval(parse(text=pvtCOL2)))#very predictable structure except for the input table and whether transect and point need to be included in the columns = possibly plug into function
@@ -128,6 +112,7 @@ for (t in 1:nrow(dbTBL)){
     #missing data checks (counted values per pivot cell which is per site per parameter)
     tblPVTm=cast(tblTYPE, eval(parse(text=pvtCOLdefault)),fun.aggregate='length')
       assign(sprintf('%s_pvtMISSINGcnt_%s',tblNAME,dbTYPE[s]),tblPVTm)
+      #missing context of expected number of values...need to compare to metadata
     #summarized categorical data (counted values per pivot cell which is per site per parameter+result)
     tblCAT=subset(tblTYPE,subset=PARAMETER %in% params_C$PARAMETER)
       if(nrow(tblCAT)>1){#only assign pivot to variable if not empty and only dive into subsequent if not empty
@@ -137,16 +122,45 @@ for (t in 1:nrow(dbTBL)){
         assign(sprintf('%s_pvtCATdistb_%s',tblNAME,dbTYPE[s]),tblPVTc)
       }
     #summarzied quantitative data (average values per pivot cell which is per site per parameter)
-    tblNUM=subset(tblTYPE,subset=PARAMETER %in% params_N$PARAMETER)
+    tblNUM=subset(tblTYPE,subset=PARAMETER %in% params_N$PARAMETER )
       if(nrow(tblNUM)>1){#only assign pivot to variable if not empty and only dive into subsequent if not empty
+        if(AggLevel=='Site'){pvtCOL4='UID + PARAMETER ~.'; pvtCOL5='RESULT~UID + PARAMETER'; colUID='tblPVTnSUM2$UID';nameUID=c('UID','PARAMETER','Quant1','Quant2')} else if (AggLevel=='All') {pvtCOL4='PARAMETER ~.';pvtCOL5='RESULT~PARAMETER';colUID='';nameUID=c('PARAMETER','Quant1','Quant2')}
         tblNUM$RESULT=as.numeric(tblNUM$RESULT)
-        tblPVTn=cast(tblNUM, eval(parse(text=pvtCOLdefault)),fun.aggregate='mean')
+        tblNUM=subset(tblNUM,subset= is.na(RESULT)==FALSE)#apparently not removing NAs during pivot aggregation, so done manually because causing errors - have to do after conversion to number
+        tblPVTn=cast(tblNUM, eval(parse(text=pvtCOLdefault)),fun.aggregate='mean')#pivot reach average by site
+        tblPVTnSUM1=cast(tblNUM, eval(parse(text=pvtCOL4)),fun.aggregate=c(length,mean,median,min,max,sd),fill='NA') # pivot summary stats by all sites combined or individual sites
+        tblPVTnSUM2=aggregate(eval(parse(text=pvtCOL5)),data=tblNUM,FUN='quantile',probs=c(0.25,0.75),names=FALSE)
+        tblPVTnSUM2=data.frame(cbind(eval(parse(text=colUID)),tblPVTnSUM2$PARAMETER,tblPVTnSUM2$RESULT[,1],tblPVTnSUM2$RESULT[,2]));colnames(tblPVTnSUM2)=nameUID
+        tblPVTnSUM=merge(tblPVTnSUM1,tblPVTnSUM2,by=setdiff(nameUID,c('Quant1','Quant2')))
+        #need to do this by UID for WRSA13 QA duplicate comparison
         assign(sprintf('%s_pvtQUANTmean_%s',tblNAME,dbTYPE[s]),tblPVTn)
+        assign(sprintf('%s_pvtSUMMARYn_%s_%s',tblNAME,dbTYPE[s],AggLevel),tblPVTnSUM)
+        
       }
     }
   }
 }
 }
+
+#export results
+QUANTtbls=grep('pvtQUANTmean',ls(),value=T)
+for (t in 1:length(QUANTtbls)){
+  write.csv(eval(parse(text=QUANTtbls[t])),sprintf('%s.csv',QUANTtbls[t]))#could merge-pvtQUANTmean_, but I like them grouped by categories
+}
+#could export _pvtCATdistrb_, but I find the Categorical variables not to be readily interpretable (also didn't make a summary table for them yet because of this)
+rm(pvtSUMMARYn)
+nSUMtbls=grep('pvtSUMMARYn',ls(),value=T)
+nSUMtbls=grep(AggLevel,nSUMtbls,value=T)
+for (t in 1:length(nSUMtbls)){
+  tblPVTnSUM=eval(parse(text=nSUMtbls[t]))
+  if( ncol(tblPVTnSUM)==1) {} else{
+    if (t==1) {pvtSUMMARYn=tblPVTnSUM} else {pvtSUMMARYn=rbind(pvtSUMMARYn,tblPVTnSUM)}
+  }
+  write.csv(pvtSUMMARYn,sprintf('pvtSUMMARYn_%s.csv',AggLevel))
+}
+
+
+
 #why is tblPOINt_pvt_BANKW coming thru with just ones?
 
 #Close ODBC connection when done talking to SQL Server
@@ -176,132 +190,18 @@ qastatsBANK_CNTagg=aggregate(tblPOINTbank,FUN='length', by=list(tblPOINTbank$UID
 tblPOINTbankNUM=subset(tblPOINTbank,subset= is.na(as.numeric(as.character(tblPOINTbank$RESULT)))==FALSE);tblPOINTbankNUM$RESULT=as.numeric(as.character(tblPOINTbankNUM$RESULT))
 qastatsBANK_MEANcast=cast(tblPOINTbankNUM, UID ~ PARAMETER, value='RESULT', fun.aggregate=mean)
 
-##QA checks##
-
-#set strata for later iteration
-typestrata=c('EcoReg','Size')#must match column names that are created
-numstrata=length(typestrata)
-UnionTBL$EcoReg=substr(UnionTBL$SITE_ID,1,2)#-- Switch to climatic rather than ecoreg?  ; ; may need to explicitly join an ecoregion column if sitecodes change over different projects, this works for NRSA only; also needs to be more expandable for additional strata
-UnionTBL$Size=substr(UnionTBL$SITE_ID,4,5)
-give.n <- function(x){#function for adding sample size to boxplots
-  return(data.frame(y = max(x)+1, label = paste("n =",length(x))))#SWJ to do: improve to handle the multiple classes for Categorical
-}
-
-allparams=unique(paste(UnionTBL$SAMPLE_TYPE,UnionTBL$PARAMETER,sep=" "))#numeric: allparams=c("BANKW INCISED", "BANKW WETWID" )#categorical: allparams=c("CROSSSECW SIZE_CLS","HUMINFLUW WALL")
-for (p in 1:length(allparams)){#this is a standard loop for iterating, could put it in a function that allows you to plug in a string for the most nested middle
-  typeparam=strsplit(allparams[p]," ")
-  type=typeparam[[1]][[1]]; param=typeparam[[1]][[2]]
-  paramTBL=subset(UnionTBL,subset=PARAMETER==param & SAMPLE_TYPE==type)
-  paramTBL$CHAR=as.character(paramTBL$RESULT)
-  paramTBL$NUM=as.numeric(paramTBL$CHAR)
-  #iterate over strata: sites, all values combined, ecoregion/climatic, size
-  #example: extract size from SITE_ID - UnionTBL$SIZE=substr(UnionTBL$SITE_ID,4,5)
-  if(is.na(min(paramTBL$NUM)) & is.na(max(paramTBL$NUM))){paramTBL$PARAMRES=paramTBL$CHAR
-                                                          print (sprintf("%s is CHARACTER format",param))
-      # hist(PARAMRES) #histogram - inclu "pseudo categorical" (densiom, visrip)           --> use params_C  + all LWD ; ; also need a way to assign levels (especially for pebbles) and to combine a few categories (namely LWD, and (x)SIZE_CLS)
-                                                          #commented snippets of code below for categorical that needs to find it's most organized happy home and most consilence with existing results for continuous data
-  } else{paramTBL$PARAMRES=paramTBL$NUM#write.csv(paramTBL,'PARAMRES_NUM_WETWIDTH.csv')
-         print (sprintf("%s is NUMBER format",param))}
-     #boxplot
-      #outlier detection - percentile flags
-         #EXAMPLE: see values that are ACTIVE='FALSE' to see common transctiprion errors and if outlier scans would catch them
-         
-         #NC
-         #Make boxplots for each strata using reach averages of paramres and paramres values
-         #Examples:
-         #1. Boxplot for each ecoregion using reach averages
-         #2. Boxplot for each stream size using reach averages
-         #3. Boxplot for each site using paramres values. 
-         #boxplot(PARAMRES, xlab=unique(PARAMETER))  
-
-        for (n in 1:numstrata) {
-           paramTBL3=paramTBL
-           paramTBL3$STRATATYPE=typestrata[n]
-           paramTBL3$STRATA=unlist(paramTBL3[typestrata[n]])#paramTBL3$STRATA='UNK'
-           if (n==1) { paramTBL2=paramTBL3
-           } else { 
-             paramTBL2=rbind(paramTBL2,paramTBL3)
-           } }
-         strata=unique(paste(paramTBL2$STRATATYPE,paramTBL2$STRATA,sep="_" ))
-         paramTBL3=aggregate(PARAMRES~SITE_ID+PARAMETER+STRATATYPE+STRATA,data=paramTBL2,FUN=mean)#if(is.numeric(paramTBL3$PARAMRES)){}
-#          paramTBL3a=aggregate(IND~PARAMRES+SITE_ID+PARAMETER+STRATATYPE+STRATA,data=paramTBL2,FUN=length)#if(is.char)
-#          paramTBL3b=aggregate(IND~SITE_ID+PARAMETER+STRATATYPE+STRATA,data=paramTBL2,FUN=length)#if(is.char)
-#          paramTBL3=merge(paramTBL3a,paramTBL3b,by=c('SITE_ID','STRATATYPE','STRATA','PARAMETER'))#if(is.char)
-#          paramTBL3$PARAMCAT=paramTBL3$PARAMRES;paramTBL3$PARAMRES=paramTBL3$IND.x/paramTBL3$IND.y#if(is.char)
-         
-         for (n in 1:numstrata) {#re-enter for loop now that all STRATA are complete and aggregated
-           paramTBL4=subset(paramTBL3,subset=STRATATYPE==typestrata[n])
-           stratabox=ggplot(paramTBL4,aes(y=PARAMRES, x=STRATA)) 
-#            stratabox=ggplot(paramTBL4,aes(y=PARAMRES, x=STRATA,fill=PARAMCAT))#if(is.char)
-           stratabox=stratabox+ geom_boxplot(outlier.colour = "red", outlier.size = 10)+#for reviewing all data by strata
-           stat_summary(fun.data =give.n, geom = "text") +
-            labs (title=sprintf('STRATA: %s ~ PARAM: %s',typestrata[n],param))
-          #save jpeg or # assign(sprintf('box_STRATA_%s_%s',typestrata[n],param),stratabox)
-         }
-allsites=unique(paramTBL$SITE_ID)
- for (s in 1:length(allsites)){#may need to explicitly join an ecoregion column if sitecodes change over different projects, this works for NRSA only
-   #if numeric, boxplot of reach avg, if character, histogram
-   paramTBL$STRATATYPE='Site';paramTBL$STRATA=paramTBL$SITE; paramTBL$STRATA=factor(paramTBL$STRATA,levels=unique(paramTBL$STRATA))
-   paramTBL6=subset(paramTBL,select=c('SITE_ID','PARAMETER','STRATATYPE','STRATA','PARAMRES'))
-   paramTBL6=rbind(paramTBL6,paramTBL3)
-   stratas=unique(subset(paramTBL6,select=STRATA,subset=SITE_ID==allsites[s]))
-   paramTBL6=subset(paramTBL6,subset=STRATA %in% stratas$STRATA)
-   paramTBL6$STRATATYPE=factor(paramTBL6$STRATATYPE,levels=c("Site",typestrata))
-   siteavg=unique(subset(paramTBL6,subset=STRATATYPE !="Site" & SITE_ID==allsites[s] , select=PARAMRES))
-    #for reviewing all data by a particular site at the site and across all strata
-#     #if categorical
-#    paramTBL6=subset(paramTBL6,subset=STRATATYPE=='Site')
-#    sitehist=ggplot(paramTBL6,aes(x=PARAMRES)) +geom_histogram() #--> or just apply above box plots (results will be single lines for sites)
-#     ##grid arrange with boxplots
-   #if numeric
-   sitebox=ggplot(paramTBL6,aes(y=PARAMRES, x=STRATATYPE)) +geom_boxplot(outlier.colour='red',outlier.size=10) +
-     geom_hline(aes(yintercept=PARAMRES),siteavg,color='blue')  + #mark the average for the site
-     stat_summary(fun.data =give.n, geom = "text") + #annotate: n(sites) for strata plots and n(points) for site  (function defined above)
-     labs(title=sprintf('SITE: %s ~ PARAM: %s',allsites[s],param))
-   #save jpeg or assign var
- } } 
-rm(paramTBL3,paramTBL4,paramTBL5,paramTBL6,paramTBL3a,paramTBL3b)
-
-#better resolved by adding "stratatype" to the site level data rather than dividing and recombining
-# for (s in 1:length(allsites)){
-#   for (p in 1:length(allparams)){  
-#     typeparam=strsplit(allparams[p]," ");param=typeparam[[1]][[2]]#type=typeparam[[1]][[1]]
-#     sitebox=eval(parse(text=sprintf('box_SITE_%s_%s',gsub("-","",allsites[s]),param)))
-#     strata1=textGrob('NONE'); strata2=textGrob('NONE'); strata3=textGrob('NONE'); strata4=textGrob('NONE')
-#     strata1I=textGrob('NONE'); strata2I=textGrob('NONE'); strata3I=textGrob('NONE'); strata4I=textGrob('NONE')
-#     if(numstrata>4){print('only the first 4 strata will be displayed')}
-#   for (n in 1:numstrata) { 
-#     strataTXT=as.character(unique(subset(UnionTBL[c('SITE_ID',typestrata[n])],subset=SITE_ID==allsites[s]))[2])
-#     stratabox=eval(parse(text=sprintf('box_STRATA_%s_%s',typestrata[n],param)))
-#     strataboxI=eval(parse(text=sprintf('box_STRATA_%s_%s_%s',typestrata[n],strataTXT,param)))
-#     assign(sprintf('strata%s',n),stratabox);assign(sprintf('strata%sI',n),strataboxI)
-#     if(n==numstrata) {grid.arrange(strata1,strata2,strata3,strata4,nrow=numstrata,ncol=1)}#this level produces duplicates more than needed
-#    }
-# grid.arrange(sitebox,strata1I,strata2I,strata3I,strata4I, nrow=1,ncol=numstrata+1)
-# }}
-
-
-
 #iteration example
 list=c(1,2,4,6,7)
 for (i in 1:length(list)){
   if(list[i]<5){
-  print(list[i] + 2)
-} else {print(list[i] *5 )}
+    print(list[i] + 2)
+  } else {print(list[i] *5 )}
 }
 
 
+##QA checks##
+##!QA checks moved to DataQA_WRSA
 
-WetWidthDIFF=sqlQuery(wrsa1314,"select WetTRAN.UID, WetTRAN.TRANSECT, RESULT_PNTthal, RESULT_TRAN
- from (select UID, TRANSECT, RESULT as RESULT_PNTthal from tblpoint
-where parameter like 'wetwid%'
-and POINT='0') as WetPNTthal
-join (select  UID, TRANSECT, RESULT as RESULT_TRAN from tbltransect
-where parameter like 'wetwid%') as WetTRAN
-on (WetTRAN.UID=WetPNTthal.UID and WetTRAN.TRANSECT=WetPNTthal.TRANSECT)
---where ROUND(convert(float,result_pntthal),1) <> ROUND(convert(float,result_tran),1)
---and WetTRAN.UID=11625 --query struggles when running the convert function with multiple UID, makes no sense, running where statement externally in excel via Exact()
-")#should only occur on paper forms where value is recorded twice and therefore appears in the db twice
 
 ##GRTS adjusted weights##
 #TBD# Pull from UTBLM
