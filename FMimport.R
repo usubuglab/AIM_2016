@@ -66,7 +66,7 @@
   }
   
   
-  importmasterTEMP=importmaster#temporary copy saved after import for easy reversion without restarting xlsx import
+  importmasterTEMP=importmaster;save.image(sprintf("C:/Users/Sarah/Downloads/%simport.RData",Sys.Date()))#temporary copy saved after import for easy reversion without restarting xlsx import
   #importmaster2=importmaster #save copy of first import test that successfully went through the  loop
   #importmasterTEMPboat=importmaster;importmasterTEMPboat2=importmaster
   #importmaster14Jul14=importmasterTEMP;importloopr14Jul14=list(t,tables,g,tblgroups); names(importloopr14Jul14)=c('t','tables','g','tblgroups');# running into problems on photo  table with more recent exports
@@ -85,8 +85,8 @@
   UIDSnew10=unique(subset(importmaster, select=UID,subset=substr(UID,1,10) %in% UIDS10))
   UIDSmatch10=setdiff(UIDSnew10$UID,UIDSexist10$UID)
   UIDSmismatch10=subset(importmaster,subset=PARAMETER %in% c('SITE_ID','DATE_COL') & UID %in% UIDSmatch10); UIDSmismatch10= UIDSmismatch10[with(UIDSmismatch10,order(UID)),]
-  if(length(UIDSmatch10)>0){sprintf('Verify %s non-exact matches for UID (1st 10 characters match). These will be automatically omitted unless otherwise indicated.',length(UIDSmatch10));View(UIDSmismatch10); sprintf('select * from tblverification where left(cast(UID as nvarchar),10) in (%s)',inLOOP(substr(UIDSmatch10,1,10)))}
-  UIDSmanualOMIT=c('8.58443864583729e+22','4948737546099460407266','15631373425099638047420','585759337742704256','324224919440318080','452002440992807387126','56939717898642521064404','1.00590424753275e+20','3.12445349814274e+20','30317561401913393152','85565470919978896','9.79114249176033e+20','2.42573446594801e+21','7.467934950944e+19','7.1001238480827e+19','7.42868294554285e+24','10445148556604496','6.22708454798246e+20','2.25618143476838e+23','8.77503374780117e+20','4.49266934743765e+21','5.64896083614649e+21',
+  if(length(UIDSmatch10)>0){print(sprintf('Verify %s non-exact matches for UID (1st 10 characters match). These will be automatically omitted unless otherwise indicated.',length(UIDSmatch10)));View(UIDSmismatch10); print(sprintf('select * from tblverification where left(cast(UID as nvarchar),10) in (%s)',inLOOP(substr(UIDSmatch10,1,10))))}
+  UIDSmanualOMIT=c('8.58443864583729e+22','4171385314118944686080','4948737546099460407266','15631373425099638047420','585759337742704256','324224919440318080','452002440992807387126','56939717898642521064404','1.00590424753275e+20','3.12445349814274e+20','30317561401913393152','85565470919978896','9.79114249176033e+20','2.42573446594801e+21','7.467934950944e+19','7.1001238480827e+19','7.42868294554285e+24','10445148556604496','6.22708454798246e+20','2.25618143476838e+23','8.77503374780117e+20','4.49266934743765e+21','5.64896083614649e+21',
                    '15371499864863700', '6289849184966886400','6778495559','4.86796721145911e+21','40929284494044758016','3.46298187240046e+24','4795923406292041','238904821513005888','1.56313734250996e+22','36066246794627100','36066246794627104','3281462015442028544','15371499864863704','7.08938994416638e+23','4.57921803104368e+25','18934588289520738304','9.72630743819978e+21','850630406814675200','850630406814675000','18934588289520700000','4.86796721145911E+21','6289849184966880000','324224919440318000','6.34916723436864e+21','7.03114033341499E+21','7.03114033341499e+21','4.57921803104368E+25', '3281462015442020000', '88015264382921100000','88015264382921129984','6.34916723436864E+21', '9.72630743819978E+21','7.08938994416638E+23'#beta testing
                    )#! auto remove sites with less than 10 lines of data (app defaults)?; record reason in Access Office_Comments
   UIDSremoveLIST=c(UIDSremove$UID,UIDSexist$UID, UIDSmanualOMIT, UIDSmatch10)#could query intentionally removed duplicates from Office_Comments in AccessDB#'1044' = duplicate site that crew entered in both app versions, confirmed with crew and Jennifer Courtwright; 6227 and 2256 = duplicates with only default data populated
@@ -214,7 +214,7 @@ for (u in 1:nrow(uu)){
                                                                                                 
 
 importmaster=unique(importmaster)
-#importmaster14Jul14clean2=importmaster
+importmasterclean2=importmaster
  
   
 ##START comments##
@@ -273,8 +273,8 @@ uuhabcom=subset(importmaster,UID %in% uuhab$UID & PARAMETER %in% c('LENGTH','MAX
   #! consider adding first point for comments that don't have a match due to a null parameter (i.e. comment explains why parameter was not collected)
   #! truncate all UIDS to 10 char at the end of ht efield season + fix in app
                                                                                                 
-  #tblCOMMENTSin14Jul142=tblCOMMENTSin
-  #importmaster14Jul14nocomm2=importmaster
+  tblCOMMENTSincomm=tblCOMMENTSin
+  importmasternocomm2=importmaster
   
   #Xwalk all parameters to non-FM names and assign proper Sample_Type (don't think it needs to be assigned earlier)
   #match sample_type for comments (not done earlier because original parameter names need to be retained for comment matching)
@@ -291,8 +291,7 @@ uuhabcom=subset(importmaster,UID %in% uuhab$UID & PARAMETER %in% c('LENGTH','MAX
   importmaster=ColCheck(importmaster,importcols)                                                                                              
                                                                                                 
   
-
-#importmaster14Jul14xwalk2=importmaster;comments14Jul14xwalk2=tblCOMMENTSin
+importmasterxwalk2=importmaster;commentsxwalk2=tblCOMMENTSin;save.image(sprintf("C:/Users/Sarah/Downloads/%simport.RData",Sys.Date()))
  }#end Else Proceed=2
 
   
@@ -327,7 +326,7 @@ if(PROCEED<3) {print("Data ready for import. Perform any desired checkes and set
   print('Beginning import to SQL server')
   TablesOUT=c('tblVERIFICATIONin','tblCOMMENTSin','tblREACHin','tblTRANSECTin','tblPOINTin')
   TableNAMES=c('tblVERIFICATION','tblCOMMENTS','tblREACH','tblTRANSECT','tblPOINT')
-  for (t in 4:length(TablesOUT)) {  
+  for (t in 1:length(TablesOUT)) {  
     TBL=eval(parse(text=TablesOUT[t]));dbTable=TableNAMES[t]#tblVerification imported for 14Jul set on 7/30/14
     #INDexist=sqlQuery(wrsa1314,sprintf('select IND from %s',dbTable));TBL=subset(TBL,(IND %in% INDexist$IND)==FALSE)#for troubleshooting and restarting failed imports, ordered by IND at an earlier step for easier monitoring, could consolidate into single line here
     #!tblREACH import struggles alot with CALIB sample_Type...sometimes random, sometimes duplicate, sometimes date or UID errors. systematic problems were corrected for during import, but unsure where the duplicate issue creeps in

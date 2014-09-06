@@ -183,8 +183,10 @@ RESULT,FLAG,IND,ACTIVE,OPERATION,INSERTION,DEPRECATION,REASON %s
 from TBLtmp   JOIN  XwalkParam on upper(TBLtmp.PARAMETER)= upper(XwalkParam.PARAMETER%s) and upper(TBLtmp.SAMPLE_TYPE)= upper(XwalkParam.[TABLE%s])
  ",XwalkDirection,XwalkDirection,gsub("'","]",ifelse(COL=='','',gsub(", '",",[",paste(", " , inLOOP(COL),sep='')))),XwalkDirection,ifelse(XwalkName=='FMstr','',XwalkDirection)))
 XwalkTBL$SAMPLE_TYPE=ifelse(toupper(substr(XwalkTBL$SAMPLE_TYPE,nchar(XwalkTBL$SAMPLE_TYPE),nchar(XwalkTBL$SAMPLE_TYPE)))=='X',substr(XwalkTBL$SAMPLE_TYPE,1,nchar(XwalkTBL$SAMPLE_TYPE)-1), XwalkTBL$SAMPLE_TYPE)
+names(XwalkParam)=toupper(names(XwalkParam))
 if(nrow(TBLtmp)!=nrow(XwalkTBL)){print(sprintf('WARNING! Different number of rows in original (%s rows) and xwalk (%s rows) tables.',nrow(TBLtmp),nrow(XwalkTBL)))
-  SPmissing=unique(setdiff(toupper(paste(TBLtmp$SAMPLE_TYPE,TBLtmp$PARAMETER,sep=':')),toupper(paste(XwalkTBL$SAMPLE_TYPE,XwalkTBL$PARAMETER,sep=':'))))
+  XwalkParamCheck=subset(XwalkParam,select=c(sprintf('TABLE%s',ifelse(XwalkName=='FMstr','',toupper(XwalkDirection))),sprintf('PARAMETER%s',toupper(XwalkDirection))));names(XwalkParamCheck)=c('SAMPLE_TYPE','PARAMETER')
+  SPmissing=unique(setdiff(toupper(paste(TBLtmp$SAMPLE_TYPE,TBLtmp$PARAMETER,sep=':')),toupper(paste(XwalkParamCheck$SAMPLE_TYPE,XwalkParamCheck$PARAMETER,sep=':'))))
   if(length(SPmissing)>0){print('The following parameters do not have a xwalk match:')
   print(SPmissing)
   }}

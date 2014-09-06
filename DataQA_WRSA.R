@@ -325,6 +325,7 @@ for (s in 1:length(stratat)){
 
 
 ##crossvalidation/business rules
+##! store and dynamically compose validation rules 
 WetWidthDIFF=sqlQuery(wrsa1314,"select WetTRAN.UID, WetTRAN.TRANSECT, RESULT_PNTthal, RESULT_TRAN
  from (select UID, TRANSECT, RESULT as RESULT_PNTthal from tblpoint
 where parameter like 'wetwid%'
@@ -336,4 +337,58 @@ on (WetTRAN.UID=WetPNTthal.UID and WetTRAN.TRANSECT=WetPNTthal.TRANSECT)
 --and WetTRAN.UID=11625 --query struggles when running the convert function with multiple UID, makes no sense, running where statement externally in excel via Exact()
 ")#should only occur on paper forms where value is recorded twice and therefore appears in the db twice
 
-##! store and dynamically compose validation rules 
+
+#slope checks
+#!10% similarity between passes
+#!compare to GIS
+#!string of complete transects
+SlopeTran=tblRetrieve(Parameters=c('ENDTRAN'),UIDS=UIDs,ALL=AllData,Filter=filter,SiteCodes=sitecodes,Dates=dates,Years=years,Projects=projects,Protocols=protocols)
+SlopeTran$Start=SlopeTran$POINT;SlopeTran$Stop=SlopeTran$RESULT;SlopeTran=SlopeTran[,!(names(SlopeTran) %in% c('POINT','RESULT'))]
+SlopeTran=SlopeTran[,!(names(SlopeTran) %in% c('SAMPLE_TYPE','PARAMETER','IND','ACTIVE','FLAG','OPERATION','INSERTION','DEPRECATION','REASON'))]#!not necessary, just easier to see when clean
+NotTran=subset(SlopeTran, nchar(RESULT)>1|nchar(POINT)>1)
+if(nrow(NotTran)>0){print('WARNING: some transects are not single letter transect names. Review and correct'); View(NotTran)}
+St=c('Start','Stop')
+SlopeUID=unique(subset(SlopeTran,select=c(UID,TRANSECT)));SlopeUIDmulti=SlopeUID[0,]
+for (u in 1:nrow(SlopeUID)){
+  SlopeU=subset(SlopeTran,UID==SlopeUID$UID[u] & TRANSECT==SlopeUID$TRANSECT[u]);Urow=nrow(SlopeU);SlopeU=unique(SlopeU);if(Urow!=nrow(SlopeU)){SlopeUIDmulti=rbind(SlopeUIDmulti,unique(subset(SlopeU,select=c(UID,TRANSECT))))}
+  SlopeConnect=SlopeU[1,];SlopeConnect$StartL0=SlopeConnect$Start;SlopeConnect$StartR0=SlopeConnect$Start;SlopeConnect$StopL0=SlopeConnect$Stop;SlopeConnect$StopR0=SlopeConnect$Stop
+  FinalR=SlopeConnect$Stop;FinalL=SlopeConnect$Start
+  if(nrow(SlopeU)==1){SlopeMatch=SlopeU[0,]
+    } else{
+      SlopeMatch=SlopeU[2:nrow(SlopeU),];
+    }
+    if(u==1){SlopeConnectFail=SlopeConnect[1,];SlopeConnectFail$UID=NA;SlopeConnectPass=SlopeConnect[1,];SlopeConnectPass$UID=NA;SlopeMatchFail=SlopeMatch[1,];SlopeMatchFail$UID=NA}
+    SlopeMatch=SlopeMatch[,!(names(SlopeMatch) %in% c('UID','TRANSECT'))];
+    for (m in 1:nrow(SlopeMatch)){
+      if(nrow(SlopeMatch)>0){
+      SlopeMatchL=SlopeMatch; names(SlopeMatchL)[names(SlopeMatchL) %in% St] <- sprintf('%sL%s',St,m)
+      SlopeMatchR=SlopeMatch; names(SlopeMatchR)[names(SlopeMatchR) %in% St] <- sprintf('%sR%s',St,m)
+      SlopeConnect=sqldf(sprintf('select * from SlopeConnect left join SlopeMatchL on SlopeConnect.StartL%s=SlopeMatchL.StopL%s left join SlopeMatchR on SlopeConnect.StopR%s=SlopeMatchR.StartR%s',m-1,m,m-1,m))
+      StartR=unlist(subset(SlopeConnect,select=sprintf('StartR%s',m)));StartL=unlist(subset(SlopeConnect,select=sprintf('StartL%s',m)));StopR=unlist(subset(SlopeConnect,select=sprintf('StopR%s',m)))
+      FinalR=ifelse(is.na(StopR),FinalR,StopR);FinalL=ifelse(is.na(StartL),FinalL,StartL)
+      SlopeMatch=subset(SlopeMatch,(Start %in% c(StartL,StartR))==FALSE)
+    }}
+  SlopeConnect$FinalR=FinalR;SlopeConnect$FinalL=FinalL
+  namesSlope=union(names(SlopeConnectFail),names(SlopeConnect))
+  if (nrow(SlopeMatch)>0){
+    SlopeConnectFail=rbind(ColCheck(SlopeConnectFail,namesSlope),ColCheck(SlopeConnect,namesSlope));
+    SlopeMatchTMP=SlopeMatch;SlopeMatchTMP$UID=SlopeUID$UID[u];SlopeMatchTMP$TRANSECT=SlopeUID$TRANSECT[u]
+    SlopeMatchFail=rbind(SlopeMatchFail,SlopeMatchTMP)
+  } else {SlopeConnectPass=rbind(ColCheck(SlopeConnectPass,namesSlope),ColCheck(SlopeConnect,namesSlope))}
+}
+SlopeConnectFail=subset(SlopeConnectFail,is.na(UID)==F);SlopeConnectPass=subset(SlopeConnectPass,is.na(UID)==F);SlopeMatchFail=subset(SlopeMatchFail,is.na(UID)==F)
+#!Warnings
+SlopeConnectPassEndFail=subset(SlopeConnectPass,((toupper(gsub(" ","",FinalL))=='A'& toupper(gsub(" ","",FinalR))=='K')|(toupper(gsub(" ","",FinalL))=='K'& toupper(gsub(" ","",FinalR))=='A'))==FALSE)
+SlopeConnectPassEndPass=sqldf('select SlopeConnectPass.* from SlopeConnectPass as s1 left join SlopeConnectPassEndFail as s2 on s1.UID=s2.UID and s1.TRANSECT=s2.TRANSECT where s2.UID is null')
+SlopeConnectPassCNT=sqldf('select UID, Count(*) as CNT from SlopeConnectPassEndPass group by UID');SlopeConnectPass2Pass=subset(SlopeConnectPassCNT,CNT>1);SlopeConnectPass2Fail=subset(SlopeConnectPassCNT,CNT<2)
+print(sprintf('CONGRATULATIONS! %s sites with 2 successful Slope Passes!',nrow(SlopeConnectPass2Pass)))
+if(nrow(SlopeConnectPassEndFail)>0){print('WARNING: Some slope passes do not start at A or end at K. Summary data at in SlopeConnectPassEndFail. Examine raw data in detail.');View(SlopeConnectPassEndFail)}
+if(nrow(SlopeConnectPass2Fail)>0){print('WARNING: Some sites have only one connected Slope Pass.');print(SlopeConnectPass2Fail)}
+if(nrow(SlopeConnectFail)>0){print('WARNING: Some slope passes had gaps and could not be connected for the entire reach. Summary data in SlopeConnectFail and SlopeMatchFail. Examine raw data in detail.');View(SlopeConnectFail); View(SlopeMatchFail)}
+if(nrow(SlopeUIDmulti)>0){print('WARNING: Duplicate transects within same slope pass. Examine raw data in detail.');print(SlopeUIDmulti)}
+
+
+
+
+
+
