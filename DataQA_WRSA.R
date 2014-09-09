@@ -174,44 +174,59 @@ write.csv(LowHighFailOUT,'LegalChecks.csv')
 ##outlier check
 
 #set strata for later iteration
-typestrata=c('EcoReg','Size')#must match column names that are created
+typestrata=c('ALL','EcoReg','Size')#must match column names that are created
 numstrata=length(typestrata)
-UnionTBL$EcoReg=substr(UnionTBL$SITE_ID,1,2)#-- Switch to climatic rather than ecoreg?  ; ; may need to explicitly join an ecoregion column if sitecodes change over different projects, this works for NRSA only; also needs to be more expandable for additional strata
+UnionTBL=addKEYS(UnionTBL,'SITE_ID')
+UnionTBL$EcoReg=substr(UnionTBL$SITE_ID,1,2)#!-- Switch to climatic rather than ecoreg?  ; ; may need to explicitly join an ecoregion column if sitecodes change over different projects, this works for NRSA only; also needs to be more expandable for additional strata
 UnionTBL$Size=substr(UnionTBL$SITE_ID,4,5)
+UnionTBL$ALL='ALL'
+#! other possible strata: reach width (would need to be calculated), VALXSITE or protocol (especially boatable vs. wadeable)
 #this section is highly dependent on WRSA siteID naming structure and GRTS strata
 
 #QA boxplots
 give.n <- function(x){return(data.frame(y = max(x)+1, label = paste("n =",length(x))))}#SWJ to do: improve to handle the multiple classes for Categorical 
+whisk95 <- function(x) {r <- quantile(x, probs = c(0.05, 0.25, 0.5, 0.75, 0.95))
+  names(r) <- c("ymin", "lower", "middle", "upper", "ymax")
+  r
+}#supports custom boxplot whiskers (instead of 1.5IQR default)#http://stackoverflow.com/questions/4765482/changing-whisker-definition-in-geom-boxplot
+out2SD <- function(x) {
+  #subset(x, x < quantile(x)[2] | quantile(x)[4] < x)
+  MN=mean(x)
+  SD2=2*sd(x)
+  subset(x, x < MN-SD2 | MN+SD2 < x)
+}#supports custom outliers#http://stackoverflow.com/questions/4765482/changing-whisker-definition-in-geom-boxplot
 subcol=c('UID','SITE_ID','PARAMETER','STRATATYPE','STRATA','PARAMRES','PARAMCAT','TRANSECT','POINT')
 #compile parameter list
 allparams=unique(paste(UnionTBL$SAMPLE_TYPE,UnionTBL$PARAMETER,sep=" "))#numeric: allparams=c("BANKW INCISED", "BANKW WETWID" )#categorical: allparams=c("CROSSSECW SIZE_CLS","HUMINFLUW WALL")
 excludeparams=c("FIELDMEAS DO",'THALW BAR_PRES',"THALW SIDCHN" ,"THALW BACKWATER",grep("VERIF",allparams,value=T),grep("CALIB",allparams,value=T),grep("BERW",allparams,value=T),"SLOPEW METHOD","FIELDMEAS LOCATION","FIELDMEAS TIME" ,"FIELDMEAS CORRECTED",'CROSSSECW DIST_LB','SLOPEW SLOPE_UNITS','CROSSSECW SUB_5_7','THALW INCREMENT')
 combineparams=c("CANCOVERW DENSIOM",'CROSSSECW XSIZE_CLS',grep("LWD",allparams,value=T),grep("HUMINFLU",allparams,value=T),grep("VISRIP",allparams,value=T),grep("FISHCOV",allparams,value=T),grep("ASSESS",allparams,value=T),grep("TORR",allparams,value=T))#need to exclude originals from allparams list and add new names back; some of these may be useable, just want to ponder them a bit more (run a few examples through the existing framework)
 allparams1=setdiff(allparams,c(excludeparams,combineparams))
-UnionTBL2=UnionTBL#subset data here if do not want all db results (UnionTBL is not filtered by UIDs, UnionTBL1 is); most likely scenario is intensifications (NorCal, CoPlateau, NV), other designs with diff strata; see second round of filtering at the allsites variable
+UnionTBL2=UnionTBL#UnionTBL2=subset(UnionTBL,SITE_ID=='EL-LS-8126')
+#!the below be redone with Xwalk along with bin?!
 UnionTBL2$PARAMETER=ifelse(UnionTBL2$PARAMETER=='XSIZE_CLS','SIZE_CLS',UnionTBL2$PARAMETER)#for all our analysis purposes, these are the same
-UnionTBL2$PARAMETER=ifelse(UnionTBL2$SAMPLE_TYPE=='LWDW','LWDtally',UnionTBL2$PARAMETER)#for preliminary analysis purposes, these are the same
-UnionTBL2$PARAMETER=ifelse(UnionTBL2$SAMPLE_TYPE=='HUMINFLUW','HumanPresence',UnionTBL2$PARAMETER)
-UnionTBL2$PARAMETER=ifelse(substr(UnionTBL2$PARAMETER,1,3)=='AGR','AGRicultural',UnionTBL2$PARAMETER)
-UnionTBL2$PARAMETER=ifelse(substr(UnionTBL2$PARAMETER,1,3)=='IND','INDustrial',UnionTBL2$PARAMETER)
-UnionTBL2$PARAMETER=ifelse(substr(UnionTBL2$PARAMETER,1,3)=='MAN','MANagement',UnionTBL2$PARAMETER)
-UnionTBL2$PARAMETER=ifelse(substr(UnionTBL2$PARAMETER,1,3)=='REC','RECreation',UnionTBL2$PARAMETER)
-UnionTBL2$PARAMETER=ifelse(substr(UnionTBL2$PARAMETER,1,3)=='RES','RESidential',UnionTBL2$PARAMETER)
-UnionTBL2$PARAMETER=ifelse(UnionTBL2$SAMPLE_TYPE=='TORR' & UnionTBL2$PARAMETER!='TSD011','Torrent',UnionTBL2$PARAMETER)
-UnionTBL2$PARAMETER=ifelse(UnionTBL2$PARAMETER=='BARE','BARE',UnionTBL2$PARAMETER)
-UnionTBL2$PARAMETER=ifelse(UnionTBL2$PARAMETER=='CANBTRE'|UnionTBL2$PARAMETER=='CANSTRE','CAN_TREE',UnionTBL2$PARAMETER)
-UnionTBL2$PARAMETER=ifelse(UnionTBL2$PARAMETER=='CANVEG'|UnionTBL2$PARAMETER=='UNDERVEG','VEG_TYPE',UnionTBL2$PARAMETER)##
+UnionTBL2$PARAMETER=ifelse(UnionTBL2$SAMPLE_TYPE=='LWDW','LWDtally',UnionTBL2$PARAMETER)#xwalk:fmstr#for preliminary analysis purposes, these are the same
+UnionTBL2$PARAMETER=ifelse(UnionTBL2$SAMPLE_TYPE=='HUMINFLUW','HumanPresence',UnionTBL2$PARAMETER)#xwalk:fmstr
+UnionTBL2$PARAMETER=ifelse(substr(UnionTBL2$PARAMETER,1,3)=='AGR','AGRicultural',UnionTBL2$PARAMETER)#xwalk:fmstr
+UnionTBL2$PARAMETER=ifelse(substr(UnionTBL2$PARAMETER,1,3)=='IND','INDustrial',UnionTBL2$PARAMETER)#xwalk:fmstr
+UnionTBL2$PARAMETER=ifelse(substr(UnionTBL2$PARAMETER,1,3)=='MAN','MANagement',UnionTBL2$PARAMETER)#xwalk:fmstr
+UnionTBL2$PARAMETER=ifelse(substr(UnionTBL2$PARAMETER,1,3)=='REC','RECreation',UnionTBL2$PARAMETER)#xwalk:fmstr
+UnionTBL2$PARAMETER=ifelse(substr(UnionTBL2$PARAMETER,1,3)=='RES','RESidential',UnionTBL2$PARAMETER)#xwalk:fmstr
+UnionTBL2$PARAMETER=ifelse(UnionTBL2$SAMPLE_TYPE=='TORR' & UnionTBL2$PARAMETER!='TSD011','Torrent',UnionTBL2$PARAMETER)#xwalk:fmstr
 UnionTBL2$SAMPLE_TYPE=ifelse(UnionTBL2$PARAMETER=='VEG_TYPE','VISRIP2W',UnionTBL2$SAMPLE_TYPE)
-UnionTBL2$PARAMETER=ifelse(UnionTBL2$PARAMETER=='GCNWDY'|UnionTBL2$PARAMETER=='UNDNWDY','NONWOOD',UnionTBL2$PARAMETER)
-UnionTBL2$PARAMETER=ifelse(UnionTBL2$PARAMETER=='GCWDY'|UnionTBL2$PARAMETER=='UNDWDY','WOODY',UnionTBL2$PARAMETER)
+UnionTBL2$PARAMETER=ifelse(UnionTBL2$PARAMETER=='BARE','BARE',UnionTBL2$PARAMETER)#xwalk:fmstr
+UnionTBL2$PARAMETER=ifelse(UnionTBL2$PARAMETER=='CANBTRE'|UnionTBL2$PARAMETER=='CANSTRE','CAN_TREE',UnionTBL2$PARAMETER)#xwalk:fmstr
+UnionTBL2$PARAMETER=ifelse(UnionTBL2$PARAMETER=='CANVEG'|UnionTBL2$PARAMETER=='UNDERVEG','VEG_TYPE',UnionTBL2$PARAMETER)#xwalk:fmstr
+UnionTBL2$PARAMETER=ifelse(UnionTBL2$PARAMETER=='GCNWDY'|UnionTBL2$PARAMETER=='UNDNWDY','NONWOOD',UnionTBL2$PARAMETER)#xwalk:fmstr
+UnionTBL2$PARAMETER=ifelse(UnionTBL2$PARAMETER=='GCWDY'|UnionTBL2$PARAMETER=='UNDWDY','WOODY',UnionTBL2$PARAMETER)#xwalk:fmstr
 UnionTBL2$PARAMETER=ifelse(UnionTBL2$PARAMETER=='DENSIOM' & UnionTBL2$POINT %in% c('LF','RT'),'DENSIOMbank',ifelse(UnionTBL2$PARAMETER=='DENSIOM' & (UnionTBL2$POINT  %in% c('LF','RT')==FALSE),'DENSIOMcenter',UnionTBL2$PARAMETER))#for preliminary analysis purposes, these need to be divided (and are believed to be separated in aquamet)
 combineparamNEW=c('CANCOVERW DENSIOMbank','CANCOVERW DENSIOMcenter','CROSSSECW SIZE_CLS','LWDW LWDtally','TORR Torrent','ASSESS AGRicultural','ASSESS INDustrial','ASSESS MANagement','ASSESS RECreation','ASSESS RESidential','HUMINFLUW HumanPresence','VISRIPW BARE','VISRIPW CAN_TREE','VISRIP2W VEG_TYPE','VISRIPW NONWOOD','VISRIPW WOODY')##still need to ponder HUMINFLU, VISRIP, FISHCOV, and ASSESS and add back in here
-allparams1=union(allparams1,combineparamNEW)
+allparams1=union(allparams1,combineparamNEW)#allparams1=allparams1[4:length(allparams1)]
 #binned parameters
-bin='Y'#'Y' if would like to apply specified binning to parameters in binparams
+bin='Y'#'Y' if would like to apply specified binning to results of parameters in binparams
 binparams=c("CROSSSECW SIZE_CLS",grep("LWD",allparams1,value=T),grep("CANCOVER",allparams1,value=T),'VISRIP2W VEG_TYPE','TORR Torrent','HUMINFLUW HumanPresence',grep("ASSESS",allparams1,value=T),grep("VISRIP",allparams1,value=T))#also list any parameters that should be treated as categorical that are otherwise in params_N
-binMETA=read.csv('binMETADATAtemp.csv')##feed in from SQL once solified in FM, R, SQL; also used to order categoricals
+binMETA=read.csv('binMETADATAtemp.csv')##!feed in from SQL once solified in FM, R, SQL; also used to order categoricals
 for (p in 1:length(allparams1)){#this is a standard loop for iterating, could put it in a function that allows you to plug in a string for the most nested middle
+#for (p in 1:1){#target specifc parameters during testing  
   typeparam=strsplit(allparams1[p]," ")
   type=typeparam[[1]][[1]]; param=typeparam[[1]][[2]]
   paramTBL=subset(UnionTBL2,subset=PARAMETER==param & SAMPLE_TYPE==type)
@@ -256,13 +271,17 @@ for (p in 1:length(allparams1)){#this is a standard loop for iterating, could pu
     
     for (n in 1:numstrata) {#re-enter for loop now that all STRATA are complete and aggregated
       paramTBL4=subset(paramTBL3,subset=STRATATYPE==typestrata[n])
-      stratabox=ggplot(paramTBL4,aes(y=PARAMRES, x=STRATA,fill=PARAMCAT)) 
-      stratabox=stratabox+ geom_boxplot(outlier.colour = "red", outlier.size = 10)+#for reviewing all data by strata
+      stratabox=ggplot(paramTBL4,aes(y=PARAMRES, x=PARAMCAT,fill=PARAMCAT,colour=PARAMCAT)) 
+      stratabox=stratabox+ #could try to consolidate with  sitebox...the same except for facet_grid
+        #geom_boxplot(outlier.colour = "red", outlier.size = 10)+#for reviewing all data by strata
+        facet_grid(.~STRATA)+
+        stat_summary(fun.data=whisk95, geom='boxplot', colour='black') + #geom_boxplot(outlier.colour='darkred',outlier.size=10,colour='black') + 
+        stat_summary(fun.y=out2SD, geom='point',colour='darkred',size=10,legend=F) +
         stat_summary(fun.data =give.n, geom = "text") +
         labs (title=sprintf('STRATA- %s ~ PARAM- %s',typestrata[n],param))
       ggsave(filename=sprintf('%s.jpg',stratabox$labels$title),plot=stratabox)#assign(stratabox$labels$title,stratabox)#save jpeg or # assign(sprintf('box_STRATA_%s_%s',typestrata[n],param),stratabox)
     }
-    allsites=intersect(unique(paramTBL$UID),unique(UnionTBL1$UID))##would be nice if this  linked to a second set of UIDs to narrow down sites, but still feed all sites through the aggregations; interim solution is to match UnionTBL (all data) to UnionTBL1 (UID restricted) which will still run all data if alldata='Y'
+    allsites=unique(paramTBL$UID)
     for (s in 1:length(allsites)){#2){
       paramTBL3$TRANSECT='ALL';paramTBL3$POINT='ALL'
       paramTBL3$POINT=ifelse(paramSTATUS=='CHAR' & paramTBL3$STRATATYPE=='SITE_ID',paramTBL3$IND.y,paramTBL3$POINT)#set up for later N (sample size) use
@@ -271,7 +290,7 @@ for (p in 1:length(allparams1)){#this is a standard loop for iterating, could pu
         paramTBL$STRATATYPE='UID';paramTBL$STRATA=paramTBL$SITE;paramTBL$PARAMCAT='None'; paramTBL$STRATA=factor(paramTBL$STRATA,levels=unique(paramTBL$STRATA))
         paramTBL6=subset(paramTBL,select=subcol)
         paramTBL6=rbind(paramTBL6,paramTBL5)
-      } else if(paramSTATUS=='CHAR'){paramTBL6=paramTBL5}
+      } else if(paramSTATUS=='CHAR'){paramTBL6=paramTBL5;paramTBL6$STRATATYPE=ifelse(paramTBL6$STRATATYPE=='SITE_ID','UID',paramTBL6$STRATATYPE)}
       stratas=unique(subset(paramTBL6,select=STRATA,subset=UID==allsites[s]))
       paramTBL6=subset(paramTBL6,subset=STRATA %in% stratas$STRATA)
       paramTBL6$STRATATYPE=factor(paramTBL6$STRATATYPE,levels=c("UID",typestrata))
@@ -284,7 +303,7 @@ for (p in 1:length(allparams1)){#this is a standard loop for iterating, could pu
       if(paramSTATUS=='CHAR'){paramN$PARAMRES=ifelse(paramN$STRATATYPE=='UID',min(paramTBL6$POINT),round(paramN$PARAMRES/length(unique(paramTBL6$PARAMCAT)),0))}
       #label quantiles with SiteCode
       paramquant=aggregate(PARAMRES~STRATATYPE+PARAMCAT,data=paramTBL6,FUN='quantile',probs=c(0.05,0.95),names=FALSE);colnames(paramquant)=c('STRATATYPE','PARAMCAT','Quant')
-      paramTBL6=merge(paramTBL6,paramquant,by=c('STRATATYPE','PARAMCAT'))
+      paramTBL6=merge(paramTBL6,paramquant,by=c('STRATATYPE','PARAMCAT'),all.x=T)
       paramTBL6$SiteLabelOUT=ifelse(paramTBL6$PARAMRES<paramTBL6$Quant[,1],paramTBL6$SITE_ID,ifelse(paramTBL6$PARAMRES>paramTBL6$Quant[,2],paramTBL6$SITE_ID,NA))#create a site label if an outlier
       paramTBL6$SiteLabelOUT=ifelse(paramTBL6$STRATATYPE=="UID"& paramSTATUS=='CHAR',NA, ifelse(paramTBL6$STRATATYPE=="UID" & is.na(paramTBL6$SiteLabelOUT)==FALSE,paste(paramTBL6$TRANSECT,paramTBL6$POINT,sep=":"),paramTBL6$SiteLabelOUT))#change site label to transect if raw data
       paramQ=subset(paramTBL6,is.na(SiteLabelOUT)==FALSE)
@@ -294,9 +313,13 @@ for (p in 1:length(allparams1)){#this is a standard loop for iterating, could pu
       paramTBL6=merge(paramTBL6,paramoutlrM,by=c('STRATATYPE','PARAMCAT'));paramTBL6=merge(paramTBL6,paramoutlrS,by=c('STRATATYPE','PARAMCAT'))
       paramTBL6$SiteLabelOUT2=ifelse(paramTBL6$PARAMRES>(paramTBL6$Mean + (2*paramTBL6$SD)),paramTBL6$SITE_ID,ifelse(paramTBL6$PARAMRES<(paramTBL6$Mean - (2*paramTBL6$SD)),paramTBL6$SITE_ID,NA))#create a site label if an outlier
       paramTBL6$SiteLabelOUT2=ifelse(paramTBL6$STRATATYPE=="UID"& paramSTATUS=='CHAR',NA, ifelse(paramTBL6$STRATATYPE=="UID" & is.na(paramTBL6$SiteLabelOUT2)==FALSE,paste(paramTBL6$TRANSECT,paramTBL6$POINT,sep=":"),paramTBL6$SiteLabelOUT2))#change site label to transect if raw data
-      paramMSD=subset(paramTBL6,is.na(SiteLabelOUT2)==FALSE);paramMSDpres=nrow(paramMSD); if(paramMSDpres==0){paramMSD=paramTBL6[1,]}#geom_text will fail if no rows are present
+      paramMSD=subset(paramTBL6,is.na(SiteLabelOUT2)==FALSE);paramMSDpres=nrow(paramMSD); if(paramMSDpres==0){paramMSD=paramTBL6[1,];paramMSD$SiteLabelOUT2=''}#geom_text will fail if no rows are present
       #generate box plot in ggplot2
-      sitebox=ggplot(paramTBL6,aes(y=PARAMRES, x=PARAMCAT,fill=PARAMCAT,colour=PARAMCAT)) + geom_boxplot(outlier.colour='darkred',outlier.size=10,colour='black') + facet_grid(.~STRATATYPE)+
+      if(allsites[s] %in% paramMSD$UID){#only print plot if it has outliers within the site or when compared to the strata
+      sitebox=ggplot(paramTBL6,aes(y=PARAMRES, x=PARAMCAT,fill=PARAMCAT,colour=PARAMCAT)) +
+        stat_summary(fun.data=whisk95, geom='boxplot',colour='black') + #geom_boxplot(outlier.colour='darkred',outlier.size=10,colour='black') + 
+        stat_summary(fun.y=out2SD, geom='point',colour='darkred',size=10,legend=F) +
+        facet_grid(.~STRATATYPE)+
         geom_hline(aes(yintercept=PARAMRES, colour=PARAMCAT),siteavg,size=1)  + #mark the average for the site
         scale_colour_brewer(drop=FALSE,palette='Set1') + scale_fill_brewer(palette='Set1')+#sync colors between lines and boxplots (especially important for categorical)
         geom_text(data=paramN,aes(label=sprintf('n=%s',PARAMRES),x=(length(unique(paramTBL6$PARAMCAT))/2)+0.5,y=max(paramTBL6$PARAMRES)+0.25),inherit.aes=FALSE, parse=FALSE)+#annotate("text",x=2,y=max(paramTBL6$PARAMRES)+0.5,label=sprintf('n=%s',paramN$PARAMRES)) +#annotate: n(sites) for strata plots and n(points) for site  (function defined above) #messy for categorical#previous (not working as anticipated, particularly for categorical): #stat_summary(fun.data =give.n, geom = "text") + #function for adding sample size to boxplots #
@@ -305,6 +328,7 @@ for (p in 1:length(allparams1)){#this is a standard loop for iterating, could pu
         geom_text(data=paramMSD,aes(label=SiteLabelOUT2),show_guide=F,size=3,position= position_jitter(width = 0.25, height=0))+
         theme(axis.text.x=element_blank(),axis.ticks.x=element_blank(),axis.title.x=element_blank())  #remove x axis 
       ggsave(filename=sprintf('%s.jpg',sitebox$labels$title),plot=sitebox)#assign(sitebox$labels$title,sitebox)#save jpeg or assign var (need to refine naming)
+      }
       if(paramMSDpres>0){if(p==1 & s==1){outlierTBL=paramMSD} else {outlierTBL=rbind(outlierTBL,paramMSD)}}
     } } }
 rm(paramTBL3,paramTBL4,paramTBL6,paramTBL5,paramTBL3a,paramTBL3b)

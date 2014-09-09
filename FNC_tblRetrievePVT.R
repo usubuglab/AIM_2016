@@ -137,26 +137,29 @@ addKEYS=function(Table,Columns){
 }
 
 #UNIONTBL/tblRetrieve
-tblRetrieve=function(Table='',ALL='N',Filter='',UIDS='BLANK',SiteCodes='',Dates='',Years='',Projects='',Protocols='',Parameters='',ALLp='N'){
+tblRetrieve=function(Table='',ALL='N',Comments='N',Filter='',UIDS='BLANK',SiteCodes='',Dates='',Years='',Projects='',Protocols='',Parameters='',ALLp='N'){
   UIDselected=UIDselect(ALL=ALL,Filter=Filter,UIDS=UIDS,SiteCodes=SiteCodes,Dates=Dates,Years=Years,Projects=Projects,Protocols=Protocols)
   UIDstr=sprintf(" left(cast(UID as nvarchar),10) in (%s) ",inLOOP(substr(UIDselected$UID,1,10)))
-  if(Table==''){
+  if(Table==''){#previously empty tran and point set to cast(Null as nvarchar(5)) but '' used to facilitate tblComments join, not sure if it will work with comments when Table specified, but in most cases it's better to specify a list of parameters and let the union figure out where they are
     TableSTR=sprintf("(select  UID, SAMPLE_TYPE, TRANSECT, POINT,PARAMETER,RESULT,FLAG,IND,ACTIVE,OPERATION,INSERTION,DEPRECATION,REASON 
       from tblPOINT where %s 
       union
-      select   UID, SAMPLE_TYPE, TRANSECT, cast(Null as nvarchar(5)) POINT,PARAMETER,RESULT,FLAG,IND,ACTIVE,OPERATION,INSERTION,DEPRECATION,REASON  
+      select   UID, SAMPLE_TYPE, TRANSECT, '' POINT,PARAMETER,RESULT,FLAG,IND,ACTIVE,OPERATION,INSERTION,DEPRECATION,REASON  
       from tbltransect where %s
       union
-      select   UID, SAMPLE_TYPE, cast(Null as nvarchar(5)) TRANSECT, cast(Null as nvarchar(5)) POINT,PARAMETER,RESULT,FLAG,IND,ACTIVE,OPERATION,INSERTION,DEPRECATION,REASON 
+      select   UID, SAMPLE_TYPE, '' TRANSECT, '' POINT,PARAMETER,RESULT,FLAG,IND,ACTIVE,OPERATION,INSERTION,DEPRECATION,REASON 
       from tblreach where %s
       union
-      select UID, SAMPLE_TYPE, cast(Null as nvarchar(5)) TRANSECT, cast(Null as nvarchar(5)) POINT,PARAMETER,RESULT,FLAG,IND,ACTIVE,OPERATION,INSERTION,DEPRECATION,REASON 
+      select UID, SAMPLE_TYPE, '' TRANSECT, '' POINT,PARAMETER,RESULT,FLAG,IND,ACTIVE,OPERATION,INSERTION,DEPRECATION,REASON 
       from tblverification where %s
     ) UnionTBL",UIDstr,UIDstr,UIDstr,UIDstr)
   } else{TableSTR=Table}
   if(toupper(Table)=='TBLCOMMENTS'){PARAMstr=''} else{PARAMstr=sprintf(" and Parameter in (%s)",inLOOP(Parameters))}
-  UnionSTR=sprintf("select * from %s where ACTIVE='TRUE' and %s %s"
-    ,TableSTR, UIDstr, PARAMstr)
+  if(Comments=='Y'){tblJoin=ifelse(Table=='','UnionTBL',Table);
+                    CommentSTR=sprintf("left join (select COMMENT, UID U, FLAG F, SAMPLE_TYPE S, case when TRANSECT='ALL' then '' when TRANSECT is NULL then '' else TRANSECT end T, case when TRANSECT='ALL' then '' when TRANSECT is NULL then '' else PAGE end  P from  tblCOMMENTS where ACTIVE='TRUE') as c on %s.UID=c.U and %s.SAMPLE_TYPE=c.S and %s.FLAG=c.F %s %s",tblJoin,tblJoin,tblJoin,ifelse(tblJoin %in% c('tblVERIFICATION','tblREACH'),'',sprintf("and %s.TRANSECT=c.T",tblJoin)),ifelse(tblJoin %in% c('tblVERIFICATION','tblREACH','tblTRANSECT'),'',sprintf("and %s.POINT=c.P",tblJoin)))
+  } else{CommentSTR=''}
+  UnionSTR=sprintf("select * from %s %s where ACTIVE='TRUE' and %s %s"
+    ,TableSTR, CommentSTR, UIDstr, PARAMstr)
   if(ALLp=='Y' | Parameters==''){UnionSTR=gsub("Parameter in \\(''\\)","Parameter like '%'",UnionSTR)}
   if(ALL=='Y' | paste(Filter,UIDS,SiteCodes,Dates,Years,Projects,Protocols,sep='')==''){UnionSTR=gsub("in \\(''\\)","like '%'",UnionSTR)}
   qryRSLT=sqlQuery(wrsa1314,UnionSTR)

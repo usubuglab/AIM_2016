@@ -371,7 +371,7 @@ if(PROCEED<3) {print("Data ready for import. Perform any desired checkes and set
 #!having to manually renumber because of intensfications, consider just setting maxSamp to zero which triggers all samplenubmers to be zero, then if maxsampl>0, run the sequence code
  sampletmp=subset(importmaster,PARAMETER=='SAMPLE_ID' & SAMPLE_TYPE=='BERW')
  sampletmp$PARAMETER='SampleNumber'
- for (s in 1:nrow(sampletmp)){sampletmp$RESULT[s]=maxSamp;maxSamp=maxSamp+1}
+ for (s in 1:nrow(sampletmp)){sampletmp$RESULT[s]=maxSamp;maxSamp=maxSamp+1}#!sampletmp$RESULT=0
  #prep fields for SampleEvent
  commenttmp=unique(subset(tblCOMMENTSin,SAMPLE_TYPE=='VERIF'))
  commentUID=unique(subset(commenttmp, select='UID'));commenttmp4=data.frame()
