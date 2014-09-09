@@ -163,6 +163,7 @@ tblRetrieve=function(Table='',ALL='N',Comments='N',Filter='',UIDS='BLANK',SiteCo
   if(ALLp=='Y' | Parameters==''){UnionSTR=gsub("Parameter in \\(''\\)","Parameter like '%'",UnionSTR)}
   if(ALL=='Y' | paste(Filter,UIDS,SiteCodes,Dates,Years,Projects,Protocols,sep='')==''){UnionSTR=gsub("in \\(''\\)","like '%'",UnionSTR)}
   qryRSLT=sqlQuery(wrsa1314,UnionSTR)
+  qryRSLT=qryRSLT[,!(names(qryRSLT) %in% c('U','F','S','T','P'))]
   if(class(qryRSLT)=="character"){  print('Unable to interpret the provided parameters. No table retrieved.')}#not running query because could cause overload#previous query: sqlQuery(wrsa1314, sprintf('select * from %s  %s',table, ifelse(filter=='',"where ACTIVE='TRUE'",paste("where ACTIVE='TRUE' and ", filter))))
   return(qryRSLT)#could auto return the pivoted view, but currently assuming that is for on the fly viewing and is not the easiest way to perform metrics
 }
