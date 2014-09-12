@@ -6,7 +6,7 @@ CheckAll='Y'#options: 'Y' = Check All Parameters for the protocol; 'N' = Check o
 CommentsCount='N'#'Y' = a comment (as represented by a flag) allows the missing data warning to be ignored; 'N' = missing data is reported regardless and contributes to subsequent percentages. 
 
 ##testing
-# UnionTBL=tblRetrieve(Table='tblREACH',ALLp=AllParam,ALL=AllData,SiteCodes=sitecodes,Years=years,Projects=projects)
+# UnionTBL=tblRetrieve(Table='',ALLp='',ALL=AllData,SiteCodes=c('XE-LS-5010','SU-SS-8349','XN-SS-4135','AA-STR-0008','EL-LS-8126'))#Table='tblREACH'#ALLp=c('VALXSITE','DOM_LAND_USE','DLDLL','ROAD','PH')
 # CheckAll='N'
 ##NorCal1314
 # UnionTBL=tblRetrieve(ALLp='Y',Years=c('2013','2014'),Projects='NorCal')
@@ -64,14 +64,19 @@ for (p in 1:length(ProtocolsP)){
   }                         
 }
 
-#emptytest=emptyFulldataset;empty14Jul14=emptyFulldataset
+emptytmp=emptyFulldataset#;empty14Jul14=emptyFulldataset
 
+#!method/checking oddities (not sure if these should be handled in emptyFulldataset or MissingCounts)
+UnionTBL$TRANSECT=ifelse(UnionTBL$SAMPLE_TYPE %in% c('SLOPEW', 'HABITAT') 
+                         & addKEYS(UnionTBL,c('PROTOCOL'))$PROTOCOL %in% c('WRSA14','AK14'),
+                         NA,UnionTBL$TRANSECT)#instances where only care if have at least one, but it's recorded as multiple so TRANSECT unable to join in MissingCounts if different
+#!posible issues with INCREMENT, but likely warrants database cleanup
 
 #only reporting values with missing counts
 MissingCounts=sqldf("select *, case when MissingCount is null then Points else Points-MissingCount end MissingCNT from 
-                    (select *, case when Transect is null then 'O' else Transect end as TRE from emptyFulldataset where Points>0) as ExpectedCounts
+                    (select *, case when Transect is null then 'O' when Transect='' then 'O' else Transect end as TRE from emptyFulldataset where Points>0) as ExpectedCounts
                     outer left join 
-                    (select Sample_Type STO, Parameter PO, [UID] as UIDo, case when Transect is null then 'O' else Transect end as TR, COUNT(Result) MissingCount, FLAG  from UnionTBL
+                    (select Sample_Type STO, Parameter PO, [UID] as UIDo, case when Transect is null then 'O' when Transect='' then 'O' else Transect end as TR, COUNT(Result) MissingCount, FLAG  from UnionTBL
                     group by Sample_Type, Parameter, [UID], Transect) as ObservedCounts
                     on ExpectedCounts.Sample_Type=ObservedCounts.STO and ExpectedCounts.Parameter=ObservedCounts.PO and ExpectedCounts.TRE=ObservedCounts.TR and ExpectedCounts.UID=ObservedCounts.UIDo
                     where (MissingCount < Points or MissingCount is null) ")
@@ -87,6 +92,31 @@ if(CommentsCount=='Y'){
   
 #count number of parameters with missing data
 MissingTotals=sqldf('select UID,count(*) ParamCNT from MissingCounts group by UID')
+
+
+#Xwalk Sample_types before grouping
+MissingXwalk='MissingBackend'; MetricType='Y'#if MetricType=='Y' then groupings will be done by the bin (Type_Xwalk) and the metric type (Indicator, Covariate, QC)
+MissingCounts$Sample_Type_ORG=MissingCounts$SAMPLE_TYPE; MissingCounts$Parameter_ORG=MissingCounts$PARAMETER#keeping this for peace of mind, may be able to omit
+emptyFulldataset$Sample_Type_ORG=emptyFulldataset$SAMPLE_TYPE; emptyFulldataset$Parameter_ORG=emptyFulldataset$PARAMETER
+if (MissingXwalk==''){
+  MissingCounts$TABLE=''#;MissingGrouping='SAMPLE_TYPE'
+} else{
+  MissingCounts=Xwalk(Source='R',XwalkName=MissingXwalk,XwalkDirection='',Table='MissingCounts',COL=colnames(MissingCounts))#,Filter='',UIDS='BLANK',SiteCodes='',Dates='',Years='',Projects='',Protocols='',Parameters='',ALLp='N'){
+  emptyFulldataset=Xwalk(Source='R',XwalkName=MissingXwalk,XwalkDirection='',Table='emptyFulldataset',COL=colnames(emptyFulldataset))
+  if(MetricType=='Y' & MissingXwalk=='MissingBackend'){
+    MissingCounts$SAMPLE_TYPE=sprintf('%s:%s',MissingCounts$SAMPLE_TYPE,MissingCounts$TABLE)
+    emptyFulldataset$SAMPLE_TYPE=sprintf('%s:%s',emptyFulldataset$SAMPLE_TYPE,emptyFulldataset$TABLE)
+  } #else{MissingGrouping='SAMPLE_TYPE'}#can set custom grouping combinations here as desired for specific xwalks
+  
+}
+
+#!combine Sample_type and table instead of groupings?
+#DONE: need to update MetadataProtocol to account for things that need to contribute to missing data checks: ACTRANSP, etc. ; change SIZE_CLS to SIZE_NUM
+#!don't group by parameter(metric name), but join at end
+#!fix MissingTotals4 (or did this only matter for paramCNT and commentCNT?); just tell folks this has stopped development unless they would like it
+
+
+
 #group by Sample_type + Transect #! likely want a more custom solution with something more akin to QAbins in FM
 MissingTotals2=sqldf(sprintf("select UID,SAMPLE_TYPE,TRE as TRANSECT,MC MissCNT, PT ExpectedCNT, cast(ifnull(round(MC/PT,2) ,0) as float) MissingPCT, CC COMMENTcnt from
                      (select UID, SAMPLE_TYPE,count(*) PTC, cast(sum(Points) as float) PT, case when Transect is null then 'O' else Transect end as TRE
@@ -99,7 +129,17 @@ MissingTotals2=sqldf(sprintf("select UID,SAMPLE_TYPE,TRE as TRANSECT,MC MissCNT,
 
 
 #group by Sample_type only to get reach totals
-MissingTotals3=sqldf("select UID,SAMPLE_TYPE, 'ReachTotal' TRANSECT,sum(MissCNT) MissCNT, sum(ExpectedCNT) ExpectedCNT ,  cast(ifnull(round((cast(sum(MissCNT) as float)/cast(sum(ExpectedCNT) as float) ),2),0) as float) MissingPCT, sum(COMMENTcnt) as COMMENTcnt from MissingTotals2 group by UID, Sample_Type")
+MissingTotals3=sqldf("select UID,SAMPLE_TYPE, 'ReachTotal' TRANSECT,sum(MissCNT) MissCNT, sum(ExpectedCNT) ExpectedCNT ,  cast(ifnull(round((cast(sum(MissCNT) as float)/cast(sum(ExpectedCNT) as float) ),2),0) as float) MissingPCT, sum(COMMENTcnt) as COMMENTcnt from MissingTotals2 group by UID, SAMPLE_TYPE")
+
+#main ouput (until param and comments fleshed out more)
+MissingTotals4=unique(rbind(MissingTotals2,MissingTotals3)  )
+#! need to fix the revisions to MissingTotals4 before this will work
+MissingTotals4=MissingTotals4[,!(names(MissingTotals4) %in% c('POINT'))]
+MissingTotalsOUT= addKEYS(cast(subset(MissingTotals4,is.na(UID)==FALSE ), 'UID + TRANSECT  ~ SAMPLE_TYPE',value='MissingPCT' ),Columns=c('SITE_ID','DATE_COL','Protocol')) 
+MissingTotalsREACH=subset(MissingTotalsOUT,TRANSECT=='ReachTotal');write.xlsx(MissingTotalsREACH,"MissingDataQCrch_nocom.xlsx")
+MissingTotalsTRAN=subset(MissingTotalsOUT,TRANSECT!='ReachTotal');write.xlsx(MissingTotalsTRAN,"MissingDataQCttran_nocom.xlsx")
+write.xlsx(MissingCounts,"MissingCounts.xlsx")
+
 #combine reach totals
 MissingTotals5=sqldf("select UID, 'REACH' SAMPLE_TYPE,  'O' TRANSECT, ParamCNT,MissCNT,  ExpectedCNT, MissingPCT ,COMMENTcnt from MissingTotals 
                      join 
@@ -107,7 +147,8 @@ MissingTotals5=sqldf("select UID, 'REACH' SAMPLE_TYPE,  'O' TRANSECT, ParamCNT,M
                      on MissingTotals.UID=Totals.UIDm
                      ")
 MissingTotals6=MissingTotals5[,!(names(MissingTotals5) %in% c('ParamCNT'))];MissingTotals7=MissingTotals5;MissingTotals7$MissingPCT=MissingTotals7$ParamCNT;MissingTotals7$SAMPLE_TYPE='Param';MissingTotals7=MissingTotals7[,!(names(MissingTotals7) %in% c('ParamCNT'))]
-MissingTotals4=unique(rbind(MissingTotals2,MissingTotals3,MissingTotals6,MissingTotals7)  );MissingTotals4$RESULT=MissingTotals4$MissingPCT;MissingTotals4$PARAMETER=paste("PCT_",MissingTotals4$SAMPLE_TYPE,"_QA",sep='');MissingTotals4$TRANSECT=ifelse(MissingTotals4$TRANSECT=='O',NA,MissingTotals4$TRANSECT);MissingTotals4$POINT=MissingTotals4$TRANSECT;MissingTotals4=ColCheck(MissingTotals4,c(VAR,'TRANSECT','POINT','PARAMETER','RESULT'))
+
+#MissingTotals4=unique(rbind(MissingTotals2,MissingTotals3,MissingTotals6,MissingTotals7)  );MissingTotals4$RESULT=MissingTotals4$MissingPCT;MissingTotals4$PARAMETER=paste("PCT_",MissingTotals4$SAMPLE_TYPE,"_QA",sep='');MissingTotals4$TRANSECT=ifelse(MissingTotals4$TRANSECT=='O',NA,MissingTotals4$TRANSECT);MissingTotals4$POINT=MissingTotals4$TRANSECT;MissingTotals4=ColCheck(MissingTotals4,c(VAR,'TRANSECT','POINT','PARAMETER','RESULT'))
 #!revision to MissingTotals4 (once complete, comment out MissingTotals4 and 6 above)
 # MissingTotals4=unique(rbind(melt(MissingTotals2,id=c('SAMPLE_TYPE','TRANSECT','UID')),melt(MissingTotals3,id=c('SAMPLE_TYPE','TRANSECT','UID')),melt(MissingTotals5,id=c('SAMPLE_TYPE','TRANSECT','UID'))))
 # MissingTotals4$TRANSECT=ifelse(MissingTotals4$variable=='ParamCNT','ReachTotal',MissingTotals4$TRANSECT)
@@ -120,12 +161,7 @@ MissingTotals4=unique(rbind(MissingTotals2,MissingTotals3,MissingTotals6,Missing
   #print(MissingTotals5)    
   #checking individual sites#View(subset(MissingCounts,subset=UID==''))#View(subset(importmaster,subset=UID==''))# View(subset(tblCOMMENTSin,subset=UID==''))
 
-#! need to fix the revisions to MissingTotals4 before this will work
-MissingTotals4=MissingTotals4[,!(names(MissingTotals4) %in% c('POINT'))]
-MissingTotalsOUT= addKEYS(cast(subset(MissingTotals4,is.na(UID)==FALSE ), 'UID + TRANSECT  ~ PARAMETER',value='RESULT' ),Columns=c('SITE_ID','DATE_COL','Protocol')) 
-MissingTotalsREACH=subset(MissingTotalsOUT,TRANSECT=='ReachTotal');write.csv(MissingTotalsREACH,"MissingDataQCr_nocom.csv")
-MissingTotalsTRAN=subset(MissingTotalsOUT,TRANSECT!='ReachTotal');write.csv(MissingTotalsTRAN,"MissingDataQCt_nocom.csv")
-write.csv(MissingCounts,"MissingCounts.csv")
+
 
 
   
@@ -263,7 +299,7 @@ for (p in 1:length(allparams1)){#this is a standard loop for iterating, could pu
 #for (p in 51:length(allparams1)){#target specifc parameters during testing or start over mid-process  
   typeparam=strsplit(allparams1[p]," ")
   type=typeparam[[1]][[1]]; param=typeparam[[1]][[2]]
-  paramTBL=subset(UnionTBL2,subset=PARAMETER==param & SAMPLE_TYPE==type)
+  paramTBL=subset(UnionTBL2,subset=PARAMETER==param & SAMPLE_TYPE==type)#!some where in subsetting and labelling of graphs, parameter was assumed to be unique...it technically is not (i.e. crosssection vs. thalweg depths, boatable) and needs Sample_TYPE in tandem
   paramTBL$CHAR=as.character(paramTBL$RESULT)
   paramTBL$NUM=as.numeric(paramTBL$CHAR)
   if(nrow(paramTBL)>0){

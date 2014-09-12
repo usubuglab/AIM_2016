@@ -178,6 +178,7 @@ TBLtmp=tblRetrieve(Table=Table,ALL=ALL,Filter=Filter,UIDS=UIDS,SiteCodes=SiteCod
 TBLtmp=eval(parse(text=Table))
 #XwalkDirection='_Xwalk' #user given control in the function, rather than assuming based on source
 }
+COL=setdiff(COL,c(VAR,'PARAMETER','TRANSECT','POINT','RESULT'))
 TBLtmp=ColCheck(TBLtmp,c(VAR,'PARAMETER','TRANSECT','POINT','RESULT',COL))
 XwalkParam=sqlQuery(wrsa1314,sprintf("select *, case when right(SAMPLE_TYPE,1)='X' then left(SAMPLE_TYPE,len(SAMPLE_TYPE)-1) else SAMPLE_TYPE end as 'TABLE' from tblXWALK where Name_XWALK='%s' ",XwalkName))
 XwalkTBL=sqldf(sprintf(" select  UID, TRANSECT, POINT,upper(XwalkParam.Table_Xwalk) as 'TABLE', 

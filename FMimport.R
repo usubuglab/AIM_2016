@@ -414,4 +414,8 @@ if (SYNC=='Y'){
   
   #!tables to do: tblMEtadata, tblMetadataProtocol, Options
   #!Options (have plans to merge and replicate + sync between app (filemaker), WRSAdb (SQL), and ProbSurveyDb(Access))
+  #!comparing gaps for metadata used by missing data checks
+  #select * from (select *, substring(SAMPLE_TYPE,1,LEN(Sample_TYPE)-1) as st from tblXWALK where name_xwalk  like '%missing%') x
+  #full outer join (select * from tblmetadataprotocol where protocol in ('wrsa14', 'boat14','nrsa13')) m on m.SAMPLE_TYPE=x.St and m.PARAMETER=x.PARAMETER
+
 }
