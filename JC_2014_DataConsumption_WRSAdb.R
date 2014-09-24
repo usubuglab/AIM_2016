@@ -3,7 +3,11 @@
 DBpassword=''#Always leave blank when saving for security and because changes annually. Contact Sarah Judson for current password.
 DBuser=''#ditto as with DBpassword
 DBserver=''#ditto as with DBpassword
+<<<<<<< HEAD
 #this is a change
+=======
+#this is a change#SWJ annotate to allow branch access
+>>>>>>> fab7dbb9e0574281752dba437b355b1505840647
 
 #FILTERS
 ##from most to least specific

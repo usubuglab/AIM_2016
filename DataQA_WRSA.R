@@ -406,12 +406,43 @@ for (s in 1:length(stratat)){
   write.csv(outlierTBLst,file=sprintf('Outliers_2SDmean_%s.csv',stratat[s]))#could export as a single table, but a bit overwhelming
 }
 #! also output allparams1 to know what was checked (And which were excluded - excludeparams) --> will be easier once in xwalk
-
 #SWJ to do (2/11/14):
 #print cv or other metric as a warning for the spread? compare cv of site to avg cv of all/strata sites? (Scott--> cv only for repeatable data, didn't give alternate spread)
 #mimic labelling of site boxplots in strata
 #add "all" boxplot in strata
 
+
+##summary stats
+#retrieve all possible tables by protocol groups and pivot
+#for exploratory purposes to review data and determine expected values, not intended to replace modular SQL solutions for multiple tools
+tblCOL=c('UID', 'SAMPLE_TYPE','PARAMETER','RESULT','TRANSECT','POINT')
+pvtCOL='UID %s ~ SAMPLE_TYPE + PARAMETER';pvtCOLdefault=sprintf(pvtCOL,'');pvtCOL2=sprintf(pvtCOL,'+ TRANSECT + POINT')
+AggLevel='Site'#options = Site, All
+dbPARAM=sqlQuery(wrsa1314,"Select SAMPLE_TYPE, PARAMETER, LABEL,VAR_TYPE from tblMETADATA where ACTIVE='TRUE'")#parameter names (SWJ to do: iterate over Sample_Type groups to generate pivots)
+params_N=subset(dbPARAM, subset=VAR_TYPE=='NUMERIC')
+tblNAME='UnionTBLnum'
+  if(min(c('SAMPLE_TYPE',tblCOL) %in% colnames(tbl))==1){#if minimum needed columns are present, proceed, otherwise assume it is a pivoted or otherwise human readable table
+        #summarized quantitative data (average values per pivot cell which is per site per parameter)
+        tblNUM=subset(UnionTBL,subset=PARAMETER %in% params_N$PARAMETER )
+        if(nrow(tblNUM)>1){#only assign pivot to variable if not empty and only dive into subsequent if not empty
+          if(AggLevel=='Site'){pvtCOL4='UID + SAMPLE_TYPE + PARAMETER ~.'; pvtCOL5='RESULT~UID + SAMPLE_TYPE + PARAMETER'; colUID='tblPVTnSUM2$UID';nameUID=c('UID','SAMPLE_TYPE','PARAMETER','Quant1','Quant2')} else if (AggLevel=='All') {pvtCOL4='SAMPLE_TYPE + PARAMETER ~.';pvtCOL5='RESULT~SAMPLE_TYPE + PARAMETER';colUID='';nameUID=c('SAMPLE_TYPE','PARAMETER','Quant1','Quant2')}
+          tblNUM$RESULT=as.numeric(tblNUM$RESULT)
+          tblNUM=subset(tblNUM,subset= is.na(RESULT)==FALSE)#apparently not removing NAs during pivot aggregation, so done manually because causing errors - have to do after conversion to number
+          tblPVTn=cast(tblNUM, eval(parse(text=pvtCOLdefault)),value='RESULT',fun.aggregate='mean')#pivot reach average by site
+          tblPVTnSUM1=cast(tblNUM, eval(parse(text=pvtCOL4)),value='RESULT',fun.aggregate=c(length,mean,median,min,max,sd),fill='NA') # pivot summary stats by all sites combined or individual sites
+          tblPVTnSUM2=aggregate(eval(parse(text=pvtCOL5)),data=tblNUM,FUN='quantile',probs=c(0.25,0.75),names=FALSE)
+          tblPVTnSUM2=data.frame(cbind(eval(parse(text=colUID)),tblPVTnSUM2$SAMPLE_TYPE,tblPVTnSUM2$PARAMETER,tblPVTnSUM2$RESULT[,1],tblPVTnSUM2$RESULT[,2]));colnames(tblPVTnSUM2)=nameUID
+          tblPVTnSUM=merge(tblPVTnSUM1,tblPVTnSUM2,by=setdiff(nameUID,c('Quant1','Quant2')))
+          #need to do this by UID for WRSA13 QA duplicate comparison
+          assign(sprintf('%s_pvtQUANTmean_%s',tblNAME,AggLevel),tblPVTn)
+          assign(sprintf('%s_pvtSUMMARYn_%s',tblNAME,AggLevel),tblPVTnSUM)
+      }
+    }
+#export results
+QUANTtbls=c(grep('pvtQUANTmean',ls(),value=T),setdiff(grep('pvtSUMMARYn',ls(),value=T),"pvtSUMMARYn"))
+for (t in 1:length(QUANTtbls)){
+  write.csv(eval(parse(text=QUANTtbls[t])),sprintf('%s.csv',QUANTtbls[t]))#could merge-pvtQUANTmean_, but I like them grouped by categories
+}
 
 
 
@@ -430,13 +461,22 @@ on (WetTRAN.UID=WetPNTthal.UID and WetTRAN.TRANSECT=WetPNTthal.TRANSECT)
 
 
 #slope checks
-#!10% similarity between passes
 #!compare to GIS
-#!string of complete transects
-SlopeTran=tblRetrieve(Parameters=c('ENDTRAN'),UIDS=UIDs,ALL=AllData,Filter=filter,SiteCodes=sitecodes,Dates=dates,Years=years,Projects=projects,Protocols=protocols)
+###---Connected Slope passes with no gaps---###
+SlopeTran1=tblRetrieve(Parameters=c('ENDTRAN'),Years=c('2014','2015','2016'))#WRSA protocol
+SlopeTran2=tblRetrieve(Parameters=c('SLOPE'),Years=c('2013'))#NRSA protocol
+SlopeTran2$PARAMETER='ENDTRAN'#could choose to add this in database
+SlopeTran2$PointTMP=SlopeTran2$POINT
+SlopeTran2$POINT=SlopeTran2$TRANSECT
+SlopeTran2$TRANSECT=SlopeTran2$PointTMP;SlopeTran2=SlopeTran2[,!(names(SlopeTran2) %in% c('PointTMP'))]
+tran=c('A','B','C','D','E','F','G','H','I','J','K')
+for (t in 1:nrow(SlopeTran2)){
+  SlopeTran2$RESULT[t]=tran[1+grep(SlopeTran2$POINT[t],tran)]#could choose to add this in database
+}
+SlopeTran=rbind(SlopeTran1,SlopeTran2)
 SlopeTran$Start=SlopeTran$POINT;SlopeTran$Stop=SlopeTran$RESULT;SlopeTran=SlopeTran[,!(names(SlopeTran) %in% c('POINT','RESULT'))]
 SlopeTran=SlopeTran[,!(names(SlopeTran) %in% c('SAMPLE_TYPE','PARAMETER','IND','ACTIVE','FLAG','OPERATION','INSERTION','DEPRECATION','REASON'))]#!not necessary, just easier to see when clean
-NotTran=subset(SlopeTran, nchar(RESULT)>1|nchar(POINT)>1)
+NotTran=subset(SlopeTran, nchar(Start)>1|nchar(Stop)>1)
 if(nrow(NotTran)>0){print('WARNING: some transects are not single letter transect names. Review and correct'); View(NotTran)}
 St=c('Start','Stop')
 SlopeUID=unique(subset(SlopeTran,select=c(UID,TRANSECT)));SlopeUIDmulti=SlopeUID[0,]
@@ -454,7 +494,7 @@ for (u in 1:nrow(SlopeUID)){
       if(nrow(SlopeMatch)>0){
       SlopeMatchL=SlopeMatch; names(SlopeMatchL)[names(SlopeMatchL) %in% St] <- sprintf('%sL%s',St,m)
       SlopeMatchR=SlopeMatch; names(SlopeMatchR)[names(SlopeMatchR) %in% St] <- sprintf('%sR%s',St,m)
-      SlopeConnect=sqldf(sprintf('select * from SlopeConnect left join SlopeMatchL on SlopeConnect.StartL%s=SlopeMatchL.StopL%s left join SlopeMatchR on SlopeConnect.StopR%s=SlopeMatchR.StartR%s',m-1,m,m-1,m))
+      SlopeConnect=sqldf(sprintf('select * from SlopeConnect left join SlopeMatchL on ltrim(rtrim(upper(SlopeConnect.StartL%s)))=ltrim(rtrim(upper(SlopeMatchL.StopL%s))) left join SlopeMatchR on ltrim(rtrim(upper(SlopeConnect.StopR%s)))=ltrim(rtrim(upper(SlopeMatchR.StartR%s)))',m-1,m,m-1,m))
       StartR=unlist(subset(SlopeConnect,select=sprintf('StartR%s',m)));StartL=unlist(subset(SlopeConnect,select=sprintf('StartL%s',m)));StopR=unlist(subset(SlopeConnect,select=sprintf('StopR%s',m)))
       FinalR=ifelse(is.na(StopR),FinalR,StopR);FinalL=ifelse(is.na(StartL),FinalL,StartL)
       SlopeMatch=subset(SlopeMatch,(Start %in% c(StartL,StartR))==FALSE)
@@ -470,16 +510,34 @@ for (u in 1:nrow(SlopeUID)){
 SlopeConnectFail=subset(SlopeConnectFail,is.na(UID)==F);SlopeConnectPass=subset(SlopeConnectPass,is.na(UID)==F);SlopeMatchFail=subset(SlopeMatchFail,is.na(UID)==F)
 #!Warnings
 SlopeConnectPassEndFail=subset(SlopeConnectPass,((toupper(gsub(" ","",FinalL))=='A'& toupper(gsub(" ","",FinalR))=='K')|(toupper(gsub(" ","",FinalL))=='K'& toupper(gsub(" ","",FinalR))=='A'))==FALSE)
-SlopeConnectPassEndPass=sqldf('select SlopeConnectPass.* from SlopeConnectPass as s1 left join SlopeConnectPassEndFail as s2 on s1.UID=s2.UID and s1.TRANSECT=s2.TRANSECT where s2.UID is null')
+SlopeConnectPassEndPass=sqldf('select s1.* from SlopeConnectPass as s1 left join SlopeConnectPassEndFail as s2 on s1.UID=s2.UID and s1.TRANSECT=s2.TRANSECT where s2.UID is null')
 SlopeConnectPassCNT=sqldf('select UID, Count(*) as CNT from SlopeConnectPassEndPass group by UID');SlopeConnectPass2Pass=subset(SlopeConnectPassCNT,CNT>1);SlopeConnectPass2Fail=subset(SlopeConnectPassCNT,CNT<2)
 print(sprintf('CONGRATULATIONS! %s sites with 2 successful Slope Passes!',nrow(SlopeConnectPass2Pass)))
-if(nrow(SlopeConnectPassEndFail)>0){print('WARNING: Some slope passes do not start at A or end at K. Summary data at in SlopeConnectPassEndFail. Examine raw data in detail.');View(SlopeConnectPassEndFail)}
-if(nrow(SlopeConnectPass2Fail)>0){print('WARNING: Some sites have only one connected Slope Pass.');print(SlopeConnectPass2Fail)}
-if(nrow(SlopeConnectFail)>0){print('WARNING: Some slope passes had gaps and could not be connected for the entire reach. Summary data in SlopeConnectFail and SlopeMatchFail. Examine raw data in detail.');View(SlopeConnectFail); View(SlopeMatchFail)}
+if(nrow(SlopeConnectPassEndFail)>0){print('WARNING: Some slope passes do not start at A or end at K. Summary data at in SlopeConnectPassEndFail. Examine raw data in detail.');View(subset(SlopeConnectPassEndFail,select=c('UID','TRANSECT','FinalL','FinalR')))}
+if(nrow(SlopeConnectPass2Fail)>0){print('WARNING: Some sites have only one connected Slope Pass. This may be because the data has already been cleaned to remove the 2nd pass if within 10%.');print(SlopeConnectPass2Fail)}
+if(nrow(SlopeConnectFail)>0){print('WARNING: Some slope passes had gaps and could not be connected for the entire reach. Summary data in SlopeConnectFail and SlopeMatchFail. Examine raw data in detail.');View(subset(SlopeConnectFail,select=c('UID','TRANSECT','FinalL','FinalR'))); View(SlopeMatchFail)}
 if(nrow(SlopeUIDmulti)>0){print('WARNING: Duplicate transects within same slope pass. Examine raw data in detail.');print(SlopeUIDmulti)}
 
 
-
-
-
-
+SlopeSlope=tblRetrieve(Parameters=c('SLOPE','PROP','METHOD','SLOPE_UNITS','ENDTRAN'),Years=c('2014','2015','2016'))
+SlopeSlope=subset(SlopeSlope,substr(SAMPLE_TYPE,1,5) =='SLOPE')
+####---SLOPE METHOD CHECK---##
+SlopeDiffMethod=subset(SlopeSlope,PARAMETER %in% c('PROP','METHOD','SLOPE_UNITS') & (RESULT %in% c('100','TR','CM'))==F)
+if(nrow(SlopeDiffMethod)>0){print('WARNING: Slopes with non-standard methods. Expected methods are PROP=100, Method=TR (transit) and Units=CM (centimeters)');View(SlopeDiffMethod)}
+####---SLOPE 10% CHECK---##
+Slope2=subset(SlopeSlope,UID %in% SlopeConnectPass2Pass$UID & PARAMETER=='SLOPE');Slope2$RESULT=as.numeric(Slope2$RESULT)
+Slope2sum=sqldf('select UID,TRANSECT, SUM(RESULT) as SlopeSum from Slope2 group by UID, TRANSECT')
+Slope2sum=cast(Slope2sum,'UID~TRANSECT',value='SlopeSum')
+SlopePass1=abs(Slope2sum[2]);SlopePass2=abs(Slope2sum[3]);
+Slope2sum$TenPCT=ifelse((SlopePass2>(SlopePass1+(SlopePass1*0.1))) | (SlopePass2<(SlopePass1-(SlopePass1*0.1))),'FAIL10%','PASS10%')#! app version is more iterative to check all passes -> could either apply here OR have app flag the slope that passes
+Slope2pass=subset(Slope2sum,TenPCT=='PASS10%' & is.na(Slope2sum[4]));Slope2fail=subset(Slope2sum,TenPCT=='FAIL10%' | is.na(Slope2sum[4])==F)
+if(nrow(Slope2fail)>0){print('WARNING: Pass 1 and 2 were not within 10%% OR if within 10% additional passes were present. Reconcile manually.');View(Slope2fail);View(subset(Slope2,UID %in% Slope2fail$UID ))}#print raw and summmed data for failed
+SlopeManuallyApproveTran1=c('21013264668376829952','5280846501466459068066440','933116886431965036742642','313491917404832989706088','57724867494140169944648','548616094584309022720','6057255640464259809280','21766046479553159758484','30503742404793951322602')
+if(nrow(Slope2pass)>0){print(sprintf('CONGRATULATIONS! Pass 1 met 10%% match requirements for %s sites. Inactivate Pass 2 in WRSAdb (csv exported).',nrow(Slope2pass)));write.csv(subset(SlopeSlope,TRANSECT>1 & UID %in% c(Slope2pass$UID,SlopeManuallyApproveTran1)),'SlopesToInactivate.csv')}#export 2nd passes to inactivate (eventually connect to UpdateDB.R once screened)
+#change externally: 
+#keep Tran2 active, Tran 3 inactive: #subset(SlopeSlope,UID %in% c('81353742941924589578','719428245490921504768','716024640500735016960') & TRANSECT!=2)
+#inactivate tran 1: 716024640500735016960 # reason: ignore this pass #use above subset
+#keep Tran3, omit all previous #subset(SlopeSlope,UID %in% c('863868431598454964244') & TRANSECT!=3)
+#keep Tran1, Point k (not a)  #subset(SlopeSlope,UID %in% c('37519940409184604912244', '47271381432878896252680') & (TRANSECT!=1|POINT=='a'))
+#keep Tran1, Point a (not k)  #subset(SlopeSlope,UID %in% c('8692216624269710244040620') & (TRANSECT!=1|POINT=='k'))
+#makes no sense and no comments to clarify 87601876754740660818804248 #View(cast(subset(SlopeSlope,UID=='87601876754740660818804248'),'UID+TRANSECT+POINT~PARAMETER',value='RESULT'))

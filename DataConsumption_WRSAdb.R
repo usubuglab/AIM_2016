@@ -1,30 +1,13 @@
+#------------------------------------------------------DOCUMENTATION------------------------------------------#
+#for detailed explanation of R and SQL structure, see buglab\Research Projects\BLM_WRSA_Stream_Surveys\Technology\WRSA data management.docx
+
+
 #-------------------------------------------------------INPUTS--------------------------------------------------------#
 #In the ideal world, users should only need to put inputs here and be able to get results out of the 'black box' below using existing functions.
 DBpassword=''#Always leave blank when saving for security and because changes annually. Contact Sarah Judson for current password.
 DBuser=''#ditto as with DBpassword
 DBserver=''#ditto as with DBpassword
 #this is a change
-
-#FILTERS
-##from most to least specific
-AllData='N'#set to 'Y' (meaning 'yes') if you want to query all sites (note this is quite time consuming and large, use provided filters wherever possible)
-sitecodes=''#c('EL-LS-8134','EL-SS-8127','MN-LS-1004','MN-SS-1104','MS-SS-3103','XE-RO-5086','XN-LS-4016','XN-SS-4128','XS-LS-6029' )#QAduplicateSites#c('AR-LS-8003','AR-LS-8007', 'TP-LS-8240')#sites for NorCalTesting
-years=c('2013')#as character, not number
-dates=''##example:c('05/05/2005')
-projects=c('WRSA')# most useful for separating NorCal and WRSA, note that abbreviations differ between Access and SQL/FM
-protocols=c('WRSA14')#for separating differences in overall protocol, may not be relevant for some parameters
-hitchs=c('')#NOT WORKING YET, hitch and crew level generally maintained by Access not SQL
-crews=c('R1')#NOT WORKING YET, hitch and crew level generally maintained by Access not SQL
-filter=''#custom filter (need working knowledge of Parameter:Result pairs and SQL structure; example: "(Parameter='ANGLE' and Result>50) OR (Parameter='WETWID' and Result<=0.75))"
-UIDs='BLANK'#custom filter (need working knowledge of primary keys)
-#NorCal settings: years=c('2013','2014');projects='NorCal';protocols=c('WRSA14','NRSA13')
-
-#PARAMETERS
-#specify if desired (will make queries less intensive):
-AllParam='Y'#set to 'Y' (meaning 'yes') if you want to query all parameters
-testP=c('ANGLE','APPEALING','ALGAE')#test, one from each level of table
-bankP=c('ANGLE','UNDERCUT','EROSION','COVER','STABLE')
-
 
 
 #--------------------------------------------------------SETUP--------------------------------------------------------#
@@ -57,13 +40,58 @@ source('FNC_tblRetrievePVT.R')
 ##(select * from tblVERIFICATION where PARAMETER='site_id') v on v.UID=tblPOINT.uid
 
 
-#--------------------------------------------------------SQL RETRIEVE--------------------------------------------------------#
-#SQL tables are created and imports managed via an independent R scripts (createNRSA1314db_SWJ.r)
-dbTBL=sqlTables(wrsa1314, tableType="TABLE")#all possible tables
-dbCOL=sqlColumns(wrsa1314,"tblPOINT")#column names (similar structure for each tbl since flat)
-dbPARAM=sqlQuery(wrsa1314,"Select SAMPLE_TYPE, PARAMETER, LABEL,VAR_TYPE from tblMETADATA where ACTIVE='TRUE'")#parameter names (SWJ to do: iterate over Sample_Type groups to generate pivots)
-tmpTYPE=as.character(unique(dbPARAM$SAMPLE_TYPE))
-dbTYPE=substr(tmpTYPE,1,nchar(tmpTYPE) - 1)#substr to get rid of the random "x" at the end of each name
+
+#------------------------------------------------------DEFAULTS-----------------------------------------------
+#FILTERS
+##from most to least specific
+AllData='N'#set to 'Y' (meaning 'yes') if you want to query all sites (note this is quite time consuming and large, use provided filters wherever possible)
+sitecodes=''#c('EL-LS-8134','EL-SS-8127','MN-LS-1004','MN-SS-1104','MS-SS-3103','XE-RO-5086','XN-LS-4016','XN-SS-4128','XS-LS-6029' )#QAduplicateSites#c('AR-LS-8003','AR-LS-8007', 'TP-LS-8240')#sites for NorCalTesting
+years=c('2014')#as character, not number
+dates=''##example:c('05/05/2005')
+projects=c('WRSA')# most useful for separating NorCal and WRSA, note that abbreviations differ between Access and SQL/FM
+protocols=c('WRSA14')#for separating differences in overall protocol, may not be relevant for some parameters
+hitchs=c('')#NOT WORKING YET, hitch and crew level generally maintained by Access not SQL
+crews=c('R1')#NOT WORKING YET, hitch and crew level generally maintained by Access not SQL
+filter=''#custom filter (need working knowledge of Parameter:Result pairs and SQL structure; example: "(Parameter='ANGLE' and Result>50) OR (Parameter='WETWID' and Result<=0.75))"
+UIDs='BLANK'#custom filter (need working knowledge of primary keys)
+#NorCal settings: years=c('2013','2014');projects='NorCal';protocols=c('WRSA14','NRSA13')
+
+#PARAMETERS
+#specify if desired (will make queries less intensive):
+AllParam='Y'#set to 'Y' (meaning 'yes') if you want to query all parameters
+testP=c('ANGLE','APPEALING','ALGAE')#test, one from each level of table
+bankP=c('ANGLE','UNDERCUT','EROSION','COVER','STABLE')
+
+
+#------------------------------------------------------EXAMPLES------------------------------------------------------------------#
+
+#Most data requests use the following basic workflow and structure. Save any custom requests created to CustomRequest_WRSAdb.R for documentation.
+#CALL data in using tblRetrieve() #at least ONE filter required, Parameters NOT required, Comments optional (default is no). For possible filters, see "WRSA data managment.docx" OR use getAnywhere(tblRetrieve) and examine available varaiables in the function() inputs section.
+EXAMPLEcond=tblRetrieve(Parameters=c('CONDUCTIVITY','CORRECTED'), Comments='N',Projects='NorCal',Years=c('2013','2014'))
+#PIVOT data using cast() function for easier viewing. IND will be lost if need for tracking. Alternative: aggregate() function OR PVTconstruct() assists in building SQL string for custom PIVOTS in SQL Server.
+EXAMPLEcondPVT=cast(EXAMPLEcond,'UID~PARAMETER',value='RESULT') 
+#KEYS added for data interpretability. Any parameters stored in tblVERIFICATION are available to add. Suggested minimum additions are Site_ID + Date_COL. In this example, coordinates for mapping.
+EXAMPLEcondPVT=addKEYS(EXAMPLEcondPVT ,c('SITE_ID','DATE_COL','LOC_NAME','LAT_DD','LON_DD'))
+#EXPORT results via csv
+write.csv(EXAMPLEcondPVT,'ExampleConductivityCorrected_TodaysDate.csv')#pivoted does not contain IND
+
+#Example of retrieving all raw data for an entire project
+NorCal1314=tblRetrieve(ALLp='Y',Years=c('2013','2014'),Projects='NorCal')
+NorCal1314subCOND=subset(NorCal1314,PARAMETER %in% c('CONDUCTIVITY','CORRECTED'))#and again subsetting it just for a few parameters like EXAMPLEcond
+
+#METADATA for reference
+#use RODBC package sqlQuery() function, not tblRetrieve
+METADATA=sqlQuery (wrsa1314,"select * from tblMETADATA where ACTIVE='TRUE'")#see "Label" for interpretable names #be careful with SQL strings, enclose in double quote and use single quotes for text
+METADATAprotocol=sqlQuery (wrsa1314,"select * from tblMETADATAprotocol where ACTIVE='Y' and Protocol='WRSA14'")#expected counts
+METADATArange=sqlQuery (wrsa1314,"select * from tblMETADATArange where ACTIVE='TRUE' and Protocol='WRSA14'")#legal values
+METADATAindicators=sqlQuery (wrsa1314,"select * from tblXwalk where NAME_xwalk='MissingBackend' and type_xwalk='Indicator'")
+indicators=''
+for (i in 1:nrow(METADATAindicators)){indicators=paste(indicators,METADATAindicators$Parameter_Xwalk[i],sep="|")}
+indicators=unique(unlist(strsplit(indicators,"\\|")))
+METADATAparametersLRBS=sqlQuery (wrsa1314,"select * from tblXwalk where NAME_xwalk='MissingBackend' and PARAMETER_Xwalk like '%lrbs%'")
+
+
+#--------------------------------------------------------SQL RETRIEVE (old examples)--------------------------------------------------------#
 
 #select samples
 UIDs=UIDselect(ALL=AllData,Filter=filter,UIDS='',SiteCodes=sitecodes,Dates=dates,Years=years,Projects=projects,Protocols=protocols)
@@ -89,79 +117,6 @@ tblPOINTbank=tblRetrieve('tblPOINT',bankP)
 #SWJ to do - could add logistics tables (pull from UTBLM.accdb)
 
 
-#retrieve all possible tables by protocol groups and pivot
-#for exploratory purposes to review data and determine expected values, not intended to replace modular SQL solutions for multiple tools
-tblCOL=c('UID', 'PARAMETER','RESULT')
-pvtCOL='UID %s ~ PARAMETER';pvtCOLdefault=sprintf(pvtCOL,'')
-AggLevel='Site'#options = Site, All
-params_N=subset(dbPARAM, subset=VAR_TYPE=='NUMERIC')
-params_C=subset(dbPARAM, subset=VAR_TYPE=='CHARACTER')#also used in boxplot QA (with some modifications)
-for (t in 1:nrow(dbTBL)){
-  tblNAME=dbTBL$TABLE_NAME[t]
-  tbl=tblRetrieve(tblNAME)#could simplify and use UnionTBL
-  if(min(c('SAMPLE_TYPE',tblCOL) %in% colnames(tbl))==1){#if minimum needed columns are present, proceed, otherwise assume it is a pivoted or otherwise human readable table
-      if(tblNAME=='tblPOINT'){tblCOL2=append(tblCOL,c('TRANSECT','POINT'), after=1); pvtCOL2=sprintf(pvtCOL,'+ TRANSECT + POINT')
-  } else if (tblNAME=='tblTRANSECT'){tblCOL2=append(tblCOL,'TRANSECT', after=1); pvtCOL2=sprintf(pvtCOL,'+ TRANSECT')
-  } else {tblCOL2=tblCOL; pvtCOL2=pvtCOLdefault}
-  for(s in 1:length(dbTYPE)){#this hits it with a hammer, could narrow down via xwalk to only the relevant sample_types
-    #raw data (one value per pivot cell which is per transect/point per parameter)
-    tblTYPE=subset(tbl,select=tblCOL2, subset=SAMPLE_TYPE %in% dbTYPE[s])
-    tblPVT=cast(tblTYPE, eval(parse(text=pvtCOL2)))#very predictable structure except for the input table and whether transect and point need to be included in the columns = possibly plug into function
-    if(nrow(tblPVT)>1 & is.na(tblPVT$UID)==FALSE){#only assign pivot to variable if not empty and only dive into subsequent if not empty
-      assign(sprintf('%s_pvt_%s',tblNAME,dbTYPE[s]),tblPVT) 
-    #missing data checks (counted values per pivot cell which is per site per parameter)
-    tblPVTm=cast(tblTYPE, eval(parse(text=pvtCOLdefault)),fun.aggregate='length')
-      assign(sprintf('%s_pvtMISSINGcnt_%s',tblNAME,dbTYPE[s]),tblPVTm)
-      #missing context of expected number of values...need to compare to metadata
-    #summarized categorical data (counted values per pivot cell which is per site per parameter+result)
-    tblCAT=subset(tblTYPE,subset=PARAMETER %in% params_C$PARAMETER)
-      if(nrow(tblCAT)>1){#only assign pivot to variable if not empty and only dive into subsequent if not empty
-        pvtCOL3=paste(pvtCOLdefault,"+ RESULT")
-        tblCAT$CNT=1
-        tblPVTc=cast(tblCAT, eval(parse(text=pvtCOL3)),fun.aggregate='length', value='CNT')
-        assign(sprintf('%s_pvtCATdistb_%s',tblNAME,dbTYPE[s]),tblPVTc)
-      }
-    #summarzied quantitative data (average values per pivot cell which is per site per parameter)
-    tblNUM=subset(tblTYPE,subset=PARAMETER %in% params_N$PARAMETER )
-      if(nrow(tblNUM)>1){#only assign pivot to variable if not empty and only dive into subsequent if not empty
-        if(AggLevel=='Site'){pvtCOL4='UID + PARAMETER ~.'; pvtCOL5='RESULT~UID + PARAMETER'; colUID='tblPVTnSUM2$UID';nameUID=c('UID','PARAMETER','Quant1','Quant2')} else if (AggLevel=='All') {pvtCOL4='PARAMETER ~.';pvtCOL5='RESULT~PARAMETER';colUID='';nameUID=c('PARAMETER','Quant1','Quant2')}
-        tblNUM$RESULT=as.numeric(tblNUM$RESULT)
-        tblNUM=subset(tblNUM,subset= is.na(RESULT)==FALSE)#apparently not removing NAs during pivot aggregation, so done manually because causing errors - have to do after conversion to number
-        tblPVTn=cast(tblNUM, eval(parse(text=pvtCOLdefault)),fun.aggregate='mean')#pivot reach average by site
-        tblPVTnSUM1=cast(tblNUM, eval(parse(text=pvtCOL4)),fun.aggregate=c(length,mean,median,min,max,sd),fill='NA') # pivot summary stats by all sites combined or individual sites
-        tblPVTnSUM2=aggregate(eval(parse(text=pvtCOL5)),data=tblNUM,FUN='quantile',probs=c(0.25,0.75),names=FALSE)
-        tblPVTnSUM2=data.frame(cbind(eval(parse(text=colUID)),tblPVTnSUM2$PARAMETER,tblPVTnSUM2$RESULT[,1],tblPVTnSUM2$RESULT[,2]));colnames(tblPVTnSUM2)=nameUID
-        tblPVTnSUM=merge(tblPVTnSUM1,tblPVTnSUM2,by=setdiff(nameUID,c('Quant1','Quant2')))
-        #need to do this by UID for WRSA13 QA duplicate comparison
-        assign(sprintf('%s_pvtQUANTmean_%s',tblNAME,dbTYPE[s]),tblPVTn)
-        assign(sprintf('%s_pvtSUMMARYn_%s_%s',tblNAME,dbTYPE[s],AggLevel),tblPVTnSUM)
-        
-      }
-    }
-  }
-}
-}
-
-#export results
-QUANTtbls=grep('pvtQUANTmean',ls(),value=T)
-for (t in 1:length(QUANTtbls)){
-  write.csv(eval(parse(text=QUANTtbls[t])),sprintf('%s.csv',QUANTtbls[t]))#could merge-pvtQUANTmean_, but I like them grouped by categories
-}
-#could export _pvtCATdistrb_, but I find the Categorical variables not to be readily interpretable (also didn't make a summary table for them yet because of this)
-rm(pvtSUMMARYn)
-nSUMtbls=grep('pvtSUMMARYn',ls(),value=T)
-nSUMtbls=grep(AggLevel,nSUMtbls,value=T)
-for (t in 1:length(nSUMtbls)){
-  tblPVTnSUM=eval(parse(text=nSUMtbls[t]))
-  if( ncol(tblPVTnSUM)==1) {} else{
-    if (t==1) {pvtSUMMARYn=tblPVTnSUM} else {pvtSUMMARYn=rbind(pvtSUMMARYn,tblPVTnSUM)}
-  }
-  write.csv(pvtSUMMARYn,sprintf('pvtSUMMARYn_%s.csv',AggLevel))
-}
-
-
-
-#why is tblPOINt_pvt_BANKW coming thru with just ones?
 
 #Close ODBC connection when done talking to SQL Server
 odbcClose(wrsa1314); rm(DBpassword); rm(DBserver); rm(DBuser)

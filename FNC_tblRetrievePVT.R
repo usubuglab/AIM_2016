@@ -139,7 +139,7 @@ addKEYS=function(Table,Columns){
 #UNIONTBL/tblRetrieve
 tblRetrieve=function(Table='',ALL='N',Comments='N',Filter='',UIDS='BLANK',SiteCodes='',Dates='',Years='',Projects='',Protocols='',Parameters='',ALLp='N'){
   UIDselected=UIDselect(ALL=ALL,Filter=Filter,UIDS=UIDS,SiteCodes=SiteCodes,Dates=Dates,Years=Years,Projects=Projects,Protocols=Protocols)
-  UIDstr=sprintf(" left(cast(UID as nvarchar),10) in (%s) ",inLOOP(substr(UIDselected$UID,1,10)))
+  UIDstr=sprintf(" left(cast(UID as nvarchar),10) in (%s) ",inLOOP(substr(UIDselected$UID,1,10)))#! if want to add tblMetadata, etc, need to make UIDstr blank
   if(Table==''){#previously empty tran and point set to cast(Null as nvarchar(5)) but '' used to facilitate tblComments join, not sure if it will work with comments when Table specified, but in most cases it's better to specify a list of parameters and let the union figure out where they are
     TableSTR=sprintf("(select  UID, SAMPLE_TYPE, TRANSECT, POINT,PARAMETER,RESULT,FLAG,IND,ACTIVE,OPERATION,INSERTION,DEPRECATION,REASON 
       from tblPOINT where %s 
