@@ -268,86 +268,86 @@ odbcClose(wrsa1314)
 
 #SWJ - logistics (should be covered in the tracking db, but verify)
 #tblCREW: SAMPLE_TYPE = VERIF
-
-sqlQuery(nrsa1314, "create table tblCREW (
-         UID                 int             NOT NULL
-         ,SAMPLE_TYPE         nvarchar(50)    NOT NULL
-         ,PARAMETER           nvarchar(50)    NOT NULL
-         ,RESULT              nvarchar(50)    NULL
-         ,IND                 int IDENTITY(1,1) NOT NULL
-         ,ACTIVE              nvarchar(50)    NULL
-         ,OPERATION           nvarchar(50)    NULL
-         ,INSERTION           datetime        NULL
-         ,DEPRECATION         datetime        NULL
-         ,REASON              nvarchar(500)   NULL
-         ,CONSTRAINT [PK_tblCREW] PRIMARY KEY CLUSTERED (
-         UID ASC
-         ,SAMPLE_TYPE ASC
-         ,PARAMETER ASC
-         ,IND ASC
-         ) ON [PRIMARY]
-) ON [PRIMARY]
-         ");
-
-
-#the first tables to create are tblSAMPLETRACKING and tblSITETRACKING.
-
-     sqlQuery(nrsa1314, "create table tblTRACKING (
-                   	UID                 int             NOT NULL
-				,SAMPLE_TYPE         nvarchar(50)    NOT NULL
-				,SHIP_ID			 nvarchar(50)    NOT NULL
-				,PARAMETER           nvarchar(50)    NOT NULL
-				,RESULT              nvarchar(500)    NULL
-				,IND                 int IDENTITY(1,1) NOT NULL
-				,ACTIVE              nvarchar(50)    NULL
-				,OPERATION           nvarchar(50)    NULL
-				,INSERTION           datetime        NULL
-				,DEPRECATION         datetime        NULL
-				,REASON              nvarchar(500)   NULL
-				,CONSTRAINT [PK_tblTRACKING] PRIMARY KEY CLUSTERED (
-				UID ASC
-				,SAMPLE_TYPE ASC
-				,PARAMETER ASC
-				,SHIP_ID ASC
-				,IND ASC
-				) ON [PRIMARY]
-				) ON [PRIMARY]
-				");         
-
-      
-
-
-# Parameter descriptions, used in validation and to link images (FORM_TYPE to FRMIMAG)
-
-sqlQuery(nrsa1314, "create table tblPARAMETERDESCRIPTIONS (
-				SAMPLE_TYPE 		 nvarchar(50)    NOT NULL
-                ,FORM_TYPE           nvarchar (50)   NOT NULL
-				,PARAMETER           nvarchar(50)    NOT NULL
-                ,UNITS               nvarchar (50)   NULL
-                ,LABEL               nvarchar (1500) NULL
-                ,VAR_TYPE            nvarchar (50)   NULL
-                ,RANGE_HIGH          float           NULL
-                ,RANGE_LOW           float           NULL
-                ,LEGAL_VALUES        nvarchar (500)  NULL
-                ,REFERENCE           nvarchar (500)  NULL
-				,IND                 int IDENTITY(1,1) NOT NULL
-				,ACTIVE              nvarchar(50)    NULL
-				,OPERATION           nvarchar(50)    NULL
-				,INSERTION           datetime        NULL
-				,DEPRECATION         datetime        NULL
-				,REASON              nvarchar(500)   NULL
-				,CONSTRAINT [PK_tblPARAMETERDESCRIPTIONS] PRIMARY KEY CLUSTERED (
-				SAMPLE_TYPE ASC
-				,PARAMETER ASC
-                ,FORM_TYPE ASC
-				,IND ASC
-				) ON [PRIMARY]
-				) ON [PRIMARY]
-				"); 
-
-
-
-
-
-
-
+# 
+# sqlQuery(nrsa1314, "create table tblCREW (
+#          UID                 int             NOT NULL
+#          ,SAMPLE_TYPE         nvarchar(50)    NOT NULL
+#          ,PARAMETER           nvarchar(50)    NOT NULL
+#          ,RESULT              nvarchar(50)    NULL
+#          ,IND                 int IDENTITY(1,1) NOT NULL
+#          ,ACTIVE              nvarchar(50)    NULL
+#          ,OPERATION           nvarchar(50)    NULL
+#          ,INSERTION           datetime        NULL
+#          ,DEPRECATION         datetime        NULL
+#          ,REASON              nvarchar(500)   NULL
+#          ,CONSTRAINT [PK_tblCREW] PRIMARY KEY CLUSTERED (
+#          UID ASC
+#          ,SAMPLE_TYPE ASC
+#          ,PARAMETER ASC
+#          ,IND ASC
+#          ) ON [PRIMARY]
+# ) ON [PRIMARY]
+#          ");
+# 
+# 
+# #the first tables to create are tblSAMPLETRACKING and tblSITETRACKING.
+# 
+#      sqlQuery(nrsa1314, "create table tblTRACKING (
+#                    	UID                 int             NOT NULL
+# 				,SAMPLE_TYPE         nvarchar(50)    NOT NULL
+# 				,SHIP_ID			 nvarchar(50)    NOT NULL
+# 				,PARAMETER           nvarchar(50)    NOT NULL
+# 				,RESULT              nvarchar(500)    NULL
+# 				,IND                 int IDENTITY(1,1) NOT NULL
+# 				,ACTIVE              nvarchar(50)    NULL
+# 				,OPERATION           nvarchar(50)    NULL
+# 				,INSERTION           datetime        NULL
+# 				,DEPRECATION         datetime        NULL
+# 				,REASON              nvarchar(500)   NULL
+# 				,CONSTRAINT [PK_tblTRACKING] PRIMARY KEY CLUSTERED (
+# 				UID ASC
+# 				,SAMPLE_TYPE ASC
+# 				,PARAMETER ASC
+# 				,SHIP_ID ASC
+# 				,IND ASC
+# 				) ON [PRIMARY]
+# 				) ON [PRIMARY]
+# 				");         
+# 
+#       
+# 
+# 
+# # Parameter descriptions, used in validation and to link images (FORM_TYPE to FRMIMAG)
+# 
+# sqlQuery(nrsa1314, "create table tblPARAMETERDESCRIPTIONS (
+# 				SAMPLE_TYPE 		 nvarchar(50)    NOT NULL
+#                 ,FORM_TYPE           nvarchar (50)   NOT NULL
+# 				,PARAMETER           nvarchar(50)    NOT NULL
+#                 ,UNITS               nvarchar (50)   NULL
+#                 ,LABEL               nvarchar (1500) NULL
+#                 ,VAR_TYPE            nvarchar (50)   NULL
+#                 ,RANGE_HIGH          float           NULL
+#                 ,RANGE_LOW           float           NULL
+#                 ,LEGAL_VALUES        nvarchar (500)  NULL
+#                 ,REFERENCE           nvarchar (500)  NULL
+# 				,IND                 int IDENTITY(1,1) NOT NULL
+# 				,ACTIVE              nvarchar(50)    NULL
+# 				,OPERATION           nvarchar(50)    NULL
+# 				,INSERTION           datetime        NULL
+# 				,DEPRECATION         datetime        NULL
+# 				,REASON              nvarchar(500)   NULL
+# 				,CONSTRAINT [PK_tblPARAMETERDESCRIPTIONS] PRIMARY KEY CLUSTERED (
+# 				SAMPLE_TYPE ASC
+# 				,PARAMETER ASC
+#                 ,FORM_TYPE ASC
+# 				,IND ASC
+# 				) ON [PRIMARY]
+# 				) ON [PRIMARY]
+# 				"); 
+# 
+# 
+# 
+# 
+# 
+# 
+# 

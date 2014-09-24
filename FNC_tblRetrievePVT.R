@@ -137,29 +137,33 @@ addKEYS=function(Table,Columns){
 }
 
 #UNIONTBL/tblRetrieve
-tblRetrieve=function(Table='',ALL='N',Filter='',UIDS='BLANK',SiteCodes='',Dates='',Years='',Projects='',Protocols='',Parameters='',ALLp='N'){
+tblRetrieve=function(Table='',ALL='N',Comments='N',Filter='',UIDS='BLANK',SiteCodes='',Dates='',Years='',Projects='',Protocols='',Parameters='',ALLp='N'){
   UIDselected=UIDselect(ALL=ALL,Filter=Filter,UIDS=UIDS,SiteCodes=SiteCodes,Dates=Dates,Years=Years,Projects=Projects,Protocols=Protocols)
-  UIDstr=sprintf(" left(cast(UID as nvarchar),10) in (%s) ",inLOOP(substr(UIDselected$UID,1,10)))
-  if(Table==''){
+  UIDstr=sprintf(" left(cast(UID as nvarchar),10) in (%s) ",inLOOP(substr(UIDselected$UID,1,10)))#! if want to add tblMetadata, etc, need to make UIDstr blank
+  if(Table==''){#previously empty tran and point set to cast(Null as nvarchar(5)) but '' used to facilitate tblComments join, not sure if it will work with comments when Table specified, but in most cases it's better to specify a list of parameters and let the union figure out where they are
     TableSTR=sprintf("(select  UID, SAMPLE_TYPE, TRANSECT, POINT,PARAMETER,RESULT,FLAG,IND,ACTIVE,OPERATION,INSERTION,DEPRECATION,REASON 
       from tblPOINT where %s 
       union
-      select   UID, SAMPLE_TYPE, TRANSECT, cast(Null as nvarchar(5)) POINT,PARAMETER,RESULT,FLAG,IND,ACTIVE,OPERATION,INSERTION,DEPRECATION,REASON  
+      select   UID, SAMPLE_TYPE, TRANSECT, '' POINT,PARAMETER,RESULT,FLAG,IND,ACTIVE,OPERATION,INSERTION,DEPRECATION,REASON  
       from tbltransect where %s
       union
-      select   UID, SAMPLE_TYPE, cast(Null as nvarchar(5)) TRANSECT, cast(Null as nvarchar(5)) POINT,PARAMETER,RESULT,FLAG,IND,ACTIVE,OPERATION,INSERTION,DEPRECATION,REASON 
+      select   UID, SAMPLE_TYPE, '' TRANSECT, '' POINT,PARAMETER,RESULT,FLAG,IND,ACTIVE,OPERATION,INSERTION,DEPRECATION,REASON 
       from tblreach where %s
       union
-      select UID, SAMPLE_TYPE, cast(Null as nvarchar(5)) TRANSECT, cast(Null as nvarchar(5)) POINT,PARAMETER,RESULT,FLAG,IND,ACTIVE,OPERATION,INSERTION,DEPRECATION,REASON 
+      select UID, SAMPLE_TYPE, '' TRANSECT, '' POINT,PARAMETER,RESULT,FLAG,IND,ACTIVE,OPERATION,INSERTION,DEPRECATION,REASON 
       from tblverification where %s
     ) UnionTBL",UIDstr,UIDstr,UIDstr,UIDstr)
   } else{TableSTR=Table}
   if(toupper(Table)=='TBLCOMMENTS'){PARAMstr=''} else{PARAMstr=sprintf(" and Parameter in (%s)",inLOOP(Parameters))}
-  UnionSTR=sprintf("select * from %s where ACTIVE='TRUE' and %s %s"
-    ,TableSTR, UIDstr, PARAMstr)
+  if(Comments=='Y'){tblJoin=ifelse(Table=='','UnionTBL',Table);
+                    CommentSTR=sprintf("left join (select COMMENT, UID U, FLAG F, SAMPLE_TYPE S, case when TRANSECT='ALL' then '' when TRANSECT is NULL then '' else TRANSECT end T, case when TRANSECT='ALL' then '' when TRANSECT is NULL then '' else PAGE end  P from  tblCOMMENTS where ACTIVE='TRUE') as c on %s.UID=c.U and %s.SAMPLE_TYPE=c.S and %s.FLAG=c.F %s %s",tblJoin,tblJoin,tblJoin,ifelse(tblJoin %in% c('tblVERIFICATION','tblREACH'),'',sprintf("and %s.TRANSECT=c.T",tblJoin)),ifelse(tblJoin %in% c('tblVERIFICATION','tblREACH','tblTRANSECT'),'',sprintf("and %s.POINT=c.P",tblJoin)))
+  } else{CommentSTR=''}
+  UnionSTR=sprintf("select * from %s %s where ACTIVE='TRUE' and %s %s"
+    ,TableSTR, CommentSTR, UIDstr, PARAMstr)
   if(ALLp=='Y' | Parameters==''){UnionSTR=gsub("Parameter in \\(''\\)","Parameter like '%'",UnionSTR)}
   if(ALL=='Y' | paste(Filter,UIDS,SiteCodes,Dates,Years,Projects,Protocols,sep='')==''){UnionSTR=gsub("in \\(''\\)","like '%'",UnionSTR)}
   qryRSLT=sqlQuery(wrsa1314,UnionSTR)
+  qryRSLT=qryRSLT[,!(names(qryRSLT) %in% c('U','F','S','T','P'))]
   if(class(qryRSLT)=="character"){  print('Unable to interpret the provided parameters. No table retrieved.')}#not running query because could cause overload#previous query: sqlQuery(wrsa1314, sprintf('select * from %s  %s',table, ifelse(filter=='',"where ACTIVE='TRUE'",paste("where ACTIVE='TRUE' and ", filter))))
   return(qryRSLT)#could auto return the pivoted view, but currently assuming that is for on the fly viewing and is not the easiest way to perform metrics
 }
@@ -174,6 +178,7 @@ TBLtmp=tblRetrieve(Table=Table,ALL=ALL,Filter=Filter,UIDS=UIDS,SiteCodes=SiteCod
 TBLtmp=eval(parse(text=Table))
 #XwalkDirection='_Xwalk' #user given control in the function, rather than assuming based on source
 }
+COL=setdiff(COL,c(VAR,'PARAMETER','TRANSECT','POINT','RESULT'))
 TBLtmp=ColCheck(TBLtmp,c(VAR,'PARAMETER','TRANSECT','POINT','RESULT',COL))
 XwalkParam=sqlQuery(wrsa1314,sprintf("select *, case when right(SAMPLE_TYPE,1)='X' then left(SAMPLE_TYPE,len(SAMPLE_TYPE)-1) else SAMPLE_TYPE end as 'TABLE' from tblXWALK where Name_XWALK='%s' ",XwalkName))
 XwalkTBL=sqldf(sprintf(" select  UID, TRANSECT, POINT,upper(XwalkParam.Table_Xwalk) as 'TABLE', 
@@ -183,8 +188,10 @@ RESULT,FLAG,IND,ACTIVE,OPERATION,INSERTION,DEPRECATION,REASON %s
 from TBLtmp   JOIN  XwalkParam on upper(TBLtmp.PARAMETER)= upper(XwalkParam.PARAMETER%s) and upper(TBLtmp.SAMPLE_TYPE)= upper(XwalkParam.[TABLE%s])
  ",XwalkDirection,XwalkDirection,gsub("'","]",ifelse(COL=='','',gsub(", '",",[",paste(", " , inLOOP(COL),sep='')))),XwalkDirection,ifelse(XwalkName=='FMstr','',XwalkDirection)))
 XwalkTBL$SAMPLE_TYPE=ifelse(toupper(substr(XwalkTBL$SAMPLE_TYPE,nchar(XwalkTBL$SAMPLE_TYPE),nchar(XwalkTBL$SAMPLE_TYPE)))=='X',substr(XwalkTBL$SAMPLE_TYPE,1,nchar(XwalkTBL$SAMPLE_TYPE)-1), XwalkTBL$SAMPLE_TYPE)
+names(XwalkParam)=toupper(names(XwalkParam))
 if(nrow(TBLtmp)!=nrow(XwalkTBL)){print(sprintf('WARNING! Different number of rows in original (%s rows) and xwalk (%s rows) tables.',nrow(TBLtmp),nrow(XwalkTBL)))
-  SPmissing=unique(setdiff(toupper(paste(TBLtmp$SAMPLE_TYPE,TBLtmp$PARAMETER,sep=':')),toupper(paste(XwalkTBL$SAMPLE_TYPE,XwalkTBL$PARAMETER,sep=':'))))
+  XwalkParamCheck=subset(XwalkParam,select=c(sprintf('TABLE%s',ifelse(XwalkName=='FMstr','',toupper(XwalkDirection))),sprintf('PARAMETER%s',toupper(XwalkDirection))));names(XwalkParamCheck)=c('SAMPLE_TYPE','PARAMETER')
+  SPmissing=unique(setdiff(toupper(paste(TBLtmp$SAMPLE_TYPE,TBLtmp$PARAMETER,sep=':')),toupper(paste(XwalkParamCheck$SAMPLE_TYPE,XwalkParamCheck$PARAMETER,sep=':'))))
   if(length(SPmissing)>0){print('The following parameters do not have a xwalk match:')
   print(SPmissing)
   }}

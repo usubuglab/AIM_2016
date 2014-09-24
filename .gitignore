@@ -1,0 +1,9 @@
+.Rproj.user
+.Rhistory
+*.RData
+WRSA.Rproj
+DBpasswordSWJ_doNOTgit.R
+*.csv
+*.jpg
+*.xlsx
+*.txt

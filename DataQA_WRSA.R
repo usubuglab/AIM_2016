@@ -6,10 +6,11 @@ CheckAll='Y'#options: 'Y' = Check All Parameters for the protocol; 'N' = Check o
 CommentsCount='N'#'Y' = a comment (as represented by a flag) allows the missing data warning to be ignored; 'N' = missing data is reported regardless and contributes to subsequent percentages. 
 
 ##testing
-# UnionTBL=tblRetrieve(Table='tblREACH',ALLp=AllParam,ALL=AllData,SiteCodes=sitecodes,Years=years,Projects=projects)
+# UnionTBL=tblRetrieve(Table='',ALLp='',ALL=AllData,SiteCodes=c('XE-LS-5010','SU-SS-8349','XN-SS-4135','AA-STR-0008','EL-LS-8126'))#Table='tblREACH'#ALLp=c('VALXSITE','DOM_LAND_USE','DLDLL','ROAD','PH')
 # CheckAll='N'
 ##NorCal1314
 # UnionTBL=tblRetrieve(ALLp='Y',Years=c('2013','2014'),Projects='NorCal')
+# UnionTBLall=UnionTBL#for outlier checks, plan to compare NorCal to only NorCal sites
 # CheckAll='Y'
 # CommentsCount='N'
 ##post hitch
@@ -63,14 +64,19 @@ for (p in 1:length(ProtocolsP)){
   }                         
 }
 
-#emptytest=emptyFulldataset;empty14Jul14=emptyFulldataset
+emptytmp=emptyFulldataset#;empty14Jul14=emptyFulldataset
 
+#!method/checking oddities (not sure if these should be handled in emptyFulldataset or MissingCounts)
+UnionTBL$TRANSECT=ifelse(UnionTBL$SAMPLE_TYPE %in% c('SLOPEW', 'HABITAT') 
+                         & addKEYS(UnionTBL,c('PROTOCOL'))$PROTOCOL %in% c('WRSA14','AK14'),
+                         NA,UnionTBL$TRANSECT)#instances where only care if have at least one, but it's recorded as multiple so TRANSECT unable to join in MissingCounts if different
+#!posible issues with INCREMENT, but likely warrants database cleanup
 
 #only reporting values with missing counts
 MissingCounts=sqldf("select *, case when MissingCount is null then Points else Points-MissingCount end MissingCNT from 
-                    (select *, case when Transect is null then 'O' else Transect end as TRE from emptyFulldataset where Points>0) as ExpectedCounts
+                    (select *, case when Transect is null then 'O' when Transect='' then 'O' else Transect end as TRE from emptyFulldataset where Points>0) as ExpectedCounts
                     outer left join 
-                    (select Sample_Type STO, Parameter PO, [UID] as UIDo, case when Transect is null then 'O' else Transect end as TR, COUNT(Result) MissingCount, FLAG  from UnionTBL
+                    (select Sample_Type STO, Parameter PO, [UID] as UIDo, case when Transect is null then 'O' when Transect='' then 'O' else Transect end as TR, COUNT(Result) MissingCount, FLAG  from UnionTBL
                     group by Sample_Type, Parameter, [UID], Transect) as ObservedCounts
                     on ExpectedCounts.Sample_Type=ObservedCounts.STO and ExpectedCounts.Parameter=ObservedCounts.PO and ExpectedCounts.TRE=ObservedCounts.TR and ExpectedCounts.UID=ObservedCounts.UIDo
                     where (MissingCount < Points or MissingCount is null) ")
@@ -86,6 +92,31 @@ if(CommentsCount=='Y'){
   
 #count number of parameters with missing data
 MissingTotals=sqldf('select UID,count(*) ParamCNT from MissingCounts group by UID')
+
+
+#Xwalk Sample_types before grouping
+MissingXwalk='MissingBackend'; MetricType='Y'#if MetricType=='Y' then groupings will be done by the bin (Type_Xwalk) and the metric type (Indicator, Covariate, QC)
+MissingCounts$Sample_Type_ORG=MissingCounts$SAMPLE_TYPE; MissingCounts$Parameter_ORG=MissingCounts$PARAMETER#keeping this for peace of mind, may be able to omit
+emptyFulldataset$Sample_Type_ORG=emptyFulldataset$SAMPLE_TYPE; emptyFulldataset$Parameter_ORG=emptyFulldataset$PARAMETER
+if (MissingXwalk==''){
+  MissingCounts$TABLE=''#;MissingGrouping='SAMPLE_TYPE'
+} else{
+  MissingCounts=Xwalk(Source='R',XwalkName=MissingXwalk,XwalkDirection='',Table='MissingCounts',COL=colnames(MissingCounts))#,Filter='',UIDS='BLANK',SiteCodes='',Dates='',Years='',Projects='',Protocols='',Parameters='',ALLp='N'){
+  emptyFulldataset=Xwalk(Source='R',XwalkName=MissingXwalk,XwalkDirection='',Table='emptyFulldataset',COL=colnames(emptyFulldataset))
+  if(MetricType=='Y' & MissingXwalk=='MissingBackend'){
+    MissingCounts$SAMPLE_TYPE=sprintf('%s:%s',MissingCounts$SAMPLE_TYPE,MissingCounts$TABLE)
+    emptyFulldataset$SAMPLE_TYPE=sprintf('%s:%s',emptyFulldataset$SAMPLE_TYPE,emptyFulldataset$TABLE)
+  } #else{MissingGrouping='SAMPLE_TYPE'}#can set custom grouping combinations here as desired for specific xwalks
+  
+}
+
+#!combine Sample_type and table instead of groupings?
+#DONE: need to update MetadataProtocol to account for things that need to contribute to missing data checks: ACTRANSP, etc. ; change SIZE_CLS to SIZE_NUM
+#!don't group by parameter(metric name), but join at end
+#!fix MissingTotals4 (or did this only matter for paramCNT and commentCNT?); just tell folks this has stopped development unless they would like it
+
+
+
 #group by Sample_type + Transect #! likely want a more custom solution with something more akin to QAbins in FM
 MissingTotals2=sqldf(sprintf("select UID,SAMPLE_TYPE,TRE as TRANSECT,MC MissCNT, PT ExpectedCNT, cast(ifnull(round(MC/PT,2) ,0) as float) MissingPCT, CC COMMENTcnt from
                      (select UID, SAMPLE_TYPE,count(*) PTC, cast(sum(Points) as float) PT, case when Transect is null then 'O' else Transect end as TRE
@@ -98,7 +129,17 @@ MissingTotals2=sqldf(sprintf("select UID,SAMPLE_TYPE,TRE as TRANSECT,MC MissCNT,
 
 
 #group by Sample_type only to get reach totals
-MissingTotals3=sqldf("select UID,SAMPLE_TYPE, 'ReachTotal' TRANSECT,sum(MissCNT) MissCNT, sum(ExpectedCNT) ExpectedCNT ,  cast(ifnull(round((cast(sum(MissCNT) as float)/cast(sum(ExpectedCNT) as float) ),2),0) as float) MissingPCT, sum(COMMENTcnt) as COMMENTcnt from MissingTotals2 group by UID, Sample_Type")
+MissingTotals3=sqldf("select UID,SAMPLE_TYPE, 'ReachTotal' TRANSECT,sum(MissCNT) MissCNT, sum(ExpectedCNT) ExpectedCNT ,  cast(ifnull(round((cast(sum(MissCNT) as float)/cast(sum(ExpectedCNT) as float) ),2),0) as float) MissingPCT, sum(COMMENTcnt) as COMMENTcnt from MissingTotals2 group by UID, SAMPLE_TYPE")
+
+#main ouput (until param and comments fleshed out more)
+MissingTotals4=unique(rbind(MissingTotals2,MissingTotals3)  )
+#! need to fix the revisions to MissingTotals4 before this will work
+MissingTotals4=MissingTotals4[,!(names(MissingTotals4) %in% c('POINT'))]
+MissingTotalsOUT= addKEYS(cast(subset(MissingTotals4,is.na(UID)==FALSE ), 'UID + TRANSECT  ~ SAMPLE_TYPE',value='MissingPCT' ),Columns=c('SITE_ID','DATE_COL','Protocol')) 
+MissingTotalsREACH=subset(MissingTotalsOUT,TRANSECT=='ReachTotal');write.xlsx(MissingTotalsREACH,"MissingDataQCrch_nocom.xlsx")
+MissingTotalsTRAN=subset(MissingTotalsOUT,TRANSECT!='ReachTotal');write.xlsx(MissingTotalsTRAN,"MissingDataQCttran_nocom.xlsx")
+write.xlsx(MissingCounts,"MissingCounts.xlsx")
+
 #combine reach totals
 MissingTotals5=sqldf("select UID, 'REACH' SAMPLE_TYPE,  'O' TRANSECT, ParamCNT,MissCNT,  ExpectedCNT, MissingPCT ,COMMENTcnt from MissingTotals 
                      join 
@@ -106,7 +147,8 @@ MissingTotals5=sqldf("select UID, 'REACH' SAMPLE_TYPE,  'O' TRANSECT, ParamCNT,M
                      on MissingTotals.UID=Totals.UIDm
                      ")
 MissingTotals6=MissingTotals5[,!(names(MissingTotals5) %in% c('ParamCNT'))];MissingTotals7=MissingTotals5;MissingTotals7$MissingPCT=MissingTotals7$ParamCNT;MissingTotals7$SAMPLE_TYPE='Param';MissingTotals7=MissingTotals7[,!(names(MissingTotals7) %in% c('ParamCNT'))]
-MissingTotals4=unique(rbind(MissingTotals2,MissingTotals3,MissingTotals6,MissingTotals7)  );MissingTotals4$RESULT=MissingTotals4$MissingPCT;MissingTotals4$PARAMETER=paste("PCT_",MissingTotals4$SAMPLE_TYPE,"_QA",sep='');MissingTotals4$TRANSECT=ifelse(MissingTotals4$TRANSECT=='O',NA,MissingTotals4$TRANSECT);MissingTotals4$POINT=MissingTotals4$TRANSECT;MissingTotals4=ColCheck(MissingTotals4,c(VAR,'TRANSECT','POINT','PARAMETER','RESULT'))
+
+#MissingTotals4=unique(rbind(MissingTotals2,MissingTotals3,MissingTotals6,MissingTotals7)  );MissingTotals4$RESULT=MissingTotals4$MissingPCT;MissingTotals4$PARAMETER=paste("PCT_",MissingTotals4$SAMPLE_TYPE,"_QA",sep='');MissingTotals4$TRANSECT=ifelse(MissingTotals4$TRANSECT=='O',NA,MissingTotals4$TRANSECT);MissingTotals4$POINT=MissingTotals4$TRANSECT;MissingTotals4=ColCheck(MissingTotals4,c(VAR,'TRANSECT','POINT','PARAMETER','RESULT'))
 #!revision to MissingTotals4 (once complete, comment out MissingTotals4 and 6 above)
 # MissingTotals4=unique(rbind(melt(MissingTotals2,id=c('SAMPLE_TYPE','TRANSECT','UID')),melt(MissingTotals3,id=c('SAMPLE_TYPE','TRANSECT','UID')),melt(MissingTotals5,id=c('SAMPLE_TYPE','TRANSECT','UID'))))
 # MissingTotals4$TRANSECT=ifelse(MissingTotals4$variable=='ParamCNT','ReachTotal',MissingTotals4$TRANSECT)
@@ -119,12 +161,7 @@ MissingTotals4=unique(rbind(MissingTotals2,MissingTotals3,MissingTotals6,Missing
   #print(MissingTotals5)    
   #checking individual sites#View(subset(MissingCounts,subset=UID==''))#View(subset(importmaster,subset=UID==''))# View(subset(tblCOMMENTSin,subset=UID==''))
 
-#! need to fix the revisions to MissingTotals4 before this will work
-MissingTotals4=MissingTotals4[,!(names(MissingTotals4) %in% c('POINT'))]
-MissingTotalsOUT= addKEYS(cast(subset(MissingTotals4,is.na(UID)==FALSE ), 'UID + TRANSECT  ~ PARAMETER',value='RESULT' ),Columns=c('SITE_ID','DATE_COL','Protocol')) 
-MissingTotalsREACH=subset(MissingTotalsOUT,TRANSECT=='ReachTotal');write.csv(MissingTotalsREACH,"MissingDataQCr_nocom.csv")
-MissingTotalsTRAN=subset(MissingTotalsOUT,TRANSECT!='ReachTotal');write.csv(MissingTotalsTRAN,"MissingDataQCt_nocom.csv")
-write.csv(MissingCounts,"MissingCounts.csv")
+
 
 
   
@@ -173,48 +210,96 @@ write.csv(LowHighFailOUT,'LegalChecks.csv')
   
 ##outlier check
 
-#set strata for later iteration
-typestrata=c('EcoReg','Size')#must match column names that are created
-numstrata=length(typestrata)
-UnionTBL$EcoReg=substr(UnionTBL$SITE_ID,1,2)#-- Switch to climatic rather than ecoreg?  ; ; may need to explicitly join an ecoregion column if sitecodes change over different projects, this works for NRSA only; also needs to be more expandable for additional strata
-UnionTBL$Size=substr(UnionTBL$SITE_ID,4,5)
-#this section is highly dependent on WRSA siteID naming structure and GRTS strata
+
+#incoming vs. comparison dataset
+UnionTBLsites=unique(UnionTBL$UID)
+if(exists('UnionTBLall')){
+  UnionTBLsitesALL=unique(UnionTBLall$UID)
+  print(sprintf('%s incoming sites will be compared to %s sites in the larger dataset. Review the incoming (UnionTBL) and comparison (UnionTBLall) datasets to confirm before proceeding with outlier checks.',length(UnionTBLsites),length(UnionTBLsitesALL)))
+} else {print(sprintf('No larger comparision dataset specified. The incoming dataset (%s sites) will also be used for between site comparison. Set UnionTBLall to a different dataset if desired before proceeding with outlier checks.',length(UnionTBLsites)))
+  UnionTBLall=UnionTBL
+}
 
 #QA boxplots
 give.n <- function(x){return(data.frame(y = max(x)+1, label = paste("n =",length(x))))}#SWJ to do: improve to handle the multiple classes for Categorical 
+whisk95 <- function(x) {r <- quantile(x, probs = c(0.05, 0.25, 0.5, 0.75, 0.95))
+  names(r) <- c("ymin", "lower", "middle", "upper", "ymax")
+  r
+}#supports custom boxplot whiskers (instead of 1.5IQR default)#http://stackoverflow.com/questions/4765482/changing-whisker-definition-in-geom-boxplot
+out2SD <- function(x) {
+  #subset(x, x < quantile(x)[2] | quantile(x)[4] < x)
+  MN=mean(x)
+  SD2=2*sd(x)
+  subset(x, x < MN-SD2 | MN+SD2 < x)
+}#supports custom outliers#http://stackoverflow.com/questions/4765482/changing-whisker-definition-in-geom-boxplot
+boxPARAM=function(boxdata,outlierdata,sampsize,facetSTR,titleSTR){
+  siteavg=subset(boxdata,subset=STRATATYPE !="UID"  , select=c('UID','STRATATYPE','PARAMRES', 'PARAMCAT'))
+  if(grepl('STRATATYPE',facetSTR)){
+    siteavg=subset(siteavg,UID==allsites[s])
+  } else { siteavg=subset(siteavg,STRATATYPE==typestrata[n])}
+  siteavg=aggregate(PARAMRES~PARAMCAT,data=siteavg,FUN='mean')
+  boxplot=ggplot(boxdata,aes(y=PARAMRES, x=PARAMCAT,fill=PARAMCAT,colour=PARAMCAT,label=SiteLabelOUT2)) +
+  stat_summary(fun.data=whisk95, geom='boxplot',colour='black') + #geom_boxplot(outlier.colour='darkred',outlier.size=10,colour='black') + 
+  stat_summary(fun.y=out2SD, geom='point',colour='darkred',size=5,show_guide=F) +
+  eval(parse(text=facetSTR)) + #
+  geom_hline(aes(yintercept=PARAMRES, colour=PARAMCAT),siteavg,size=1)  + #mark the average for the site
+  scale_colour_brewer(drop=FALSE,palette='Set1') + scale_fill_brewer(palette='Set1')+#sync colors between lines and boxplots (especially important for categorical)
+  #stat_summary(fun.data =give.n, geom = "text") +
+  eval(parse(text=titleSTR)) +
+  #geom_text(data=paramQ,aes(label=SiteLabelOUT),show_guide=F,size=3,position= position_jitter(width = 0.5, height=0))+#jitter a little strange, but makes it readable
+  #stat_summary(fun.y=out2SD, geom='text',colour='red',show_guide=F) +
+  geom_text(show_guide=F,size=3,position= position_jitter(width = 0.15, height=0))+#data=outlierdata,aes(label=SiteLabelOUT2),
+  geom_text(aes(label=sprintf('n=%s',SampSize),x=(length(unique(PARAMCAT))/2)+0.5,y=max(PARAMRES)+(max(PARAMRES)/10)),colour='black')+#,x=(length(unique(boxdata$PARAMCAT))/2)+0.5,y=max(boxdata$PARAMRES)+0.25),inherit.aes=FALSE, parse=FALSE)+#annotate("text",x=2,y=max(paramTBL6$PARAMRES)+0.5,label=sprintf('n=%s',paramN$PARAMRES)) +#annotate: n(sites) for strata plots and n(points) for site  (function defined above) #messy for categorical#previous (not working as anticipated, particularly for categorical): #stat_summary(fun.data =give.n, geom = "text") + #function for adding sample size to boxplots #
+  theme(axis.text.x=element_blank(),axis.ticks.x=element_blank(),axis.title.x=element_blank())  #remove x axis 
+}# to support similar boxplot structure for stratabox and sitebox
 subcol=c('UID','SITE_ID','PARAMETER','STRATATYPE','STRATA','PARAMRES','PARAMCAT','TRANSECT','POINT')
 #compile parameter list
+dbPARAM=sqlQuery(wrsa1314,"Select SAMPLE_TYPE, PARAMETER, LABEL,VAR_TYPE from tblMETADATA where ACTIVE='TRUE'")#parameter names (SWJ to do: iterate over Sample_Type groups to generate pivots)
+params_C=subset(dbPARAM, subset=VAR_TYPE=='CHARACTER')
 allparams=unique(paste(UnionTBL$SAMPLE_TYPE,UnionTBL$PARAMETER,sep=" "))#numeric: allparams=c("BANKW INCISED", "BANKW WETWID" )#categorical: allparams=c("CROSSSECW SIZE_CLS","HUMINFLUW WALL")
-excludeparams=c("FIELDMEAS DO",'THALW BAR_PRES',"THALW SIDCHN" ,"THALW BACKWATER",grep("VERIF",allparams,value=T),grep("CALIB",allparams,value=T),grep("BERW",allparams,value=T),"SLOPEW METHOD","FIELDMEAS LOCATION","FIELDMEAS TIME" ,"FIELDMEAS CORRECTED",'CROSSSECW DIST_LB','SLOPEW SLOPE_UNITS','CROSSSECW SUB_5_7','THALW INCREMENT')
+excludeparams=c("FIELDMEAS DO",'THALW BAR_PRES' ,"THALW BACKWATER",grep("CONSTRAINT",allparams,value=T),grep("VERIF",allparams,value=T),grep("CALIB",allparams,value=T),grep("BERW",allparams,value=T),grep("CHEM",allparams,value=T),grep("PHOTO",allparams,value=T),grep("PACK",allparams,value=T),grep("INVA",allparams,value=T),grep("NOT_COLLECTED",allparams,value=T),"SLOPEW METHOD","FIELDMEAS LOCATION","FIELDMEAS TIME" ,"FIELDMEAS CORRECTED","FIELDMEAS OTH_LOCATION",'CROSSSECW DIST_LB',"FIELDMEAS PROBE_ENDTIME" ,"FIELDMEAS PROBE_ID"       ,"SLOPEW ENDHEIGHT"     ,     "SLOPEW ENDTRAN"  ,   "SLOPEW STARTHEIGHT"        ,    "SLOPEW PROP",   "FIELDMEAS PROBE_STARTTIME",'SLOPEW SLOPE_UNITS','CROSSSECW SUB_5_7','THALW INCREMENT')
 combineparams=c("CANCOVERW DENSIOM",'CROSSSECW XSIZE_CLS',grep("LWD",allparams,value=T),grep("HUMINFLU",allparams,value=T),grep("VISRIP",allparams,value=T),grep("FISHCOV",allparams,value=T),grep("ASSESS",allparams,value=T),grep("TORR",allparams,value=T))#need to exclude originals from allparams list and add new names back; some of these may be useable, just want to ponder them a bit more (run a few examples through the existing framework)
+#!add Size_Num to combineparams list, use same translation for converting prior to aquamet, revise legal checks for Size_NUM
 allparams1=setdiff(allparams,c(excludeparams,combineparams))
-UnionTBL2=UnionTBL#subset data here if do not want all db results (UnionTBL is not filtered by UIDs, UnionTBL1 is); most likely scenario is intensifications (NorCal, CoPlateau, NV), other designs with diff strata; see second round of filtering at the allsites variable
+UnionTBL2=UnionTBLall#UnionTBL2=subset(UnionTBL,SITE_ID=='EL-LS-8126')
+#!the below be redone with Xwalk along with bin?!
 UnionTBL2$PARAMETER=ifelse(UnionTBL2$PARAMETER=='XSIZE_CLS','SIZE_CLS',UnionTBL2$PARAMETER)#for all our analysis purposes, these are the same
-UnionTBL2$PARAMETER=ifelse(UnionTBL2$SAMPLE_TYPE=='LWDW','LWDtally',UnionTBL2$PARAMETER)#for preliminary analysis purposes, these are the same
-UnionTBL2$PARAMETER=ifelse(UnionTBL2$SAMPLE_TYPE=='HUMINFLUW','HumanPresence',UnionTBL2$PARAMETER)
-UnionTBL2$PARAMETER=ifelse(substr(UnionTBL2$PARAMETER,1,3)=='AGR','AGRicultural',UnionTBL2$PARAMETER)
-UnionTBL2$PARAMETER=ifelse(substr(UnionTBL2$PARAMETER,1,3)=='IND','INDustrial',UnionTBL2$PARAMETER)
-UnionTBL2$PARAMETER=ifelse(substr(UnionTBL2$PARAMETER,1,3)=='MAN','MANagement',UnionTBL2$PARAMETER)
-UnionTBL2$PARAMETER=ifelse(substr(UnionTBL2$PARAMETER,1,3)=='REC','RECreation',UnionTBL2$PARAMETER)
-UnionTBL2$PARAMETER=ifelse(substr(UnionTBL2$PARAMETER,1,3)=='RES','RESidential',UnionTBL2$PARAMETER)
-UnionTBL2$PARAMETER=ifelse(UnionTBL2$SAMPLE_TYPE=='TORR' & UnionTBL2$PARAMETER!='TSD011','Torrent',UnionTBL2$PARAMETER)
-UnionTBL2$PARAMETER=ifelse(UnionTBL2$PARAMETER=='BARE','BARE',UnionTBL2$PARAMETER)
-UnionTBL2$PARAMETER=ifelse(UnionTBL2$PARAMETER=='CANBTRE'|UnionTBL2$PARAMETER=='CANSTRE','CAN_TREE',UnionTBL2$PARAMETER)
-UnionTBL2$PARAMETER=ifelse(UnionTBL2$PARAMETER=='CANVEG'|UnionTBL2$PARAMETER=='UNDERVEG','VEG_TYPE',UnionTBL2$PARAMETER)##
+UnionTBL2$PARAMETER=ifelse(UnionTBL2$SAMPLE_TYPE=='LWDW','LWDtally',UnionTBL2$PARAMETER)#xwalk:fmstr#for preliminary analysis purposes, these are the same
+UnionTBL2$PARAMETER=ifelse(UnionTBL2$SAMPLE_TYPE=='HUMINFLUW','HumanPresence',UnionTBL2$PARAMETER)#xwalk:fmstr
+UnionTBL2$PARAMETER=ifelse(substr(UnionTBL2$PARAMETER,1,3)=='AGR','AGRicultural',UnionTBL2$PARAMETER)#xwalk:fmstr
+UnionTBL2$PARAMETER=ifelse(substr(UnionTBL2$PARAMETER,1,3)=='IND','INDustrial',UnionTBL2$PARAMETER)#xwalk:fmstr
+UnionTBL2$PARAMETER=ifelse(substr(UnionTBL2$PARAMETER,1,3)=='MAN','MANagement',UnionTBL2$PARAMETER)#xwalk:fmstr
+UnionTBL2$PARAMETER=ifelse(substr(UnionTBL2$PARAMETER,1,3)=='REC','RECreation',UnionTBL2$PARAMETER)#xwalk:fmstr
+UnionTBL2$PARAMETER=ifelse(substr(UnionTBL2$PARAMETER,1,3)=='RES','RESidential',UnionTBL2$PARAMETER)#xwalk:fmstr
+UnionTBL2$PARAMETER=ifelse(UnionTBL2$SAMPLE_TYPE=='TORR' & UnionTBL2$PARAMETER!='TSD011','Torrent',UnionTBL2$PARAMETER)#xwalk:fmstr
 UnionTBL2$SAMPLE_TYPE=ifelse(UnionTBL2$PARAMETER=='VEG_TYPE','VISRIP2W',UnionTBL2$SAMPLE_TYPE)
-UnionTBL2$PARAMETER=ifelse(UnionTBL2$PARAMETER=='GCNWDY'|UnionTBL2$PARAMETER=='UNDNWDY','NONWOOD',UnionTBL2$PARAMETER)
-UnionTBL2$PARAMETER=ifelse(UnionTBL2$PARAMETER=='GCWDY'|UnionTBL2$PARAMETER=='UNDWDY','WOODY',UnionTBL2$PARAMETER)
+UnionTBL2$PARAMETER=ifelse(UnionTBL2$PARAMETER=='BARE','BARE',UnionTBL2$PARAMETER)#xwalk:fmstr
+UnionTBL2$PARAMETER=ifelse(UnionTBL2$PARAMETER=='CANBTRE'|UnionTBL2$PARAMETER=='CANSTRE','CAN_TREE',UnionTBL2$PARAMETER)#xwalk:fmstr
+UnionTBL2$PARAMETER=ifelse(UnionTBL2$PARAMETER=='CANVEG'|UnionTBL2$PARAMETER=='UNDERVEG','VEG_TYPE',UnionTBL2$PARAMETER)#xwalk:fmstr
+UnionTBL2$PARAMETER=ifelse(UnionTBL2$PARAMETER=='GCNWDY'|UnionTBL2$PARAMETER=='UNDNWDY','NONWOOD',UnionTBL2$PARAMETER)#xwalk:fmstr
+UnionTBL2$PARAMETER=ifelse(UnionTBL2$PARAMETER=='GCWDY'|UnionTBL2$PARAMETER=='UNDWDY','WOODY',UnionTBL2$PARAMETER)#xwalk:fmstr
 UnionTBL2$PARAMETER=ifelse(UnionTBL2$PARAMETER=='DENSIOM' & UnionTBL2$POINT %in% c('LF','RT'),'DENSIOMbank',ifelse(UnionTBL2$PARAMETER=='DENSIOM' & (UnionTBL2$POINT  %in% c('LF','RT')==FALSE),'DENSIOMcenter',UnionTBL2$PARAMETER))#for preliminary analysis purposes, these need to be divided (and are believed to be separated in aquamet)
-combineparamNEW=c('CANCOVERW DENSIOMbank','CANCOVERW DENSIOMcenter','CROSSSECW SIZE_CLS','LWDW LWDtally','TORR Torrent','ASSESS AGRicultural','ASSESS INDustrial','ASSESS MANagement','ASSESS RECreation','ASSESS RESidential','HUMINFLUW HumanPresence','VISRIPW BARE','VISRIPW CAN_TREE','VISRIP2W VEG_TYPE','VISRIPW NONWOOD','VISRIPW WOODY')##still need to ponder HUMINFLU, VISRIP, FISHCOV, and ASSESS and add back in here
-allparams1=union(allparams1,combineparamNEW)
+combineparamNEW=c('CHEM NTL','CHEM PTL','CANCOVERW DENSIOMbank','CANCOVERW DENSIOMcenter','CROSSSECW SIZE_CLS','LWDW LWDtally','TORR Torrent','ASSESS AGRicultural','ASSESS INDustrial','ASSESS MANagement','ASSESS RECreation','ASSESS RESidential','HUMINFLUW HumanPresence','VISRIPW BARE','VISRIPW CAN_TREE','VISRIP2W VEG_TYPE','VISRIPW NONWOOD','VISRIPW WOODY')##still need to ponder HUMINFLU, VISRIP, FISHCOV, and ASSESS and add back in here
+allparams1=union(allparams1,combineparamNEW)#allparams1=allparams1[4:length(allparams1)]
 #binned parameters
-bin='Y'#'Y' if would like to apply specified binning to parameters in binparams
+bin='Y'#'Y' if would like to apply specified binning to results of parameters in binparams
 binparams=c("CROSSSECW SIZE_CLS",grep("LWD",allparams1,value=T),grep("CANCOVER",allparams1,value=T),'VISRIP2W VEG_TYPE','TORR Torrent','HUMINFLUW HumanPresence',grep("ASSESS",allparams1,value=T),grep("VISRIP",allparams1,value=T))#also list any parameters that should be treated as categorical that are otherwise in params_N
-binMETA=read.csv('binMETADATAtemp.csv')##feed in from SQL once solified in FM, R, SQL; also used to order categoricals
+binMETA=read.csv('binMETADATAtemp.csv')##!feed in from SQL once solified in FM, R, SQL; also used to order categoricals
+#set strata for later iteration
+typestrata=c('ALL','EcoReg','Size')#must match column names that are created
+numstrata=length(typestrata)
+UnionTBL2=addKEYS(UnionTBL,'SITE_ID')
+UnionTBL2$EcoReg=substr(UnionTBL$SITE_ID,1,2)#!-- Switch to climatic rather than ecoreg?  ; ; may need to explicitly join an ecoregion column if sitecodes change over different projects and/or to utilize the EPA reference dataset, this works for NRSA only; also needs to be more expandable for additional strata
+UnionTBL2$Size=substr(UnionTBL$SITE_ID,4,5)
+UnionTBL2$ALL='ALL'
+#! other possible strata: reach width (would need to be calculated), VALXSITE or protocol (especially boatable vs. wadeable)
+#this section is highly dependent on WRSA siteID naming structure and GRTS strata
+rm(outlierTBL)
 for (p in 1:length(allparams1)){#this is a standard loop for iterating, could put it in a function that allows you to plug in a string for the most nested middle
+#for (p in 51:length(allparams1)){#target specifc parameters during testing or start over mid-process  
   typeparam=strsplit(allparams1[p]," ")
   type=typeparam[[1]][[1]]; param=typeparam[[1]][[2]]
-  paramTBL=subset(UnionTBL2,subset=PARAMETER==param & SAMPLE_TYPE==type)
+  paramTBL=subset(UnionTBL2,subset=PARAMETER==param & SAMPLE_TYPE==type)#!some where in subsetting and labelling of graphs, parameter was assumed to be unique...it technically is not (i.e. crosssection vs. thalweg depths, boatable) and needs Sample_TYPE in tandem
   paramTBL$CHAR=as.character(paramTBL$RESULT)
   paramTBL$NUM=as.numeric(paramTBL$CHAR)
   if(nrow(paramTBL)>0){
@@ -253,60 +338,65 @@ for (p in 1:length(allparams1)){#this is a standard loop for iterating, could pu
       paramTBL3=merge(paramTBL3a,paramTBL3b,by=c('UID','SITE_ID','STRATATYPE','STRATA','PARAMETER'))
       paramTBL3$PARAMCAT=paramTBL3$PARAMRES;paramTBL3$PARAMRES=paramTBL3$IND.x/paramTBL3$IND.y
     }
-    
+    #set up dataset and outliers for later subsetting by UID and strata in subsequent loops
+    paramTBL3$TRANSECT='ALL';paramTBL3$POINT='ALL'
+    paramTBL3$POINT=ifelse(paramSTATUS=='CHAR' & paramTBL3$STRATATYPE=='SITE_ID',paramTBL3$IND.y,paramTBL3$POINT)#set up for later N (sample size) use
+    paramTBL5=subset(paramTBL3,select=subcol)
+    if(paramSTATUS=='NUM'){
+      paramTBL$STRATATYPE='UID';paramTBL$STRATA=paramTBL$SITE;paramTBL$PARAMCAT='None'; paramTBL$STRATA=factor(paramTBL$STRATA,levels=unique(paramTBL$STRATA))
+      paramTBL6=subset(paramTBL,select=subcol)
+      paramTBL6=rbind(paramTBL6,paramTBL5)
+      paramN2=aggregate(PARAMRES~STRATATYPE+UID,data=subset(paramTBL6,STRATATYPE=='UID'),FUN='length');colnames(paramN2)=c(colnames(paramN2)[1:2],'SampSizeTMP')
+      paramTBL6=merge(paramTBL6,paramN2,by=c('STRATATYPE','UID'),all.x=T)
+    } else if(paramSTATUS=='CHAR'){paramTBL6=paramTBL5;paramTBL6$STRATATYPE=ifelse(paramTBL6$STRATATYPE=='SITE_ID','UID',paramTBL6$STRATATYPE);paramTBL6$SampSizeTMP=NA}
+    paramTBL6$STRATATYPE=factor(paramTBL6$STRATATYPE,levels=c("UID",typestrata))
+    paramTBL6$PARAMCAT=factor(paramTBL6$PARAMCAT)
+    #label sample size
+    paramN1=aggregate(PARAMRES~STRATATYPE+STRATA+UID,data=subset(paramTBL6,STRATATYPE!='UID'),FUN='length')#to remove PARAMCAT duplicates for CHAR
+    paramN1=aggregate(PARAMRES~STRATATYPE+STRATA,paramN1,FUN='length');colnames(paramN1)=c(colnames(paramN1)[1:2],'SampSize')#paramN$STRATATYPE=factor(paramN$STRATATYPE,levels=levels(paramTBL6$STRATATYPE))#might be needed to keep in the same order, unsure
+    paramTBL6=merge(paramTBL6,paramN1,by=c('STRATATYPE','STRATA'),all.x=T)
+    paramTBL6$SampSizeTMP=ifelse(is.na(paramTBL6$SampSizeTMP),paramTBL6$POINT,paramTBL6$SampSizeTMP);paramTBL6$SampSize=ifelse(is.na(paramTBL6$SampSize),paramTBL6$SampSizeTMP,paramTBL6$SampSize)
+    if(paramSTATUS=='CHAR'){paramN$PARAMRES=ifelse(paramN$STRATATYPE=='UID',min(paramTBL6$POINT),round(paramN$PARAMRES/length(unique(paramTBL6$PARAMCAT)),0))}
+    #label quantiles with SiteCode
+    paramquant=aggregate(PARAMRES~STRATATYPE+PARAMCAT+STRATA,data=paramTBL6,FUN='quantile',probs=c(0.05,0.95),names=FALSE);colnames(paramquant)=c('STRATATYPE','PARAMCAT','STRATA','Quant')
+    paramTBL6=merge(paramTBL6,paramquant,by=c('STRATATYPE','PARAMCAT','STRATA'),all.x=T)
+    paramTBL6$SiteLabelOUT=ifelse(paramTBL6$PARAMRES<paramTBL6$Quant[,1],paramTBL6$SITE_ID,ifelse(paramTBL6$PARAMRES>paramTBL6$Quant[,2],paramTBL6$SITE_ID,NA))#create a site label if an outlier
+    paramTBL6$SiteLabelOUT=ifelse(paramTBL6$STRATATYPE=="UID"& paramSTATUS=='CHAR',NA, ifelse(paramTBL6$STRATATYPE=="UID" & is.na(paramTBL6$SiteLabelOUT)==FALSE,paste(paramTBL6$TRANSECT,paramTBL6$POINT,sep=":"),paramTBL6$SiteLabelOUT))#change site label to transect if raw data
+    paramQ=subset(paramTBL6,is.na(SiteLabelOUT)==FALSE)
+    #label outliers with SiteCode
+    paramoutlrM=aggregate(PARAMRES~STRATATYPE+PARAMCAT+STRATA,data=paramTBL6,FUN='mean');colnames(paramoutlrM)=c('STRATATYPE','PARAMCAT','STRATA','Mean')
+    paramoutlrS=aggregate(PARAMRES~STRATATYPE+PARAMCAT+STRATA,data=paramTBL6,FUN='sd');colnames(paramoutlrS)=c('STRATATYPE','PARAMCAT','STRATA','SD')
+    paramTBL6=merge(paramTBL6,paramoutlrM,by=c('STRATATYPE','PARAMCAT','STRATA'));paramTBL6=merge(paramTBL6,paramoutlrS,by=c('STRATATYPE','PARAMCAT','STRATA'))
+    paramTBL6$SiteLabelOUT2=ifelse(paramTBL6$PARAMRES>(paramTBL6$Mean + (2*paramTBL6$SD)),paramTBL6$SITE_ID,ifelse(paramTBL6$PARAMRES<(paramTBL6$Mean - (2*paramTBL6$SD)),paramTBL6$SITE_ID,NA))#create a site label if an outlier
+    paramTBL6$SiteLabelOUT2=ifelse(paramTBL6$STRATATYPE=="UID"& paramSTATUS=='CHAR',NA, ifelse(paramTBL6$STRATATYPE=="UID" & is.na(paramTBL6$SiteLabelOUT2)==FALSE,paste(paramTBL6$TRANSECT,paramTBL6$POINT,sep=":"),paramTBL6$SiteLabelOUT2))#change site label to transect if raw data
+    paramTBL6$SiteLabelOUT2=ifelse(is.na(paramTBL6$SiteLabelOUT2),'',paramTBL6$SiteLabelOUT2)
+    paramMSD=subset(paramTBL6,is.na(SiteLabelOUT2)==FALSE & SiteLabelOUT2!='');paramMSDpres=nrow(paramMSD); if(paramMSDpres==0){paramMSD=paramTBL6[1,];paramMSD$SiteLabelOUT2=''}#geom_text will fail if no rows are present
+    if(paramMSDpres>0){
+      if(exists('outlierTBL')) {
+        outlierTBL=rbind(outlierTBL,paramMSD)
+      } else {outlierTBL=paramMSD}
+    }
+    allsites=intersect(unique(paramTBL$UID),unique(UnionTBL$UID))#only iterate over sites in the incoming/subset dataset (UnionTBL)
+    for (s in 1:length(allsites)){
+    #for (s in 1:3){#to test a smaller subset
+      stratas=unique(subset(paramTBL6,select=STRATA,subset=UID==allsites[s]))
+      paramTBL7=subset(paramTBL6,subset=STRATA %in% stratas$STRATA)
+      #generate box plot in ggplot2
+    if(max(paramTBL7$UID==allsites[s] & paramTBL7$SiteLabelOUT2!='')==1){#only print plot if it has outliers within the site or when compared to the strata
+      sitebox=boxPARAM(boxdata=paramTBL7,sampsize=paramN,facetSTR='facet_grid(.~STRATATYPE)',titleSTR='labs(title=sprintf("SITE- %s (%s) ~ PARAM- %s",unique(subset(boxdata, subset=STRATATYPE=="UID", select=SITE_ID)),allsites[s],param))')
+      ggsave(filename=sprintf('%s.jpg',sitebox$labels$title),plot=sitebox)#assign(sitebox$labels$title,sitebox)#save jpeg or assign var (need to refine naming)
+      }
+      
+    }
+  
     for (n in 1:numstrata) {#re-enter for loop now that all STRATA are complete and aggregated
-      paramTBL4=subset(paramTBL3,subset=STRATATYPE==typestrata[n])
-      stratabox=ggplot(paramTBL4,aes(y=PARAMRES, x=STRATA,fill=PARAMCAT)) 
-      stratabox=stratabox+ geom_boxplot(outlier.colour = "red", outlier.size = 10)+#for reviewing all data by strata
-        stat_summary(fun.data =give.n, geom = "text") +
-        labs (title=sprintf('STRATA- %s ~ PARAM- %s',typestrata[n],param))
+    if(nrow(subset(paramMSD,STRATATYPE==typestrata[n]))>0){
+      paramTBL4=subset(paramTBL6,subset=STRATATYPE==typestrata[n])
+      stratabox=boxPARAM(boxdata=paramTBL4,sampsize=paramN,facetSTR='facet_grid(.~STRATA)',titleSTR='labs (title=sprintf("STRATA- %s ~ PARAM- %s",typestrata[n],param))')
       ggsave(filename=sprintf('%s.jpg',stratabox$labels$title),plot=stratabox)#assign(stratabox$labels$title,stratabox)#save jpeg or # assign(sprintf('box_STRATA_%s_%s',typestrata[n],param),stratabox)
     }
-    allsites=intersect(unique(paramTBL$UID),unique(UnionTBL1$UID))##would be nice if this  linked to a second set of UIDs to narrow down sites, but still feed all sites through the aggregations; interim solution is to match UnionTBL (all data) to UnionTBL1 (UID restricted) which will still run all data if alldata='Y'
-    for (s in 1:length(allsites)){#2){
-      paramTBL3$TRANSECT='ALL';paramTBL3$POINT='ALL'
-      paramTBL3$POINT=ifelse(paramSTATUS=='CHAR' & paramTBL3$STRATATYPE=='SITE_ID',paramTBL3$IND.y,paramTBL3$POINT)#set up for later N (sample size) use
-      paramTBL5=subset(paramTBL3,select=subcol)
-      if(paramSTATUS=='NUM'){
-        paramTBL$STRATATYPE='UID';paramTBL$STRATA=paramTBL$SITE;paramTBL$PARAMCAT='None'; paramTBL$STRATA=factor(paramTBL$STRATA,levels=unique(paramTBL$STRATA))
-        paramTBL6=subset(paramTBL,select=subcol)
-        paramTBL6=rbind(paramTBL6,paramTBL5)
-      } else if(paramSTATUS=='CHAR'){paramTBL6=paramTBL5}
-      stratas=unique(subset(paramTBL6,select=STRATA,subset=UID==allsites[s]))
-      paramTBL6=subset(paramTBL6,subset=STRATA %in% stratas$STRATA)
-      paramTBL6$STRATATYPE=factor(paramTBL6$STRATATYPE,levels=c("UID",typestrata))
-      paramTBL6$PARAMCAT=factor(paramTBL6$PARAMCAT)
-      #label prep#
-      #label site average
-      siteavg=unique(subset(paramTBL6,subset=STRATATYPE !="UID" & UID==allsites[s] , select=c('PARAMRES', 'PARAMCAT')))
-      #label sample size
-      paramN=aggregate(PARAMRES~STRATATYPE,data=paramTBL6,FUN='length')#paramN$STRATATYPE=factor(paramN$STRATATYPE,levels=levels(paramTBL6$STRATATYPE))#might be needed to keep in the same order, unsure
-      if(paramSTATUS=='CHAR'){paramN$PARAMRES=ifelse(paramN$STRATATYPE=='UID',min(paramTBL6$POINT),round(paramN$PARAMRES/length(unique(paramTBL6$PARAMCAT)),0))}
-      #label quantiles with SiteCode
-      paramquant=aggregate(PARAMRES~STRATATYPE+PARAMCAT,data=paramTBL6,FUN='quantile',probs=c(0.05,0.95),names=FALSE);colnames(paramquant)=c('STRATATYPE','PARAMCAT','Quant')
-      paramTBL6=merge(paramTBL6,paramquant,by=c('STRATATYPE','PARAMCAT'))
-      paramTBL6$SiteLabelOUT=ifelse(paramTBL6$PARAMRES<paramTBL6$Quant[,1],paramTBL6$SITE_ID,ifelse(paramTBL6$PARAMRES>paramTBL6$Quant[,2],paramTBL6$SITE_ID,NA))#create a site label if an outlier
-      paramTBL6$SiteLabelOUT=ifelse(paramTBL6$STRATATYPE=="UID"& paramSTATUS=='CHAR',NA, ifelse(paramTBL6$STRATATYPE=="UID" & is.na(paramTBL6$SiteLabelOUT)==FALSE,paste(paramTBL6$TRANSECT,paramTBL6$POINT,sep=":"),paramTBL6$SiteLabelOUT))#change site label to transect if raw data
-      paramQ=subset(paramTBL6,is.na(SiteLabelOUT)==FALSE)
-      #label outliers with SiteCode
-      paramoutlrM=aggregate(PARAMRES~STRATATYPE+PARAMCAT,data=paramTBL6,FUN='mean');colnames(paramoutlrM)=c('STRATATYPE','PARAMCAT','Mean')
-      paramoutlrS=aggregate(PARAMRES~STRATATYPE+PARAMCAT,data=paramTBL6,FUN='sd');colnames(paramoutlrS)=c('STRATATYPE','PARAMCAT','SD')
-      paramTBL6=merge(paramTBL6,paramoutlrM,by=c('STRATATYPE','PARAMCAT'));paramTBL6=merge(paramTBL6,paramoutlrS,by=c('STRATATYPE','PARAMCAT'))
-      paramTBL6$SiteLabelOUT2=ifelse(paramTBL6$PARAMRES>(paramTBL6$Mean + (2*paramTBL6$SD)),paramTBL6$SITE_ID,ifelse(paramTBL6$PARAMRES<(paramTBL6$Mean - (2*paramTBL6$SD)),paramTBL6$SITE_ID,NA))#create a site label if an outlier
-      paramTBL6$SiteLabelOUT2=ifelse(paramTBL6$STRATATYPE=="UID"& paramSTATUS=='CHAR',NA, ifelse(paramTBL6$STRATATYPE=="UID" & is.na(paramTBL6$SiteLabelOUT2)==FALSE,paste(paramTBL6$TRANSECT,paramTBL6$POINT,sep=":"),paramTBL6$SiteLabelOUT2))#change site label to transect if raw data
-      paramMSD=subset(paramTBL6,is.na(SiteLabelOUT2)==FALSE);paramMSDpres=nrow(paramMSD); if(paramMSDpres==0){paramMSD=paramTBL6[1,]}#geom_text will fail if no rows are present
-      #generate box plot in ggplot2
-      sitebox=ggplot(paramTBL6,aes(y=PARAMRES, x=PARAMCAT,fill=PARAMCAT,colour=PARAMCAT)) + geom_boxplot(outlier.colour='darkred',outlier.size=10,colour='black') + facet_grid(.~STRATATYPE)+
-        geom_hline(aes(yintercept=PARAMRES, colour=PARAMCAT),siteavg,size=1)  + #mark the average for the site
-        scale_colour_brewer(drop=FALSE,palette='Set1') + scale_fill_brewer(palette='Set1')+#sync colors between lines and boxplots (especially important for categorical)
-        geom_text(data=paramN,aes(label=sprintf('n=%s',PARAMRES),x=(length(unique(paramTBL6$PARAMCAT))/2)+0.5,y=max(paramTBL6$PARAMRES)+0.25),inherit.aes=FALSE, parse=FALSE)+#annotate("text",x=2,y=max(paramTBL6$PARAMRES)+0.5,label=sprintf('n=%s',paramN$PARAMRES)) +#annotate: n(sites) for strata plots and n(points) for site  (function defined above) #messy for categorical#previous (not working as anticipated, particularly for categorical): #stat_summary(fun.data =give.n, geom = "text") + #function for adding sample size to boxplots #
-        labs(title=sprintf('SITE- %s (%s) ~ PARAM- %s',unique(subset(paramTBL6, subset=STRATATYPE=='UID', select=SITE_ID)),allsites[s],param)) +
-        #geom_text(data=paramQ,aes(label=SiteLabelOUT),show_guide=F,size=3,position= position_jitter(width = 0.5, height=0))+#jitter a little strange, but makes it readable
-        geom_text(data=paramMSD,aes(label=SiteLabelOUT2),show_guide=F,size=3,position= position_jitter(width = 0.25, height=0))+
-        theme(axis.text.x=element_blank(),axis.ticks.x=element_blank(),axis.title.x=element_blank())  #remove x axis 
-      ggsave(filename=sprintf('%s.jpg',sitebox$labels$title),plot=sitebox)#assign(sitebox$labels$title,sitebox)#save jpeg or assign var (need to refine naming)
-      if(paramMSDpres>0){if(p==1 & s==1){outlierTBL=paramMSD} else {outlierTBL=rbind(outlierTBL,paramMSD)}}
-    } } }
+    }
+  } }
 rm(paramTBL3,paramTBL4,paramTBL6,paramTBL5,paramTBL3a,paramTBL3b)
 
 outlierTBL=unique(subset(outlierTBL,select=c('STRATATYPE','STRATA','SITE_ID','UID','PARAMETER','PARAMCAT','TRANSECT','POINT','PARAMRES','Mean','SD')))
@@ -315,16 +405,49 @@ for (s in 1:length(stratat)){
   outlierTBLst=subset(outlierTBL,subset=STRATATYPE==stratat[s])
   write.csv(outlierTBLst,file=sprintf('Outliers_2SDmean_%s.csv',stratat[s]))#could export as a single table, but a bit overwhelming
 }
-
+#! also output allparams1 to know what was checked (And which were excluded - excludeparams) --> will be easier once in xwalk
 #SWJ to do (2/11/14):
 #print cv or other metric as a warning for the spread? compare cv of site to avg cv of all/strata sites? (Scott--> cv only for repeatable data, didn't give alternate spread)
 #mimic labelling of site boxplots in strata
 #add "all" boxplot in strata
 
 
+##summary stats
+#retrieve all possible tables by protocol groups and pivot
+#for exploratory purposes to review data and determine expected values, not intended to replace modular SQL solutions for multiple tools
+tblCOL=c('UID', 'SAMPLE_TYPE','PARAMETER','RESULT','TRANSECT','POINT')
+pvtCOL='UID %s ~ SAMPLE_TYPE + PARAMETER';pvtCOLdefault=sprintf(pvtCOL,'');pvtCOL2=sprintf(pvtCOL,'+ TRANSECT + POINT')
+AggLevel='Site'#options = Site, All
+dbPARAM=sqlQuery(wrsa1314,"Select SAMPLE_TYPE, PARAMETER, LABEL,VAR_TYPE from tblMETADATA where ACTIVE='TRUE'")#parameter names (SWJ to do: iterate over Sample_Type groups to generate pivots)
+params_N=subset(dbPARAM, subset=VAR_TYPE=='NUMERIC')
+tblNAME='UnionTBLnum'
+  if(min(c('SAMPLE_TYPE',tblCOL) %in% colnames(tbl))==1){#if minimum needed columns are present, proceed, otherwise assume it is a pivoted or otherwise human readable table
+        #summarized quantitative data (average values per pivot cell which is per site per parameter)
+        tblNUM=subset(UnionTBL,subset=PARAMETER %in% params_N$PARAMETER )
+        if(nrow(tblNUM)>1){#only assign pivot to variable if not empty and only dive into subsequent if not empty
+          if(AggLevel=='Site'){pvtCOL4='UID + SAMPLE_TYPE + PARAMETER ~.'; pvtCOL5='RESULT~UID + SAMPLE_TYPE + PARAMETER'; colUID='tblPVTnSUM2$UID';nameUID=c('UID','SAMPLE_TYPE','PARAMETER','Quant1','Quant2')} else if (AggLevel=='All') {pvtCOL4='SAMPLE_TYPE + PARAMETER ~.';pvtCOL5='RESULT~SAMPLE_TYPE + PARAMETER';colUID='';nameUID=c('SAMPLE_TYPE','PARAMETER','Quant1','Quant2')}
+          tblNUM$RESULT=as.numeric(tblNUM$RESULT)
+          tblNUM=subset(tblNUM,subset= is.na(RESULT)==FALSE)#apparently not removing NAs during pivot aggregation, so done manually because causing errors - have to do after conversion to number
+          tblPVTn=cast(tblNUM, eval(parse(text=pvtCOLdefault)),value='RESULT',fun.aggregate='mean')#pivot reach average by site
+          tblPVTnSUM1=cast(tblNUM, eval(parse(text=pvtCOL4)),value='RESULT',fun.aggregate=c(length,mean,median,min,max,sd),fill='NA') # pivot summary stats by all sites combined or individual sites
+          tblPVTnSUM2=aggregate(eval(parse(text=pvtCOL5)),data=tblNUM,FUN='quantile',probs=c(0.25,0.75),names=FALSE)
+          tblPVTnSUM2=data.frame(cbind(eval(parse(text=colUID)),tblPVTnSUM2$SAMPLE_TYPE,tblPVTnSUM2$PARAMETER,tblPVTnSUM2$RESULT[,1],tblPVTnSUM2$RESULT[,2]));colnames(tblPVTnSUM2)=nameUID
+          tblPVTnSUM=merge(tblPVTnSUM1,tblPVTnSUM2,by=setdiff(nameUID,c('Quant1','Quant2')))
+          #need to do this by UID for WRSA13 QA duplicate comparison
+          assign(sprintf('%s_pvtQUANTmean_%s',tblNAME,AggLevel),tblPVTn)
+          assign(sprintf('%s_pvtSUMMARYn_%s',tblNAME,AggLevel),tblPVTnSUM)
+      }
+    }
+#export results
+QUANTtbls=c(grep('pvtQUANTmean',ls(),value=T),setdiff(grep('pvtSUMMARYn',ls(),value=T),"pvtSUMMARYn"))
+for (t in 1:length(QUANTtbls)){
+  write.csv(eval(parse(text=QUANTtbls[t])),sprintf('%s.csv',QUANTtbls[t]))#could merge-pvtQUANTmean_, but I like them grouped by categories
+}
+
 
 
 ##crossvalidation/business rules
+##! store and dynamically compose validation rules 
 WetWidthDIFF=sqlQuery(wrsa1314,"select WetTRAN.UID, WetTRAN.TRANSECT, RESULT_PNTthal, RESULT_TRAN
  from (select UID, TRANSECT, RESULT as RESULT_PNTthal from tblpoint
 where parameter like 'wetwid%'
@@ -336,4 +459,85 @@ on (WetTRAN.UID=WetPNTthal.UID and WetTRAN.TRANSECT=WetPNTthal.TRANSECT)
 --and WetTRAN.UID=11625 --query struggles when running the convert function with multiple UID, makes no sense, running where statement externally in excel via Exact()
 ")#should only occur on paper forms where value is recorded twice and therefore appears in the db twice
 
-##! store and dynamically compose validation rules 
+
+#slope checks
+#!compare to GIS
+###---Connected Slope passes with no gaps---###
+SlopeTran1=tblRetrieve(Parameters=c('ENDTRAN'),Years=c('2014','2015','2016'))#WRSA protocol
+SlopeTran2=tblRetrieve(Parameters=c('SLOPE'),Years=c('2013'))#NRSA protocol
+SlopeTran2$PARAMETER='ENDTRAN'#could choose to add this in database
+SlopeTran2$PointTMP=SlopeTran2$POINT
+SlopeTran2$POINT=SlopeTran2$TRANSECT
+SlopeTran2$TRANSECT=SlopeTran2$PointTMP;SlopeTran2=SlopeTran2[,!(names(SlopeTran2) %in% c('PointTMP'))]
+tran=c('A','B','C','D','E','F','G','H','I','J','K')
+for (t in 1:nrow(SlopeTran2)){
+  SlopeTran2$RESULT[t]=tran[1+grep(SlopeTran2$POINT[t],tran)]#could choose to add this in database
+}
+SlopeTran=rbind(SlopeTran1,SlopeTran2)
+SlopeTran$Start=SlopeTran$POINT;SlopeTran$Stop=SlopeTran$RESULT;SlopeTran=SlopeTran[,!(names(SlopeTran) %in% c('POINT','RESULT'))]
+SlopeTran=SlopeTran[,!(names(SlopeTran) %in% c('SAMPLE_TYPE','PARAMETER','IND','ACTIVE','FLAG','OPERATION','INSERTION','DEPRECATION','REASON'))]#!not necessary, just easier to see when clean
+NotTran=subset(SlopeTran, nchar(Start)>1|nchar(Stop)>1)
+if(nrow(NotTran)>0){print('WARNING: some transects are not single letter transect names. Review and correct'); View(NotTran)}
+St=c('Start','Stop')
+SlopeUID=unique(subset(SlopeTran,select=c(UID,TRANSECT)));SlopeUIDmulti=SlopeUID[0,]
+for (u in 1:nrow(SlopeUID)){
+  SlopeU=subset(SlopeTran,UID==SlopeUID$UID[u] & TRANSECT==SlopeUID$TRANSECT[u]);Urow=nrow(SlopeU);SlopeU=unique(SlopeU);if(Urow!=nrow(SlopeU)){SlopeUIDmulti=rbind(SlopeUIDmulti,unique(subset(SlopeU,select=c(UID,TRANSECT))))}
+  SlopeConnect=SlopeU[1,];SlopeConnect$StartL0=SlopeConnect$Start;SlopeConnect$StartR0=SlopeConnect$Start;SlopeConnect$StopL0=SlopeConnect$Stop;SlopeConnect$StopR0=SlopeConnect$Stop
+  FinalR=SlopeConnect$Stop;FinalL=SlopeConnect$Start
+  if(nrow(SlopeU)==1){SlopeMatch=SlopeU[0,]
+    } else{
+      SlopeMatch=SlopeU[2:nrow(SlopeU),];
+    }
+    if(u==1){SlopeConnectFail=SlopeConnect[1,];SlopeConnectFail$UID=NA;SlopeConnectPass=SlopeConnect[1,];SlopeConnectPass$UID=NA;SlopeMatchFail=SlopeMatch[1,];SlopeMatchFail$UID=NA}
+    SlopeMatch=SlopeMatch[,!(names(SlopeMatch) %in% c('UID','TRANSECT'))];
+    for (m in 1:nrow(SlopeMatch)){
+      if(nrow(SlopeMatch)>0){
+      SlopeMatchL=SlopeMatch; names(SlopeMatchL)[names(SlopeMatchL) %in% St] <- sprintf('%sL%s',St,m)
+      SlopeMatchR=SlopeMatch; names(SlopeMatchR)[names(SlopeMatchR) %in% St] <- sprintf('%sR%s',St,m)
+      SlopeConnect=sqldf(sprintf('select * from SlopeConnect left join SlopeMatchL on ltrim(rtrim(upper(SlopeConnect.StartL%s)))=ltrim(rtrim(upper(SlopeMatchL.StopL%s))) left join SlopeMatchR on ltrim(rtrim(upper(SlopeConnect.StopR%s)))=ltrim(rtrim(upper(SlopeMatchR.StartR%s)))',m-1,m,m-1,m))
+      StartR=unlist(subset(SlopeConnect,select=sprintf('StartR%s',m)));StartL=unlist(subset(SlopeConnect,select=sprintf('StartL%s',m)));StopR=unlist(subset(SlopeConnect,select=sprintf('StopR%s',m)))
+      FinalR=ifelse(is.na(StopR),FinalR,StopR);FinalL=ifelse(is.na(StartL),FinalL,StartL)
+      SlopeMatch=subset(SlopeMatch,(Start %in% c(StartL,StartR))==FALSE)
+    }}
+  SlopeConnect$FinalR=FinalR;SlopeConnect$FinalL=FinalL
+  namesSlope=union(names(SlopeConnectFail),names(SlopeConnect))
+  if (nrow(SlopeMatch)>0){
+    SlopeConnectFail=rbind(ColCheck(SlopeConnectFail,namesSlope),ColCheck(SlopeConnect,namesSlope));
+    SlopeMatchTMP=SlopeMatch;SlopeMatchTMP$UID=SlopeUID$UID[u];SlopeMatchTMP$TRANSECT=SlopeUID$TRANSECT[u]
+    SlopeMatchFail=rbind(SlopeMatchFail,SlopeMatchTMP)
+  } else {SlopeConnectPass=rbind(ColCheck(SlopeConnectPass,namesSlope),ColCheck(SlopeConnect,namesSlope))}
+}
+SlopeConnectFail=subset(SlopeConnectFail,is.na(UID)==F);SlopeConnectPass=subset(SlopeConnectPass,is.na(UID)==F);SlopeMatchFail=subset(SlopeMatchFail,is.na(UID)==F)
+#!Warnings
+SlopeConnectPassEndFail=subset(SlopeConnectPass,((toupper(gsub(" ","",FinalL))=='A'& toupper(gsub(" ","",FinalR))=='K')|(toupper(gsub(" ","",FinalL))=='K'& toupper(gsub(" ","",FinalR))=='A'))==FALSE)
+SlopeConnectPassEndPass=sqldf('select s1.* from SlopeConnectPass as s1 left join SlopeConnectPassEndFail as s2 on s1.UID=s2.UID and s1.TRANSECT=s2.TRANSECT where s2.UID is null')
+SlopeConnectPassCNT=sqldf('select UID, Count(*) as CNT from SlopeConnectPassEndPass group by UID');SlopeConnectPass2Pass=subset(SlopeConnectPassCNT,CNT>1);SlopeConnectPass2Fail=subset(SlopeConnectPassCNT,CNT<2)
+print(sprintf('CONGRATULATIONS! %s sites with 2 successful Slope Passes!',nrow(SlopeConnectPass2Pass)))
+if(nrow(SlopeConnectPassEndFail)>0){print('WARNING: Some slope passes do not start at A or end at K. Summary data at in SlopeConnectPassEndFail. Examine raw data in detail.');View(subset(SlopeConnectPassEndFail,select=c('UID','TRANSECT','FinalL','FinalR')))}
+if(nrow(SlopeConnectPass2Fail)>0){print('WARNING: Some sites have only one connected Slope Pass. This may be because the data has already been cleaned to remove the 2nd pass if within 10%.');print(SlopeConnectPass2Fail)}
+if(nrow(SlopeConnectFail)>0){print('WARNING: Some slope passes had gaps and could not be connected for the entire reach. Summary data in SlopeConnectFail and SlopeMatchFail. Examine raw data in detail.');View(subset(SlopeConnectFail,select=c('UID','TRANSECT','FinalL','FinalR'))); View(SlopeMatchFail)}
+if(nrow(SlopeUIDmulti)>0){print('WARNING: Duplicate transects within same slope pass. Examine raw data in detail.');print(SlopeUIDmulti)}
+
+
+SlopeSlope=tblRetrieve(Parameters=c('SLOPE','PROP','METHOD','SLOPE_UNITS','ENDTRAN'),Years=c('2014','2015','2016'))
+SlopeSlope=subset(SlopeSlope,substr(SAMPLE_TYPE,1,5) =='SLOPE')
+####---SLOPE METHOD CHECK---##
+SlopeDiffMethod=subset(SlopeSlope,PARAMETER %in% c('PROP','METHOD','SLOPE_UNITS') & (RESULT %in% c('100','TR','CM'))==F)
+if(nrow(SlopeDiffMethod)>0){print('WARNING: Slopes with non-standard methods. Expected methods are PROP=100, Method=TR (transit) and Units=CM (centimeters)');View(SlopeDiffMethod)}
+####---SLOPE 10% CHECK---##
+Slope2=subset(SlopeSlope,UID %in% SlopeConnectPass2Pass$UID & PARAMETER=='SLOPE');Slope2$RESULT=as.numeric(Slope2$RESULT)
+Slope2sum=sqldf('select UID,TRANSECT, SUM(RESULT) as SlopeSum from Slope2 group by UID, TRANSECT')
+Slope2sum=cast(Slope2sum,'UID~TRANSECT',value='SlopeSum')
+SlopePass1=abs(Slope2sum[2]);SlopePass2=abs(Slope2sum[3]);
+Slope2sum$TenPCT=ifelse((SlopePass2>(SlopePass1+(SlopePass1*0.1))) | (SlopePass2<(SlopePass1-(SlopePass1*0.1))),'FAIL10%','PASS10%')#! app version is more iterative to check all passes -> could either apply here OR have app flag the slope that passes
+Slope2pass=subset(Slope2sum,TenPCT=='PASS10%' & is.na(Slope2sum[4]));Slope2fail=subset(Slope2sum,TenPCT=='FAIL10%' | is.na(Slope2sum[4])==F)
+if(nrow(Slope2fail)>0){print('WARNING: Pass 1 and 2 were not within 10%% OR if within 10% additional passes were present. Reconcile manually.');View(Slope2fail);View(subset(Slope2,UID %in% Slope2fail$UID ))}#print raw and summmed data for failed
+SlopeManuallyApproveTran1=c('21013264668376829952','5280846501466459068066440','933116886431965036742642','313491917404832989706088','57724867494140169944648','548616094584309022720','6057255640464259809280','21766046479553159758484','30503742404793951322602')
+if(nrow(Slope2pass)>0){print(sprintf('CONGRATULATIONS! Pass 1 met 10%% match requirements for %s sites. Inactivate Pass 2 in WRSAdb (csv exported).',nrow(Slope2pass)));write.csv(subset(SlopeSlope,TRANSECT>1 & UID %in% c(Slope2pass$UID,SlopeManuallyApproveTran1)),'SlopesToInactivate.csv')}#export 2nd passes to inactivate (eventually connect to UpdateDB.R once screened)
+#change externally: 
+#keep Tran2 active, Tran 3 inactive: #subset(SlopeSlope,UID %in% c('81353742941924589578','719428245490921504768','716024640500735016960') & TRANSECT!=2)
+#inactivate tran 1: 716024640500735016960 # reason: ignore this pass #use above subset
+#keep Tran3, omit all previous #subset(SlopeSlope,UID %in% c('863868431598454964244') & TRANSECT!=3)
+#keep Tran1, Point k (not a)  #subset(SlopeSlope,UID %in% c('37519940409184604912244', '47271381432878896252680') & (TRANSECT!=1|POINT=='a'))
+#keep Tran1, Point a (not k)  #subset(SlopeSlope,UID %in% c('8692216624269710244040620') & (TRANSECT!=1|POINT=='k'))
+#makes no sense and no comments to clarify 87601876754740660818804248 #View(cast(subset(SlopeSlope,UID=='87601876754740660818804248'),'UID+TRANSECT+POINT~PARAMETER',value='RESULT'))
