@@ -8,6 +8,10 @@ AKminesASSESS=addKEYS(tblRetrieve(Comments='Y',Parameters=c('IND_MINES','MINE'),
 write.csv(AKminesASSESS,'AKmine.csv')
 
 ##NorCal QC followup
+#PilotDB - verify areas
+BERW=setdiff(unclass(sqlQuery(wrsa1314,"select PARAMETER from tblMetadata where Sample_TYPE='BERWx'"))$PARAMETER,c("SHIPPING_METHOD","CHANNEL","NOT_COLLECTED","SAMPLE_ID","ACTUAL_DATE","SUBSTRATE"))
+ncSAMP=tblRetrieve(Parameters=BERW,Projects='NorCal',Years=c('2013','2014'))
+ncSAMPpvt=addKEYS(cast(ncSAMP,'UID~SAMPLE_TYPE+PARAMETER',value='RESULT')  ,c('SITE_ID','DATE_COL'))
 #Nicole - All conductivity values to troubleshoot a low (6) value. 
 ncond=tblRetrieve(Parameters=c('CONDUCTIVITY','CORRECTED'), Comments='Y',Projects='NorCal',Years=c('2013','2014'))
 ncondPVT=addKEYS(cast(ncond,'UID+FLAG+COMMENT~PARAMETER',value='RESULT') #!comment/flag makes a separate pivot row...consider fixing if this functionaility is frequently desired (moving Comments addition to addKEYS?)
