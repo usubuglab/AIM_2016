@@ -51,7 +51,7 @@ dates=''##example:c('05/05/2005')
 projects=c('WRSA')# most useful for separating NorCal and WRSA, note that abbreviations differ between Access and SQL/FM
 protocols=c('WRSA14')#for separating differences in overall protocol, may not be relevant for some parameters
 hitchs=c('')#NOT WORKING YET, hitch and crew level generally maintained by Access not SQL
-crews=c('R1')#NOT WORKING YET, hitch and crew level generally maintained by Access not SQL
+crews=c('R1')#NOT WORKING YET, hitch and crew level generally maintained by Access not SQL#see crewKC in customrequests for possible method
 filter=''#custom filter (need working knowledge of Parameter:Result pairs and SQL structure; example: "(Parameter='ANGLE' and Result>50) OR (Parameter='WETWID' and Result<=0.75))"
 UIDs='BLANK'#custom filter (need working knowledge of primary keys)
 #NorCal settings: years=c('2013','2014');projects='NorCal';protocols=c('WRSA14','NRSA13')
