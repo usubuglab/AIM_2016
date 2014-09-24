@@ -33,9 +33,9 @@ SiteWeights=addKEYS(tblRetrieve(Table='',Parameters='VALXSITE',ALLp=AllParam,UID
 
 TS_VALXSITE=c('WADEABLE','BOATABLE','PARBYWADE', 'PARBYBOAT','INTWADE', 'INTBOAT', 'ALTERED')
 NT_VALXSITE=c('DRYVISIT', 'DRYNOVISIT', 'WETLAND', 'MAPERROR', 'IMPOUNDED', 'TIDAL','NT') 
-IA_VALXSITE=c('OTHER_NST','NOTBOAT','NOTWADE', 'OTHER_NOACCESS','NOACCESS', 'INACCPERM','INACCTEMP')
-SiteWeights$EvalStatus=ifelse(SiteWeights$RESULT %in% TS_VALXSITE, 'TS',ifelse(SiteWeights$RESULT %in% IA_VALXSITE, 'IA',ifelse(SiteWeights$RESULT %in% NT_VALXSITE, 'NT','NN')))
-UNKeval=subset(SiteWeights,EvalStatus=='NN'); if(nrow(UNKeval)>0){print('The VALXSITE for the following sites was not recognized. Please reconcile, or it will be assumed to be unevaluated (NN)');print(UNKeval)}
+IA_VALXSITE=c('OTHER_NST','NOTBOAT','NOTWADE', 'OTHER_NOACCESS','NOACCESS', 'INACCPERM','INACCTEMP')#! should we be more careful to distinguish IA sites that had physical barriers (i.e. bushes) but were clearly target vs. streams we never saw which are truly unknown - either way, they are assumed TS, but need to determine if IA vs. UNK is important for our tabulations (see section 3 of spsurvey/GRTS practitioner guide); if long strings of IA with no subsequent TS, then set to NN. Tony lumps IA into a broader "UNK"
+SiteWeights$EvalStatus=ifelse(SiteWeights$RESULT %in% TS_VALXSITE, 'TS',ifelse(SiteWeights$RESULT %in% IA_VALXSITE, 'IA',ifelse(SiteWeights$RESULT %in% NT_VALXSITE, 'NT','UNK')))
+UNKeval=subset(SiteWeights,EvalStatus=='UNK'); if(nrow(UNKeval)>0){print('The VALXSITE for the following sites was not recognized. Please reconcile, or it will be assumed to be unevaluated (UNK)');print(UNKeval)}
 
 #mimic UTBLM script (UTblmGRTS.r) that utilizes spsurvey and included the design code as well
 #!merge SiteWeights to original design file or frame metadata to get original weights (see ProbSurveydb query Stats_Weights_Sites and/or table GRTS_Design)
