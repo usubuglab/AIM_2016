@@ -51,7 +51,7 @@ SlopeBoat=tblRetrieve(Parameters=SLOPEp,Protocols='BOAT14');SlopeBoat$SlopeFLAG=
 SlopeAK=tblRetrieve(Parameters=SLOPEp,Projects='AKEFO');SlopeAK$SlopeFLAG='AK'
 if(exists('SlopeConnectFail')){SlopeUNC=tblRetrieve(Parameters=SLOPEp,UIDS=c(SlopeConnectFail$UID,SlopeConnectPassEndFail$UID,87601876754740660818804248));SlopeUNC$SlopeFLAG='PartialReach'} else{SlopeUNC=SlopeBoat[0,]}
 SlopeIssues=rbind(SlopeKC,SlopeBoat,SlopeTR,SlopeAK,SlopeUNC);
-SlopeIssues=addKEYS(cast(SlopeIssues,'UID+TRANSECT+POINT+SlopeFLAG~PARAMETER',value='RESULT')  ,c('SITE_ID','DATE_COL'))
+SlopeIssues=addKEYS(cast(SlopeIssues,'UID+TRANSECT+POINT+SlopeFLAG~PARAMETER',value='RESULT')  ,c('SITE_ID','DATE_COL','PROJECT'))
 
 
 
