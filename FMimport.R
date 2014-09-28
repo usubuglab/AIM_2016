@@ -79,7 +79,7 @@
   PROCEED=1
 
   UIDSremove=unique(subset(importmaster,select=UID,subset= (PARAMETER=='DB' & RESULT =='WRSA_AIM')|(PARAMETER=='DEVICE' & RESULT =='ProAdvanced 13.0v3/C:/Users/Sarah/Documents/')))#exclude UIDs used by Sarah in testing and ones already imported, as well as monitored duplicates
-  UIDSexist=sqlQuery(wrsa1314, "select distinct UID from tblVerification where parameter='SITE_ID'")
+  UIDSexist=sqlQuery(wrsa1314, "select distinct UID from tblVerification where parameter='SITE_ID'  ")
   UIDS10=unique(intersect(substr(importmaster$UID,1,10),substr(UIDSexist$UID,1,10)))
   UIDSexist10=unique(subset(UIDSexist, select=UID,subset=substr(UID,1,10) %in% UIDS10))
   UIDSnew10=unique(subset(importmaster, select=UID,subset=substr(UID,1,10) %in% UIDS10))
@@ -397,7 +397,7 @@ if(PROCEED<3) {print("Data ready for import. Perform any desired checkes and set
  write.xlsx(pvtQArch,'AccessImport//pvtQArch.xlsx')#QA tables will likely be revised to have more readable text in memo fields and to included 1st vs. last check of the data
  write.xlsx(pvtQAtran,'AccessImport//pvtQAtran.xlsx')
  write.xlsx(tblCOMMENTSin,'AccessImport//tblCOMMENTS.xlsx')
- print('Tables exported. Imported into ProbSurveyDB (Access) via the saved imports prefixed with Tracking or associated button under admin tasks (both methods pending setup). Export as csv and right insert loop script (like Python recipes) if want a more automated process.')
+ print('Tables exported. Import into ProbSurveyDB (Access) via the saved imports prefixed with Tracking or associated button under admin tasks (both methods pending setup). Export as csv and right insert loop script (like Python recipes) if want a more automated process.')
 
   }#end Else Proceed=4
   
