@@ -62,9 +62,39 @@ source('FNC_tblRetrievePVT.R')
 
 #-------------------------------------------------------Jennifer's custom code-------------------------------------------#
 tbl2=addKEYS(tblRetrieve(Parameter='INCISED',Projects='NORCAL',Years='2013'),Columns=C('SITE_ID','UID')
-tblRetrieve(Parameter='CONDUCTIVITY',Projects='NORCAL',Years='2013')
-cast(tbl,'SITE_ID+UID~PARAMETER',value='RESULT',fun.aggregate='mean')# '' are around the entire rows #default to counts if more than one result for each row # can add mean as I did here
+)
+tbl4=addKEYS(tblRetrieve(Parameter='TRCHLEN',Years='2014'),Columns='SITE_ID')
+
+tbl6<-tblRetrieve(Parameter='SITE_ID',SiteCodes=c('NY-SS-9219','NY-LS-9218','NC-SS-9152','NC-LS-9158','NO-SS-9202','CO-LS-9445','CO-SS-9450','NB-LS-9114','NB-LS-9119'), Years='2014')
+tbl6<-tblRetrieve(Parameter='SITE_ID',SiteCodes=c('MN-LS-1019','XE-RO-5085'))
+tbl6<-tblRetrieve(Parameter='PH',UIDS=c(40043807846903000000,
+                                        802046621474380000000,
+                                        5206614528497750000))
+                                               7.76527E+21))
+                                               '7.60578E+21',
+                                               '7.47283E+22',
+                                               '7.06515E+16',
+                                               '2.81825E+19',
+                                               '9.30972E+23'))
+)
+)
+
+tbl3=addKEYS(tblRetrieve(Parameter='TRCHLEN',Years='2014'),Columns='SITE_ID')
+
+             tblRetrieve(Parameter='TRCHLEN','SITE_ID'=c('OT-SS-7141', 'XS-LS-6039', 
+          'XS-RO-6083',
+            'MS-SS-3118',
+            'XE-SS-5105',
+            'AA-STR-0010',
+            'XE-SS-5150',
+            'NW-LS-9269',
+            'MP-SS-2100',
+            'MN-SS-1133',
+            'MN-LS-1019'))
+                                       
              
+cast(tbl,'SITE_ID+UID~PARAMETER',value='RESULT',fun.aggregate='mean')# '' are around the entire rows #default to counts if more than one result for each row # can add mean as I did here
+           
              
 trial<-sqlQuery(wrsa1314,"select * from tblPOINT where PARAMETER='slope'") #basic select query must use "
 getmeta<-sqlQuery(wrsa1314,"select * from tblMETADATA")#### getting the metadata table
