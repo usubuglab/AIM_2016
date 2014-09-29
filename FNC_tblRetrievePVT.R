@@ -96,6 +96,18 @@ WHERE ACTIVE='TRUE' and %s
 #UID select
 UIDselect=function(ALL='N',Filter='',UIDS='BLANK',SiteCodes='',Dates='',Years='',Projects='',Protocols=''){#UIDS default is "Blank" so it isn't subject to the replacement (gsub) and can still have the UNION...want the user to be able to use UID and FILTER to ADD samples to the main request (i.e. because those assume they have working knowledge of the database/SQL), not INTERSECT like others
   if(UIDS[1]!='BLANK'){UIDsubstr=sprintf(" left(cast(UID as nvarchar),10) in (%s) ",inLOOP(substr(UIDS,1,10)))} else{UIDsubstr="(cast(UID as nvarchar) in ('BLANK'))" }
+  if(Filter==''){FilterSTR=''} else{FilterSTR=sprintf("UNION
+    select UID, Active  from tblVERIFICATION where 
+    %s
+    UNION
+    select UID, Active  from tblREACH where 
+    %s
+    UNION
+    select UID, Active  from tblPOINT where 
+    %s
+    UNION
+    select UID, Active  from tblTRANSECT where 
+    %s",Filter,Filter,Filter,Filter)}
   UIDstr=sprintf("select distinct UID from  (
   select UID , Active from tblVERIFICATION  where
 		Parameter='PROJECT' and Result in (%s)
@@ -113,13 +125,14 @@ INTERSECT
 		PARAMETER='DATE_COL' and RIGHT(result,4) in (%s)
 UNION
 	select UID, Active  from tblVERIFICATION where 
-		%s %s
+		%s
+%s
  ) UnionTBL1
 where (active='TRUE') "
                  ,inLOOP(Projects),inLOOP(Protocols),
                  inLOOP(SiteCodes),
                  inLOOP(Dates),inLOOP(Years),
-                 UIDsubstr,ifelse(Filter=='','',sprintf('OR %s',Filter)))
+                 UIDsubstr,FilterSTR)
   UIDstr=gsub("in \\(''\\)","like '%'",UIDstr)#if(ALL=='Y' | paste(Filter,UIDS,SiteCodes,Dates,Years,Projects,Protocols,sep='')==''){UIDstr=gsub("in \\(''\\)","like '%'",UIDstr)}
   if((UIDS[1]=='BLANK' &  Filter=='') ==FALSE|paste(SiteCodes,Dates,Years,Projects,Protocols,sep='')==''){UIDstr=gsub("like '%'","like ''",UIDstr)}#not including UID and Filter, similar to setting UID to "BLANK", this also helps the INTERSECTS and UNION to be implement properly
   qryRSLT=sqlQuery(wrsa1314, UIDstr)

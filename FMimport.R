@@ -4,7 +4,7 @@
   library(reshape)#clean up packages for auto-install if not present
   library(xlsx)
   datetest <- function(x) c(ifelse(is.numeric(x),FALSE,ifelse(is.character(x),FALSE,TRUE)))
-  setwd('M:\\buglab\\Research Projects\\BLM_WRSA_Stream_Surveys\\Field Work\\Post Sample\\iPad backup')#setwd('C:\\Users\\Sarah\\Documents')#default export location for desktop version of FM
+  setwd('N:\\buglab\\Research Projects\\BLM_WRSA_Stream_Surveys\\Field Work\\Post Sample\\iPad backup')#setwd('C:\\Users\\Sarah\\Documents')#default export location for desktop version of FM
   tables=list.files(getwd(),pattern='*.xlsx')#tables=read.csv('RelationalTest.csv')#tables=c('FMout_tbl_yr2014doy156Sarah-PC_Hitch.xlsx')#test table
   importcols=c(VAR,'TRANSECT','POINT','PARAMETER','RESULT');#importcols=setdiff(importcols,c('REASON'))
   importmaster=data.frame(t(rep(NA,length(importcols))))
@@ -74,20 +74,20 @@
   #!screen null and duplicate values that are warned about
   #!save all warning messages to a table for export/reference (right now, all are printed to the console; how is error handling supposed to be done in R packages, a lot of times, they say, "type WARN to see all warnings")
   
-  
+
   
   PROCEED=1
 
   UIDSremove=unique(subset(importmaster,select=UID,subset= (PARAMETER=='DB' & RESULT =='WRSA_AIM')|(PARAMETER=='DEVICE' & RESULT =='ProAdvanced 13.0v3/C:/Users/Sarah/Documents/')))#exclude UIDs used by Sarah in testing and ones already imported, as well as monitored duplicates
-  UIDSexist=sqlQuery(wrsa1314, "select distinct UID from tblVerification where parameter='SITE_ID'")
+  UIDSexist=sqlQuery(wrsa1314, "select distinct UID from tblVerification where parameter='SITE_ID'  ")
   UIDS10=unique(intersect(substr(importmaster$UID,1,10),substr(UIDSexist$UID,1,10)))
   UIDSexist10=unique(subset(UIDSexist, select=UID,subset=substr(UID,1,10) %in% UIDS10))
   UIDSnew10=unique(subset(importmaster, select=UID,subset=substr(UID,1,10) %in% UIDS10))
   UIDSmatch10=setdiff(UIDSnew10$UID,UIDSexist10$UID)
   UIDSmismatch10=subset(importmaster,subset=PARAMETER %in% c('SITE_ID','DATE_COL') & UID %in% UIDSmatch10); UIDSmismatch10= UIDSmismatch10[with(UIDSmismatch10,order(UID)),]
-  if(length(UIDSmatch10)>0){print(sprintf('Verify %s non-exact matches for UID (1st 10 characters match). These will be automatically omitted unless otherwise indicated.',length(UIDSmatch10)));View(UIDSmismatch10); print(sprintf('select * from tblverification where left(cast(UID as nvarchar),10) in (%s)',inLOOP(substr(UIDSmatch10,1,10))))}
+  if(length(UIDSmatch10)>0){print(sprintf('Verify %s non-exact matches for UID (1st 10 characters match). These will be automatically omitted unless otherwise indicated.',length(UIDSmatch10)));View(UIDSmismatch10); print(sprintf("select * from tblverification where parameter='site_id' and left(cast(UID as nvarchar),10) in (%s)",inLOOP(substr(UIDSmatch10,1,10))))}
   UIDSmanualOMIT=c('8.58443864583729e+22','4171385314118944686080','4948737546099460407266','15631373425099638047420','585759337742704256','324224919440318080','452002440992807387126','56939717898642521064404','1.00590424753275e+20','3.12445349814274e+20','30317561401913393152','85565470919978896','9.79114249176033e+20','2.42573446594801e+21','7.467934950944e+19','7.1001238480827e+19','7.42868294554285e+24','10445148556604496','6.22708454798246e+20','2.25618143476838e+23','8.77503374780117e+20','4.49266934743765e+21','5.64896083614649e+21',
-                   '15371499864863700', '6289849184966886400','6778495559','4.86796721145911e+21','40929284494044758016','3.46298187240046e+24','4795923406292041','238904821513005888','1.56313734250996e+22','36066246794627100','36066246794627104','3281462015442028544','15371499864863704','7.08938994416638e+23','4.57921803104368e+25','18934588289520738304','9.72630743819978e+21','850630406814675200','850630406814675000','18934588289520700000','4.86796721145911E+21','6289849184966880000','324224919440318000','6.34916723436864e+21','7.03114033341499E+21','7.03114033341499e+21','4.57921803104368E+25', '3281462015442020000', '88015264382921100000','88015264382921129984','6.34916723436864E+21', '9.72630743819978E+21','7.08938994416638E+23'#beta testing
+                   '15371499864863700', '68773868470210160','6289849184966886400','6778495559','4.86796721145911e+21','40929284494044758016','3.46298187240046e+24','4795923406292041','238904821513005888','1.56313734250996e+22','36066246794627100','36066246794627104','3281462015442028544','15371499864863704','7.08938994416638e+23','4.57921803104368e+25','18934588289520738304','9.72630743819978e+21','850630406814675200','850630406814675000','18934588289520700000','4.86796721145911E+21','6289849184966880000','324224919440318000','6.34916723436864e+21','7.03114033341499E+21','7.03114033341499e+21','4.57921803104368E+25', '3281462015442020000', '88015264382921100000','88015264382921129984','6.34916723436864E+21', '9.72630743819978E+21','7.08938994416638E+23'#beta testing
                    )#! auto remove sites with less than 10 lines of data (app defaults)?; record reason in Access Office_Comments
   UIDSremoveLIST=c(UIDSremove$UID,UIDSexist$UID, UIDSmanualOMIT, UIDSmatch10)#could query intentionally removed duplicates from Office_Comments in AccessDB#'1044' = duplicate site that crew entered in both app versions, confirmed with crew and Jennifer Courtwright; 6227 and 2256 = duplicates with only default data populated
   importmaster=subset(importmaster,subset= (UID %in% UIDSremoveLIST)== FALSE)
@@ -206,6 +206,11 @@ for (u in 1:nrow(uu)){
     importmaster$ACTIVE=ifelse(importmaster$UID %in% uuhab$UID & importmaster$PARAMETER %in% c('MAXDEPTH') & importmaster$POINT=='0.5','FALSE',importmaster$ACTIVE)# max depth inactivated so residual depth not accidentally computed, but tail depth could still be used if desired (not used alone in any PIBO stats)
     importmaster$DEPRECATION=ifelse(importmaster$UID %in% uuhab$UID & importmaster$PARAMETER %in% c('MAXDEPTH') & importmaster$POINT=='0.5',as.character(Sys.Date()),importmaster$DEPRECATION)
   }}
+#remove boatable defaults if non-boatable
+NonBoatUID=subset(importmaster,select=UID,PARAMETER=='VALXSITE' & RESULT != 'BOATABLE')
+importmaster= subset(importmaster,(PARAMETER %in% c('JUDG','Depth_METHODxsec','OFF_CHAN','SNAG') & UID %in% NonBoatUID$UID)==FALSE)
+#convert bank heights to m from cm
+importmaster$RESULT=ifelse(importmaster$PARAMETER %in% c('BANKHT','INCISED'),as.numeric(importmaster$RESULT)/100,importmaster$RESULT)                                                                                                
   
  #!other data quirks that need global correction in existing data and prevention in future data
  #!double records for CHANDEPTHB and CROSSSECW with the same index (should be cleared up for new xwalk funciton); check other ind duplicates
@@ -305,12 +310,12 @@ if(PROCEED<3) {print("Data ready for import. Perform any desired checkes and set
   tblQAin=subset(importmaster,toupper(SAMPLE_TYPE)=='TRACKING' & toupper(PARAMETER)!='OMIT')#unique(tblQAin$PARAMETER)
   tblVERIFICATIONin=subset(importmaster,toupper(SAMPLE_TYPE)=='VERIF');tblVERIFICATIONin=tblVERIFICATIONin[,!(names(tblVERIFICATIONin) %in% c('POINT','TRANSECT'))];tblVERIFICATIONin=tblVERIFICATIONin[with(tblVERIFICATIONin,order(IND)),]
   tblREACHin=subset(importmaster,is.na(POINT)==TRUE & is.na(TRANSECT)==TRUE & toupper(SAMPLE_TYPE)!='FAILURE' & toupper(SAMPLE_TYPE)!='TRACKING' & SAMPLE_TYPE!='VERIF');tblREACHin=tblREACHin[,!(names(tblREACHin) %in% c('POINT','TRANSECT'))];tblREACHin=tblREACHin[with(tblREACHin,order(IND)),] #any remaining with not in  tblVERIFICATIONin and parameter <> comment/flag
-  masterCNT=nrow(importmaster);pointCNT=nrow(tblPOINTin);transectCNT=nrow(tblTRANSECTin);failCNT=nrow(tblFAILUREin);qaCNT=nrow(tblQAin);reachCNT=nrow(tblREACHin);verifCNT=nrow(tblVERIFICATIONin);
-  unacctCNT=masterCNT-#total rows expected
-    sum(pointCNT,transectCNT,reachCNT,commentCNT,verifCNT,failCNT,qaCNT)-#total rows accounted for in partitioned tables
-    (commentCNT-flagonlyCNT-commentonlyCNT)- #double count the overlap between flags and comments
-    omitCNT #tracking parameters that were omitted
-  sprintf('wARNING! %s rows unaccounted for after table partitioning',unacctCNT)
+  #masterCNT=nrow(importmaster);pointCNT=nrow(tblPOINTin);transectCNT=nrow(tblTRANSECTin);failCNT=nrow(tblFAILUREin);qaCNT=nrow(tblQAin);reachCNT=nrow(tblREACHin);verifCNT=nrow(tblVERIFICATIONin);
+  #unacctCNT=masterCNT-#total rows expected
+  #  sum(pointCNT,transectCNT,reachCNT,commentCNT,verifCNT,failCNT,qaCNT)-#total rows accounted for in partitioned tables
+  #  (commentCNT-flagonlyCNT-commentonlyCNT)- #double count the overlap between flags and comments
+   # omitCNT #tracking parameters that were omitted
+  #sprintf('wARNING! %s rows unaccounted for after table partitioning',unacctCNT)
   #problems to check for again: tblREACH - SLOPE, THAL,FISHCOV,CANCOV,LWD,CROSSSEC, HABITAT, PHOTOS ;tblTRANSECT - photos,CROSSSEC, stability *3 (Bankw; happened in single UID) , Slope
   #View(subset(tblREACHin,SAMPLE_TYPE %in% c('SLOPEW', 'THALW','FISHCOVW','CANCOVW','LWDW','CROSSSECW', 'HABITAT', 'PHOTOS')))
   #View(subset(tblTRANSECTin,SAMPLE_TYPE %in% c('SLOPEW', 'CROSSSECW', 'BANKW', 'PHOTOS')))  
@@ -392,7 +397,7 @@ if(PROCEED<3) {print("Data ready for import. Perform any desired checkes and set
  write.xlsx(pvtQArch,'AccessImport//pvtQArch.xlsx')#QA tables will likely be revised to have more readable text in memo fields and to included 1st vs. last check of the data
  write.xlsx(pvtQAtran,'AccessImport//pvtQAtran.xlsx')
  write.xlsx(tblCOMMENTSin,'AccessImport//tblCOMMENTS.xlsx')
- print('Tables exported. Imported into ProbSurveyDB (Access) via the saved imports prefixed with Tracking or associated button under admin tasks (both methods pending setup). Export as csv and right insert loop script (like Python recipes) if want a more automated process.')
+ print('Tables exported. Import into ProbSurveyDB (Access) via the saved imports prefixed with Tracking or associated button under admin tasks (both methods pending setup). Export as csv and right insert loop script (like Python recipes) if want a more automated process.')
 
   }#end Else Proceed=4
   

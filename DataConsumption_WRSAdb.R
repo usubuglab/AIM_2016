@@ -51,7 +51,7 @@ dates=''##example:c('05/05/2005')
 projects=c('WRSA')# most useful for separating NorCal and WRSA, note that abbreviations differ between Access and SQL/FM
 protocols=c('WRSA14')#for separating differences in overall protocol, may not be relevant for some parameters
 hitchs=c('')#NOT WORKING YET, hitch and crew level generally maintained by Access not SQL
-crews=c('R1')#NOT WORKING YET, hitch and crew level generally maintained by Access not SQL
+crews=c('R1')#NOT WORKING YET, hitch and crew level generally maintained by Access not SQL#see crewKC in customrequests for possible method
 filter=''#custom filter (need working knowledge of Parameter:Result pairs and SQL structure; example: "(Parameter='ANGLE' and Result>50) OR (Parameter='WETWID' and Result<=0.75))"
 UIDs='BLANK'#custom filter (need working knowledge of primary keys)
 #NorCal settings: years=c('2013','2014');projects='NorCal';protocols=c('WRSA14','NRSA13')
@@ -85,10 +85,15 @@ METADATA=sqlQuery (wrsa1314,"select * from tblMETADATA where ACTIVE='TRUE'")#see
 METADATAprotocol=sqlQuery (wrsa1314,"select * from tblMETADATAprotocol where ACTIVE='Y' and Protocol='WRSA14'")#expected counts
 METADATArange=sqlQuery (wrsa1314,"select * from tblMETADATArange where ACTIVE='TRUE' and Protocol='WRSA14'")#legal values
 METADATAindicators=sqlQuery (wrsa1314,"select * from tblXwalk where NAME_xwalk='MissingBackend' and type_xwalk='Indicator'")
-indicators=''
+indicators=NULL
 for (i in 1:nrow(METADATAindicators)){indicators=paste(indicators,METADATAindicators$Parameter_Xwalk[i],sep="|")}
-indicators=unique(unlist(strsplit(indicators,"\\|")))
-METADATAparametersLRBS=sqlQuery (wrsa1314,"select * from tblXwalk where NAME_xwalk='MissingBackend' and PARAMETER_Xwalk like '%lrbs%'")
+indicators=unique(unlist(strsplit(indicators,"\\|")));indicators=indicators[2:length(indicators)]
+for (p in 1:length(indicators)){
+  METADATAparameters=sqlQuery (wrsa1314,sprintf("select * from tblXwalk where NAME_xwalk='MissingBackend' and PARAMETER_Xwalk like '%%%s%%'",indicators[p]))
+  METADATAparameters$INDICATOR=indicators[p]
+  if(p==1){parameters=METADATAparameters} else{parameters=rbind(parameters,METADATAparameters)}
+}  
+View(indicators);View(parameters)
 
 
 #--------------------------------------------------------SQL RETRIEVE (old examples)--------------------------------------------------------#
