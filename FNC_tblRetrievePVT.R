@@ -96,6 +96,18 @@ WHERE ACTIVE='TRUE' and %s
 #UID select
 UIDselect=function(ALL='N',Filter='',UIDS='BLANK',SiteCodes='',Dates='',Years='',Projects='',Protocols=''){#UIDS default is "Blank" so it isn't subject to the replacement (gsub) and can still have the UNION...want the user to be able to use UID and FILTER to ADD samples to the main request (i.e. because those assume they have working knowledge of the database/SQL), not INTERSECT like others
   if(UIDS[1]!='BLANK'){UIDsubstr=sprintf(" left(cast(UID as nvarchar),10) in (%s) ",inLOOP(substr(UIDS,1,10)))} else{UIDsubstr="(cast(UID as nvarchar) in ('BLANK'))" }
+  if(Filter==''){FilterSTR=''} else{FilterSTR=sprintf("UNION
+    select UID, Active  from tblVERIFICATION where 
+    %s
+    UNION
+    select UID, Active  from tblREACH where 
+    %s
+    UNION
+    select UID, Active  from tblPOINT where 
+    %s
+    UNION
+    select UID, Active  from tblTRANSECT where 
+    %s",Filter,Filter,Filter,Filter)}
   UIDstr=sprintf("select distinct UID from  (
   select UID , Active from tblVERIFICATION  where
 		Parameter='PROJECT' and Result in (%s)
@@ -113,13 +125,14 @@ INTERSECT
 		PARAMETER='DATE_COL' and RIGHT(result,4) in (%s)
 UNION
 	select UID, Active  from tblVERIFICATION where 
-		%s %s
+		%s
+%s
  ) UnionTBL1
 where (active='TRUE') "
                  ,inLOOP(Projects),inLOOP(Protocols),
                  inLOOP(SiteCodes),
                  inLOOP(Dates),inLOOP(Years),
-                 UIDsubstr,ifelse(Filter=='','',sprintf('OR %s',Filter)))
+                 UIDsubstr,FilterSTR)
   UIDstr=gsub("in \\(''\\)","like '%'",UIDstr)#if(ALL=='Y' | paste(Filter,UIDS,SiteCodes,Dates,Years,Projects,Protocols,sep='')==''){UIDstr=gsub("in \\(''\\)","like '%'",UIDstr)}
   if((UIDS[1]=='BLANK' &  Filter=='') ==FALSE|paste(SiteCodes,Dates,Years,Projects,Protocols,sep='')==''){UIDstr=gsub("like '%'","like ''",UIDstr)}#not including UID and Filter, similar to setting UID to "BLANK", this also helps the INTERSECTS and UNION to be implement properly
   qryRSLT=sqlQuery(wrsa1314, UIDstr)
@@ -196,5 +209,26 @@ if(nrow(TBLtmp)!=nrow(XwalkTBL)){print(sprintf('WARNING! Different number of row
   print(SPmissing)
   }}
 return(XwalkTBL)
+}
+
+#converting variable or other names from a dictionary
+varConvert=function(x){ #for use within figures to convert to variable names
+  NAMESlist=sub('name','',ls(envir=as.environment(1))[grep('name',ls(envir=as.environment(1)))])
+  temp=paste(setdiff(gsub('rtg','',x),NAMESlist),collapse=',')
+  if(nchar(temp)>0){print(sprintf('Variables missing presentation names are: %s', temp))}
+  presentationNAMES=character()
+  for (v in 1:length(variables)){
+    if(variables[[v]] %in% NAMESlist) {varNAME=eval(parse(text=sprintf('%sname',variables[[v]])))} else{varNAME='TBD1'}
+    presentationNAMES=append(presentationNAMES,varNAME)}
+  abc=list(variables, sprintf('%srtg',variables), presentationNAMES)# consider using hash package http://cran.r-project.org/web/packages/hash/
+  y=character()
+  for (j in 1:length(x)){
+    y2=NA
+    for (i in 1:length(variables)){
+      if(x[[j]]==abc[[1]][[i]] | x[[j]]==abc[[2]][[i]]) {y2=abc[[3]][[i]]} 
+      else if(i==length(variables) & is.na(y2)) {y2='TBD2'}
+    }
+    y=append(y,y2)} 
+  return(list(names=y, color=rainbow(length(y))))
 }
 
