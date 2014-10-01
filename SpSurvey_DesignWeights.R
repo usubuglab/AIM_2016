@@ -92,7 +92,7 @@ siteeval$wgt_cat <- factor(paste(siteeval$STRATUM, siteeval$MDCATY, sep="_"))
 summary(siteeval$wgt_cat) # look at all categories
 
 siteeval$Wgt_Final <- adjwgt(sites=siteeval$EvalStatus != "NN", 
-                             wgt=as.numeric(siteeval$WGT),
+                             wgt=as.numeric(siteeval$WGT), #!Main thing I still don't understand: Why Tony even bothers to assign original weights since he throws them out the window in the end. Perhaps just for bookkeeping in case the target population file is lost and to make sure all weights are within orders of magnitudes of each other? It seems these are evaluated to determine proportionality of classes, but not in a significant way that can't be recomputed on the fly using the target population kilometers.
                              wtcat=siteeval$wgt_cat, framesize=frmszARRY)
 
 sum(siteeval$Wgt_Final)

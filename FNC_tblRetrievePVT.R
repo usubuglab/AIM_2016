@@ -232,3 +232,30 @@ varConvert=function(x){ #for use within figures to convert to variable names
   return(list(names=y, color=rainbow(length(y))))
 }
 
+
+bintranslate=function(Table,ST,PM=''){
+  TBLtmp=eval(parse(text=Table))
+  BINtbl=sqlQuery(wrsa1314,sprintf("select * from tblMETADATAbin where SAMPLE_TYPE='%s' %s",ST,ifelse(PM=='' | is.na(PM),"and (PARAMETER='' or PARAMETER is null)",sprintf("and PARAMETER='%s' ",PM))))
+  #join TBL and BIN to update RESULT
+  return(TBLtmp$RESULT)
+#   #planned usage in NRSAmetrics
+#   #example usage in outlier checks
+#   typeMATCH=type %in% as.character(unlist(subset(binMETA,select=SAMPLE_TYPE,subset=is.na(PARAMETER)|PARAMETER=='')))
+#   if(bin=='Y' & (paramMATCH=='TRUE'|typeMATCH=='TRUE')){#if match in binMETA
+#     if(paramMATCH=='TRUE'){temp=merge(paramTBL,binMETA,by=c('SAMPLE_TYPE','PARAMETER','RESULT'))
+#     }else if (typeMATCH=='TRUE'){temp=merge(paramTBL,binMETA,by=c('SAMPLE_TYPE','RESULT')); temp$PARAMETER=param}
+#     if(nrow(paramTBL) != nrow(temp)) {print(sprintf('WARNING: categories are missing from binMETA for %s and are excluded.',typeparam))}##need to determine standard way of reporting what they are once we run into one
+#     paramTBL=temp
+#     paramTBL$PARAMRES=factor(paramTBL$Bin,levels=unique(paramTBL$Bin[order(paramTBL$Order,paramTBL$Bin)]),ordered=TRUE)##bin may be blank if only feeding in order (not yet doing this), determine how to handle depending on final binMETA structure #this method did not work: paramTBL=paramTBL[with(paramTBL,order(Order)),]##will order be retained? ##resetting paramTBL$PARAMRES to paramTBL$Bin automatically made it a factor...this is turned off in options and was problematic for quantiative summaries, not sure implications for boxplots##alternative way may be to order the factor list and apply to the factor levels (but this may be more complicate for ones with no binning, only ordering, unless specifying bin=result (instead of blank))
+#     rm(temp)
+#     # order and/or bin 
+#   } else{print(sprintf('Sorting Order and Binning unknown for %s',typeparam))}
+#   #example usage in SpSurvey
+#   TS_VALXSITE=c('WADEABLE','BOATABLE','PARBYWADE', 'PARBYBOAT','INTWADE', 'INTBOAT', 'ALTERED')
+#   NT_VALXSITE=c('DRYVISIT', 'DRYNOVISIT', 'WETLAND', 'MAPERROR', 'IMPOUNDED', 'TIDAL','NT') 
+#   IA_VALXSITE=c('OTHER_NST','NOTBOAT','NOTWADE', 'OTHER_NOACCESS','NOACCESS', 'INACCPERM','INACCTEMP')#! should we be more careful to distinguish IA sites that had physical barriers (i.e. bushes) but were clearly target vs. streams we never saw which are truly unknown - either way, they are assumed TS, but need to determine if IA vs. UNK is important for our tabulations (see section 3 of spsurvey/GRTS practitioner guide); if long strings of IA with no subsequent TS, then set to NN. Tony lumps IA into a broader "UNK"
+#   NN_VALXSITE=c('NSF',"NN")# not needed because not in sample frame (ex: 2013-15 canals omitted a priori) or unevaluated
+#   siteeval$EvalStatus=ifelse(siteeval$VALXSITE %in% TS_VALXSITE, 'TS',ifelse(siteeval$VALXSITE %in% IA_VALXSITE, 'IA',ifelse(siteeval$VALXSITE %in% NT_VALXSITE, 'NT',ifelse(siteeval$VALXSITE %in% NN_VALXSITE, 'NN','UNK'))))
+  
+  
+}
