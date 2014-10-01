@@ -211,3 +211,24 @@ if(nrow(TBLtmp)!=nrow(XwalkTBL)){print(sprintf('WARNING! Different number of row
 return(XwalkTBL)
 }
 
+#converting variable or other names from a dictionary
+varConvert=function(x){ #for use within figures to convert to variable names
+  NAMESlist=sub('name','',ls(envir=as.environment(1))[grep('name',ls(envir=as.environment(1)))])
+  temp=paste(setdiff(gsub('rtg','',x),NAMESlist),collapse=',')
+  if(nchar(temp)>0){print(sprintf('Variables missing presentation names are: %s', temp))}
+  presentationNAMES=character()
+  for (v in 1:length(variables)){
+    if(variables[[v]] %in% NAMESlist) {varNAME=eval(parse(text=sprintf('%sname',variables[[v]])))} else{varNAME='TBD1'}
+    presentationNAMES=append(presentationNAMES,varNAME)}
+  abc=list(variables, sprintf('%srtg',variables), presentationNAMES)# consider using hash package http://cran.r-project.org/web/packages/hash/
+  y=character()
+  for (j in 1:length(x)){
+    y2=NA
+    for (i in 1:length(variables)){
+      if(x[[j]]==abc[[1]][[i]] | x[[j]]==abc[[2]][[i]]) {y2=abc[[3]][[i]]} 
+      else if(i==length(variables) & is.na(y2)) {y2='TBD2'}
+    }
+    y=append(y,y2)} 
+  return(list(names=y, color=rainbow(length(y))))
+}
+
