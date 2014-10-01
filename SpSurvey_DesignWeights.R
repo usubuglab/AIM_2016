@@ -1,12 +1,11 @@
-
-###pull in ValXsite
-SiteWeights=addKEYS(tblRetrieve(Table='',Parameters='VALXSITE',ALLp=AllParam,UIDS=UIDs,ALL=AllData,
+###------------------------------------------------pull in relevant SiteInfo------------------------------------------------###
+siteeval=tblRetrieve(Table='',Parameters=c('VALXSITE','STRATUM','MDCATY','WGT'),UIDS=UIDs,ALL=AllData,
                     Filter=filter,SiteCodes=sitecodes,Dates=dates,Years=years,Projects=projects,
-                    Protocols=''),#forcing all protocols despite global DataConsumption settings to pull in Failed sites
-        c('SITE_ID','DATE_COL','PROJECT'))
+                    Protocols='')#forcing all protocols despite global DataConsumption settings to pull in Failed sites
+siteeval=addKEYS(cast(siteeval,'UID~PARAMETER',value='RESULT'),c('SITE_ID','DATE_COL','PROJECT','VISIT_NO'))
 
 ###Final Designation reconcilation###
-#reconcilation was done manually for norcal 2013-4 (took approx 1 hour, see **.xlsx at: ***), the following needs to be implemented for a more streamlined process:
+#reconcilation was done manually for norcal 2013-4 (took approx 1 hour), the following needs to be implemented for a more streamlined process:
 #! 1.  query used to check for norcal missing valxsite, not sure how to replicate using tblRetrieve
 # select * from  (select * from tblverification where PARAMETER='project' and RESULT like '%cal%') as pr
 # left join (select * from tblverification where tblverification.PARAMETER='valxsite') as vx on pr.UID=vx.UID
@@ -20,7 +19,7 @@ SiteWeights=addKEYS(tblRetrieve(Table='',Parameters='VALXSITE',ALLp=AllParam,UID
 #! 3. any missing VALXSITE or changed FinalDesignations should go to Office_Updates in Access and be updated via UpdateDatabase_WRSA.R; avoid duplicates for the same site code especially for failed sites (i.e. if visit 1 failed and visit 2 was successful, insert/update VALXSITE from visit 2; if visit 1 was "temporary inaccessible" and visit 2 was "permenatently inaccessible", determine what the primary reason for not getting to the site was, keeping in mind that in the subsequent translation code, it really boils down to 4 categories (uneval, sucessful, inaccessible (i.e. unknown), and non-target) )
 
 
-###translate to EvalStatus###
+###------------------------------------------------translate to EvalStatus------------------------------------------------##
 ##previous Access iif statements (which also handle duplicate reconciled sites)
 #EvalStatus_Target: IIf([NonTarget]=Yes,"NT",IIf(IsNull([minofScoutDate]),"NN",IIf((([minofunsuccessreason]=[maxofunsuccessreason]) Or ([minofunsuccessreason]=62 And [maxofunsuccessreason]=63)) And ([minofunsuccessreason] In (62,63)) And IsNull([sampledate]),"NT",IIf([office_site].[unsuccessReason] In (62,63),"NT",IIf((([minofunsuccessreason] In (65,67)) Or ([minofunsuccessreason]<>[maxofunsuccessreason])) And IsNull([sampledate]) And IsNull([office_site].[unsuccessreason]),"UNK","TS")))))
 #EvalStatus_Access: IIf([EvalStatus_Target]="NT","NT",IIf([SampleEvent].[ProbeReachID] Is Not Null,"TS",IIf((([minofunsuccessreason]=[maxofunsuccessreason]) And [minofunsuccessreason] In (60,61)) Or [office_site].[unsuccessreason] In (60,61),"IA",[EvalStatus_Target])))
@@ -30,13 +29,123 @@ SiteWeights=addKEYS(tblRetrieve(Table='',Parameters='VALXSITE',ALLp=AllParam,UID
 # NN: Not Needed (not evaluated)
 # IA: Inaccessible - any type of Access Issue (landowner, gate, distance, etc), i.e. assumed to still be in target pop, but use as a measure of uncertainty (X% unknown) - combines EMAP "Land Owner Denied" and "Access" (LD/PB) categories
 #!IA --> TS for reweighting, but that and any other categories can be used to separate in bar charts
-
+#!migrate to "translation" table used for Size_NUM, LWD, etc. binning
 TS_VALXSITE=c('WADEABLE','BOATABLE','PARBYWADE', 'PARBYBOAT','INTWADE', 'INTBOAT', 'ALTERED')
 NT_VALXSITE=c('DRYVISIT', 'DRYNOVISIT', 'WETLAND', 'MAPERROR', 'IMPOUNDED', 'TIDAL','NT') 
 IA_VALXSITE=c('OTHER_NST','NOTBOAT','NOTWADE', 'OTHER_NOACCESS','NOACCESS', 'INACCPERM','INACCTEMP')#! should we be more careful to distinguish IA sites that had physical barriers (i.e. bushes) but were clearly target vs. streams we never saw which are truly unknown - either way, they are assumed TS, but need to determine if IA vs. UNK is important for our tabulations (see section 3 of spsurvey/GRTS practitioner guide); if long strings of IA with no subsequent TS, then set to NN. Tony lumps IA into a broader "UNK"
-SiteWeights$EvalStatus=ifelse(SiteWeights$RESULT %in% TS_VALXSITE, 'TS',ifelse(SiteWeights$RESULT %in% IA_VALXSITE, 'IA',ifelse(SiteWeights$RESULT %in% NT_VALXSITE, 'NT','UNK')))
-UNKeval=subset(SiteWeights,EvalStatus=='UNK'); if(nrow(UNKeval)>0){print('The VALXSITE for the following sites was not recognized. Please reconcile, or it will be assumed to be unevaluated (UNK)');print(UNKeval)}
+NN_VALXSITE=c('NSF',"NN")# not needed because not in sample frame (ex: 2013-15 canals omitted a priori) or unevaluated
+siteeval$EvalStatus=ifelse(siteeval$VALXSITE %in% TS_VALXSITE, 'TS',ifelse(siteeval$VALXSITE %in% IA_VALXSITE, 'IA',ifelse(siteeval$VALXSITE %in% NT_VALXSITE, 'NT',ifelse(siteeval$VALXSITE %in% NN_VALXSITE, 'NN','UNK'))))
+UNKeval=subset(siteeval,EvalStatus=='UNK'); if(nrow(UNKeval)>0){print('The VALXSITE for the following sites was not recognized. Please reconcile, or it will be assumed to be unevaluated (UNK)');print(UNKeval)}
+siteeval=subset(siteeval,(UID==11799)==FALSE)#omit NorCal random reference site
+siteeval=subset(siteeval,is.na(VISIT_NO) | (VISIT_NO==2)==FALSE)#omit repeat QA visits
 
-#mimic UTBLM script (UTblmGRTS.r) that utilizes spsurvey and included the design code as well
+###------------------------------------------------assign weights------------------------------------------------###
+#!this is most recent stuff from Tony, should also reconcile with UTBLM adjusted weights (though these were a bit different due to  segment vs. point selection)
+#load("C:/Users/Sarah/Desktop/NAMCdevelopmentLocal/WRSA/GRTS_NHDworkspace.RData")#takes a while to read in att, so saved to workspace
+#att="N:\\GIS\\Projects\\NRSA\\BLM_NRSA.dbf"#att = Tony (BLM_NRSA NHD)
+#att2="N:\\GIS\\GIS_Stats\\Streams\\NHD4GRTS7.dbf"# att2 = Lokteff NHD (updated with correct south dakota; supposed to move location ("N:\GIS\Projects\NHD_GRTS_Process\NHD_AllStreams_Classification.dbf") and get a better name soon!!), worried about StrCalc used to liberally to denote braided channels resulting in too many unconnected and arid streams being omitted
+att3=read.dbf('\\\\share2.bluezone.usu.edu\\miller\\GIS\\Projects\\CAblm\\Olsen_EPA_Design\\OriginalDesign\\SWJ_TargetPopClip\\NHD4GRTS7_NorCalFO.dbf') #
+att3$mdcaty=ifelse(att3$StreamOr_1<3,"SmallStreams",ifelse(att3$StreamOr<5,"LargeStreams","RiversOther"))
+att3$stratum=ifelse(att3$FO=='Surprise','Surprise Field Office',ifelse(att3$FO=='EagleLake','Eagle Lake Field Offfice',ifelse(att3$FO=='Alturas','Alturas Field Office',NA)))
+att3$stratum=ifelse(is.na(att3$ALT),att3$stratum,ifelse(att3$ALT=='HomeCamp','Surprise Field Office Home Camp',ifelse(att3$ALT=='TwinPeaks','Eagle Lake Field Office Twin Peaks',att3$stratum)))
+
+#framesum=att #tony original #slop in nhd line splitting since pulling in all of BLM_NRSA, not a clip
+framesum=subset(att3,nonBLMstrm==0 & Wtrbody==0 & Intermitt==0)#replicate EPA exclusions (BLM only, not ArtificialPath in waterbody, not intermittent fcode)
+#framesum=subset(att3,GRTS_Remov==0)#singlehandedly remove braided (Sc=0), canals, and epa omissions, and non-blm
+framesum=subset(framesum,Canal==0)#exclude canals and pipelines
+framesum=subset(framesum,StrCalcRem==0)#exclude  streamcalc0 (braided, unconnected --> concerned applies to liberally, seems to affect streams EPA has with positive stream order but we have as 0...perhaps differences in NHDplus version?) #matches with EPA layer in upper right section, but not middle left section; EPA layer is not effectively removing truely braided systems (37.850,-107.572), which this method does
+#framesum=subset(framesum,StreamOr_1<5)#exclude RiverOther
+
+
+# recalculate stream length in field office regions
+framesize <- aggregate(framesum$LengthKM2,list(paste(framesum$stratum,framesum$mdcaty, sep="_")),sum);#att3#tmp <- tapply(framesum$LengthKM2,list(paste(framesum$stratum,framesum$mdcaty, sep="_")),sum)#att3
+names(framesize)=c('wgt_cat','wgt'); frmszARRY=array(framesize$wgt,dimnames=list(framesize$wgt_cat))
+#tmp <- tapply(framesum$LENGTHKM, list(paste(framesum$BLM_UNIT, framesum$DES_NRSA14, sep="_")), sum)#att
+#tmp[is.na(tmp)] <- 0
+#round(addmargins(tmp), 2)
+#framesize <- round(addmargins(tmp), 2)
+
+
+# read in evaluation information
+#SWJ read in from SQL instead (above)
+#siteeval <- read.csv('C:/Users/Sarah/Downloads/RE__Eval_status_and_weight_computation/NorCal_Completed_2Sept2014_ARO.csv')#"Weights 2014/NorCal_Completed_2Sept2014_ARO.csv")
+addmargins(table(siteeval$STRATUM, siteeval$EvalStatus))#addmargins(table(siteeval$stratum, EvalStatus_ARO))
+addmargins(table(siteeval$MDCATY, siteeval$EvalStatus))#addmargins(table(siteeval$mdcaty, EvalStatus_ARO))
+
+# create TNT variable
+siteeval$TNT <- as.factor(siteeval$EvalStatus)#EvalStatus_ARO
+levels(siteeval$TNT) <- list(Target=c("TS", "UNK", "IA"),
+                             NonTarget="NT",
+                             NotNeeded="NN")
+
+
+# look at design weights
+#siteeval=merge(siteeval,framesize,by=c('wgt_cat'))
+# tmp <- tapply(siteeval$wgt, list(siteeval$STRATUM, siteeval$mdcaty, siteeval$panel), sum)
+# tmp[is.na(tmp)] <- 0
+# round(addmargins(tmp), 1)
+
+
+# adjust weights by field office strata and mdcaty
+# create weight adjustment category variable
+siteeval$wgt_cat <- factor(paste(siteeval$STRATUM, siteeval$MDCATY, sep="_"))
+summary(siteeval$wgt_cat) # look at all categories
+
+siteeval$Wgt_Final <- adjwgt(sites=siteeval$EvalStatus != "NN", 
+                             wgt=as.numeric(siteeval$WGT),
+                             wtcat=siteeval$wgt_cat, framesize=frmszARRY)
+
+sum(siteeval$Wgt_Final)
+
+# create field office variable
+siteeval$Field_Office <- as.factor(siteeval$STRATUM)
+levels(siteeval$Field_Office) <- list(Alturas_Field_Office="Alturas Field Office",
+                                      Eagle_Lake_Field_Office=c("Eagle Lake Field Offfice", 
+                                                                "Eagle Lake Field Office Twin Peaks"),
+                                      Surprise_Field_Office=c("Surprise Field Office",
+                                                              "Surprise Field Office Home Camp")
+)
+
+siteeval$xcoord=0#SWJ:set to zero or pull in lat long? or xcoord of design file. not sure how this is ever used unless spsurvey has mapping functions i'm not aware of
+siteeval$ycoord=0
+
+######
+# do population estimates
+######
+# common to all estimation
+dsgn <- data.frame(siteID=siteeval$SITE_ID,
+                   xcoord=siteeval$xcoord,   
+                   ycoord=siteeval$ycoord,
+                   wgt=siteeval$Wgt_Final)
+subpop <- data.frame(siteID=siteeval$SITE_ID,
+                     All_Offices=rep("All Field Offices", nrow(siteeval)),
+                     Field_Offices=siteeval$Field_Office,
+                     Strata=siteeval$STRATUM)
+
+## TNT
+# sites to use
+sites_tnt <- data.frame(siteID=siteeval$SITE_ID, use=siteeval$TNT != "NotNeeded")
+
+data_tnt <- data.frame(siteID=siteeval$SITE_ID, 
+                       Target_NonTarget=siteeval$TNT)
+TNT_Estimates <- cat.analysis(sites_tnt, subpop, dsgn, data_tnt)#!not sure why this is having trouble setting error bar bounds
+
+## Target reasons
+sites_target <- data.frame(siteID=siteeval$SITE_ID, use=siteeval$TNT == "Target")
+
+data_target <- data.frame(siteID=siteeval$SITE_ID, 
+                          Target_Reasons=siteeval$EvalStatus)
+Target_Estimates <- cat.analysis(sites_target, subpop, dsgn, data_target)
+
+## Non target reasons
+sites_nontarget <- data.frame(siteID=siteeval$SITE_ID, use=siteeval$TNT =="NonTarget")
+
+data_nontarget <- data.frame(siteID=siteeval$SITE_ID, 
+                             NonTarget_Reasons=siteeval$EvalStatus)
+NonTarget_Estimates <- cat.analysis(sites_nontarget, subpop, dsgn, data_nontarget)
+
+
+
+#mimic UTBLM script (UTblmGRTS.r) and Tony's code (FieldOfficeWgts.R) that utilizes spsurvey and included the design code as well
 #!merge SiteWeights to original design file or frame metadata to get original weights (see ProbSurveydb query Stats_Weights_Sites and/or table GRTS_Design)
 #! NN (not evaluated sites get omitted, do they even need to be brought back in?) if so, need to assign null EvalStatus to be NN
