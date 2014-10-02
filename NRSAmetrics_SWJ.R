@@ -13,7 +13,19 @@ setwd(wd)
 
 #WRSA data conversion
 #assumes DB connection remains open
-tblx=Xwalk(XwalkName='Aquamet1',source='SQL',XwalkDirection='')#Norcal inputs:,Years=c('2013','2014'),Projects='NorCal')
+XwalkUnion=tblRetrieve(Table='',Parameters='',ALLp=AllParam,UIDS=UIDs,ALL=AllData,Filter=filter,SiteCodes=sitecodes,Dates=dates,Years=years,Projects=projects,Protocols=protocols)#XwalkUniontmp=XwalkUnion
+#protocol and parameter conversions
+XwalkUnion=bintranslate(Table='XwalkUnion',ST='CROSSSECW',PM='SIZE_NUM')
+#should undercut (PIBO>EPA) be translated? otherwise non-existent for 2014
+#should we randomly subset pebbles and embeddness to lower EPA amounts?
+#slope handling TBD#Hmm...need to check my thinking and reconcile with aquamet code, but with the EPA method, straight length (RUN) = reach length because slope was taken transect to transect (so distance between transects is standard and additive); with the PIBO method, straight length must be determined by BR and TR coordinates, because crews could skip over transects at will. This also makes slopes that end early (did not go all the way from A to K) more difficult to estimate. Not sure if that makes sense in typing, but my questions with slope are increasing rather than decreasing and though the field method was simpler, the data handling is more complex with this method. 
+XwalkUnion$RESULT=ifelse(XwalkUnion$PARAMETER=='ANGLE180',180-as.numeric(XwalkUnion$RESULT),XwalkUnion$RESULT)
+XwalkUnion=Xwalk(XwalkName='Aquamet1',Table='XwalkUnion',Source='R',XwalkDirection='')#!need to formally omit unused parameters and track down unknowns to see how they are used in aquamet (i.e. Assessment, etc)
+#collapse LWD
+XwalkLWDsub=subset(XwalkUnion,PARAMETER %in% c('DXDSL','DSDSL','DMDSL','DLDSL','WXDSL','WSDSL','WMDSL','WLDSL'));XwalkLWDsub$RESULT=as.numeric(XwalkLWDsub$RESULT);
+XwalkLWDagg=data.frame(cast(XwalkLWDsub,'UID+TRANSECT+POINT+SAMPLE_TYPE+PARAMETER ~ .',value='RESULT',fun.aggregate=sum));XwalkLWDagg$RESULT=XwalkLWDagg$X.all.;XwalkLWDagg=ColCheck(XwalkLWDagg,colnames(XwalkUnion))#  228284433826712128 B
+XwalkNOlwd=subset(XwalkUnion,(IND %in% XwalkLWDsub$IND)==FALSE)
+XwalkUnion=rbind(XwalkLWDagg,XwalkNOlwd); rm(XwalkLWDsub); rm(XwalkLWDagg);rm(XwalkNOlwd)
 
 #!parameters that will need to be modified from 2014 protocol changes: size_cls, angle, width/height units
 
@@ -40,7 +52,7 @@ for(i in 1:length(tables)) {
    eval(parse(text=paste("print(head(", tables[i], "))", sep="")))
 }
 
-#slight tweaks
+#slight structure tweaks
 #SWJ: consider rolling into Xwalk metadata
 channelcover$TRANSDIR=channelcover$POINT # how to include this in the Xwalk table in SQL WRSAdb?
 channelcrosssection$TRANSDIR=channelcrosssection$POINT
