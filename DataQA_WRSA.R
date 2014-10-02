@@ -16,9 +16,9 @@ MissingXwalk='MissingBackend'; MetricType='Y'#if MetricType=='Y' then groupings 
 # CommentsCount='N'
 ##post hitch
 # HitchImport=Sys.Date() # Sys.Date()  for today or text string like '2014-08-18'
-# UIDhitch=UIDselect(Filter=sprintf("INSERTION='%s'",HitchImport))
+# UIDhitch=UIDselect(Filter=sprintf("INSERTION='%s' and operation='O' ",HitchImport))
 # UnionTBL=tblRetrieve(ALLp='Y',UIDS=UIDhitch$UID)
-#MissingXwalk=''; MetricType='N'
+# MissingXwalk=''; MetricType='N'
 # CheckAll='Y'
 # CommentsCount='N'
 
@@ -141,8 +141,8 @@ if (MissingXwalk==''){
                      ")
   MissingTotals6=MissingTotals5[,!(names(MissingTotals5) %in% c('ParamCNT'))];MissingTotals7=MissingTotals5;MissingTotals7$MissingPCT=MissingTotals7$ParamCNT;MissingTotals7$SAMPLE_TYPE='Param';MissingTotals7=MissingTotals7[,!(names(MissingTotals7) %in% c('ParamCNT'))]
   MissingTotals4=unique(rbind(MissingTotals2,MissingTotals3,MissingTotals6,MissingTotals7)  );MissingTotals4$RESULT=MissingTotals4$MissingPCT;MissingTotals4$PARAMETER=paste("PCT_",MissingTotals4$SAMPLE_TYPE,"_QA",sep='');MissingTotals4$TRANSECT=ifelse(MissingTotals4$TRANSECT=='O',NA,MissingTotals4$TRANSECT);MissingTotals4$POINT=MissingTotals4$TRANSECT;MissingTotals4=ColCheck(MissingTotals4,c(VAR,'TRANSECT','POINT','PARAMETER','RESULT'))
-  print ('ready for use in Access import')}
-  else{MissingTotals4=unique(rbind(MissingTotals2,MissingTotals3)  )
+  print ('ready for use in Access import')
+} else{MissingTotals4=unique(rbind(MissingTotals2,MissingTotals3)  )
 #! need to fix the revisions to MissingTotals4 before this will work
 MissingTotals4=MissingTotals4[,!(names(MissingTotals4) %in% c('POINT'))]
 MissingTotalsOUT= addKEYS(cast(subset(MissingTotals4,is.na(UID)==FALSE ), 'UID + TRANSECT  ~ SAMPLE_TYPE',value='MissingPCT' ),Columns=c('SITE_ID','DATE_COL','Protocol')) 
