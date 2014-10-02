@@ -4,15 +4,14 @@
 
 #-------------------------------------------------------INPUTS--------------------------------------------------------#
 #In the ideal world, users should only need to put inputs here and be able to get results out of the 'black box' below using existing functions.
-DBpassword=''#Always leave blank when saving for security and because changes annually. Contact Sarah Judson for current password.
+DBpassword= ''
 DBuser=''#ditto as with DBpassword
 DBserver=''#ditto as with DBpassword
-#this is a change
 
 
 #--------------------------------------------------------SETUP--------------------------------------------------------#
 #LOAD required packages#
-requiredPACKAGES=c('reshape', 'RODBC','ggplot2','grid','gridExtra','xlsx','sqldf','jpeg','spsurvey')
+requiredPACKAGES=c('reshape', 'RODBC','ggplot2','grid','gridExtra','xlsx','sqldf')
 for (r in 1:length(requiredPACKAGES)){
   if ((requiredPACKAGES[r] %in% installed.packages()[,1])==FALSE){install.packages(requiredPACKAGES[r])}#auto-install if not present
   library(requiredPACKAGES[r],character.only = TRUE)
@@ -95,6 +94,7 @@ for (p in 1:length(indicators)){
 }  
 View(indicators);View(parameters)
 
+ld (RColorBrewer)
 
 #--------------------------------------------------------SQL RETRIEVE (old examples)--------------------------------------------------------#
 

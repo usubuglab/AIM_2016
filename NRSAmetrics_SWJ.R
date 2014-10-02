@@ -191,6 +191,7 @@ for(i in 1:length(METfiles)) {
 METmaster$RESULT=as.numeric(METmaster$RESULT)
 unique(METmaster$METRIC)
 #variables to omit: xbearing, sinu  (bc bearing not collected)
+#write to csv as one mondo file, or don't even write out in the first place, but compile via rbinds after all functions called; use some kind of grep on ls
 
 ##QR1
 QRmets=subset(METmaster, subset=METRIC %in% c('w1_hall','xcmgw','xcdenbk')) #pivot or merge? if the metrics get stored in the database (with a timestamp), then switch to pivot, but merge for now
