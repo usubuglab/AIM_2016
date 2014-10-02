@@ -40,9 +40,9 @@ NT_VALXSITE=c('DRYVISIT', 'DRYNOVISIT', 'WETLAND', 'MAPERROR', 'IMPOUNDED', 'TID
 IA_VALXSITE=c('OTHER_NST','NOTBOAT','NOTWADE', 'OTHER_NOACCESS','NOACCESS', 'INACCPERM','INACCTEMP')#! should we be more careful to distinguish IA sites that had physical barriers (i.e. bushes) but were clearly target vs. streams we never saw which are truly unknown - either way, they are assumed TS, but need to determine if IA vs. UNK is important for our tabulations (see section 3 of spsurvey/GRTS practitioner guide); if long strings of IA with no subsequent TS, then set to NN. Tony lumps IA into a broader "UNK"
 NN_VALXSITE=c('NSF',"NN")# not needed because not in sample frame (ex: 2013-15 canals omitted a priori) or unevaluated
 siteeval$EvalStatus=ifelse(siteeval$VALXSITE %in% TS_VALXSITE, 'TS',ifelse(siteeval$VALXSITE %in% IA_VALXSITE, 'IA',ifelse(siteeval$VALXSITE %in% NT_VALXSITE, 'NT',ifelse(siteeval$VALXSITE %in% NN_VALXSITE, 'NN','UNK'))))
-
 #The one line of code below will change the value of the first HC-LS to NT rather than NN so that it can recieve a weight. 
 #This is a temporary TRIAL and must be permanently updated in Access if it is decided to keep this change. 
+#Data file to alter[row number, "column name"]="value you want there instead of what is there"
 siteeval[61,"EvalStatus"]='NT'
 
 UNKeval=subset(siteeval,EvalStatus=='UNK'); if(nrow(UNKeval)>0){print('The VALXSITE for the following sites was not recognized. Please reconcile, or it will be assumed to be unevaluated (UNK)');print(UNKeval)}
