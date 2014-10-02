@@ -78,7 +78,7 @@ tbl6<-tblRetrieve(Parameter='PH',UIDS=c(40043807846903000000,
                                                '9.30972E+23'))
 )
 )
-
+tbl<-addKEYS(tblRetrieve(Parameters='DATE_COL',Projects='NorCal'),Columns='Site_ID')  #works!!!!! #SiteCodes=c('EL-LS-8134'))
 tbl3=addKEYS(tblRetrieve(Parameter='TRCHLEN',Years='2014'),Columns='SITE_ID')
 
              tblRetrieve(Parameter='TRCHLEN','SITE_ID'=c('OT-SS-7141', 'XS-LS-6039', 
