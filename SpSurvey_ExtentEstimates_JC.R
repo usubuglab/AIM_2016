@@ -81,7 +81,7 @@ SiteInfo=merge(siteeval,ResponseInfo,by=intersect(colnames(siteeval),colnames(Re
 #str(SiteInfo)
 ##variable selection:
 selectVARauto='N'; selectVARchoice=ifelse(selectVARauto=='Y','AllVar','CustomVar')#automatically select all variables
-extentVAR=c('EvalStatus','VALXSITE')#NOT extentVAR=c('MMI','trial','EvalStatus','VALXSITE')#Extent Estimate added here since weights the same (rather than running cat.analysis twice)
+extentVAR=c('TNT','EvalStatus','VALXSITE')#NOT extentVAR=c('MMI','trial','EvalStatus','VALXSITE')#Extent Estimate added here since weights the same (rather than running cat.analysis twice)
 responseVAR=c('MMI')#NOT responseVAR=c('MMI','trial')
 stressorsVAR=c('trial')#NOT stressorsVAR=c('MMI')   ####'PCT_SAFN','LSUB_DMM')#UTBLM final list: stressorsVAR=c('InvasivesYN','EC','TP','TN','AugST','LBFXWRat','C1WM100','XCDENMID','Stab2','PCT_SAFN')#must be Access names with a matching 'rtg' variable: to view, str(ResponseInfo)
 #save previous variable lists here:
