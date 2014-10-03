@@ -61,10 +61,15 @@ source('FNC_tblRetrievePVT.R')
 ##(select * from tblVERIFICATION where PARAMETER='site_id') v on v.UID=tblPOINT.uid
 
 #-------------------------------------------------------Jennifer's custom code-------------------------------------------#
-tbl2=addKEYS(tblRetrieve(Parameter='INCISED',Projects='NORCAL',Years='2013'),Columns=C('SITE_ID','UID')
-)
+tbl2=addKEYS(tblRetrieve(Parameter='INCISED',Projects='NORCAL',Years='2013'),Columns=C('SITE_ID','UID'))
 tbl4=addKEYS(tblRetrieve(Parameter='TRCHLEN',Years='2014'),Columns='SITE_ID')
 
+######WRSA 2014 QC of benthic areas
+QCAREA=tblRetrieve(Parameters=c('AREA','TRAN_NUM'), Comments='Y',Projects='WRSA',Years=('2014'))
+QC.AREA<-addKEYS(QCAREA,Columns='SITE_ID')
+write.csv(QC.AREA,'QC.AREA.csv')
+
+####trying to select specific sites to get IND to change site codes
 tbl6<-tblRetrieve(Parameter='SITE_ID',SiteCodes=c('NY-SS-9219','NY-LS-9218','NC-SS-9152','NC-LS-9158','NO-SS-9202','CO-LS-9445','CO-SS-9450','NB-LS-9114','NB-LS-9119'), Years='2014')
 tbl6<-tblRetrieve(Parameter='SITE_ID',SiteCodes=c('MN-LS-1019','XE-RO-5085'))
 tbl6<-tblRetrieve(Parameter='PH',UIDS=c(40043807846903000000,
