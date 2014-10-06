@@ -17,7 +17,7 @@ MissingXwalk='MissingBackend'; MetricType='Y'#if MetricType=='Y' then groupings 
 ##post hitch
 # HitchImport=Sys.Date() # Sys.Date()  for today or text string like '2014-08-18'
 # UIDhitch=UIDselect(Filter=sprintf("INSERTION='%s' and operation='O' ",HitchImport))
-# UnionTBL=tblRetrieve(ALLp='Y',UIDS=UIDhitch$UID)
+# UnionTBL=tblRetrieve(ALLp='Y',UIDS=UIDhitch$UID)#UnionTBLnorcal=UnionTBL
 # MissingXwalk=''; MetricType='N'
 # CheckAll='Y'
 # CommentsCount='N'
