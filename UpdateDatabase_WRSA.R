@@ -11,7 +11,7 @@ if(sessionInfo()$R.version$major==2){
 
 #test scenarios
 #ID3 ; 667-670= match with IND
-#change transect/point NOT result
+#change location (uid/transect/point) NOT result
 #ID0 = Comment (example of a comment manually inserted + flag update: IND 2390646 in tblReach and tblCommment insertion: IND=4804552)
 #ID399-435=TBD IND (need match) # i=359; i=373, i=368 (368 is nonexact UID match)
 #ID4 - 12 (and many more) = new insertions, no IND match anticipated
