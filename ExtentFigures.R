@@ -228,7 +228,7 @@ for (g in 1:varLEN){
 ### add percent stream length at the bottom#DONE
 
 
-
+##RELATIVE RISK + Figures## see UTblmGRTS_WGTs_FIGs.R
 
 #?will viewports or grid.arrange work with base graphics? --> answer for WRSA boxplots
 

@@ -208,8 +208,13 @@ for (u in 1:nrow(uu)){
 NonBoatUID=subset(importmaster,select=UID,PARAMETER=='VALXSITE' & RESULT != 'BOATABLE')
 importmaster= subset(importmaster,(PARAMETER %in% c('JUDG','Depth_METHODxsec','OFF_CHAN','SNAG') & UID %in% NonBoatUID$UID)==FALSE)
 #convert bank heights to m from cm
-importmaster$RESULT=ifelse(importmaster$PARAMETER %in% c('BANKHT','INCISED'),as.numeric(importmaster$RESULT)/100,importmaster$RESULT)                                                                                                
-  
+importmaster$RESULT=ifelse(importmaster$PARAMETER %in% c('BANKHT','INCISED'),as.numeric(importmaster$RESULT)/100,importmaster$RESULT)
+#change "Yes" and "No" to single letters
+YNparam=c('VALLEYBOX','SEDIMENT','BAR_PRES','SIDCHN','BACKWATER','OFF_CHAN'	,'SNAG','SEEOVRBK','CORRECTED','PROBE_OVERNIGHT'	,'CHILLED','PRESERVED','OTHER_VER', 'GPS_VER', 'LOC_VER', 'RDS_VER', 'SIG_VER','TOP_VER')                                                                                                
+importmaster$RESULT=ifelse(toupper(importmaster$PARAMETER) %in% toupper(YNparam),
+                           ifelse(toupper(importmaster$RESULT)==toupper('YES'),'Y',ifelse(toupper(importmaster$RESULT)==toupper('NO'),'N',importmaster$RESULT))
+                                  ,importmaster$RESULT)
+                                                                                                
  #!other data quirks that need global correction in existing data and prevention in future data
  #!double records for CHANDEPTHB and CROSSSECW with the same index (should be cleared up for new xwalk funciton); check other ind duplicates
  #!measurement units for app tweaks

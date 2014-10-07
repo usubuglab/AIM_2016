@@ -34,6 +34,12 @@ siteeval$xcoord <- tmp[,'x']
 siteeval$ycoord <- tmp[,'y']
 #! NorCal - why do sites 8487 and 8503 have the same coordinates?! they don't in the design file, but do in GRTS_SITEINFO and WRSAdb
 
+##TNT designation
+siteeval$TNT <- siteeval$EvalStatus
+levels(siteeval$TNT ) <- list(Target=c("TS", "UNK", "IA"),
+                              NonTarget="NT",
+                              NotNeeded=c("NN"))
+
 
 ###-------"Design" files (sites and weights)-------------###
 sitesCON=data.frame(siteID=siteeval$SITE_ID,
