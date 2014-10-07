@@ -210,7 +210,7 @@ importmaster= subset(importmaster,(PARAMETER %in% c('JUDG','Depth_METHODxsec','O
 #convert bank heights to m from cm
 importmaster$RESULT=ifelse(importmaster$PARAMETER %in% c('BANKHT','INCISED'),as.numeric(importmaster$RESULT)/100,importmaster$RESULT)
 #change "Yes" and "No" to single letters
-YNparam=c('VALLEYBOX','SEDIMENT','BAR_PRES','SIDCHN','BACKWATER','OFF_CHAN'	,'SEEOVRBK','CORRECTED','PROBE_OVERNIGHT'	,'CHILLED','PRESERVED','OTHER_VER', 'GPS_VER', 'LOC_VER', 'RDS_VER', 'SIG_VER','TOP_VER')                                                                                                
+YNparam=c('VALLEYBOX','SEDIMENT','BAR_PRES','SIDCHN','BACKWATER','OFF_CHAN'	,'SNAG','SEEOVRBK','CORRECTED','PROBE_OVERNIGHT'	,'CHILLED','PRESERVED','OTHER_VER', 'GPS_VER', 'LOC_VER', 'RDS_VER', 'SIG_VER','TOP_VER')                                                                                                
 importmaster$RESULT=ifelse(toupper(importmaster$PARAMETER) %in% toupper(YNparam),
                            ifelse(toupper(importmaster$RESULT)==toupper('YES'),'Y',ifelse(toupper(importmaster$RESULT)==toupper('NO'),'N',importmaster$RESULT))
                                   ,importmaster$RESULT)

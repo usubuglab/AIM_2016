@@ -1,3 +1,22 @@
+#IND is required!!! all "TBD" IND will be ignored, all blank IND will be added as a new row
+
+#export from SavedExport Export-Office_Updates3
+UpdatesTBL=read.csv('Office_Updates.csv')
+UpdatesTBL=subset(UpdatesTBL,UPDATE=='')
+
+#enter the name of the table you want to update
+TBL='UnionTBL'
+TBLout=eval(parse(text=TBL))
+colIND=intersect(colnames(TBLout),colnames(UpdatesTBL));colIND=setdiff(colIND,c('REASON','RESULT')
+TBLout=merge(TBLout,UpdatesTBL,colIND,all.x=T)
+TBLout$RESULT=TBLout$RESULT.y                                                                       
+TBLout=ColCheck(TBLout,c(VAR))
+assign(TBL,TBLout)
+
+DEVELOPMENT='N'#update query still in development
+
+if(DEVELOPMENT=='Y'){
+
 if(sessionInfo()$R.version$major==2){
   library('RODBC')
   probsurv14=odbcConnect("ProbSurveyDB")#have to run on remote desktop (gisUser3) or machine which has 64bit R and 64bit Access
@@ -73,3 +92,4 @@ for (t in 1:nrow(UPDATEtables)){
 
 
 print('Set UPDATE field in ProbSurveyDB (Access) Office_UPDATE to today to indicate that the update was performed.')
+}

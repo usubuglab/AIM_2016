@@ -5,10 +5,10 @@ library(aquamet)#need R 2... version, not 3.0 (available on remote desktop)
 sink("NRSAmetrics.txt")
 cat("NRSA 2008-2009 Physical Habitat Metrics\n")
 
-#SWJ to do: test all functions for boatable (not yet verified bc no example data)
+#SWJ to do: test all functions for boatable (not yet verified bc no example data); for example, need to convert depth to pole/sonar
 #! to troubleshoot use getAnywhere() to view raw code of function
 
-options(stringsAsFactors=T)#revert this option to default; aquamet handles factor conversions to character
+#options(stringsAsFactors=T)#revert this option to default; aquamet handles factor conversions to character
 readEXTERNAL='N'#set to 'Y' to read in EPA or other provided files (i.e. when using remote desktop), otherwise set to 'N' and it will query directly from WRSAdb.SQL based on defaults specified in "DataConsumption_WRSAdb.R"
 writeEXTERNAL='N'#set to 'Y' to produce csv files of inputs, metrics, and 2nd tier calcs; useful if have to run in other version of R on remote desktop
 #wd="\\\\share2.bluezone.usu.edu\\miller\\buglab\\Research Projects\\BLM_WRSA_Stream_Surveys\\Results and Reports\\NorCal_2013\\AquametTEST\\Test2";setwd(wd)
@@ -75,8 +75,16 @@ thalweg$TRANSECT=as.factor(ifelse(thalweg$PARAMETER=='INCREMNT',"A",as.character
 #visits$UNITS='CM'#what was this added for?
 #add zero bearings to force slopeBearing function
 TRANhold=unique(paste(as.character(channelgeometry$UID) , as.character(channelgeometry$TRANSECT)))
-UIDhold=data.frame(UID=substr(TRANhold,1,5),SAMPLE_TYPE='SLOPEW',TRANSECT=substr(TRANhold,7,8),POINT=0,PARAMETER='BEARING',RESULT=0);UIDhold=ColCheck(UIDhold,colnames(channelgeometry))
+UIDhold=data.frame(UID=substr(TRANhold,1,nchar(TRANhold)-2),SAMPLE_TYPE='SLOPEW',TRANSECT=substr(TRANhold,nchar(TRANhold),nchar(TRANhold)),POINT='0',PARAMETER='BEARING',RESULT=0);UIDhold=ColCheck(UIDhold,colnames(channelgeometry))
 channelgeometry=rbind(channelgeometry,UIDhold)
+channelgeometry$TRANSECT=ifelse(is.na(as.numeric(channelgeometry$TRANSECT))==FALSE,as.character(channelgeometry$POINT),as.character(channelgeometry$TRANSECT))
+#channelgeometry=subset((UID %in% c()==FALSE )#omit suspected problems for NorCal
+#add dummy boatable data to avoid crash in residual pools
+ACTRANSPhold=UIDhold[1,];ACTRANSPhold$PARAMETER='ACTRANSP'
+DISThold=UIDhold[1,];DISThold$PARAMETER='DISTANCE'
+ACDThold=rbind(ACTRANSPhold,DISThold);ACDThold$RESULT='1';ACDThold$UID='123456789'
+channelgeometry=rbind(channelgeometry,ACDThold);
+#other channel geo modifications
 channelgeometry$UNITS=ifelse(channelgeometry$PARAMETER=='SLOPE',"CM",#can't assume, need to pivot from slope_units
                             # ifelse(channelgeometry$PARAMETER=='DISTANCE',"M",#this is to help push a boatable site through
                              ifelse(channelgeometry$PARAMETER=='PROP',"PERCENT","NONE"))
@@ -96,18 +104,11 @@ head(gisCalcs)
 #not provided with example data set
 #Ryan lokteff adapted the EPA script M:\GIS\GIS_Stats\Slope\Python\Slope_Endpoints1.py
 
+metsoutSlopeBearing <- metsSlopeBearing(thalweg, channelgeometry, visits)#, gisCalcs) #DONE, but be cautious with slopes #gisCalcs allows null # not working without bearing #can force with 0 bearings does not change metrics except xbearing and sinu --> make sure these aren't consumed in other functions that use channelgeometry #bearings isn't affecting any other outputs (residual pools, general, bed stability)
 
-cat("\n\nSlope and Bearing:\n\n")#SWJ in progress- in conjuction with Residual pools #works with example data set once Visits fixed# (##the additional message seems to have been corrected by adding the column VALXSITE to visits based on records present in Littoral to demarcate Boatable)
-metsoutSlopeBearing <- metsSlopeBearing(thalweg, channelgeometry, visits)#, gisCalcs) #gisCalcs allows null
-# not working without bearing
-#can force with 0 bearings does not change metrics except xbearing and sinu --> make sure these aren't consumed in other functions that use channelgeometry
-#bearings isn't affecting any other outputs (residual pools, general, bed stability)
+metsoutResidualPools <- metsResidualPools(thalweg, channelgeometry, visits)#, gisCalcs) #DONE, but be cautious with slopes
 
-cat("\n\nResidual Pools:\n\n")# was working now crashing on slope bearing
-metsoutResidualPools <- metsResidualPools(thalweg, channelgeometry, visits)#, gisCalcs)
-
-cat("\n\nBed Stability:\n\n")#!unresolved
-metsoutBedStability <- metsBedStability(bankgeometry, thalweg, visits, channelgeometry,   channelcrosssection, littoral, wood, fishcover)#, gisCalcs)
+metsoutBedStability <- metsBedStability(bankgeometry, thalweg, visits, channelgeometry,   channelcrosssection, littoral, wood, fishcover)#DONE, but be cautious with slopes#, gisCalcs)
 
 cat("\n\nChannel Habitat:\n\n")#!unresolved
 metsoutChannelHabitat <- metsChannelHabitat(thalweg)
@@ -116,6 +117,11 @@ cat("\n\nLittoral Depth:\n\n")#pending boatable data
 metsoutLittoralDepth <- metsLittoralDepth(chandepth)
 
 metsoutGeneral <- metsGeneral(thalweg, channelgeometry)#working, but odd values coming out for reachlength still >> trouble shoot thalweg$STATION (currently set to numeric); seems to be good >> next up:  cdData data subset driving the station count which results in 0 for many NRSA sites which don't include all the "No"s for side channel, etc. >> cdData <- subset(indat, PARAMETER %in% c("ACTRANSP", "DISTANCE", "INCREMNT", "SIDCHN", "OFF_CHAN", "REACHLENGTH"))
+rlen=subset(metsoutGeneral,METRIC=='reachlen'); rlen$VALUEl=rlen$RESULT-(rlen$RESULT*.1); rlen$VALUEh=rlen$RESULT+(rlen$RESULT*.1)#10% bounds
+thalCheck=tblRetrieve(Parameters='TRCHLEN',UIDS=UIDs,ALL=AllData,Filter=filter,SiteCodes=sitecodes,Dates=dates,Years=years,Projects=projects,Protocols=protocols)
+thalCheck=merge(rlen,thalCheck,intersect(setdiff(colnames(metsoutGeneral),'RESULT'),colnames(thalCheck))),all.x=T)
+thalCheck$check=ifelse(thalCheck$RESULT>thalCheck$VALUEl & thalCheck$RESULT<thalCheck$VALUEh,'OK','X');thalCheck=subset(thalCheck,check=='X')
+if(nrow(thalCheck)>0){print("WARNING! Calculated reach length (METRIC=='reachlen') significantly different from field recorded Reach Length (PARAMETER=='TRCHLEN'). Confirm correct INCREMENT parameter.")}
 
 metsoutLargeWoody <- metsLargeWoody(thalweg, channelgeometry, bankgeometry, wood, visits)#DONE, but concerned about reachlen value coming out of metsGeneral
 
