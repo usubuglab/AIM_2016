@@ -1,20 +1,6 @@
 ###------------------------------------------------pull in relevant SiteInfo------------------------------------------------###
-siteeval=tblRetrieve(Table='',Parameters=c('VALXSITE','STRATUM','MDCATY','WGT'),UIDS=UIDs,ALL=AllData,
-                    Filter=filter,SiteCodes=sitecodes,Dates=dates,Years=years,Projects=projects,
-                    Protocols='')#forcing all protocols despite global DataConsumption settings to pull in Failed sites
-                    #siteeval[3,6]="WADE"#test for UNKeval
-#translate to EvalStatus
-siteeval=bintranslate(Table='siteeval',ST='VERIF',PM='VALXSITE') 
-Eval=sqlQuery(wrsa1314,"select * from tblmetadatabin where Parameter='VALXSITE'")
-siteeval$PARAMETER=ifelse(siteeval$PARAMETER=='VALXSITE','EvalStatus',siteeval$PARAMETER)
-siteeval$RESULT=ifelse((siteeval$RESULT %in% Eval$BIN)==FALSE & siteeval$PARAMETER=='EvalStatus','UNK',siteeval$RESULT)
-UNKeval=subset(siteeval,RESULT=='UNK'); if(nrow(UNKeval)>0){print('The VALXSITE RESULTorg for the following sites was not recognized. Please reconcile, or it will be assumed to be unevaluated (UNK)');print(UNKeval)}
-#add identifiers
-siteeval=addKEYS(cast(siteeval,'UID~PARAMETER',value='RESULT'),c('SITE_ID','DATE_COL','PROJECT','VISIT_NO','LAT_DD','LON_DD','VALXSITE'))
-#clean up
-omitUIDanalysis=c(11799)#11799=omit NorCal random reference site
-siteeval=subset(siteeval,(UID %in% omitUIDanalysis)==FALSE)
-siteeval=subset(siteeval,is.na(VISIT_NO) | (VISIT_NO==2)==FALSE)#omit repeat QA visits
+siteeval=tblRetrieve(Table='',Parameters=c('VALXSITE','STRATUM','MDCATY','WGT'),Projects='NorCal',Protocols='')#forcing all protocols despite global DataConsumption settings to pull in Failed sites
+siteeval=addKEYS(cast(siteeval,'UID~PARAMETER',value='RESULT'),c('SITE_ID','DATE_COL','PROJECT','VISIT_NO','LAT_DD','LON_DD'))
 #View(siteeval) or otherwise check for data gaps and expected # of sites
 
 ###Final Designation reconcilation###
@@ -35,6 +21,26 @@ siteeval=subset(siteeval,is.na(VISIT_NO) | (VISIT_NO==2)==FALSE)#omit repeat QA 
 #!merge SiteWeights to original design file or frame metadata to get original weights (see ProbSurveydb query Stats_Weights_Sites and/or table GRTS_Design)
 #! NN (not evaluated sites get omitted, do they even need to be brought back in?) if so, need to assign null EvalStatus to be NN
 
+###------------------------------------------------translate to EvalStatus------------------------------------------------##
+##previous Access iif statements (which also handle duplicate reconciled sites)
+#EvalStatus_Target: IIf([NonTarget]=Yes,"NT",IIf(IsNull([minofScoutDate]),"NN",IIf((([minofunsuccessreason]=[maxofunsuccessreason]) Or ([minofunsuccessreason]=62 And [maxofunsuccessreason]=63)) And ([minofunsuccessreason] In (62,63)) And IsNull([sampledate]),"NT",IIf([office_site].[unsuccessReason] In (62,63),"NT",IIf((([minofunsuccessreason] In (65,67)) Or ([minofunsuccessreason]<>[maxofunsuccessreason])) And IsNull([sampledate]) And IsNull([office_site].[unsuccessreason]),"UNK","TS")))))
+#EvalStatus_Access: IIf([EvalStatus_Target]="NT","NT",IIf([SampleEvent].[ProbeReachID] Is Not Null,"TS",IIf((([minofunsuccessreason]=[maxofunsuccessreason]) And [minofunsuccessreason] In (60,61)) Or [office_site].[unsuccessreason] In (60,61),"IA",[EvalStatus_Target])))
+##Site Status Codes stored in ProbSurvey_DB.accdb Options Category=EvalStatus
+# TS: Target Sampled
+# NT: Non-Target (dry, too shallow,...)
+# NN: Not Needed (not evaluated)
+# IA: Inaccessible - any type of Access Issue (landowner, gate, distance, etc), i.e. assumed to still be in target pop, but use as a measure of uncertainty (X% unknown) - combines EMAP "Land Owner Denied" and "Access" (LD/PB) categories
+#!IA --> TS for reweighting, but that and any other categories can be used to separate in bar charts
+#!migrate to "translation" table/function planned for Size_NUM, LWD, etc. binning
+TS_VALXSITE=c('WADEABLE','BOATABLE','PARBYWADE', 'PARBYBOAT','INTWADE', 'INTBOAT', 'ALTERED')
+NT_VALXSITE=c('DRYVISIT', 'DRYNOVISIT', 'WETLAND', 'MAPERROR', 'IMPOUNDED', 'TIDAL','NT') 
+IA_VALXSITE=c('OTHER_NST','NOTBOAT','NOTWADE', 'OTHER_NOACCESS','NOACCESS', 'INACCPERM','INACCTEMP')#! should we be more careful to distinguish IA sites that had physical barriers (i.e. bushes) but were clearly target vs. streams we never saw which are truly unknown - either way, they are assumed TS, but need to determine if IA vs. UNK is important for our tabulations (see section 3 of spsurvey/GRTS practitioner guide); if long strings of IA with no subsequent TS, then set to NN. Tony lumps IA into a broader "UNK"
+NN_VALXSITE=c('NSF',"NN")# not needed because not in sample frame (ex: 2013-15 canals omitted a priori) or unevaluated
+siteeval$EvalStatus=ifelse(siteeval$VALXSITE %in% TS_VALXSITE, 'TS',ifelse(siteeval$VALXSITE %in% IA_VALXSITE, 'IA',ifelse(siteeval$VALXSITE %in% NT_VALXSITE, 'NT',ifelse(siteeval$VALXSITE %in% NN_VALXSITE, 'NN','UNK'))))
+UNKeval=subset(siteeval,EvalStatus=='UNK'); if(nrow(UNKeval)>0){print('The VALXSITE for the following sites was not recognized. Please reconcile, or it will be assumed to be unevaluated (UNK)');print(UNKeval)}
+omitUIDanalysis=c(11799)#11799=omit NorCal random reference site
+siteeval=subset(siteeval,(UID %in% omitUIDanalysis)==FALSE)
+siteeval=subset(siteeval,is.na(VISIT_NO) | (VISIT_NO==2)==FALSE)#omit repeat QA visits
 
 ###------------------------------------------------assign weights------------------------------------------------###
 #read in the target population

@@ -8,7 +8,7 @@ axissize=2#cex
 GFPcol=c('firebrick','gold','lightgreen')#c('red','yellow','green')#fix to be global (category can be fed into to only generate relevant colors), needs to be in this order for current code to color good, fair, poor correctly
 
 #Export='PNL'#options: 'PNG' (exported png); 'PNL' (saved to workspace for later panelling) ## not working as anticipated
-ScaleTYPE='Percent'#options: Percent, Absolute (meaning Percentage (Segments or StreamKM same) or StreamKM ) # set to absolute by default if an extent variable
+ScaleTYPE='Absolute'#options: Percent, Absolute (meaning Percentage (Segments or StreamKM same) or StreamKM ) # set to absolute by default if an extent variable
 SubpopTypes=unique(results.cat$Type)#SubpopTypes=c('Districts','Utah')
 SubpopSort='N'#TO DO! if SubpopSort='Y', will sort each subpopulation based on its own order (may need additional improvement for matching RelExtentPoor to RelRisk...probably saving variableORDER with a district speficic name and then calling via eval at relrisk)
 ResponseInclude='Y'# set to "Y" for UTBLM 2014 report in which OE is treated as an equal metric, not the main response variable
@@ -21,10 +21,10 @@ for (s in 1:length(SubpopTypes)){#Temporary! only all and district - length(Subp
     } else if (ResponseInclude=='N'){BarDataPoor=subset(results.cat,subset=Subpopulation==SubpopStrata[[t]]  & Category=='Poor'& Indicator %in% sprintf('%srtg',responseVAR) ==FALSE)}
     if (ScaleTYPE=='Percent'){ BarDataPoor$X= BarDataPoor$Estimate.P; 
                                BarDataPoor$UConf= BarDataPoor$UCB95Pct.P; BarDataPoor$LConf= BarDataPoor$LCB95Pct.P;
-                               XmaxPoor=100#setting at 100 sometimes causes problems with large error bars
+                               XmaxPoor=100 ## x axis max limit for poor extent figures in % #setting at 100 sometimes causes problems with large error bars
     } else{ BarDataPoor$X= BarDataPoor$Estimate.U; 
             BarDataPoor$UConf= BarDataPoor$UCB95Pct.U; BarDataPoor$LConf= BarDataPoor$LCB95Pct.U
-            XmaxPoor=sum(BarDataPoor$X)
+            XmaxPoor=2*sum(BarDataPoor$X) ##changes x scale on poor extent for scale bars in absolute stream km
     }
     #code repeated from below, consolidate
     if(s==1 & length(SubpopStrata)==1){#set variable order for remainder
@@ -41,12 +41,12 @@ for (s in 1:length(SubpopTypes)){#Temporary! only all and district - length(Subp
     par(mar = c(2, 1,2 ,0)  ,oma = c(2,7, 1, 2),cex=axissize)   
     #modeled after Fig 23 - http://www.epa.gov/owow/streamsurvey/pdf/WSA_Assessment_May2007.pdf
     #Category barchart: http://www.epa.gov/nheerl/arm/orpages/streamorimpair.htm (cleaner examples in EMAP report)    
-    BarEXTp=barplot( BarDataPoor$X,xlim=c(0,XmaxPoor),#FIX! Note 1157 total stream km seems low  (adjwgt adds to 3305, original was **)
+    BarEXTp=barplot( BarDataPoor$X,xlim=c(0,XmaxPoor),#XmaxPoor is the x axis max limit #FIX! Note 1157 total stream km seems low  (adjwgt adds to 3305, original was **)
                      xlab=ScaleTYPE,
                      names.arg= BarDataPoor$names,horiz=T,
                      col=BarDataPoor$color,las=1) #Temporary! make color global and assign specfically to variables
     title(sprintf('Extent Poor\n%s: %s',SubpopTypes[[s]],SubpopStrata[[t]])
-          ,cex=.1) 
+          ,cex=.1) # can comment this out to make it disappear from poor extent figures
     mtext(ifelse(ScaleTYPE=='Percent','% of Stream KM','Stream KM'),side=1,line=2,cex=axissize)#not sure why xlab is not working in barplot
     BarDataPoor$UConf=ifelse(is.na(BarDataPoor$UConf),0,BarDataPoor$UConf) ; BarDataPoor$X=ifelse(is.na(BarDataPoor$X),0,round(BarDataPoor$X,1))     
     arrows(x0=BarDataPoor$LConf,x1=BarDataPoor$UConf,y0=BarEXTp,length=.1,angle=90,code=3)#use Conf or StErr? why are upper limits so much higher?
@@ -80,10 +80,10 @@ for (s in 1:length(SubpopTypes)){#Temporary! only all and district - length(Subp
       #custom sort order for access #BarData=BarData[with(BarData,order(Estimate.U)),] 
       #manual Xmax for access# Xmax=3000
       png(sprintf('ExtentBAR_%s_%s.png', varNAME,ExtentSuffix),width=1000,height=700, bg='transparent',pointsize = 24)#if(Export=='PNG') {}#temporarily wrapped in if, but recordplot alternative did not work
-      par(mar = c(1.5, 1,3 ,1 )  ,oma = c(2, 3, 2, 2),cex=axissize)   
+      par(mar = c(1.5, 1,3 ,1 )  ,oma = c(2, 3, 2, 2),cex=axissize)  #cex.lab=axissize 
       #modeled after Fig 23 - http://www.epa.gov/owow/streamsurvey/pdf/WSA_Assessment_May2007.pdf
       #Category barchart: http://www.epa.gov/nheerl/arm/orpages/streamorimpair.htm (cleaner examples in EMAP report)    
-      BarEXT=barplot( BarData$X,xlim=c(0,Xmax),
+      BarEXT=barplot( BarData$X,xlim=c(0,Xmax),#######################this is where you can change the x axis max for the NT.IA, and TS graphs
                       xlab=ScaleTYPE2,
                       names.arg= BarData$Category,horiz=T,col=GFPcol,las=1)
       # title(sprintf('Extent: %s\n%s: %s',varNAME,SubpopTypes[[s]],SubpopStrata[[t]])    ,cex=.5, line=1) 
@@ -228,7 +228,7 @@ for (g in 1:varLEN){
 ### add percent stream length at the bottom#DONE
 
 
-##RELATIVE RISK + Figures## see UTblmGRTS_WGTs_FIGs.R
+
 
 #?will viewports or grid.arrange work with base graphics? --> answer for WRSA boxplots
 

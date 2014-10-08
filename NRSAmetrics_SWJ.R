@@ -1,192 +1,172 @@
 #install.packages("M:\\buglab\\Research Projects\\BLM_WRSA_Stream_Surveys\\Technology\\Output\\aquamet_1.0.zip")
-
 # install.packages(c('Hmisc','foreach','reshape'))#dependent packages
-library(aquamet)#need R 2... version, not 3.0
+library(aquamet)#need R 2... version, not 3.0 (available on remote desktop)
 
 sink("NRSAmetrics.txt")
 cat("NRSA 2008-2009 Physical Habitat Metrics\n")
 
-wd="M:\\buglab\\Research Projects\\BLM_WRSA_Stream_Surveys\\Results and Reports\\NorCal_2013\\AquametTEST"
-setwd(wd)
+#SWJ to do: test all functions for boatable (not yet verified bc no example data); for example, need to convert depth to pole/sonar
+#! to troubleshoot use getAnywhere() to view raw code of function
 
-#SWJ to do: at the end, consume the metrics outputs back in and pivot them for readability and prepare filtering them for figure processing
-
-#WRSA data conversion
-#assumes DB connection remains open
-tblx=Xwalk(XwalkName='Aquamet1',source='SQL',XwalkDirection='')#Norcal inputs:,Years=c('2013','2014'),Projects='NorCal')
-
-#!parameters that will need to be modified from 2014 protocol changes: size_cls, angle, width/height units
+#options(stringsAsFactors=T)#revert this option to default; aquamet handles factor conversions to character
+readEXTERNAL='N'#set to 'Y' to read in EPA or other provided files (i.e. when using remote desktop), otherwise set to 'N' and it will query directly from WRSAdb.SQL based on defaults specified in "DataConsumption_WRSAdb.R"
+writeEXTERNAL='N'#set to 'Y' to produce csv files of inputs, metrics, and 2nd tier calcs; useful if have to run in other version of R on remote desktop
+#wd="\\\\share2.bluezone.usu.edu\\miller\\buglab\\Research Projects\\BLM_WRSA_Stream_Surveys\\Results and Reports\\NorCal_2013\\AquametTEST\\Test2";setwd(wd)
 
 files <- c("tblBANKGEOMETRY2", "tblCHANCOV2", "tblCHANDEPTH2",##SWJ: none of these tables are in the 2013 output, can cross walk if given corresponding tables
            "tblCHANNELCHAR2", "tblCHANNELCROSSSECTION2", "tblCHANNELGEOMETRY2",##SWJ: no Channel Geometry
            "tblFISHCOVER2", "tblINVASIVELEGACY2", "tblLITTORAL2",##SWJ: no Littoral table (might be boatable only)
            "tblTHALWEG2", "tblVISITS2", "tblVISRIP2", "tblWOOD2")##SWJ: no Wood table anymore...in Channel
-
-#filesout=unique(XwalkUnion$Table_Xwalk)#use existing files list which will then make dummy files for all anticipated files
-for (f in 1:length(files)){
-  tblout=subset(XwalkUnion,subset=Table_Xwalk==files[f])
-  write.csv(tblout[-1],file=sprintf('%s.csv', files[f]))
-}
-#SWJ to do: could bypass file export and go straight to files variable as established by EPA, need to change all metrics inputs which call csv
-#SWJ to do: test all functions for boatable (not yet verified bc no example data)
-
 tables <- c("bankgeometry", "channelcover", "chandepth", "channelchar",
             "channelcrosssection", "channelgeometry", "fishcover",
             "invasivelegacy", "littoral", "thalweg", "visits", "visrip", "wood")
 
+if(readEXTERNAL=='N'){
+#WRSA data conversion
+#assumes DB connection remains open
+XwalkUnion=tblRetrieve(Table='',Parameters='',ALLp=AllParam,UIDS=UIDs,ALL=AllData,Filter=filter,SiteCodes=sitecodes,Dates=dates,Years=years,Projects=projects,Protocols=protocols)#XwalkUniontmp=XwalkUnion
+#protocol and parameter conversions #! these conversions also need to be done when relaying back to EPA
+XwalkUnion=bintranslate(Table='XwalkUnion',ST='CROSSSECW',PM='SIZE_NUM')
+#!should undercut (PIBO>EPA) be translated? otherwise non-existent for 2014
+#!should we randomly subset pebbles and embeddness to lower EPA amounts?
+#!slope handling TBD#Hmm...need to check my thinking and reconcile with aquamet code, but with the EPA method, straight length (RUN) = reach length because slope was taken transect to transect (so distance between transects is standard and additive); with the PIBO method, straight length must be determined by BR and TR coordinates, because crews could skip over transects at will. This also makes slopes that end early (did not go all the way from A to K) more difficult to estimate. Not sure if that makes sense in typing, but my questions with slope are increasing rather than decreasing and though the field method was simpler, the data handling is more complex with this method. 
+#convert angle
+XwalkUnion$RESULT=ifelse(XwalkUnion$PARAMETER=='ANGLE180',180-as.numeric(XwalkUnion$RESULT),XwalkUnion$RESULT)
+#change parameter names
+XwalkUnion=Xwalk(XwalkName='Aquamet1',Table='XwalkUnion',Source='R',XwalkDirection='')#!need to formally omit unused parameters and track down unknowns to see how they are used in aquamet (i.e. Assessment, etc)
+#collapse LWD
+XwalkLWDsub=subset(XwalkUnion,PARAMETER %in% c('DXDSL','DSDSL','DMDSL','DLDSL','WXDSL','WSDSL','WMDSL','WLDSL'));XwalkLWDsub$RESULT=as.numeric(XwalkLWDsub$RESULT);
+XwalkLWDagg=data.frame(cast(XwalkLWDsub,'UID+TRANSECT+POINT+TABLE+SAMPLE_TYPE+PARAMETER ~ .',value='RESULT',fun.aggregate=sum));XwalkLWDagg$RESULT=XwalkLWDagg$X.all.;XwalkLWDagg=ColCheck(XwalkLWDagg,colnames(XwalkUnion))#  228284433826712128 B
+XwalkNOlwd=subset(XwalkUnion,(IND %in% XwalkLWDsub$IND)==FALSE)
+XwalkUnion=rbind(XwalkLWDagg,XwalkNOlwd); rm(XwalkLWDsub); rm(XwalkLWDagg);rm(XwalkNOlwd)#XwalkUnionclean=XwalkUnion
+}
+
 for(i in 1:length(tables)) {
    cat("\n\n", tables[i], ":\n\n", sep="")
-   eval(parse(text=paste(tables[i], " <- read.csv('", files[i], ".csv', row.names=1)", sep="")))
+   if(readEXTERNAL=='Y'){TBLtmp=eval(parse(text=paste("read.csv('", files[i], ".csv')", sep="")))
+   }  else {TBLtmp=subset(XwalkUnion,toupper(TABLE)==toupper(files[i]))
+        if(writeEXTERNAL=='Y'){write.csv(TBLtmp,file=sprintf('%s.csv', files[i]),row.names=FALSE)}
+      }
+   assign(tables[i],TBLtmp)
    eval(parse(text=paste("print(head(", tables[i], "))", sep="")))
 }
 
-#slight tweaks
+#slight structure tweaks
+#!need to be careful with factor handling as in thalweg$TRANSECT and thalweg$STATION, especially in ifelse statements
 #SWJ: consider rolling into Xwalk metadata
-channelcover$TRANSDIR=channelcover$POINT # how to include this in the Xwalk table in SQL WRSAdb?
-channelcrosssection$TRANSDIR=channelcrosssection$POINT
-visrip$TRANSDIR=visrip$POINT
-visits$VALXSITE=visits$RESULT[visits$PARAMETER=='VALXSITE']
+channelcover$TRANSDIR=as.character(channelcover$POINT) # how to include this in the Xwalk table in SQL WRSAdb?
+channelcrosssection$TRANSDIR=as.character(channelcrosssection$POINT)
+visrip$TRANSDIR=as.character(visrip$POINT)
+visits=addKEYS(visits,c('SITE_ID','DATE_COL','VISIT_NO','VALXSITE','XSTATUS','LOC_NAME'));visits$SITE_CLASS="PROB"#write.csv(visits,"tblVISITS2.csv"); visits=read.csv("tblVISITS2.csv")
+if('VALXSITE' %in% colnames(visits)==FALSE){visits$VALXSITE=visits$RESULT[visits$PARAMETER=='VALXSITE']}
+visits$PROTOCOL=visits$VALXSITE#what was this added for?
 #for running ChannelMorphology
-bankgeometry$TRANSDIR=bankgeometry$POINT
-bankgeometry$TRANSDIR=ifelse(is.na(bankgeometry$TRANSDIR),"NONE",bankgeometry$TRANSDIR)
-#visits$PROTOCOL=visits$VALXSITE#what was this added for?
+bankgeometry$TRANSDIR=as.character(bankgeometry$POINT)
+bankgeometry$TRANSDIR=ifelse(is.na(bankgeometry$TRANSDIR)|bankgeometry$TRANSDIR=='',"NONE",as.character(bankgeometry$TRANSDIR))
 thalweg$UNITS=ifelse(thalweg$PARAMETER=='DEPTH',"CM","")#can only be assumed to be cm for wadeable, the boatable protocol allows FT or CM
-bankgeometry$UNITS=ifelse(bankgeometry$PARAMETER=='ANGLE',"DEGRES","M")#need to sync this with tblMETADATA eventually
+bankgeometry$UNITS=ifelse(bankgeometry$PARAMETER=='ANGLE',"DEGREES","M")#need to sync this with tblMETADATA eventually
 
 #for SlopeBearing (also used in residual pool)
-thalweg$STATION=thalweg$POINT; thalweg$STATION=ifelse(thalweg$POINT=='ALL',0,thalweg$STATION)#slope bearing has a very specific filter for station 0, which is now "ALL" 
+thalweg$STATION=as.character(thalweg$POINT); thalweg$STATION=ifelse(thalweg$STATION=='ALL'|thalweg$STATION==''|is.na(thalweg$STATION),0,thalweg$STATION);thalweg$STATION=as.numeric(thalweg$STATION)#slope bearing has a very specific filter for station 0, which is now "ALL" 
 #thalweg$STATION=0#Station and Transect were given for old slope method which seems odd, just trying to push the function to work
 thalweg$UNITS=ifelse(thalweg$PARAMETER=='BARWIDTH'|thalweg$PARAMETER=='INCREMNT'|thalweg$PARAMETER=='REACHLENGTH'|thalweg$PARAMETER=='WETWIDTH',"M",
                     ifelse(thalweg$PARAMETER=='DEPTH',"CM", "NONE"))#can only be assumed to be cm for wadeable sites for which unique unit values were checked
+thalweg$TRANSECT=as.factor(ifelse(thalweg$PARAMETER=='INCREMNT',"A",as.character(thalweg$TRANSECT)))
 #visits$UNITS='CM'#what was this added for?
 #add zero bearings to force slopeBearing function
 TRANhold=unique(paste(as.character(channelgeometry$UID) , as.character(channelgeometry$TRANSECT)))
-UIDhold=data.frame(UID=substr(TRANhold,1,5),SAMPLE_TYPE='SLOPEW',TRANSECT=substr(TRANhold,7,8),POINT=0,PARAMETER='BEARING',RESULT=0,FLAG=NA,IND=NA,ACTIVE=NA,OPERATION=NA,INSERTION=NA,DEPRECATION=NA,REASON=NA)
- channelgeometry=rbind(channelgeometry,UIDhold)
+UIDhold=data.frame(UID=substr(TRANhold,1,nchar(TRANhold)-2),SAMPLE_TYPE='SLOPEW',TRANSECT=substr(TRANhold,nchar(TRANhold),nchar(TRANhold)),POINT='0',PARAMETER='BEARING',RESULT=0);UIDhold=ColCheck(UIDhold,colnames(channelgeometry))
+channelgeometry=rbind(channelgeometry,UIDhold)
+channelgeometry$TRANSECT=ifelse(is.na(as.numeric(channelgeometry$TRANSECT))==FALSE,as.character(channelgeometry$POINT),as.character(channelgeometry$TRANSECT))
+#channelgeometry=subset((UID %in% c()==FALSE )#omit suspected problems for NorCal
+#add dummy boatable data to avoid crash in residual pools
+ACTRANSPhold=UIDhold[1,];ACTRANSPhold$PARAMETER='ACTRANSP'
+DISThold=UIDhold[1,];DISThold$PARAMETER='DISTANCE'
+ACDThold=rbind(ACTRANSPhold,DISThold);ACDThold$RESULT='1';ACDThold$UID='123456789'
+channelgeometry=rbind(channelgeometry,ACDThold);
+#other channel geo modifications
 channelgeometry$UNITS=ifelse(channelgeometry$PARAMETER=='SLOPE',"CM",#can't assume, need to pivot from slope_units
                             # ifelse(channelgeometry$PARAMETER=='DISTANCE',"M",#this is to help push a boatable site through
                              ifelse(channelgeometry$PARAMETER=='PROP',"PERCENT","NONE"))
 channelgeometry$LINE=NA;channelgeometry$TRANLINE='NONE'#channelgeometry$TRANLINE=ifelse(channelgeometry$PARAMETER=='DISTANCE',"MID",'NONE') #appears to be a dummy variable populated by ifelse statements within the function - used by boatable protocol perhaps?
-channelgeometry$METHOD='TR'#need to get this from pivoting the method parameter (can't assume for boatable)
-#remove extra columns (need to do for all tables, most critical for bankgeom)
-bankgeometry=subset(bankgeometry,select=-c(IND, ACTIVE,OPERATION,INSERTION,DEPRECATION,REASON))
+channelgeometry$METHOD='TR'#need to get this from pivoting the method parameter or addkeys(but not in VERIF) (can't assume for boatable)
+channelgeometry$BANK='NONE'#get from point (can't assume for boatable)
+#remove extra columns (need to do for all tables, most critical for bankgeom)>>use ColCheck
+bankgeometry=subset(bankgeometry,select=-c(IND, ACTIVE,OPERATION,INSERTION,DEPRECATION,REASON,TABLE))
+thalweg=subset(thalweg,select=-c(IND, ACTIVE,OPERATION,INSERTION,DEPRECATION,REASON,TABLE))
 bankgeometry=subset(bankgeometry,select=-c(POINT)) #remove point since it was redistributed to appropriate legacy columns
+thalweg=subset(thalweg,select=-c(POINT)) #remove point since it was redistributed to appropriate legacy column
 
 
 cat("\n\ngpsBasedCalculations_asOf201203008:\n\n")
-gisCalcs <- read.csv("gpsBasedCalculations_asOf201203008.csv")##SWJ: need to know how to generate this
+metsoutgisCalcs <- read.csv("gpsBasedCalculations_asOf201203008.csv")##SWJ: need to know how to generate this, until understood, commented out of functions
 head(gisCalcs)
 #not provided with example data set
 #Ryan lokteff adapted the EPA script M:\GIS\GIS_Stats\Slope\Python\Slope_Endpoints1.py
 
-cat("\n\nBank Morphology:\n\n")#DONE SWJ
-BankMorphology <- metsBankMorphology(bankgeometry, visits)
-print(head(BankMorphology))
-write.csv(BankMorphology, "metsBankMorphology.csv")
+metsoutSlopeBearing <- metsSlopeBearing(thalweg, channelgeometry, visits)#, gisCalcs) #DONE, but be cautious with slopes #gisCalcs allows null # not working without bearing #can force with 0 bearings does not change metrics except xbearing and sinu --> make sure these aren't consumed in other functions that use channelgeometry #bearings isn't affecting any other outputs (residual pools, general, bed stability)
 
+metsoutResidualPools <- metsResidualPools(thalweg, channelgeometry, visits)#, gisCalcs) #DONE, but be cautious with slopes
 
-cat("\n\nBed Stability:\n\n")
-BedStability <- metsBedStability(bankgeometry, thalweg, visits, channelgeometry,   channelcrosssection, littoral, wood, fishcover)#, gisCalcs)
-print(head(BedStability))
-write.csv(BedStability, "metsBedStability.csv")
+metsoutBedStability <- metsBedStability(bankgeometry, thalweg, visits, channelgeometry,   channelcrosssection, littoral, wood, fishcover)#DONE, but be cautious with slopes#, gisCalcs)
 
-cat("\n\nCanopy Densiometer:\n\n")#done SWJ
-CanopyDensiometer <- metsCanopyDensiometer(channelcover)
-print(head(CanopyDensiometer))
-write.csv(CanopyDensiometer, "metsCanopyDensiometer.csv")
-
-cat("\n\nChannel Characteristic:\n\n")##SWJ in progress (DONE for wadeable) - channelchar parameters and bankgeo (boatable) parameters matched but not run for boatable - bankgeo only seems to be incorporated if boatable, otherwise only populated by channel constraint; WRSA/NRSA tables that boatable bankgeo data will be provided in is unknown (recorded as "UNK" in tblXWalk)
-ChannelChar <- metsChannelChar(bankgeometry, channelchar)
-print(head(ChannelChar))
-write.csv(ChannelChar, "metsChannelChar.csv")
-
-
-cat("\n\nChannel Habitat:\n\n")
-ChannelHabitat <- metsChannelHabitat(thalweg)
-print(head(ChannelHabitat))
-write.csv(ChannelHabitat, "metsChannelHabitat.csv")
-
-cat("\n\nChannel Morphology:\n\n") #in Progress SWJ #works with example data# - major format issues, awaiting input from Curt - needs particular attention when boatable added (step through source code to verify use of multiple DEPTHS and WETWID)
-ChannelMorphology <- metsChannelMorphology(bankgeometry, thalweg, visits)
-print(head(ChannelMorphology))
-write.csv(ChannelMorphology, "metsChannelMorphology.csv")
-
-cat("\n\nFish Cover:\n\n")#done SWJ
-FishCover <- metsFishCover(fishcover, visits)
-print(head(FishCover))
-write.csv(FishCover, "metsFishCover.csv")
-
-cat("\n\nGeneral:\n\n")#DONE SWJ
-General <- metsGeneral(thalweg, channelgeometry)
-print(head(General))
-write.csv(General, "metsGeneral.csv")
-
-cat("\n\nHuman Influence:\n\n")#done SWJ
-HumanInfluence <- metsHumanInfluence(visrip)
-print(head(HumanInfluence))
-write.csv(HumanInfluence, "metsHumanInfluence.csv")
-
-cat("\n\nInvasive Species:\n\n")#not relevant to NAMC
-InvasiveSpecies <- metsInvasiveSpecies(invasivelegacy)
-print(head(InvasiveSpecies))
-write.csv(InvasiveSpecies, "metsInvasiveSpecies.csv")
-
-cat("\n\nLarge Woody Debris:\n\n") #works with example data set once Visits fixed
-LargeWoody <- metsLargeWoody(thalweg, channelgeometry, bankgeometry, wood, visits)
-print(head(LargeWoody))
-write.csv(LargeWoody, "metsLargeWoody.csv")
-
-
-cat("\n\nLegacy Riparian Trees:\n\n")#not relevant to NAMC
-LegacyTree <- metsLegacyTree(invasivelegacy)
-print(head(LegacyTree))
-write.csv(LegacyTree, "metsLegacyTree.csv")
+cat("\n\nChannel Habitat:\n\n")#!unresolved
+metsoutChannelHabitat <- metsChannelHabitat(thalweg)
 
 cat("\n\nLittoral Depth:\n\n")#pending boatable data
-LittoralDepth <- metsLittoralDepth(chandepth)
-print(head(LittoralDepth))
-write.csv(LittoralDepth, "metsLittoralDepth.csv")
+metsoutLittoralDepth <- metsLittoralDepth(chandepth)
 
-cat("\n\nResidual Pools:\n\n")#DONE SWJ (wadeable only)
-ResidualPools <- metsResidualPools(thalweg, channelgeometry, visits)#, gisCalcs)
-print(head(ResidualPools))
-write.csv(ResidualPools, "metsResidualPools.csv")
+metsoutGeneral <- metsGeneral(thalweg, channelgeometry)#working, but odd values coming out for reachlength still >> trouble shoot thalweg$STATION (currently set to numeric); seems to be good >> next up:  cdData data subset driving the station count which results in 0 for many NRSA sites which don't include all the "No"s for side channel, etc. >> cdData <- subset(indat, PARAMETER %in% c("ACTRANSP", "DISTANCE", "INCREMNT", "SIDCHN", "OFF_CHAN", "REACHLENGTH"))
+rlen=subset(metsoutGeneral,METRIC=='reachlen'); rlen$VALUEl=rlen$RESULT-(rlen$RESULT*.1); rlen$VALUEh=rlen$RESULT+(rlen$RESULT*.1)#10% bounds
+thalCheck=tblRetrieve(Parameters='TRCHLEN',UIDS=UIDs,ALL=AllData,Filter=filter,SiteCodes=sitecodes,Dates=dates,Years=years,Projects=projects,Protocols=protocols)
+thalCheck=merge(rlen,thalCheck,intersect(setdiff(colnames(metsoutGeneral),'RESULT'),colnames(thalCheck))),all.x=T)
+thalCheck$check=ifelse(thalCheck$RESULT>thalCheck$VALUEl & thalCheck$RESULT<thalCheck$VALUEh,'OK','X');thalCheck=subset(thalCheck,check=='X')
+if(nrow(thalCheck)>0){print("WARNING! Calculated reach length (METRIC=='reachlen') significantly different from field recorded Reach Length (PARAMETER=='TRCHLEN'). Confirm correct INCREMENT parameter.")}
 
-cat("\n\nRiparian Vegetation:\n\n")#done SWJ
-RiparianVegetation <- metsRiparianVegetation(visrip)
-print(head(RiparianVegetation))
-write.csv(RiparianVegetation, "metsRiparianVegetation.csv")
+metsoutLargeWoody <- metsLargeWoody(thalweg, channelgeometry, bankgeometry, wood, visits)#DONE, but concerned about reachlen value coming out of metsGeneral
 
-cat("\n\nSlope and Bearing:\n\n")#SWJ in progress- in conjuction with Residual pools #works with example data set once Visits fixed# (##the additional message seems to have been corrected by adding the column VALXSITE to visits based on records present in Littoral to demarcate Boatable)
-SlopeBearing <- metsSlopeBearing(thalweg, channelgeometry, visits)#, gisCalcs) #gisCalcs allows null
-print(head(SlopeBearing))
-write.csv(SlopeBearing, "metsSlopeBearing.csv")
-# not working without bearing
-#can force with 0 bearings does not change metrics except xbearing and sinu --> make sure these aren't consumed in other functions that use channelgeometry
-#bearings isn't affecting any other outputs (residual pools, general, bed stability)
+metsoutBankMorphology <- metsBankMorphology(bankgeometry, visits)#DONE SWJ
 
+metsoutCanopyDensiometer <- metsCanopyDensiometer(channelcover)#done SWJ
 
-cat("\n\nSubstrate Characterization:\n\n") #done SWJ (for wadeable, boatable not yet verified bc no example data)
-SubstrateCharacterization <- metsSubstrateCharacterization(channelcrosssection,   thalweg, littoral)
-print(head(SubstrateCharacterization))
-write.csv(SubstrateCharacterization, "metsSubstrateCharacterization.csv")
+metsoutChannelChar <- metsChannelChar(bankgeometry, channelchar)##SWJ in progress (DONE for wadeable) - channelchar parameters and bankgeo (boatable) parameters matched but not run for boatable - bankgeo only seems to be incorporated if boatable, otherwise only populated by channel constraint; WRSA/NRSA tables that boatable bankgeo data will be provided in is unknown (recorded as "UNK" in tblXWalk)
 
-cat("\n\nSubstrate Embeddedness:\n\n")#done SWJ 
-SubstrateEmbed <- metsSubstrateEmbed(channelcrosssection)#SWJ: Input = Embeddedness
-print(head(SubstrateEmbed))
-write.csv(SubstrateEmbed, "metsSubstrateEmbed.csv")
+metsoutChannelMorphology <- metsChannelMorphology(bankgeometry, thalweg, visits)# DONE SWJ for wadeable; needs particular attention when boatable and alternate slope methods added (BANK/METHOD;step through source code to verify use of multiple DEPTHS and WETWID)
+
+metsoutFishCover <- metsFishCover(fishcover, visits)#done SWJ
+
+metsoutHumanInfluence <- metsHumanInfluence(visrip)#done SWJ
+
+metsoutRiparianVegetation <- metsRiparianVegetation(visrip)#done SWJ
+
+metsoutSubstrateCharacterization <- metsSubstrateCharacterization(channelcrosssection,   thalweg, littoral) #done SWJ (for wadeable, boatable not yet verified bc no example data)
+
+metsoutSubstrateEmbed <- metsSubstrateEmbed(channelcrosssection)#done SWJ 
+
+metsoutInvasiveSpecies <- metsInvasiveSpecies(invasivelegacy)#not relevant to NAMC
+
+metsoutLegacyTree <- metsLegacyTree(invasivelegacy)#not relevant to NAMC
 
 sink()
 
+#combine all metric files
+outls=ls()[grep('metsout',ls())]
+for (m in 1:length(outls)){
+  TBLtmp=eval(parse(text=outls[m]))
+  if(m==1){METmaster=TBLtmp[0,]}
+  METmaster=rbind(METmaster,TBLtmp)
+}
+if(writeEXTERNAL=='Y'){write.csv(METmaster,file=sprintf('metsAquamet_%s.csv',Sys.Date()),row.names=FALSE)}
 
 #Bring in aquamet results to do second tier calcs
+if(readEXTERNAL=='Y'){
 METfiles=list.files(wd, pattern='mets*.')
 for(i in 1:length(METfiles)) {
   cat("\n\n", METfiles[i], ":\n\n", sep="")
   eval(parse(text=paste(METfiles[i], " <- read.csv('", METfiles[i], "', row.names=1)", sep="")))
   eval(parse(text=paste("print(head(", METfiles[i], "))", sep="")))
   if(i==1){METmaster=eval(parse(text=METfiles[i]))} else {METmaster=rbind(METmaster,eval(parse(text=METfiles[i])))}
-}
+}}
 
 METmaster$RESULT=as.numeric(METmaster$RESULT)
 unique(METmaster$METRIC)
@@ -194,12 +174,29 @@ unique(METmaster$METRIC)
 #write to csv as one mondo file, or don't even write out in the first place, but compile via rbinds after all functions called; use some kind of grep on ls
 
 ##QR1
-QRmets=subset(METmaster, subset=METRIC %in% c('w1_hall','xcmgw','xcdenbk')) #pivot or merge? if the metrics get stored in the database (with a timestamp), then switch to pivot, but merge for now
-QRmets=cast(QRmets, UID ~ METRIC, value='RESULT', fun.aggregate=mean)#fun.aggregate=count #count to make sure only 1 record per pivot cell
-QRmets$QRDIST1=1/ (1+QRmets$w1_hall)
-QRmets$QRVeg2= 0.1 + (0.9*(QRmets$xcdenbk/100))
-QRmets$QRVeg1=ifelse(QRmets$xcmgw<=2.00, .1+(.9 * (QRmets$xcmgw/2.00)),1)
-QRmets$QR1=((QRVeg1)*(QRVeg2)*(QRDIST1))^0.333
+QRmetTIER2=subset(METmaster, subset=METRIC %in% c('w1_hall','xcmgw','xcdenbk')) #pivot or merge? if the metrics get stored in the database (with a timestamp), then switch to pivot, but merge for now
+QRmetTIER2=cast(QRmetTIER2, UID ~ METRIC, value='RESULT', fun.aggregate=mean)#fun.aggregate=count #count to make sure only 1 record per pivot cell
+QRmetTIER2$QRDIST1=1/ (1+QRmetTIER2$w1_hall)
+QRmetTIER2$QRVeg2= 0.1 + (0.9*(QRmetTIER2$xcdenbk/100))
+QRmetTIER2$QRVeg1=ifelse(QRmetTIER2$xcmgw<=2.00, .1+(.9 * (QRmetTIER2$xcmgw/2.00)),1)
+QRmetTIER2$QR1=((QRmetTIER2$QRVeg1)*(QRmetTIER2$QRVeg2)*(QRmetTIER2$QRDIST1))^0.333
+QRmetTIER2$METRIC='QR1';QRmetTIER2$RESULT=QRmetTIER2$QR1#name and save the desired metric(s), copy table and name with metTIER2 if want to save multiple submetrics
+
+##LINCIS_H
+
+#combine all 2nd tier calcs and append to METmaster
+outls=ls()[grep('metTIER2',ls())]
+for (m in 1:length(outls)){
+  TBLtmp=eval(parse(text=outls[m]))
+  TBLtmp=ColCheck(TBLtmp,colnames(METmaster))#assumes metric(s) was named and saved in the METRIC-RESULT format at the end of each calc
+  METmaster=rbind(METmaster,TBLtmp)
+}
+if(writeEXTERNAL=='Y'){write.csv(METmaster,file=sprintf('metsAquamet_%s.csv',Sys.Date()),row.names=FALSE)}
+
+if(exists('indicators')){
+  print("WARNING: The following core indicators (as recorded in the MissingBackend Xwalk) were not found in the AQUAMET output:")
+  print(setdiff(toupper(indicators),toupper(unique(METmaster$METRIC))))
+}
 
 
 #xcmg check

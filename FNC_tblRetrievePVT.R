@@ -233,12 +233,38 @@ varConvert=function(x){ #for use within figures to convert to variable names
 }
 
 
-bintranslate=function(Table,ST,PM=''){
-  TBLtmp=eval(parse(text=Table))
-  BINtbl=sqlQuery(wrsa1314,sprintf("select * from tblMETADATAbin where SAMPLE_TYPE='%s' %s",ST,ifelse(PM=='' | is.na(PM),"and (PARAMETER='' or PARAMETER is null)",sprintf("and PARAMETER='%s' ",PM))))
-  #join TBL and BIN to update RESULT
-  return(TBLtmp$RESULT)
-#   #planned usage in NRSAmetrics
+bintranslate=function(Table,ST,PM=''){#ST=c("HUMINFLUW" ,     "VISRIPW" ,  "CROSSSECW"); PM=c( "SIZE_NUM")
+  TBLtmp=eval(parse(text=Table))#TBLtmp=tblRetrieve(Table='tblPOINT' , Parameters=c('SIZE_NUM','SIZE_CLS','DENSIOM','PARK','ROAD','GCWDY','UNDNWDY'),UIDS=c(10368 ,31667445819269712))
+  TBLtmp$RESULTorg=TBLtmp$RESULT
+  TBLrow=nrow(TBLtmp)
+  NullSTR="and (PARAMETER='' or PARAMETER is null)"
+  BINtbl=sqlQuery(wrsa1314,sprintf("select * from tblMETADATAbin where SAMPLE_TYPE in (%s) and PARAMETER in (%s) and ACTIVE='TRUE'
+                                   union select * from tblMETADATAbin where SAMPLE_TYPE in (%s) %s and ACTIVE='TRUE'",
+                                   inLOOP(ST),inLOOP(PM),inLOOP(ST),NullSTR))
+  if(nrow(subset(BINtbl,LOWHIGH!=0))>0) {BINtblN=cast(subset(BINtbl,LOWHIGH!=0),'SAMPLE_TYPE+PARAMETER+BIN+SORTORDER~LOWHIGH',value='RESULT');BINtblN$H=ifelse(is.na(BINtblN$H),BINtblN$L,BINtblN$H);BINtblN$LOWHIGH=1} else {BINtblN=data.frame(cbind('','','','','','',''))}
+  if(nrow(subset(BINtbl,LOWHIGH==0))>0) {BINtblC=cbind(subset(BINtbl,LOWHIGH==0,select=c(SAMPLE_TYPE,PARAMETER,BIN,SORTORDER,RESULT)),NA,0);colnames(BINtblC)=c('SAMPLE_TYPE','PARAMETER','BIN','SORTORDER','H','L','LOWHIGH');BINtblC$L=BINtblC$H} else {BINtblC=data.frame(cbind('','','','','','',''))}
+  BINtbl=sqldf('select * from BINtblN union select * from BINtblC');colnames(BINtbl)=c('SAMPLE_TYPE','PARAMETER','BIN','SORTORDER','H','L','LOWHIGH')
+  UnionSTR="select * from TBLtmp join (select SAMPLE_TYPE as ST, PARAMETER as PM, BIN,SORTORDER,LOWHIGH,L,H from BINtbl %s) bin%s on bin%s.st=TBLtmp.sample_type %s %s"
+  JOINtbl=sqldf(sprintf('%s union %s union %s union %s',
+                        sprintf(UnionSTR,"where L=H",1,1,"and bin1.pm=TBLtmp.parameter",'and TBLtmp.result=bin1.L'),
+                        sprintf(UnionSTR,sprintf("where L=H %s",NullSTR),2,2,"",'and TBLtmp.result=bin2.L'),
+                        sprintf(UnionSTR,"where L<>H",3,3,"and bin3.pm=TBLtmp.parameter",'and cast(TBLtmp.result as float)>=cast(bin3.L as float) and cast(TBLtmp.result as float)<=cast(bin3.H as float)'),
+                        sprintf(UnionSTR,sprintf("where L<>H %s",NullSTR),4,4,"",'and cast(TBLtmp.result as float)>=cast(bin4.L as float) and cast(TBLtmp.result as float)<=cast(bin4.H as float)')
+                ))
+  JOINtbl$RESULT=JOINtbl$BIN; JOINtbl=JOINtbl[,!(names(JOINtbl) %in% setdiff(names(JOINtbl),c('SORTORDER',names(TBLtmp))))]
+  TBLtmp$SORTORDER=0;TBLtmpU=subset(TBLtmp,(IND %in% JOINtbl$IND)==FALSE)
+  TBLtmp=rbind(JOINtbl,TBLtmpU)
+  TBLrow2=nrow(TBLtmp)
+  if(TBLrow!=TBLrow2){print('WARNING: OUtput table different length than incoming table.')}
+  JOINsp=unique(sprintf('%s-%s',JOINtbl$SAMPLE_TYPE,JOINtbl$PARAMETER))
+  TBLtmp2=TBLtmp;TBLtmp2$SP=sprintf('%s-%s',TBLtmp2$SAMPLE_TYPE,TBLtmp2$PARAMETER);TBLtmp2=subset(TBLtmp2,SP %in% JOINsp)#TBLspr=TBLspr[grep(list(JOINspr),TBLspr)]
+  TBLspr=unique(sprintf('%s-%s-%s',TBLtmp2$SAMPLE_TYPE,TBLtmp2$PARAMETER,TBLtmp2$RESULT))
+  JOINspr=unique(sprintf('%s-%s-%s',JOINtbl$SAMPLE_TYPE,JOINtbl$PARAMETER,JOINtbl$RESULT))
+  sprDIFF=setdiff(TBLspr,JOINspr);sprROW=length(sprDIFF)
+  if(sprROW>0){sprintf("WARNING: %s unmatched results that were not binned.",sprROW);print(sprDIFF)}
+  print('RESULT is now translated and binned. Columns SORTORDER and RESULTorg added.')
+  return(TBLtmp)
+#   #DONE planned usage in NRSAmetrics
 #   #example usage in outlier checks
 #   typeMATCH=type %in% as.character(unlist(subset(binMETA,select=SAMPLE_TYPE,subset=is.na(PARAMETER)|PARAMETER=='')))
 #   if(bin=='Y' & (paramMATCH=='TRUE'|typeMATCH=='TRUE')){#if match in binMETA
@@ -250,12 +276,6 @@ bintranslate=function(Table,ST,PM=''){
 #     rm(temp)
 #     # order and/or bin 
 #   } else{print(sprintf('Sorting Order and Binning unknown for %s',typeparam))}
-#   #example usage in SpSurvey
-#   TS_VALXSITE=c('WADEABLE','BOATABLE','PARBYWADE', 'PARBYBOAT','INTWADE', 'INTBOAT', 'ALTERED')
-#   NT_VALXSITE=c('DRYVISIT', 'DRYNOVISIT', 'WETLAND', 'MAPERROR', 'IMPOUNDED', 'TIDAL','NT') 
-#   IA_VALXSITE=c('OTHER_NST','NOTBOAT','NOTWADE', 'OTHER_NOACCESS','NOACCESS', 'INACCPERM','INACCTEMP')#! should we be more careful to distinguish IA sites that had physical barriers (i.e. bushes) but were clearly target vs. streams we never saw which are truly unknown - either way, they are assumed TS, but need to determine if IA vs. UNK is important for our tabulations (see section 3 of spsurvey/GRTS practitioner guide); if long strings of IA with no subsequent TS, then set to NN. Tony lumps IA into a broader "UNK"
-#   NN_VALXSITE=c('NSF',"NN")# not needed because not in sample frame (ex: 2013-15 canals omitted a priori) or unevaluated
-#   siteeval$EvalStatus=ifelse(siteeval$VALXSITE %in% TS_VALXSITE, 'TS',ifelse(siteeval$VALXSITE %in% IA_VALXSITE, 'IA',ifelse(siteeval$VALXSITE %in% NT_VALXSITE, 'NT',ifelse(siteeval$VALXSITE %in% NN_VALXSITE, 'NN','UNK'))))
-  
-  
+#   #DONE example usage in SpSurvey
+
 }

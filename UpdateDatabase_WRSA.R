@@ -1,8 +1,27 @@
+#IND is required!!! all "TBD" IND will be ignored, all blank IND will be added as a new row
+
+#export from SavedExport Export-Office_Updates3
+UpdatesTBL=read.csv('Office_Updates.csv')
+UpdatesTBL=subset(UpdatesTBL,UPDATE=='')
+
+#enter the name of the table you want to update
+TBL='UnionTBL'
+TBLout=eval(parse(text=TBL))
+colIND=intersect(colnames(TBLout),colnames(UpdatesTBL));colIND=setdiff(colIND,c('REASON','RESULT')
+TBLout=merge(TBLout,UpdatesTBL,colIND,all.x=T)
+TBLout$RESULT=TBLout$RESULT.y                                                                       
+TBLout=ColCheck(TBLout,c(VAR))
+assign(TBL,TBLout)
+
+DEVELOPMENT='N'#update query still in development
+
+if(DEVELOPMENT=='Y'){
+
 if(sessionInfo()$R.version$major==2){
   library('RODBC')
   probsurv14=odbcConnect("ProbSurveyDB")#have to run on remote desktop (gisUser3) or machine which has 64bit R and 64bit Access
   UpdatesTBL=sqlQuery(probsurv14,'select * from Office_Updates where Update is null'
-  #!set Update field to today())
+                      #!set Update field to today())
 } else {setwd('C:\\Users\\Sarah\\Desktop\\NAMCdevelopmentLocal\\WRSA')#setwd('M:\\buglab\\Research Projects\\BLM_WRSA_Stream_Surveys\\Field Work\\Post Sample\\iPad backup\\AccessImport');
         UpdatesTBL=read.csv('Office_Updates.csv')#export from SavedExport Export-Office_Updates3
         UpdatesTBL=subset(UpdatesTBL,UPDATE=='')
@@ -11,7 +30,7 @@ if(sessionInfo()$R.version$major==2){
 
 #test scenarios
 #ID3 ; 667-670= match with IND
-#change transect/point NOT result
+#change location (uid/transect/point) NOT result
 #ID0 = Comment (example of a comment manually inserted + flag update: IND 2390646 in tblReach and tblCommment insertion: IND=4804552)
 #ID399-435=TBD IND (need match) # i=359; i=373, i=368 (368 is nonexact UID match)
 #ID4 - 12 (and many more) = new insertions, no IND match anticipated
@@ -28,20 +47,20 @@ INDnonexist=subset(UpdatesTBL,IND=='' | IND=='TBD'|IND=='0')
 for (i in 1:nrow(INDnonexist)){
   match=sqlQuery(wrsa1314,sprintf("SELECT * from  %s where left(cast(UID as nvarchar),10)='%s'  %s  %s  and SAMPLE_TYPE='%s' and PARAMETER='%s'  ",INDnonexist$TABLE[i],substr(INDnonexist$UID[i],1,10),ifelse(INDnonexist$TRANSECT[i]=='','',sprintf("and TRANSECT='%s'",INDnonexist$TRANSECT[i])),ifelse(INDnonexist$POINT[i]=='','',sprintf("and POINT='%s'",INDnonexist$POINT[i])),INDnonexist$SAMPLE_TYPE[i],INDnonexist$PARAMETER[i]))
   if(nrow(match)>0){print('Possible match based on point and parameter information: ');print(match)
-        print(sprintf('Proposed change is to: %s',INDnonexist$RESULT[i]))
-        print('Do you accept this match?')#!need to pause code here, in the meantime, exists loop
-        if(match$UID!=INDnonexist$UID[i]){
-          match=addKEYS(match,Columns=c('SITE_ID','DATE_COL'))
-          print(sprintf('UID match based on 1st 10 characters, not full UID (Original: %s:%s:%s vs. Match: %s:%s:%s)',INDnonexist$UID[i],INDnonexist$SITE_ID[i],INDnonexist$DATE_COL[i],match$UID,match$SITE_ID,match$DATE_COL))
-          }
-        if(exists('accept')){
-          if(accept=='Y'){
-          INDnonexist$IND[i]=match$IND#set IND if match found so UPDATE can set OPERATION correctly
-          }
-          rm(accept)
-        } else {print("Set accept='Y' or accept='N'")}
+                    print(sprintf('Proposed change is to: %s',INDnonexist$RESULT[i]))
+                    print('Do you accept this match?')#!need to pause code here, in the meantime, exists loop
+                    if(match$UID!=INDnonexist$UID[i]){
+                      match=addKEYS(match,Columns=c('SITE_ID','DATE_COL'))
+                      print(sprintf('UID match based on 1st 10 characters, not full UID (Original: %s:%s:%s vs. Match: %s:%s:%s)',INDnonexist$UID[i],INDnonexist$SITE_ID[i],INDnonexist$DATE_COL[i],match$UID,match$SITE_ID,match$DATE_COL))
+                    }
+                    if(exists('accept')){
+                      if(accept=='Y'){
+                        INDnonexist$IND[i]=match$IND#set IND if match found so UPDATE can set OPERATION correctly
+                      }
+                      rm(accept)
+                    } else {print("Set accept='Y' or accept='N'")}
   } 
- }
+}
 sprintf('%s matches were made. The following rows did not find a potential match. If a match is suspected, find and update IND before proceeding. If old rows are not properly linked and invalidated, duplicate data and persistence of the error will result.', nrow(subset(INDnonexist,IND!='' & IND!='TBD')))
 View(subset(INDnonexist,IND=='' | IND=='TBD'))
 
@@ -73,5 +92,4 @@ for (t in 1:nrow(UPDATEtables)){
 
 
 print('Set UPDATE field in ProbSurveyDB (Access) Office_UPDATE to today to indicate that the update was performed.')
-
-
+}

@@ -42,6 +42,22 @@ psych # package that has
 prop.table() #proportions
 round() # rounds
 scale() # M=0, SD=1
+ggplot(vegLengths, aes(length, fill = veg)) + geom_density(alpha = 0.2)
+
+par(mfrow=c(2,2))
+plot(Year,Max7day,type="n",bty='n',xlab="",ylab="Max 7-day mean discharge (cfs)")
+lines(Year,Max7day)
+box(bty="l",lwd=2)
+plot(Year,hgt6000,type="n",bty='n',xlab="",ylab="Total hours with discharge >6000 cfs")
+lines(Year,hgt6000)
+box(bty="l",lwd=2)
+plot(Year,mean_dcv,type="n",bty='n',xlab="",ylab="Mean daily CV")
+lines(Year,mean_dcv)
+box(bty="l",lwd=2)
+plot(Year,ds_6000,type="n",bty='n',xlab="",ylab="Number of days since discharge >6000 cfs")
+lines(Year,ds_6000)
+box(bty="l",lwd=2)
+
 
 prop.test( 100, 200)
 t.test(x, mu=4)

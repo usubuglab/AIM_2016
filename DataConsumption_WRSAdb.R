@@ -79,21 +79,48 @@ write.csv(EXAMPLEcondPVT,'ExampleConductivityCorrected_TodaysDate.csv')#pivoted 
 NorCal1314=tblRetrieve(ALLp='Y',Years=c('2013','2014'),Projects='NorCal')
 NorCal1314subCOND=subset(NorCal1314,PARAMETER %in% c('CONDUCTIVITY','CORRECTED'))#and again subsetting it just for a few parameters like EXAMPLEcond
 
-#METADATA for reference
+##---------METADATA for reference---------##
 #use RODBC package sqlQuery() function, not tblRetrieve
+#parameter descriptions
 METADATA=sqlQuery (wrsa1314,"select * from tblMETADATA where ACTIVE='TRUE'")#see "Label" for interpretable names #be careful with SQL strings, enclose in double quote and use single quotes for text
+#query a particular protocol
 METADATAprotocol=sqlQuery (wrsa1314,"select * from tblMETADATAprotocol where ACTIVE='Y' and Protocol='WRSA14'")#expected counts
+#compare protocols
+METADATAprotocolS=sqlQuery(wrsa1314, "select distinct Result from tblverification where parameter='Protocol' union select distinct Protocol from tblmetadataprotocol")
+    #METADATAprotocolS=protocols
+    METADATAprotocolS=data.frame(METADATAprotocolS)
+    protocolSTR1="select m.SAMPLE_TYPE,m.PARAMETER,m.UNITS,m.LABEL,m.VAR_TYPE,m.ACTIVE,m.INSERTION,m.REASON"
+    protocolSTR2a="left join (select PROTOCOL,SAMPLE_TYPE as ST, PARAMETER as PM, POINTS,REPS,Insertion,NOTE  from tblMetadataProtocol where Protocol='%s' and ACTIVE='Y') %s on %s.ST=substring(m.SAMPLE_TYPE,1,len(m.SAMPLE_TYPE)-1) and %s.PM=m.parameter"
+    METADATAprotocolSpairs=subset(expand.grid(P1=unclass(METADATAprotocolS)[[1]],P2=unclass(METADATAprotocolS)[[1]]),P1!=P2)
+    protocolSTR3a="(isnull(%s.Points*%s.Reps,0) <> isnull(%s.Points*%s.Reps,0))"
+    for (p in 1:nrow(METADATAprotocolS)){
+      currP=METADATAprotocolS[p,1]
+      protocolSTR1=sprintf("%s, %s.*",protocolSTR1,currP)
+      protocolSTR2=sprintf("%s %s",ifelse(p==1,'',protocolSTR2),sprintf(protocolSTR2a,currP,currP,currP,currP))
+      pair=subset(METADATAprotocolSpairs,P1==currP)
+      for (r in 1:nrow(pair)){
+        p1=pair$P1[r];p2=pair$P2[r]
+        protocolSTR3=sprintf("%s %s",ifelse(p==1,'',sprintf("%s or", protocolSTR3)),sprintf(protocolSTR3a,p1,p1,p2,p2))
+      }
+    }
+    protocolSTRdiff=sprintf("%s from tblmetadata m %s where %s order by m.SAMPLE_TYPE, m.parameter",protocolSTR1,protocolSTR2,protocolSTR3)
+    protocolSTRcomp=sprintf("%s from tblmetadata m %s order by m.SAMPLE_TYPE, m.parameter",protocolSTR1,protocolSTR2)
+    METADATAprotocolCOMPARE=sqlQuery(wrsa1314,protocolSTRcomp)  
+    METADATAprotocolDIFF=sqlQuery(wrsa1314,protocolSTRdiff)  
+    View(METADATAprotocolDIFF)
+#legal values for parameters
 METADATArange=sqlQuery (wrsa1314,"select * from tblMETADATArange where ACTIVE='TRUE' and Protocol='WRSA14'")#legal values
+#matchup of parameters to indicators
 METADATAindicators=sqlQuery (wrsa1314,"select * from tblXwalk where NAME_xwalk='MissingBackend' and type_xwalk='Indicator'")
-indicators=NULL
-for (i in 1:nrow(METADATAindicators)){indicators=paste(indicators,METADATAindicators$Parameter_Xwalk[i],sep="|")}
-indicators=unique(unlist(strsplit(indicators,"\\|")));indicators=indicators[2:length(indicators)]
-for (p in 1:length(indicators)){
-  METADATAparameters=sqlQuery (wrsa1314,sprintf("select * from tblXwalk where NAME_xwalk='MissingBackend' and PARAMETER_Xwalk like '%%%s%%'",indicators[p]))
-  METADATAparameters$INDICATOR=indicators[p]
-  if(p==1){parameters=METADATAparameters} else{parameters=rbind(parameters,METADATAparameters)}
-}  
-View(indicators);View(parameters)
+    indicators=NULL
+    for (i in 1:nrow(METADATAindicators)){indicators=paste(indicators,METADATAindicators$Parameter_Xwalk[i],sep="|")}
+    indicators=unique(unlist(strsplit(indicators,"\\|")));indicators=indicators[2:length(indicators)]
+    for (p in 1:length(indicators)){
+      METADATAparameters=sqlQuery (wrsa1314,sprintf("select * from tblXwalk where NAME_xwalk='MissingBackend' and PARAMETER_Xwalk like '%%%s%%'",indicators[p]))
+      METADATAparameters$INDICATOR=indicators[p]
+      if(p==1){parameters=METADATAparameters} else{parameters=rbind(parameters,METADATAparameters)}
+    }  
+    View(indicators);View(parameters)
 
 
 #--------------------------------------------------------SQL RETRIEVE (old examples)--------------------------------------------------------#

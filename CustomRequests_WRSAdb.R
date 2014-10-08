@@ -57,6 +57,26 @@ SlopeIssues=addKEYS(cast(SlopeIssues,'UID+TRANSECT+POINT+SlopeFLAG~PARAMETER',va
 
 #!TN and TP updates, BMI sampleID updates
 
+#!updating "N" for SIDCHN, etc #aquamet made apparent that thalweg Yes/no variables should be populated with "No" too (not just if "yes") despite EPA not providing it (ironically, used in reachlen calc)
+YNparamTHALw=c('SEDIMENT','BAR_PRES','SIDCHN','BACKWATER');YNparamTHALb=c('SNAG','OFF_CHAN');thalwb=c('w','b')  
+for (i in 1:length(thalwb)){
+YNparamTHAL=eval(parse(text=sprintf('YNparamTHAL%s',thalwb[i])))
+THAL=tblRetrieve(Parameters=c('CHANUNCD',YNparamTHAL),Years='2013')#if 2014, would need to use depth or something else that is always populated
+THAL=subset(THAL,SAMPLE_TYPE==toupper(sprintf('THAL%s',thalwb[i])))
+THAL=cast(THAL,'UID+TRANSECT+POINT~PARAMETER',value='RESULT')
+THAL=ColCheck(THAL,c("UID","TRANSECT","POINT",YNparamTHAL))
+for(n in 1:length(YNparamTHAL)){
+  THALvar=YNparamTHAL[n]
+  THAL[,names(THAL) %in% c(THALvar)]=ifelse(is.na(THAL[,names(THAL) %in% c(THALvar)]),"N",THAL[,names(THAL) %in% c(THALvar)])
+}
+THAL=THAL[,!names(THAL) %in% c('CHANUNCD')]
+THAL=melt(data.frame(THAL),id=c("UID","TRANSECT","POINT"));THAL$RESULT=THAL$value;THAL$PARAMETER=THAL$variable
+THAL=ColCheck(subset(THAL,RESULT=='N'),c(VAR,'TRANSECT','POINT','PARAMETER','RESULT'))
+THAL$SAMPLE_TYPE=toupper(sprintf('THAL%s',thalwb[i]))
+if(i==1){THALout=THAL} else{THALout=rbind(THALout,THAL)}
+}
+#sqlSave(wrsa1314,dat=THALout,tablename='tblPOINT',rownames=F, append=TRUE)#imported 10/7/2014
+
 #checking for IND duplicates
 # select * from(
 #   select IND, COUNT(*)as cnt from(
