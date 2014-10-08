@@ -77,8 +77,9 @@ thalweg$TRANSECT=as.factor(ifelse(thalweg$PARAMETER=='INCREMNT',"A",as.character
 TRANhold=unique(paste(as.character(channelgeometry$UID) , as.character(channelgeometry$TRANSECT)))
 UIDhold=data.frame(UID=substr(TRANhold,1,nchar(TRANhold)-2),SAMPLE_TYPE='SLOPEW',TRANSECT=substr(TRANhold,nchar(TRANhold),nchar(TRANhold)),POINT='0',PARAMETER='BEARING',RESULT=0);UIDhold=ColCheck(UIDhold,colnames(channelgeometry))
 channelgeometry=rbind(channelgeometry,UIDhold)
-channelgeometry$TRANSECT=ifelse(is.na(as.numeric(channelgeometry$TRANSECT))==FALSE,as.character(channelgeometry$POINT),as.character(channelgeometry$TRANSECT))
-#channelgeometry=subset((UID %in% c()==FALSE )#omit suspected problems for NorCal
+channelgeometry$TRANSECT=ifelse(is.na(as.numeric(channelgeometry$TRANSECT))==FALSE,as.character(channelgeometry$POINT),as.character(channelgeometry$TRANSECT))#!temporary fix for 2014 slopes, these need additional modification both for skipping transects and because someimtes the crew listed the starting transect as "landmark1", etc.
+print('WARNING: Sites with questionable slope data are being omitted!')
+channelgeometry=subset(channelgeometry,substr(UID,1,5) %in% c(11625,11626,16322,16444,17198,21013,22828,31349,45019,52508,53538,74173,74588,99063)==FALSE )#omit suspected problems for NorCal so subsequent metrics not produced
 #add dummy boatable data to avoid crash in residual pools
 ACTRANSPhold=UIDhold[1,];ACTRANSPhold$PARAMETER='ACTRANSP'
 DISThold=UIDhold[1,];DISThold$PARAMETER='DISTANCE'
@@ -104,17 +105,14 @@ head(gisCalcs)
 #not provided with example data set
 #Ryan lokteff adapted the EPA script M:\GIS\GIS_Stats\Slope\Python\Slope_Endpoints1.py
 
+cat("\n\nLittoral Depth:\n\n")#pending boatable data
+metsoutLittoralDepth <- metsLittoralDepth(chandepth)
+
 metsoutSlopeBearing <- metsSlopeBearing(thalweg, channelgeometry, visits)#, gisCalcs) #DONE, but be cautious with slopes #gisCalcs allows null # not working without bearing #can force with 0 bearings does not change metrics except xbearing and sinu --> make sure these aren't consumed in other functions that use channelgeometry #bearings isn't affecting any other outputs (residual pools, general, bed stability)
 
 metsoutResidualPools <- metsResidualPools(thalweg, channelgeometry, visits)#, gisCalcs) #DONE, but be cautious with slopes
 
 metsoutBedStability <- metsBedStability(bankgeometry, thalweg, visits, channelgeometry,   channelcrosssection, littoral, wood, fishcover)#DONE, but be cautious with slopes#, gisCalcs)
-
-cat("\n\nChannel Habitat:\n\n")#!unresolved
-metsoutChannelHabitat <- metsChannelHabitat(thalweg)
-
-cat("\n\nLittoral Depth:\n\n")#pending boatable data
-metsoutLittoralDepth <- metsLittoralDepth(chandepth)
 
 metsoutGeneral <- metsGeneral(thalweg, channelgeometry)#working, but odd values coming out for reachlength still >> trouble shoot thalweg$STATION (currently set to numeric); seems to be good >> next up:  cdData data subset driving the station count which results in 0 for many NRSA sites which don't include all the "No"s for side channel, etc. >> cdData <- subset(indat, PARAMETER %in% c("ACTRANSP", "DISTANCE", "INCREMNT", "SIDCHN", "OFF_CHAN", "REACHLENGTH"))
 rlen=subset(metsoutGeneral,METRIC=='reachlen'); rlen$VALUEl=rlen$RESULT-(rlen$RESULT*.1); rlen$VALUEh=rlen$RESULT+(rlen$RESULT*.1)#10% bounds
@@ -143,6 +141,8 @@ metsoutSubstrateCharacterization <- metsSubstrateCharacterization(channelcrossse
 
 metsoutSubstrateEmbed <- metsSubstrateEmbed(channelcrosssection)#done SWJ 
 
+metsoutChannelHabitat <- metsChannelHabitat(thalweg)#!unresolved, not relevant to NAMC since CHANUNCD not collected in 2014
+
 metsoutInvasiveSpecies <- metsInvasiveSpecies(invasivelegacy)#not relevant to NAMC
 
 metsoutLegacyTree <- metsLegacyTree(invasivelegacy)#not relevant to NAMC
@@ -162,18 +162,23 @@ if(writeEXTERNAL=='Y'){write.csv(METmaster,file=sprintf('metsAquamet_%s.csv',Sys
 if(readEXTERNAL=='Y'){
 METfiles=list.files(wd, pattern='mets*.')
 for(i in 1:length(METfiles)) {
-  cat("\n\n", METfiles[i], ":\n\n", sep="")
-  eval(parse(text=paste(METfiles[i], " <- read.csv('", METfiles[i], "', row.names=1)", sep="")))
-  eval(parse(text=paste("print(head(", METfiles[i], "))", sep="")))
-  if(i==1){METmaster=eval(parse(text=METfiles[i]))} else {METmaster=rbind(METmaster,eval(parse(text=METfiles[i])))}
+  print(cat("\n\n", METfiles[i], ":\n\n", sep=""))
+  assign('METtmp', read.csv(METfiles[i]))
+  print(head(METtemp))
+  if(i==1){METmaster=METtmp} else {METmaster=rbind(METmaster,METtmp)}
 }}
 
 METmaster$RESULT=as.numeric(METmaster$RESULT)
 unique(METmaster$METRIC)
-#variables to omit: xbearing, sinu  (bc bearing not collected)
+if(exists('indicators')){
+  print("WARNING: The following core indicators (as recorded in the MissingBackend Xwalk) were not found in the AQUAMET output:")
+  print(setdiff(toupper(indicators),toupper(unique(METmaster$METRIC))))
+} else {print('Core indicators unknown.')}
+#variables to omit: xbearing, sinu  (bc bearing not collected, values are dummy)
 #write to csv as one mondo file, or don't even write out in the first place, but compile via rbinds after all functions called; use some kind of grep on ls
 
-##QR1
+
+#QR1
 QRmetTIER2=subset(METmaster, subset=METRIC %in% c('w1_hall','xcmgw','xcdenbk')) #pivot or merge? if the metrics get stored in the database (with a timestamp), then switch to pivot, but merge for now
 QRmetTIER2=cast(QRmetTIER2, UID ~ METRIC, value='RESULT', fun.aggregate=mean)#fun.aggregate=count #count to make sure only 1 record per pivot cell
 QRmetTIER2$QRDIST1=1/ (1+QRmetTIER2$w1_hall)
@@ -182,7 +187,16 @@ QRmetTIER2$QRVeg1=ifelse(QRmetTIER2$xcmgw<=2.00, .1+(.9 * (QRmetTIER2$xcmgw/2.00
 QRmetTIER2$QR1=((QRmetTIER2$QRVeg1)*(QRmetTIER2$QRVeg2)*(QRmetTIER2$QRDIST1))^0.333
 QRmetTIER2$METRIC='QR1';QRmetTIER2$RESULT=QRmetTIER2$QR1#name and save the desired metric(s), copy table and name with metTIER2 if want to save multiple submetrics
 
-##LINCIS_H
+#post-processing to do for remaining core indicators:
+##LINCIS_H from xinc_h (log)
+##LRBS from ?? (determine which variant)
+##LDVRP100 from RP100 (log and ??)
+##LBFWD_RAT from bfwd_rat (log)
+##NTL, PTL, Conductivity (+ correction), Turbidity, pH, temperature from raw data
+##CVDPTH from ?? (not in NRSA_documentation that came with aquamet package)
+##concerned about reachlen used by C1WM100 (see notes for thalCheck variable above)
+##custom (non-aquamet): OE, INVASIVES, POOLHABITAT, BANKSTAB, BLM_QR1 
+
 
 #combine all 2nd tier calcs and append to METmaster
 outls=ls()[grep('metTIER2',ls())]
@@ -193,10 +207,6 @@ for (m in 1:length(outls)){
 }
 if(writeEXTERNAL=='Y'){write.csv(METmaster,file=sprintf('metsAquamet_%s.csv',Sys.Date()),row.names=FALSE)}
 
-if(exists('indicators')){
-  print("WARNING: The following core indicators (as recorded in the MissingBackend Xwalk) were not found in the AQUAMET output:")
-  print(setdiff(toupper(indicators),toupper(unique(METmaster$METRIC))))
-}
 
 
 #xcmg check

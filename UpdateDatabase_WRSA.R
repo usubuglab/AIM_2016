@@ -1,16 +1,26 @@
-#IND is required!!! all "TBD" IND will be ignored, all blank IND will be added as a new row
+#temporary update method
 
-#export from SavedExport Export-Office_Updates3
+#export from Access using SavedExport Export-Office_Updates3
 UpdatesTBL=read.csv('Office_Updates.csv')
-UpdatesTBL=subset(UpdatesTBL,UPDATE=='')
+#IND is required!!! all "TBD" IND will be ignored, all blank IND will be added as a new row
+UpdatesTBL=subset(UpdatesTBL,UPDATE=='' & IND !='TBD')
+
 
 #enter the name of the table you want to update
-TBL='UnionTBL'
+TBL='UnionTBL'#TBL='XwalkUnion'
 TBLout=eval(parse(text=TBL))
-colIND=intersect(colnames(TBLout),colnames(UpdatesTBL));colIND=setdiff(colIND,c('REASON','RESULT')
-TBLout=merge(TBLout,UpdatesTBL,colIND,all.x=T)
-TBLout$RESULT=TBLout$RESULT.y                                                                       
-TBLout=ColCheck(TBLout,c(VAR))
+#testing, need some IND matches # intersect(unique(UpdatesTBL$IND),unique(TBLout$IND))#UpdatesTBL[485,]$IND= head(unique(TBLout$IND))[1]#UpdatesTBL[486,]$IND= head(unique(TBLout$IND))[2]#subset(TBLout,IND==2104713)
+#match IND rows
+UpdatesTBLind=subset(UpdatesTBL,is.na(IND)==FALSE & IND!='')
+UpdatesTBLind= UpdatesTBLind[,(names(UpdatesTBLind) %in% c('IND','RESULT'))]
+colIND='IND'#colIND=intersect(colnames(TBLout),colnames(UpdatesTBL));colIND=setdiff(colIND, c('REASON','INSERTION','FLAG','RESULT'))# decided to make the union looser with just IND especially given UID matching issues (permanent swaps will flag lack of matches for the colRM fields too)
+TBLout=merge(TBLout,UpdatesTBLind,colIND,all.x=T)
+TBLout$RESULT=ifelse(is.na(TBLout$RESULT.y  ) ,TBLout$RESULT.x,TBLout$RESULT.y)                                                                    
+TBLout=ColCheck(TBLout,c(VAR,'PARAMETER','RESULT','TRANSECT','POINT'))
+#append blank IND
+UpdatesTBLnew=ColCheck(subset(UpdatesTBL,is.na(IND) | IND==''),colnames(TBLout));UpdatesTBLnew$INSERTION=as.POSIXct(Sys.Date())
+TBLout=rbind(TBLout,UpdatesTBLnew)
+#DONE!
 assign(TBL,TBLout)
 
 DEVELOPMENT='N'#update query still in development
