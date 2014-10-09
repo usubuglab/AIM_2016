@@ -3,6 +3,7 @@
 *.RData
 WRSA.Rproj
 DBpasswordSWJ_doNOTgit.R
+DBpasswordNC_doNOTgit.R
 *.csv
 *.jpg
 *.xlsx
