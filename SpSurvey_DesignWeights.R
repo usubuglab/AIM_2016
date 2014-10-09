@@ -1,8 +1,10 @@
 ###------------------------------------------------pull in relevant SiteInfo------------------------------------------------###
-siteeval=tblRetrieve(Table='',Parameters=c('VALXSITE','STRATUM','MDCATY','WGT'),UIDS=UIDs,ALL=AllData,
-                    Filter=filter,SiteCodes=sitecodes,Dates=dates,Years=years,Projects=projects,
-                    Protocols='')#forcing all protocols despite global DataConsumption settings to pull in Failed sites
+siteeval=tblRetrieve(Table='',Parameters=c('VALXSITE','STRATUM','MDCATY','WGT'),UIDS=UIDs,ALL=AllData,Filter=filter,SiteCodes=sitecodes,Dates=dates,Years=years,Projects=projects,
+                    Protocols='')####comment out other filters if not needed####
+                    #forcing all protocols despite global DataConsumption settings to pull in Failed sites
                     #siteeval[3,6]="WADE"#test for UNKeval
+#siteeval=tblRetrieve(Table='',Parameters=c('VALXSITE','STRATUM','MDCATY','WGT'),Projects='NorCal',Protocols='')
+
 #translate to EvalStatus
 siteeval=bintranslate(Table='siteeval',ST='VERIF',PM='VALXSITE') 
 Eval=sqlQuery(wrsa1314,"select * from tblmetadatabin where Parameter='VALXSITE'")

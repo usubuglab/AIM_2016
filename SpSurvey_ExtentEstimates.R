@@ -61,10 +61,17 @@ designCON=data.frame(siteID=siteeval$SITE_ID,
 #accepts PIVOT or FLAT format, read in test sets to understand structure
 #UID is CRITICAL for linking regardless of the format
 #! eventually read straight from aquamet or from previous aquamet run stored in WRSAdb (note, aquamet is "flat" and original ResponseInfo was pivotted)
+######UT BLM examples###########
 #PIVOT
 #ResponseInfo=read.csv('\\\\share2.bluezone.usu.edu\\miller\\buglab\\Research Projects\\UT_BLM_Prob_Baseline\\Analyses\\GRTSweights\\Stats_Metrics_4Feb2014.csv');ResponseInfo$UID=siteeval$UID[1:nrow(ResponseInfo)];ResponseInfo$DATE_COL=siteeval$DATE_COL[1:nrow(ResponseInfo)]#(UID randomly assigned for testing)#UTBLM OE scores updated 2/4/14 for all>1="good" and no NA for low split counts (most become poor); Access query "Stats_MetricsOutputCompileForR" #previous inputs: Stats_Metrics_30Oct12
 #FLAT
-ResponseInfo=read.csv('\\\\share2.bluezone.usu.edu\\miller\\buglab\\Research Projects\\BLM_WRSA_Stream_Surveys\\Results and Reports\\NorCal_2013\\AquametTEST\\metsSubstrateCharacterization.csv')
+#ResponseInfo=read.csv('\\\\share2.bluezone.usu.edu\\miller\\buglab\\Research Projects\\BLM_WRSA_Stream_Surveys\\Results and Reports\\NorCal_2013\\AquametTEST\\metsSubstrateCharacterization.csv')
+######NorCal examples#########
+#PIVOT
+ResponseInfo=read.csv('\\\\share2.bluezone.usu.edu\\miller\\buglab\\Research Projects\\BLM_WRSA_Stream_Surveys\\Results and Reports\\NorCal_2013\\Analysis\\BugModels\\NV.MMI.InputExtentTRIAL.2014_gfp_panel_trial.csv')
+#FLAT
+#ResponseInfo=read.csv('\\\\share2.bluezone.usu.edu\\miller\\buglab\\Research Projects\\BLM_WRSA_Stream_Surveys\\Results and Reports\\NorCal_2013\\AquametTEST\\Test2\\10-08input_ToDelete\\metsAquamet_2014-10-02.csv')
+
 #determine if Pivotting needed
 aquametSTR=subset(count(colnames(ResponseInfo) %in% c('METRIC','RESULT')),x==TRUE)
 if(nrow(aquametSTR)>0){#if in aquamet format
@@ -85,10 +92,16 @@ SiteInfo=merge(siteeval,ResponseInfo,by=intersect(colnames(siteeval),colnames(Re
 ##potential variables:
 #str(SiteInfo)
 ##variable selection:
+#########UT BLM examples###########
+# selectVARauto='N'; selectVARchoice=ifelse(selectVARauto=='Y','AllVar','CustomVar')#automatically select all variables
+# extentVAR=c('TNT','EvalStatus','VALXSITE')#Extent Estimate added here since weights the same (rather than running cat.analysis twice)
+# responseVAR=c('OE')
+# stressorsVAR=c('PCT_SAFN','LSUB_DMM')#UTBLM final list: stressorsVAR=c('InvasivesYN','EC','TP','TN','AugST','LBFXWRat','C1WM100','XCDENMID','Stab2','PCT_SAFN')#must be Access names with a matching 'rtg' variable: to view, str(ResponseInfo)
+#########NorCal examples###########
 selectVARauto='N'; selectVARchoice=ifelse(selectVARauto=='Y','AllVar','CustomVar')#automatically select all variables
-extentVAR=c('TNT','EvalStatus','VALXSITE')#Extent Estimate added here since weights the same (rather than running cat.analysis twice)
-responseVAR=c('OE')
-stressorsVAR=c('PCT_SAFN','LSUB_DMM')#UTBLM final list: stressorsVAR=c('InvasivesYN','EC','TP','TN','AugST','LBFXWRat','C1WM100','XCDENMID','Stab2','PCT_SAFN')#must be Access names with a matching 'rtg' variable: to view, str(ResponseInfo)
+extentVAR=c('TNT','EvalStatus','VALXSITE')#NOT extentVAR=c('MMI','trial','EvalStatus','VALXSITE')#Extent Estimate added here since weights the same (rather than running cat.analysis twice)
+responseVAR=c('MMI')#NOT responseVAR=c('MMI','trial')
+stressorsVAR=c('trial')#NOT stressorsVAR=c('MMI')   ####'PCT_SAFN','LSUB_DMM')#UTBLM final list: stressorsVAR=c('InvasivesYN','EC','TP','TN','AugST','LBFXWRat','C1WM100','XCDENMID','Stab2','PCT_SAFN')#must be Access names with a matching 'rtg' variable: to view, str(ResponseInfo)
 #save previous variable lists here:
 #initial run variables (default): c('TotalHA','RIPARIAN',"EC","TN","TP",'MWMT','PCT_SAFN')
 #Scott November 2012 figures: c('EC','TP','TN','RIPARIAN','MWMT','PCT_SAFN')
@@ -120,7 +133,7 @@ stressorsVAR=setdiff(stressorsVAR,omitVAR)
 #the asterisk indictates 2012 only
 ECname='Conductivity'; TPname='Phosphorus';MWMTname='Max Temp.'; TNname='Nitrogen'; InvasivesYNname='Invasives';OEname='O/E';
 TotalHAname='Habitat'; RIPARIANname='Riparian Alt.'; AugSTname= 'Stream Temp.'; SummerSTname= 'Stream Temp (Sum)';
-C1WM100name='LWD*';XCDENMIDname = 'Canopy*' ; PCT_SAFNname = 'Fines'; LBFXWRatname='Flood Inundation*' ; Stab2name='Bank Stability'
+C1WM100name='LWD*';XCDENMIDname = 'Canopy*' ; PCT_SAFNname = 'Fines'; LBFXWRatname='Flood Inundation*' ; Stab2name='Bank Stability'; MMIname='MMI';trialname='trial'
 #EPA Statistical summary: LBFXWRat is an index of streamside flood inundation potential. A high value of LBFXWRat indicates that a stream or river has very unconstrained access to the valley flood plain and has flood flows sufficiently large to do so.
 #brokered through varConvert function stored in FNC_tblRetrievePVT.R
 
