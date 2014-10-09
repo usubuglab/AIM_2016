@@ -69,6 +69,21 @@ QCAREA=tblRetrieve(Parameters=c('AREA','TRAN_NUM'), Comments='Y',Projects='WRSA'
 QC.AREA<-addKEYS(QCAREA,Columns='SITE_ID')
 write.csv(QC.AREA,'QC.AREA.csv')
 
+QCAREA=tblRetrieve(Parameters=c('AREA','TRAN_NUM','SAMPLER'), Comments='Y',Projects='NV',Years=('2014'))
+QC.AREA<-addKEYS(QCAREA,Columns='SITE_ID')
+
+QCAREA=tblRetrieve(Parameters=c('AREA','TRAN_NUM','SAMPLER'), Comments='Y',Projects='COPLT',Years=('2014'))
+QC.AREA<-addKEYS(QCAREA,Columns='SITE_ID')
+
+QCAREA=tblRetrieve(Parameters=c('AREA','TRAN_NUM'), Comments='Y',Projects='GSENM',Years=('2014'))
+QC.AREA<-addKEYS(QCAREA,Columns='SITE_ID')
+
+#get benthic area for 2 boating sites in 2013
+tblRetrieve(Parameters=c('AREA'),UIDS=c(12647,13525))
+
+latlong=tblRetrieve(Parameters=c('LAT_DD','LON_DD'), Comments='Y',Projects='WRSA',Years=('2014'),SiteCodes=c('MS-LS-3028'))
+lat.long<-addKEYS(latlong,Columns='SITE_ID')
+
 ####trying to select specific sites to get IND to change site codes
 tbl6<-tblRetrieve(Parameter='SITE_ID',SiteCodes=c('NY-SS-9219','NY-LS-9218','NC-SS-9152','NC-LS-9158','NO-SS-9202','CO-LS-9445','CO-SS-9450','NB-LS-9114','NB-LS-9119'), Years='2014')
 tbl6<-tblRetrieve(Parameter='SITE_ID',SiteCodes=c('MN-LS-1019','XE-RO-5085'))
