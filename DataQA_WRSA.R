@@ -291,14 +291,14 @@ binMETA=read.csv('binMETADATAtemp.csv')##!feed in from SQL once solified in FM, 
 typestrata=c('ALL','EcoReg','Size')#must match column names that are created
 numstrata=length(typestrata)
 UnionTBL2=addKEYS(UnionTBL,'SITE_ID')
-UnionTBL2$EcoReg=substr(UnionTBL$SITE_ID,1,2)#!-- Switch to climatic rather than ecoreg?  ; ; may need to explicitly join an ecoregion column if sitecodes change over different projects and/or to utilize the EPA reference dataset, this works for NRSA only; also needs to be more expandable for additional strata
-UnionTBL2$Size=substr(UnionTBL$SITE_ID,4,5)
+UnionTBL2$EcoReg=substr(UnionTBL2$SITE_ID,1,2)#!-- Switch to climatic rather than ecoreg?  ; ; may need to explicitly join an ecoregion column if sitecodes change over different projects and/or to utilize the EPA reference dataset, this works for NRSA only; also needs to be more expandable for additional strata
+UnionTBL2$Size=substr(UnionTBL2$SITE_ID,4,5)
 UnionTBL2$ALL='ALL'
 #! other possible strata: reach width (would need to be calculated), VALXSITE or protocol (especially boatable vs. wadeable)
 #this section is highly dependent on WRSA siteID naming structure and GRTS strata
 rm(outlierTBL)
 for (p in 1:length(allparams1)){#this is a standard loop for iterating, could put it in a function that allows you to plug in a string for the most nested middle
-#for (p in 51:length(allparams1)){#target specifc parameters during testing or start over mid-process  
+for (p in 2:6){#target specifc parameters during testing or start over mid-process  
   typeparam=strsplit(allparams1[p]," ")
   type=typeparam[[1]][[1]]; param=typeparam[[1]][[2]]
   paramTBL=subset(UnionTBL2,subset=PARAMETER==param & SAMPLE_TYPE==type)#!some where in subsetting and labelling of graphs, parameter was assumed to be unique...it technically is not (i.e. crosssection vs. thalweg depths, boatable) and needs Sample_TYPE in tandem
@@ -423,7 +423,7 @@ AggLevel='Site'#options = Site, All
 dbPARAM=sqlQuery(wrsa1314,"Select SAMPLE_TYPE, PARAMETER, LABEL,VAR_TYPE from tblMETADATA where ACTIVE='TRUE'")#parameter names (SWJ to do: iterate over Sample_Type groups to generate pivots)
 params_N=subset(dbPARAM, subset=VAR_TYPE=='NUMERIC')
 tblNAME='UnionTBLnum'
-  if(min(c('SAMPLE_TYPE',tblCOL) %in% colnames(tbl))==1){#if minimum needed columns are present, proceed, otherwise assume it is a pivoted or otherwise human readable table
+  if(min(c('SAMPLE_TYPE',tblCOL) %in% colnames(UnionTBL))==1){#if minimum needed columns are present, proceed, otherwise assume it is a pivoted or otherwise human readable table
         #summarized quantitative data (average values per pivot cell which is per site per parameter)
         tblNUM=subset(UnionTBL,subset=PARAMETER %in% params_N$PARAMETER )
         if(nrow(tblNUM)>1){#only assign pivot to variable if not empty and only dive into subsequent if not empty
