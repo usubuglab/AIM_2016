@@ -15,7 +15,7 @@ UpdatesTBLind=subset(UpdatesTBL,is.na(IND)==FALSE & IND!='')
 UpdatesTBLind= UpdatesTBLind[,(names(UpdatesTBLind) %in% c('IND','RESULT'))]
 colIND='IND'#colIND=intersect(colnames(TBLout),colnames(UpdatesTBL));colIND=setdiff(colIND, c('REASON','INSERTION','FLAG','RESULT'))# decided to make the union looser with just IND especially given UID matching issues (permanent swaps will flag lack of matches for the colRM fields too)
 TBLout=merge(TBLout,UpdatesTBLind,colIND,all.x=T)
-TBLout$RESULT=ifelse(is.na(TBLout$RESULT.y  ) ,TBLout$RESULT.x,TBLout$RESULT.y)                                                                    
+TBLout$RESULT=ifelse(is.na(TBLout$RESULT.y  ) ,TBLout$RESULT.x,TBLout$RESULT.y)  #if nervous, stop to verify which result will be used                                                                  
 TBLout=ColCheck(TBLout,c(VAR,'PARAMETER','RESULT','TRANSECT','POINT'))
 #append blank IND
 UpdatesTBLnew=ColCheck(subset(UpdatesTBL,is.na(IND) | IND==''),colnames(TBLout));UpdatesTBLnew$INSERTION=as.POSIXct(Sys.Date())
