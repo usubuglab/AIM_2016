@@ -2,39 +2,9 @@
 #for detailed explanation of R and SQL structure, see buglab\Research Projects\BLM_WRSA_Stream_Surveys\Technology\WRSA data management.docx
 
 
-#-------------------------------------------------------INPUTS--------------------------------------------------------#
-#In the ideal world, users should only need to put inputs here and be able to get results out of the 'black box' below using existing functions.
-DBpassword=''#Always leave blank when saving for security and because changes annually. Contact Sarah Judson for current password.
-DBuser=''#ditto as with DBpassword
-DBserver=''#ditto as with DBpassword
-#this is a change
 
-#--------------------------------------------------------SETUP--------------------------------------------------------#
-#LOAD required packages#
-requiredPACKAGES=c('reshape', 'RODBC','ggplot2','grid','gridExtra','xlsx','sqldf','jpeg','spsurvey')
-for (r in 1:length(requiredPACKAGES)){
-  if ((requiredPACKAGES[r] %in% installed.packages()[,1])==FALSE){install.packages(requiredPACKAGES[r])}#auto-install if not present
-  library(requiredPACKAGES[r],character.only = TRUE)
-}
 
-#default working directory is the location of the Rproject which is custom to each collaborator and should automatically be set when project is loaded
-#setwd('\\\\share1.bluezone.usu.edu\\miller\\buglab\\Research Projects\\BLM_WRSA_Stream_Surveys\\Technology\\Output\\WRSA')#SWJ to do: map more dynamically but securely
-#setwd('C:\\Users\\Sarah\\Desktop\\NAMCdevelopmentLocal\\WRSA')##Sarah desktop
 
-##Establish an ODBC connection##
-#the db was created in SQL Server Manager on 11/19/2013 by Sarah Judson#
-wrsaConnectSTR=sprintf("Driver={SQL Server Native Client 10.0};Server=%s;Database=WRSAdb;Uid=%s; Pwd=%s;",DBserver,DBuser, DBpassword)
-wrsa1314=odbcDriverConnect(connection = wrsaConnectSTR)
-#SWJ to do: throw this into a function that also prompts for server and password if missing (='')
-#SWJ to do: throw the function into a separate referenced script because multiple files are using this
-
-options(stringsAsFactors=F,"scipen"=50)#general option, otherwise default read is as factors which assigns arbitrary number behind the scenes to most columns
-
-#SQL assistance functions
-#loaded from a separate R script
-source('FNC_tblRetrievePVT.R')
-#common sQL strings that need to be incorporated:
-##(select * from tblVERIFICATION where PARAMETER='site_id') v on v.UID=tblPOINT.uid
 
 
 #------------------------------------------------------New Data Requests-----------------------------------------------#
@@ -46,11 +16,31 @@ WQtbl=tblRetrieve(Parameters=c('CONDUCTIVITY','NTL','PTL'),Projects='NorCal')
 WQpvt=cast(WQtbl,'UID~PARAMETER',value='RESULT')
 WQfinal=addKEYS(WQpvt,c('SITE_ID','DATE_COL','LOC_NAME','LAT_DD','LON_DD'))
 
+#Getting Data for aquamet check of XFC_NAT
+fish=tblRetrieve(Parameters=c('BOULDR','BRUSH','LVTREE','OVRHNG','UNDCUT','WOODY'),Projects='NorCal')
+
+#Getting data for aquamet check of xcdenmid
+densiom=tblRetrieve(Parameters='DENSIOM',Projects='NorCal')
+MidDensiom = subset(densiom, POINT == "CU"|POINT =="CD"|POINT == "CL"|POINT == "CR")
+DensPvt=cast(MidDensiom,'UID~PARAMETER',value='RESULT',fun=mean)
 
 
 
+##What is causing one ONE site to have an incorrect value: 11802 is 5.147059 by Aquamet, but 2.807 by my calculations above. 
+dens3=tblRetrieve(Parameters='DENSIOM',Projects='NorCal',UIDS='11802', Comments="Y")
+
+MidDens3 = subset(dens3, POINT == "CU"|POINT =="CD"|POINT == "CL"|POINT == "CR")
 
 
+Dens_Pvt3=cast(MidDens3,'UID+TRANSECT~PARAMETER',value='RESULT',fun=mean)
+
+
+(((sum(Dens_Pvt3$DENSIOM))/11)/17)*100
+
+
+
+#This doesn't work.... Figure out filters, ask jennifer again how we got it to work.. 
+desiom=tblRetrieve(Parameters='DENSIOM',Filter= "POINT ='CU'",Projects='NorCal')
 
 #------------------------------------------------------SARAH'S EXAMPLES------------------------------------------------------------------#
 
