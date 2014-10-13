@@ -41,4 +41,20 @@ write.csv(AllWQ2, "N:\\buglab\\Research Projects\\BLM_WRSA_Stream_Surveys\\Resul
 
 
 
+##############      Aquamet Indicator calculations check      ###############
+#############################################################################
+
+#XFC_NAT
+###Get the approrpaite fish metrics from NC_DataConsumption
+######'BOULDR','BRUSH','LVTREE','OVRHNG','UNDCUT','WOODY'
+###### Change numeric categories into appropriate percentages, pivot and take the mean or each fish cover category at a site. 
+######Then sum to categories of fish cover for each site to have the final results to compared to aquamet's xfc_nat
+###### The way this is calculated causes NA's to be treated as blanks that do not count for or against the average. For example if only 1 NA for BOULDR then you would divide boulders by 10 transects instead of 11. See UID 11625 for an example.
+fish$ResultsPer=ifelse(fish$RESULT == 1, 0.05,ifelse(fish$RESULT == 2, 0.25,ifelse(fish$RESULT == 3, 0.575,ifelse(fish$RESULT == 4, 0.875,ifelse(fish$RESULT ==0, 0, NA)))))
+#fishpvt=cast(fish,'UID+TRANSECT~PARAMETER', value='RESULT')
+fishpvt2=cast(fish,'UID~PARAMETER', value='ResultsPer',fun='mean')
+fishpvt2$XFC_NAT_CHECK=rowSums(fishpvt2[,c(2,3,4,5,6,7)])
+
+#xcdenmid
+DensPvt$xcdenmid_CHECK=(DensPvt$DENSIOM/17)*100
 
