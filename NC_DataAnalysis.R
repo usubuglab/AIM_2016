@@ -1,3 +1,6 @@
+#How to order data
+New table name=data[order(data$column),]
+
 
 ##############    Water quality condition determinations      ###############
 #############################################################################
@@ -56,5 +59,49 @@ fishpvt2=cast(fish,'UID~PARAMETER', value='ResultsPer',fun='mean')
 fishpvt2$XFC_NAT_CHECK=rowSums(fishpvt2[,c(2,3,4,5,6,7)])
 
 #xcdenmid
+MidDensiom = subset(densiom, POINT == "CU"|POINT =="CD"|POINT == "CL"|POINT == "CR")
+DensPvt=cast(MidDensiom,'UID~PARAMETER',value='RESULT',fun=mean)
 DensPvt$xcdenmid_CHECK=(DensPvt$DENSIOM/17)*100
+#Trying to figure out what is going on with UID 11802.
+#Dens_Pvt3=cast(MidDens3,'UID+TRANSECT~PARAMETER',value='RESULT',fun=mean)
+
+#LINCIS_H
+
+###############################################
+##########   TROUBLESHOOTING START  ###########
+##IncBnk2=cast(Incision,'UID~PARAMETER', value='RESULT', fun=mean)
+##INCISED=Incision[,c("UID","TRANSECT","PARAMETER","RESULT")]
+#IB=aggregate(Incision)
+#IB=cast(Incision,'UID~PARAMETER',  value='RESULT', fun=aggregate)
+#IBagg=aggregate(Incision,by='PARAMETER',value='RESULT', FUN=mean)
+
+###LINCIS_h REMOVAL OF SIDE CHANNELS TO FIX PLROBLEM.. DIDN'T FIX THE ISSUE... 
+#NoSide= subset(Incision, TRANSECT == "A"|TRANSECT == "B"|TRANSECT == "C"|TRANSECT == "D"|TRANSECT == "E"|TRANSECT == "F"|TRANSECT == "G"|TRANSECT == "H"|TRANSECT == "I"|TRANSECT == "J"|TRANSECT == "K")
+#NS_IncBnk=cast(NoSide,'UID~PARAMETER', value='RESULT', fun=mean)
+#NS_IncBnk$LINCIS_H_Check=log10(NS_InkBnk$INCISED-NS_IncBnk$BANKHT+0.1)
+#########    TROUBLESHOOTING END   ############
+###############################################
+
+###First the max value of either the side channel or main channel needs to be chosen. To do this I changed all side channels (X-letter) to just the main letter (Sidechannel at A (XA) would be changed to just A).
+###Then I subset the data so that missing values would not cause errors. 
+###Then I pivoted by the max to chose the max transect value (If XA=5 and A=2 then the XA value would be chosen and the A value removed, note that it is no longer called XA so there would just be 2 A transects for a site with an A sidechannel)
+### Then take the average at each site for bank height and incised height. Merge the data back together and then calculate LINCIS_H
+Incision$TRANSECT=mapvalues(Incision$TRANSECT, c("XA", "XB","XC","XD","XE","XF","XG","XH","XI","XJ","XK" ),c("A", "B","C","D","E","F","G","H","I","J","K"))
+INCISED=subset(Incision, PARAMETER=="INCISED")
+BANKHT=subset(Incision, PARAMETER=="BANKHT")
+Inc=cast(INCISED,'UID+TRANSECT~PARAMETER', value='RESULT', fun=max)
+Bnk=cast(BANKHT,'UID+TRANSECT~PARAMETER', value='RESULT', fun=max)
+xIncht=setNames(aggregate(Inc$INCISED,list(UID=Inc$UID),mean),c("UID","xinc_h_CHECK"))
+xBnkht=setNames(aggregate(Bnk$BANKHT,list(UID=Bnk$UID),mean),c("UID","xbnk_h_CHECK"))
+IncBnk=merge(xBnkht,xIncht,all=TRUE)
+IncBnk$LINCIS_H_CHECK=log10(IncBnk$xinc_h_CHECK-IncBnk$xbnk_h_CHECK+0.1)
+
+
+
+
+
+
+
+
+
 

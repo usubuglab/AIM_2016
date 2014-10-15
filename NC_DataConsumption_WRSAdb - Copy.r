@@ -21,26 +21,14 @@ fish=tblRetrieve(Parameters=c('BOULDR','BRUSH','LVTREE','OVRHNG','UNDCUT','WOODY
 
 #Getting data for aquamet check of xcdenmid
 densiom=tblRetrieve(Parameters='DENSIOM',Projects='NorCal')
-MidDensiom = subset(densiom, POINT == "CU"|POINT =="CD"|POINT == "CL"|POINT == "CR")
-DensPvt=cast(MidDensiom,'UID~PARAMETER',value='RESULT',fun=mean)
+
+#Getting data for aquamet check of LINCIS_H, I need bankfull height and incision height for this metric
+Incision=tblRetrieve(Parameters=c('INCISED','BANKHT'),Projects='NorCal')
 
 
 
-##What is causing one ONE site to have an incorrect value: 11802 is 5.147059 by Aquamet, but 2.807 by my calculations above. 
-dens3=tblRetrieve(Parameters='DENSIOM',Projects='NorCal',UIDS='11802', Comments="Y")
-
-MidDens3 = subset(dens3, POINT == "CU"|POINT =="CD"|POINT == "CL"|POINT == "CR")
 
 
-Dens_Pvt3=cast(MidDens3,'UID+TRANSECT~PARAMETER',value='RESULT',fun=mean)
-
-
-(((sum(Dens_Pvt3$DENSIOM))/11)/17)*100
-
-
-
-#This doesn't work.... Figure out filters, ask jennifer again how we got it to work.. 
-desiom=tblRetrieve(Parameters='DENSIOM',Filter= "POINT ='CU'",Projects='NorCal')
 
 #------------------------------------------------------SARAH'S EXAMPLES------------------------------------------------------------------#
 
