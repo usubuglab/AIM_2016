@@ -9,7 +9,7 @@ MissingXwalk='MissingBackend'; MetricType='Y'#if MetricType=='Y' then groupings 
 ##testing
 # UnionTBL=tblRetrieve(Table='',ALLp='',ALL=AllData,SiteCodes=c('XE-LS-5010','SU-SS-8349','XN-SS-4135','AA-STR-0008','EL-LS-8126'))#Table='tblREACH'#ALLp=c('VALXSITE','DOM_LAND_USE','DLDLL','ROAD','PH')
 # CheckAll='N'
-##NorCal1314
+# #NorCal1314
 # UnionTBL=tblRetrieve(ALLp='Y',Years=c('2013','2014'),Projects='NorCal')
 # UnionTBLall=UnionTBL#for outlier checks, plan to compare NorCal to only NorCal sites
 # CheckAll='Y'
