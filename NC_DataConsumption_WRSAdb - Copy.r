@@ -25,7 +25,8 @@ densiom=tblRetrieve(Parameters='DENSIOM',Projects='NorCal')
 #Getting data for aquamet check of LINCIS_H, I need bankfull height and incision height for this metric
 Incision=tblRetrieve(Parameters=c('INCISED','BANKHT'),Projects='NorCal')
 
-
+#Getting data for aquamet check of pct_safn.
+Sediment=tblRetrieve(Parameters=c('SIZE_CLS','XSIZE_CLS'),Projects='NorCal')
 
 
 

@@ -1,6 +1,9 @@
 #How to order data
 New table name=data[order(data$column),]
 
+#R studio only allows the first 1000 records and 100 fields. With the below code I can choose which records I want. This is an example of viewing rown 3500-4500
+#View(data[records or rows, fields or columns])
+View(data[3500:4500,])
 
 ##############    Water quality condition determinations      ###############
 #############################################################################
@@ -97,11 +100,44 @@ IncBnk=merge(xBnkht,xIncht,all=TRUE)
 IncBnk$LINCIS_H_CHECK=log10(IncBnk$xinc_h_CHECK-IncBnk$xbnk_h_CHECK+0.1)
 
 
+#pct_safn
+#Correct...For 2013 data
+#################
+Sediment$SA_True=ifelse(Sediment$RESULT == "SA", 1, 0)
+pctsa=setNames((cast(Sediment,'UID~SAMPLE_TYPE', value='SA_True',fun='mean')),c("UID","PCT_SA_CHECK"))
+pctsa$PCT_SA_CHECK=pctsa$PCT_SA_CHECK*100
 
+Sediment$FN_True=ifelse(Sediment$RESULT == "FN", 1, 0)
+pctfn=setNames((cast(Sediment,'UID~SAMPLE_TYPE', value='FN_True',fun='mean')),c("UID","PCT_FN_CHECK"))
+pctfn$PCT_FN_CHECK=pctfn$PCT_FN_CHECK*100
 
+pctSAFN=merge(pctfn,pctsa, All=TRUE)
+pctSAFN$PCT_SAFN_CHECK=pctSAFN$PCT_FN_CHECK+pctSAFN$PCT_SA_CHECK
 
+###############################################
+##########   TROUBLESHOOTING START  ###########
+#Wrong
+Sediment$SAFN_True=ifelse(Sediment$RESULT == "SA", 1,ifelse(Sediment$RESULT == "FN", 1, 0))
+pctsafn=setNames((cast(Sediment,'UID~SAMPLE_TYPE', value='SAFN_True',fun='mean')),c("UID","PCT_SAFN_CHECK"))
+pctsafn$PCT_SAFN_CHECK=pctsafn$PCT_SAFN_CHECK*100
+#Wrong
+###
+rawsed=read.csv("N:\\buglab\\Research Projects\\BLM_WRSA_Stream_Surveys\\Results and Reports\\NorCal_2013\\Analysis\\R-processing\\NorCal_Substrate_ACTIVE_INACTIVE_Aquamet_check_14Oct14.csv")
+rawsed$SAFN_True=ifelse(rawsed$RESULT == "SA", 1,ifelse(rawsed$RESULT == "FN", 1, 0))
+Bpctsafn=setNames((cast(rawsed,'UID~SAMPLE_TYPE', value='SAFN_True',fun='mean')),c("UID","PCT_SAFN_CHECK"))
+Bpctsafn$PCT_SAFN_CHECK=Bpctsafn$PCT_SAFN_CHECK*100
+#Wrong
+########
+Sedtry1$SAFN_True=ifelse(Sedtry1$RESULT == "SA", 1,ifelse(Sedtry1$RESULT == "FN", 1, 0))
+Sedtry12=cast(Sedtry1,'UID+TRANSECT~SAMPLE_TYPE', value='SAFN_True',fun='mean')
+Sedtry123=setNames(aggregate(Sedtry12$CROSSSECW,list(UID=Sedtry12$UID),mean),c("UID","pctsafn"))
+Sedtry12$PCT_SAFN_CHECK=Sedtry12$PCT_SAFN_CHECK*100
+pctSAFN$PCT_SAFN_CHECK=pctSAFN$PCT_FN_CHECK+pctSAFN$PCT_SA_CHECK
 
-
-
-
-
+#Wrong
+###############################
+Sedtry1$SA_True=ifelse(Sedtry1$RESULT == "SA", 1, 0)
+Sedtry12=cast(Sedtry1,'UID+TRANSECT~SAMPLE_TYPE', value='SA_True',fun='mean')
+Sedtry123=setNames(aggregate(Sedtry12$CROSSSECW,list(UID=Sedtry12$UID),mean),c("UID","pctsa"))
+#########    TROUBLESHOOTING END   ############
+###############################################
