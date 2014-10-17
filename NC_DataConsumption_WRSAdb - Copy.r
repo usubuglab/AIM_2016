@@ -27,8 +27,13 @@ Incision=tblRetrieve(Parameters=c('INCISED','BANKHT'),Projects='NorCal')
 
 #Getting data for aquamet check of pct_safn.
 Sediment=tblRetrieve(Parameters=c('SIZE_CLS','XSIZE_CLS'),Projects='NorCal')
+Sed2014=tblRetrieve(Parameters=c('SIZE_NUM','LOC'),Projects='NorCal')
+WR_Sed2014=tblRetrieve(Parameters=c('SIZE_NUM'),Projects='NorCal')
 
-
+#Getting data for aquamet check of XCMG
+RipALL=tblRetrieve(Parameters=c("BARE","CANBTRE","CANSTRE","CANVEG","GCNWDY","GCWDY","UNDERVEG","UNDNWDY","UNDWDY"),Projects='NorCal')
+RipXCMG=tblRetrieve(Parameters=c("CANBTRE","CANSTRE","GCNWDY","GCWDY","UNDNWDY","UNDWDY"),Projects='NorCal')
+RipWW=tblRetrieve(Parameters=c("CANBTRE","CANSTRE","GCWDY","UNDWDY"),Projects='NorCal')
 
 
 #------------------------------------------------------SARAH'S EXAMPLES------------------------------------------------------------------#
