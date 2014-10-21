@@ -210,8 +210,11 @@ for (p in 1:length(LowHigh)){
 }
 write.csv(LowHighFailOUT,'LegalChecks.csv')
   
-##outlier check
 
+
+
+##outlier check
+##Need to have binMETADATAtemp.csv in your working directory for this script to work. You can get this table from SQL. It is called "tblMETADATAbin".
 
 #incoming vs. comparison dataset
 UnionTBLsites=unique(UnionTBL$UID)
@@ -406,7 +409,7 @@ stratat=unique(outlierTBL$STRATATYPE)
 for (s in 1:length(stratat)){
   outlierTBLst=subset(outlierTBL,subset=STRATATYPE==stratat[s])
   write.csv(outlierTBLst,file=sprintf('Outliers_2SDmean_%s.csv',stratat[s]))#could export as a single table, but a bit overwhelming
-}
+}}
 #! also output allparams1 to know what was checked (And which were excluded - excludeparams) --> will be easier once in xwalk
 #SWJ to do (2/11/14):
 #print cv or other metric as a warning for the spread? compare cv of site to avg cv of all/strata sites? (Scott--> cv only for repeatable data, didn't give alternate spread)
