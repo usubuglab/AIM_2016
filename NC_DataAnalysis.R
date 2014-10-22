@@ -211,5 +211,146 @@ RipXCMGW_Final$XCMGW_CHECK=rowSums(RipXCMGW_Final[,c(2,3,4,5)])
 ##############             EPA EMAP and WRSA data             ###############
 #############################################################################
 
+EMAP=read.csv("C:\\Users\\Nicole\\Desktop\\EMAP.csv")
+NRSA=read.csv("C:\\Users\\Nicole\\Desktop\\NRSA.csv")
+
+names(EMAP) = toupper(names(EMAP))
+names(NRSA) = toupper(names(NRSA))
+
+NRSA$PROJECT='NRSA'
+EMAP$PROJECT='EMAP'
+
+T_EMAP=t(EMAP)
+T_NRSA=t(NRSA)
+
+#Merged=merge(T_EMAP,T_NRSA)
+Merged2=merge(T_EMAP,T_NRSA, by="row.names", all=TRUE)
+#final1=t(Merged)
+final1=t(Merged2)
+
+#Yes! This works! To keep column 1 from the transposed data as column headings... Not sure how it works yet though...
+Final2=setNames(data.frame(t(Merged2[,-1])), Merged2[,1])
+
+write.csv(Final2, "C:\\Users\\Nicole\\Desktop\\3Comb.csv")
+
+##########################################################################################
+#############
+#Sooo.. I needed Excel to clean up and do a few things, but now coming back to R
+#############
+##########################################################################################
+
+combined=read.csv("C:\\Users\\Nicole\\Desktop\\comb_21Oct2014.csv")
+
+#Use to get wadeable or boatable only, if this line isn't run both boatable and wadeable will be used. Change REALM== ""
+combined=subset(combined, REALM == "WADEABLE")
+
+#To subset for reference to use on Riparian indicators.
+#First subset the data to only include sites with R or S designations
+RIP_RS_combined=subset(combined, RST_FRIP_AND_RMD_PHAB == "R"|RST_FRIP_AND_RMD_PHAB == "S")
+#Now I need to remove duplicate sites, but choose the one with the most recent year. 
+###So I order by if it was revisited, the site code, and then the year.  Check this with the view
+RIP_RS_reorder=RIP_RS_combined[order(RIP_RS_combined$REVISITED_OVERLAP,RIP_RS_combined$DUPLICATE_ID, RIP_RS_combined$YEAR, decreasing=FALSE),]
+#View(RIP_RS_reorder[1250:2041,])
+###Now I remove the duplicate that is listed second.
+RIP_RS_minusDup= RIP_RS_reorder[!duplicated(RIP_RS_reorder$DUPLICATE_ID),]
+#View(RIP_RS_minusDup[1000:1999,])
+RIP_RS_final=RIP_RS_minusDup[order(RIP_RS_minusDup$REVISITED_OVERLAP, decreasing=TRUE),]
+
+# IN EXCEL... CHANGE .95 TO .75 OR .25 AND .05 AND CHANGE THE ECOREGION FOR EACH
+#PROBLEM!!!!! Need excel 2010 to do a real percentile!
+#=Percentile.exc
+
+# Use riparian reference sites for: XCDENMID, XCMG, XCMGW, 
+
+
+###
+
+
+#Wish I could get this or the next line to work, but it won't repeat the ecoregion name and so I have to do it individually....
+#RIP_Thres_XCDENMID = aggregate(Wade_RIP_Final$XCDENMID, by = list(Wade_RIP_Final$ECO10), FUN = function(x) quantile(x, probs = c(0.95,0.75,0.25,0.05),na.rm=TRUE))
+#T4=aggregate(SED_RS_final$XEMBED, by = list(SED_RS_final$ECO10), FUN = function(x) quantile(x,probs=0.95,na.rm=TRUE))
+#trial2 = aggregate(Wade_RIP_Final$XCDENMID, by = list(Wade_RIP_Final$ECO10), FUN = quantile, probs= c(0.05,0.25,0.75,0.95),na.rm=TRUE)
+
+#XCDENMID
+T1=setNames(aggregate(RIP_RS_final$XCDENMID, by = list(RIP_RS_final$ECO10), FUN = quantile,probs=0.05,na.rm=TRUE), c("ECO10","XCDENMID_0.05"))
+T2=setNames(aggregate(RIP_RS_final$XCDENMID, by = list(RIP_RS_final$ECO10), FUN = quantile,probs=0.25,na.rm=TRUE), c("ECO10","XCDENMID_0.25"))
+T3=setNames(aggregate(RIP_RS_final$XCDENMID, by = list(RIP_RS_final$ECO10), FUN = quantile,probs=0.75,na.rm=TRUE), c("ECO10","XCDENMID_0.75"))
+T4=setNames(aggregate(RIP_RS_final$XCDENMID, by = list(RIP_RS_final$ECO10), FUN = quantile,probs=0.95,na.rm=TRUE), c("ECO10","XCDENMID_0.95"))
+T5=join_all(list(T1,T2,T3,T4), by="ECO10")
+
+#XCMG
+T1=setNames(aggregate(RIP_RS_final$XCMG, by = list(RIP_RS_final$ECO10), FUN = quantile,probs=0.05,na.rm=TRUE), c("ECO10","XCMG_0.05"))
+T2=setNames(aggregate(RIP_RS_final$XCMG, by = list(RIP_RS_final$ECO10), FUN = quantile,probs=0.25,na.rm=TRUE), c("ECO10","XCMG_0.25"))
+T3=setNames(aggregate(RIP_RS_final$XCMG, by = list(RIP_RS_final$ECO10), FUN = quantile,probs=0.75,na.rm=TRUE), c("ECO10","XCMG_0.75"))
+T4=setNames(aggregate(RIP_RS_final$XCMG, by = list(RIP_RS_final$ECO10), FUN = quantile,probs=0.95,na.rm=TRUE), c("ECO10","XCMG_0.95"))
+T6=join_all(list(T1,T2,T3,T4), by="ECO10")
+
+#XCMGW
+T1=setNames(aggregate(RIP_RS_final$XCMGW, by = list(RIP_RS_final$ECO10), FUN = quantile,probs=0.05,na.rm=TRUE), c("ECO10","XCMGW_0.05"))
+T2=setNames(aggregate(RIP_RS_final$XCMGW, by = list(RIP_RS_final$ECO10), FUN = quantile,probs=0.25,na.rm=TRUE), c("ECO10","XCMGW_0.25"))
+T3=setNames(aggregate(RIP_RS_final$XCMGW, by = list(RIP_RS_final$ECO10), FUN = quantile,probs=0.75,na.rm=TRUE), c("ECO10","XCMGW_0.75"))
+T4=setNames(aggregate(RIP_RS_final$XCMGW, by = list(RIP_RS_final$ECO10), FUN = quantile,probs=0.95,na.rm=TRUE), c("ECO10","XCMGW_0.95"))
+T7=join_all(list(T1,T2,T3,T4), by="ECO10")
+
+RIP_THRESHOLDS=join_all(list(T5,T6,T7),by="ECO10")
+
+###################################################################################
+###################################################################################
+#To subset for reference to use on Sediment and Instream indicators.
+#First subset the data to only include sites with R or S designations
+SED_RS_combined=subset(combined, RST_FSED_AND_RMD_PHAB == "R"|RST_FSED_AND_RMD_PHAB == "S")
+#Now I need to remove duplicate sites, but choose the one with the most recent year. 
+###So I order by if it was revisited, the site code, and then the year.  Check this with the view
+SED_RS_reorder=SED_RS_combined[order(SED_RS_combined$REVISITED_OVERLAP,SED_RS_combined$DUPLICATE_ID, SED_RS_combined$YEAR, decreasing=FALSE),]
+#View(SED_RS_reorder[1250:2041,])
+###Now I remove the duplicate that is listed second.
+SED_RS_minusDup= SED_RS_reorder[!duplicated(SED_RS_reorder$DUPLICATE_ID),]
+#View(SED_RS_minusDup[1000:1999,])
+SED_RS_final=SED_RS_minusDup[order(SED_RS_minusDup$REVISITED_OVERLAP, decreasing=TRUE),]
+
+# Use sediment reference sites for:  PCT_SAFN, DPCT_SF, XEMBED, XFC_NAT,LINCIS_H,
+#SECONDARY INDICATORS: CVDPTH, LRP100, LDVRP100, C1WM100
+
+#PCT_SAFN
+T1=setNames(aggregate(SED_RS_final$PCT_SAFN, by = list(SED_RS_final$ECO10), FUN = quantile,probs=0.05,na.rm=TRUE), c("ECO10","PCT_SAFN_0.05"))
+T2=setNames(aggregate(SED_RS_final$PCT_SAFN, by = list(SED_RS_final$ECO10), FUN = quantile,probs=0.25,na.rm=TRUE), c("ECO10","PCT_SAFN_0.25"))
+T3=setNames(aggregate(SED_RS_final$PCT_SAFN, by = list(SED_RS_final$ECO10), FUN = quantile,probs=0.75,na.rm=TRUE), c("ECO10","PCT_SAFN_0.75"))
+T4=setNames(aggregate(SED_RS_final$PCT_SAFN, by = list(SED_RS_final$ECO10), FUN = quantile,probs=0.95,na.rm=TRUE), c("ECO10","PCT_SAFN_0.95"))
+T5=join_all(list(T1,T2,T3,T4), by="ECO10")
+
+#DPCT_SF
+T1=setNames(aggregate(SED_RS_final$DPCT_SF, by = list(SED_RS_final$ECO10), FUN = quantile,probs=0.05,na.rm=TRUE), c("ECO10","DPCT_SF_0.05"))
+T2=setNames(aggregate(SED_RS_final$DPCT_SF, by = list(SED_RS_final$ECO10), FUN = quantile,probs=0.25,na.rm=TRUE), c("ECO10","DPCT_SF_0.25"))
+T3=setNames(aggregate(SED_RS_final$DPCT_SF, by = list(SED_RS_final$ECO10), FUN = quantile,probs=0.75,na.rm=TRUE), c("ECO10","DPCT_SF_0.75"))
+T4=setNames(aggregate(SED_RS_final$DPCT_SF, by = list(SED_RS_final$ECO10), FUN = quantile,probs=0.95,na.rm=TRUE), c("ECO10","DPCT_SF_0.95"))
+T6=join_all(list(T1,T2,T3,T4), by="ECO10")
+
+#XFC_NAT
+T1=setNames(aggregate(SED_RS_final$XFC_NAT, by = list(SED_RS_final$ECO10), FUN = quantile,probs=0.05,na.rm=TRUE), c("ECO10","XFC_NAT_0.05"))
+T2=setNames(aggregate(SED_RS_final$XFC_NAT, by = list(SED_RS_final$ECO10), FUN = quantile,probs=0.25,na.rm=TRUE), c("ECO10","XFC_NAT_0.25"))
+T3=setNames(aggregate(SED_RS_final$XFC_NAT, by = list(SED_RS_final$ECO10), FUN = quantile,probs=0.75,na.rm=TRUE), c("ECO10","XFC_NAT_0.75"))
+T4=setNames(aggregate(SED_RS_final$XFC_NAT, by = list(SED_RS_final$ECO10), FUN = quantile,probs=0.95,na.rm=TRUE), c("ECO10","XFC_NAT_0.95"))
+T7=join_all(list(T1,T2,T3,T4), by="ECO10")
+
+#LINCIS_H
+T1=setNames(aggregate(SED_RS_final$LINCIS_H, by = list(SED_RS_final$ECO10), FUN = quantile,probs=0.05,na.rm=TRUE), c("ECO10","LINCIS_H_0.05"))
+T2=setNames(aggregate(SED_RS_final$LINCIS_H, by = list(SED_RS_final$ECO10), FUN = quantile,probs=0.25,na.rm=TRUE), c("ECO10","LINCIS_H_0.25"))
+T3=setNames(aggregate(SED_RS_final$LINCIS_H, by = list(SED_RS_final$ECO10), FUN = quantile,probs=0.75,na.rm=TRUE), c("ECO10","LINCIS_H_0.75"))
+T4=setNames(aggregate(SED_RS_final$LINCIS_H, by = list(SED_RS_final$ECO10), FUN = quantile,probs=0.95,na.rm=TRUE), c("ECO10","LINCIS_H_0.95"))
+T8=join_all(list(T1,T2,T3,T4), by="ECO10")
+
+#XEMBED
+T1=setNames(aggregate(SED_RS_final$XEMBED, by = list(SED_RS_final$ECO10), FUN = quantile,probs=0.05,na.rm=TRUE), c("ECO10","XEMBED_0.05"))
+T2=setNames(aggregate(SED_RS_final$XEMBED, by = list(SED_RS_final$ECO10), FUN = quantile,probs=0.25,na.rm=TRUE), c("ECO10","XEMBED_0.25"))
+T3=setNames(aggregate(SED_RS_final$XEMBED, by = list(SED_RS_final$ECO10), FUN = quantile,probs=0.75,na.rm=TRUE), c("ECO10","XEMBED_0.75"))
+T4=setNames(aggregate(SED_RS_final$XEMBED, by = list(SED_RS_final$ECO10), FUN = quantile,probs=0.95,na.rm=TRUE), c("ECO10","XEMBED_0.95"))
+T9=join_all(list(T1,T2,T3,T4), by="ECO10")
+
+SED_THRESHOLDS=join_all(list(T5,T6,T7,T8,T9),by="ECO10")
+
+
+# WHAT TO DO WITH: W1_HALL, QR1
+
+
 
 
