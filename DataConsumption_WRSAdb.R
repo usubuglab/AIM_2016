@@ -55,6 +55,7 @@ crews=c('R1')#NOT WORKING YET, hitch and crew level generally maintained by Acce
 filter=''#custom filter (need working knowledge of Parameter:Result pairs and SQL structure; example: "(Parameter='ANGLE' and Result>50) OR (Parameter='WETWID' and Result<=0.75))"
 UIDs='BLANK'#custom filter (need working knowledge of primary keys)
 #NorCal settings: #years=c('2013','2014');projects='NorCal';protocols=c('WRSA14','NRSA13')
+#WRSA QC settings: #years=c('2014'); projects='WRSA';protocols=c('WRSA14')
 
 #PARAMETERS
 #specify if desired (will make queries less intensive):

@@ -1,6 +1,8 @@
 
 ##missing data parameters
-UnionTBL=tblRetrieve(Table='',Parameters='',ALLp=AllParam,UIDS=UIDs,ALL=AllData,Filter=filter,SiteCodes=sitecodes,Dates=dates,Years=years,Projects=projects
+UnionTBL=tblRetrieve(Table='',Parameters='',
+                     #ALLp=AllParam,UIDS=UIDs,ALL=AllData,Filter=filter,SiteCodes=sitecodes,Dates=dates,
+                     Years=years,Projects=projects
                      ,Protocols=protocols)#!? should Protocols='' to bring in all protocols? so as not to neglect failed sites? this was done for weights
 CheckAll='Y'#options: 'Y' = Check All Parameters for the protocol; 'N' = Check only Parameters in UnionTBL (i.e. if subsetting UnionTBL to single Table and don't want clutter from parameters not interested in)....this is not done automatically because missing data checks are meant to look for parameters that have ZERO readings for a particular dataset, only use in testing and known scenarios (usually where AllParams='Y')
 CommentsCount='N'#'Y' = a comment (as represented by a flag) allows the missing data warning to be ignored; 'N' = missing data is reported regardless and contributes to subsequent percentages. 
@@ -210,8 +212,11 @@ for (p in 1:length(LowHigh)){
 }
 write.csv(LowHighFailOUT,'LegalChecks.csv')
   
-##outlier check
 
+
+
+##outlier check
+##Need to have binMETADATAtemp.csv in your working directory for this script to work. You can get this table from SQL. It is called "tblMETADATAbin".
 
 #incoming vs. comparison dataset
 UnionTBLsites=unique(UnionTBL$UID)
@@ -406,7 +411,7 @@ stratat=unique(outlierTBL$STRATATYPE)
 for (s in 1:length(stratat)){
   outlierTBLst=subset(outlierTBL,subset=STRATATYPE==stratat[s])
   write.csv(outlierTBLst,file=sprintf('Outliers_2SDmean_%s.csv',stratat[s]))#could export as a single table, but a bit overwhelming
-}
+}}
 #! also output allparams1 to know what was checked (And which were excluded - excludeparams) --> will be easier once in xwalk
 #SWJ to do (2/11/14):
 #print cv or other metric as a warning for the spread? compare cv of site to avg cv of all/strata sites? (Scott--> cv only for repeatable data, didn't give alternate spread)
