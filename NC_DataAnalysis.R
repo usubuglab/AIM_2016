@@ -1,7 +1,7 @@
 #How to order data
 New table name=data[order(data$column),]
 
-#R studio only allows the first 1000 records and 100 fields. With the below code I can choose which records I want. This is an example of viewing rown 3500-4500
+#R studio only allows the first 1000 records and 100 fields to be viewed. With the below code I can choose which records I want to view. This is an example of viewing rows 3500-4500
 #View(data[records or rows, fields or columns])
 View(data[3500:4500,])
 
@@ -9,8 +9,10 @@ View(data[3500:4500,])
 #### ! means negate
 #### | means OR
 
+#############################################################################
 
 ##############    Water quality condition determinations      ###############
+
 #############################################################################
 
 # First get field measured WQ data (conductivity, tn, tp) using code in NC_DataConsumption
@@ -51,14 +53,16 @@ View(AllWQ2)
 write.csv(AllWQ2, "N:\\buglab\\Research Projects\\BLM_WRSA_Stream_Surveys\\Results and Reports\\NorCal_2013\\Analysis\\WaterQualityModels\\WQconditions_2014All_8Oct2014.csv")
 
 
+#############################################################################
 
 ##############      Aquamet Indicator calculations check      ###############
+
 #############################################################################
 
 #XFC_NAT
-###Get the approrpaite fish metrics from NC_DataConsumption
+###Get the approrpaite fish parameters from NC_DataConsumption
 ######'BOULDR','BRUSH','LVTREE','OVRHNG','UNDCUT','WOODY'
-###### Change numeric categories into appropriate percentages, pivot and take the mean or each fish cover category at a site. 
+###### Change numeric categories into appropriate percentages, pivot to take the mean or each fish cover category at a site. 
 ######Then sum to categories of fish cover for each site to have the final results to compared to aquamet's xfc_nat
 ###### The way this is calculated causes NA's to be treated as blanks that do not count for or against the average. For example if only 1 NA for BOULDR then you would divide boulders by 10 transects instead of 11. See UID 11625 for an example.
 fish$ResultsPer=ifelse(fish$RESULT == 1, 0.05,ifelse(fish$RESULT == 2, 0.25,ifelse(fish$RESULT == 3, 0.575,ifelse(fish$RESULT == 4, 0.875,ifelse(fish$RESULT ==0, 0, NA)))))
@@ -153,7 +157,7 @@ PCT_SAFN_ALL=rbind(pctsafn,F_Sed2014)
 
 
 #############
-##TO check if bed and bank measurements were included I ran this code. This code does not distinguish between bed or bank just runs to get the mean of all 2014 particles, regardless of location
+##TO check if bed and bank measurements were included I ran this code. This code does not distinguish between bed or bank just runs to get the mean of all 2014 particles, regardless of location. THis shows that Sarah's code is missing the BED/BANK determinations....
 WR_Sed2014$SAFN_True=ifelse(WR_Sed2014$RESULT == "1", 1, 0)
 WR1_Sed2014=cast(WR_Sed2014,'UID~PARAMETER', value='SAFN_True', fun=mean)
 
@@ -189,26 +193,86 @@ WR1_Sed2014=cast(WR_Sed2014,'UID~PARAMETER', value='SAFN_True', fun=mean)
 
 #xcmg
 RipXCMG$ResultsPer=ifelse(RipXCMG$RESULT == 1, 0.05,ifelse(RipXCMG$RESULT == 2, 0.25,ifelse(RipXCMG$RESULT == 3, 0.575,ifelse(RipXCMG$RESULT == 4, 0.875,ifelse(RipXCMG$RESULT ==0, 0, NA)))))
-RipXCMG_Final=cast(RipXCMG,'UID~PARAMETER', value='ResultsPer',fun='mean')
-RipXCMG_Final$XCMG_CHECK=rowSums(RipXCMG_Final[,c(2,3,4,5,6,7)])
+XCMG_new=setNames(cast(RipXCMG,'UID+TRANSECT+POINT~ACTIVE', value='ResultsPer',fun='sum'),list('UID',  'TRANSECT',  'POINT',  'VALUE'))
+XCMG_new1=setNames(aggregate(VALUE~UID,data=XCMG_new,FUN=mean),list("UID","XCMG_CHECK"))
 
-#xcmgw
+
+#xcmgw=XC+XMW+XGW: However, this is not how aquamet is calculating it, the order of operation would give different results if XC was caluclated and then added to XMW and XMG
+#More true to aquamet calculation: XCMG=XCL+XCS+XMW+XGW 
+#Need to just calculate it by transect side first then average at an entire site. 
+##XC=XCL+XCS (Small Canopy trees (CANSTRE) + Large Canopy trees(CANBTRE))  
+##XMW=Understory woody aka UNDWDY
+##MGW= ground cover woody GCWDY
 RipWW$ResultsPer=ifelse(RipWW$RESULT == 1, 0.05,ifelse(RipWW$RESULT == 2, 0.25,ifelse(RipWW$RESULT == 3, 0.575,ifelse(RipWW$RESULT == 4, 0.875,ifelse(RipWW$RESULT ==0, 0, NA)))))
-RipXCMGW_Final=cast(RipWW,'UID~PARAMETER', value='ResultsPer',fun='mean')
-RipXCMGW_Final$XCMGW_CHECK=rowSums(RipXCMGW_Final[,c(2,3,4,5)])
+XCMGW_new=setNames(cast(RipWW,'UID+TRANSECT+POINT~ACTIVE', value='ResultsPer',fun='sum'),list('UID',  'TRANSECT',  'POINT',	'VALUE'))
+XCMGW_new1=setNames(aggregate(VALUE~UID,data=XCMGW_new,FUN=mean),list("UID","XCMGW_CHECK"))
+
+
+###############################################
+##########   TROUBLESHOOTING START  ###########
+#Originals
+#RipXCMG_Final=cast(RipXCMG,'UID~PARAMETER', value='ResultsPer',fun='mean')
+#RipXCMG_Final$XCMG_CHECK=rowSums(RipXCMG_Final[,c(2,3,4,5,6,7)])
+#RipXCMGW_Final=cast(RipWW,'UID~PARAMETER', value='ResultsPer',fun='mean')
+#RipXCMGW_Final$XCMGW_CHECK=rowSums(RipXCMGW_Final[,c(2,3,4,5)])
+#Redo.... agrfdnd
+# WW6 has two values that do not match: 
+####11626 has an XC (Canopy LG trees and Canopy Small trees metric does not match aquamets) problem
+####12440 has a UNDWDY (understory woody does not match Aquamet) problem
+#WW5=cast(RipWW,'UID+TRANSECT~PARAMETER', value='ResultsPer',fun='mean')
+#WW5$XC_TRY=WW5$CANBTRE+WW5$CANSTRE
+#WW6=setNames(aggregate(XC_TRY+GCWDY+UNDWDY~UID,data=WW5,FUN=mean),list("UID","XCMGW_CHECK2"))
+#WW5$TW1=WW5$CANBTRE+WW5$CANSTRE+WW5$UNDWDY+WW5$GCWDY
+#TW2=setNames(aggregate(TW1~UID,data=WW5,FUN=mean),list("UID","XCMGW_TW2"))
+##################################################
+#WW7=setNames(aggregate(XC_TRY~UID,data=WW5,FUN=mean),list("UID","XC_CHECK2"))
+#WW8=setNames(aggregate(GCWDY~UID,data=WW5,FUN=mean),list("UID","GCW_CHECK2"))
+#WW9=setNames(aggregate(UNDWDY~UID,data=WW5,FUN=mean),list("UID","UNDW_CHECK2"))
+###############################################################
+#RipXCMGW_Final$blurg2=WW7$XC_CHECK2+RipXCMGW_Final$UNDWDY+RipXCMGW_Final$GCWDY
+#############################
+#WWA=join_all(list(WW7,WW8,WW9),by="UID")
+###############################
+#RipXCMGW_Final$XC_CHECK2=WW7$XC_CHECK2
+#RipXCMGW_Final$WWB3=rowSums(RipXCMG_Final[,c(4,5)])
+#RipXCMGW_Final$WWB3=rowSums(RipXCMG_Final[,c(4,5)])
+#View(RipXCMGW_Final)
+#colnames(RipXCMGW_Final)
+####################################
+#RipXCMGW_Final$WWB5=RipXCMGW_Final$XC_CHECK2+RipXCMGW_Final$GCWDY+RipXCMGW_Final$UNDWDY
+#BLAH=RipXCMGW_Final[,c('UID','WWB5','XCMGW_CHECK','XCMGW_CHECK2')]
+#View(BLAH)
+###############################
+#WWredo=subset(RipWW, PARAMETER=="CANBTRE"|PARAMETER=="CANSTRE")
+#WWredo2=cast(WWredo,'UID~SAMPLE_TYPE', value='ResultsPer',fun='mean')
+#RipXCMGW_Final$XC=rowSums(RipXCMGW_Final[,c(2,3)])
+#RipXCMGW_Final$XCMGW_CHECK2=rowSums(RipXCMGW_Final[,c(4,5,7)])
+#############################################
+#Didn't Work: WW6=aggregate(WW5,FUN=mean, by=list('UID'))
+#View(RipWW[2000:3000,])
+#########    TROUBLESHOOTING END   ############
+###############################################
 
 
 
 
+#To get all calculated values together... Although some tables still have the metrics included.
+AquametCheckJoin=join_all(list(fishpvt2,DensPvt,XCMGW_new1,XCMG_new1,IncBnk,pctsa,pctfn,pctSAFN,pctsafn,PCT_SAFN_ALL),by="UID")
+#To remove all of the metrics and only get the indicators subset by UID and all those columns ending in "CHECK". Hmm..not really sure what the $ is doing here, the code works without it, but all the examples I've looked at keep the $ so I kept it too... 
+AquametCheck=AquametCheckJoin[,c("UID",grep("CHECK$", colnames(AquametCheckJoin),value=TRUE))]
+write.csv(AquametCheck,"C:\\Users\\Nicole\\Desktop\\AquametCheck2.csv")
+
+#AquametCheck10=join_all(list(fishpvt2,DensPvt,RipXCMGW_Final,RipXCMG_Final,IncBnk,PCT_SAFN_ALL),by="UID")
+#AquametCheck11=AquametCheck10[,c("UID",grep("CHECK$", colnames(AquametCheck10),value=TRUE))]
+#write.csv(AquametCheck11,"C:\\Users\\Nicole\\Desktop\\AquametCheck11.csv")
 
 
 
 
-
-
-
+#############################################################################
 
 ##############             EPA EMAP and WRSA data             ###############
+
 #############################################################################
 
 EMAP=read.csv("C:\\Users\\Nicole\\Desktop\\EMAP.csv")
@@ -233,11 +297,11 @@ Final2=setNames(data.frame(t(Merged2[,-1])), Merged2[,1])
 
 write.csv(Final2, "C:\\Users\\Nicole\\Desktop\\3Comb.csv")
 
-##########################################################################################
+#################################################################################
 #############
 #Sooo.. I needed Excel to clean up and do a few things, but now coming back to R
 #############
-##########################################################################################
+#################################################################################
 
 combined=read.csv("C:\\Users\\Nicole\\Desktop\\comb_21Oct2014.csv")
 
