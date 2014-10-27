@@ -275,40 +275,47 @@ write.csv(AquametCheck,"C:\\Users\\Nicole\\Desktop\\AquametCheck2.csv")
 
 #############################################################################
 
-EMAP=read.csv("C:\\Users\\Nicole\\Desktop\\EMAP.csv")
-NRSA=read.csv("C:\\Users\\Nicole\\Desktop\\NRSA.csv")
+#Read in EMAP and NRSA data
+EMAP=read.csv("\\\\share1.bluezone.usu.edu\\miller\\buglab\\Research Projects\\BLM_WRSA_Stream_Surveys\\Results and Reports\\EPA_Data\\EMAP.csv")
+NRSA=read.csv("\\\\share1.bluezone.usu.edu\\miller\\buglab\\Research Projects\\BLM_WRSA_Stream_Surveys\\Results and Reports\\EPA_Data\\NRSA.csv")
 
+#Change all column names to uppercase because R is case sensitive
 names(EMAP) = toupper(names(EMAP))
 names(NRSA) = toupper(names(NRSA))
 
+#Make a column to distinguish between which project the data belongs to
 NRSA$PROJECT='NRSA'
 EMAP$PROJECT='EMAP'
 
+#Transpose data so that it can be merged. 
 T_EMAP=t(EMAP)
 T_NRSA=t(NRSA)
 
+#Merge the two files
 #Merged=merge(T_EMAP,T_NRSA)
 Merged2=merge(T_EMAP,T_NRSA, by="row.names", all=TRUE)
 #final1=t(Merged)
 final1=t(Merged2)
 
-#Yes! This works! To keep column 1 from the transposed data as column headings... Not sure how it works yet though...
+#Yes! This works! To keep column 1 from the transposed data as column headings
 Final2=setNames(data.frame(t(Merged2[,-1])), Merged2[,1])
 
-write.csv(Final2, "C:\\Users\\Nicole\\Desktop\\3Comb.csv")
+#Write out because I cannot figure out how do deal with this in R....
+write.csv(Final2, "\\\\share1.bluezone.usu.edu\\miller\\buglab\\Research Projects\\BLM_WRSA_Stream_Surveys\\Results and Reports\\EPA_Data\\Mass_Combination_NRSA_EMAP.csv")
 
 #################################################################################
 #############
 #Sooo.. I needed Excel to clean up and do a few things, but now coming back to R
+# to set thresholds for p-hab indicators
 #############
 #################################################################################
 
-combined=read.csv("C:\\Users\\Nicole\\Desktop\\comb_21Oct2014.csv")
+combined=read.csv("\\\\share1.bluezone.usu.edu\\miller\\buglab\\Research Projects\\BLM_WRSA_Stream_Surveys\\Results and Reports\\EPA_Data\\comb_21Oct2014.csv")
 
-#Use to get wadeable or boatable only, if this line isn't run both boatable and wadeable will be used. Change REALM== ""
+#Use to get wadeable or boatable only, if this line isn't run both boatable and wadeable will be used. Change REALM== "" to specify 
 combined=subset(combined, REALM == "WADEABLE")
 
-#To subset for reference to use on Riparian indicators.
+#To subset for reference to use on RIPARIAN indicators.
 #First subset the data to only include sites with R or S designations
 RIP_RS_combined=subset(combined, RST_FRIP_AND_RMD_PHAB == "R"|RST_FRIP_AND_RMD_PHAB == "S")
 #Now I need to remove duplicate sites, but choose the one with the most recent year. 
@@ -320,7 +327,7 @@ RIP_RS_minusDup= RIP_RS_reorder[!duplicated(RIP_RS_reorder$DUPLICATE_ID),]
 #View(RIP_RS_minusDup[1000:1999,])
 RIP_RS_final=RIP_RS_minusDup[order(RIP_RS_minusDup$REVISITED_OVERLAP, decreasing=TRUE),]
 
-#To subset for reference to use on Sediment and Instream indicators.
+#To subset for reference to use on SEDIMENT and INSTREAM indicators.
 #First subset the data to only include sites with R or S designations
 SED_RS_combined=subset(combined, RST_FSED_AND_RMD_PHAB == "R"|RST_FSED_AND_RMD_PHAB == "S")
 #Now I need to remove duplicate sites, but choose the one with the most recent year. 
@@ -333,11 +340,7 @@ SED_RS_minusDup= SED_RS_reorder[!duplicated(SED_RS_reorder$DUPLICATE_ID),]
 SED_RS_final=SED_RS_minusDup[order(SED_RS_minusDup$REVISITED_OVERLAP, decreasing=TRUE),]
 
 
-
-
-
-Trial1_pvt=cast(SED_RS_final,'ECO10~XCDENMID')
-Trial1_pvt=aggregate(SED_RS_final,by='ECO10')
+#To get Sample sizes used to set thresholds
 ##This does not count NAs (good) and was manually checked to determine if it was counting the correct information.
 ###FOR eco10
 pvt1=aggregate(XCDENMID~ECO10,data=RIP_RS_final,FUN=length)
@@ -371,10 +374,11 @@ ECOIII_SampSizes=join_all(list(pvt11,pvt12,pvt13,pvt14,pvt15, pvt16, pvt17, pvt1
 #NorCal specific hybrid ecoregions
 ECOIII_SampSizes_NC = subset(ECOIII_SampSizes, ECO_LVL_3NAME == "Central Basin and Range"|ECO_LVL_3NAME == "Eastern Cascades Slopes and Foothills"|ECO_LVL_3NAME == "Northern Basin and Range"|ECO_LVL_3NAME == "Sierra Nevada")
 
-
+###############################
 # IN EXCEL... CHANGE .95 TO .75 OR .25 AND .05 AND CHANGE THE ECOREGION FOR EACH
 #PROBLEM!!!!! Need excel 2010 to do a real percentile!
 #=Percentile.exc
+###############################
 
 # Use riparian reference sites for: XCDENMID, XCMG, XCMGW, 
 
