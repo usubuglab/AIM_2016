@@ -11,7 +11,7 @@
 #To get the metadata table you must use the SQL code. 
 tblMETADATA= sqlQuery(wrsa1314, "select * from tblMETADATA")
 
-#To get WQ data for 3 parameters for all NorCal sites
+  #To get WQ data for 3 parameters for all NorCal sites
 WQtbl=tblRetrieve(Parameters=c('CONDUCTIVITY','NTL','PTL'),Projects='NorCal')
 WQpvt=cast(WQtbl,'UID~PARAMETER',value='RESULT')
 WQfinal=addKEYS(WQpvt,c('SITE_ID','DATE_COL','LOC_NAME','LAT_DD','LON_DD'))
