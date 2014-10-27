@@ -310,7 +310,7 @@ write.csv(Final2, "\\\\share1.bluezone.usu.edu\\miller\\buglab\\Research Project
 #############
 #################################################################################
 
-combined=read.csv("\\\\share1.bluezone.usu.edu\\miller\\buglab\\Research Projects\\BLM_WRSA_Stream_Surveys\\Results and Reports\\EPA_Data\\comb_21Oct2014.csv")
+combined=read.csv("\\\\share1.bluezone.usu.edu\\miller\\buglab\\Research Projects\\BLM_WRSA_Stream_Surveys\\Results and Reports\\EPA_Data\\Comb_21Oct2014_Rinput_DoNotAlter.csv")
 
 #Use to get wadeable or boatable only, if this line isn't run both boatable and wadeable will be used. Change REALM== "" to specify 
 combined=subset(combined, REALM == "WADEABLE")
