@@ -53,7 +53,34 @@ if(exists('SlopeConnectFail')){SlopeUNC=tblRetrieve(Parameters=SLOPEp,UIDS=c(Slo
 SlopeIssues=rbind(SlopeKC,SlopeBoat,SlopeTR,SlopeAK,SlopeUNC);
 SlopeIssues=addKEYS(cast(SlopeIssues,'UID+TRANSECT+POINT+SlopeFLAG~PARAMETER',value='RESULT')  ,c('SITE_ID','DATE_COL','PROJECT'))
 
+#Jennifer - WQ WRSA checks
+WQ2=tblRetrieve(Parameters=c('CONDUCTIVITY','PH','CAL_INST_ID'), Comments='Y',Projects='WRSA',Years=c('2013','2014'))
+WQ1=addKEYS(cast(WQ2,'UID~PARAMETER',value='RESULT')  ,c('SITE_ID','DATE_COL','CREW_LEADER'))
 
+#bank cross-validation WRSA checks
+widhgt=tblRetrieve(Parameters=c('BANKHT','INCISED','WETWID','BANKWID','BARWID'), Projects='WRSA',Years=c('2013','2014'))
+widhgt2=tblRetrieve(Parameters=c('BANKHT','INCISED','WETWID','WETWIDTH','BANKWID','BARWID','BARWIDTH'), Projects='WRSA',Years=c('2013','2014'))
+widhgt=subset(widhgt,nchar(TRANSECT)==1 | substr(TRANSECT,1,1)=='X')
+
+whPVT=cast(widhgt,'UID+TRANSECT~PARAMETER',value='RESULT')
+wnPVTIND=cast(widhgt,'UID+TRANSECT~PARAMETER',value='IND')     
+tranPVT=addKEYS(merge(whPVT,bnkPVT,by=c('UID','TRANSECT'),all=T) ,c('SITE_ID','DATE_COL'))
+rawwhPVT=addKEYS(merge(whPVT,wnPVTIND,by=c('UID','TRANSECT'),all=T) ,c('SITE_ID','DATE_COL'))
+colnames(rawwhPVT)<-c('UID','TRANSECT','BANKHT','BANKWID','BARWID','INCISED','WETWID','BANKHT_IND','BANKWID_IND','BARWID_ID','INCISED_IND','WETWID_ID','DATE_COL','SITE_ID')
+
+bankhtcheck=subset(rawwhPVT,BANKHT>INCISED|BANKHT>1.5)#!possible crossvalidation rule to scan for#no bank heights showed up in the legal value or outlier check so wanted to check units
+wetwidthchecks=subset(rawwhPVT,WETWID>BANKWID)
+write.csv(bankhtcheck,'bankhtincisedcheck_23Oct2014.csv')
+write.csv(wetwidthchecks,'wetwidthchecks_23Oct2014.csv')
+write.csv(rbind(widhgt2,banks),'WidthHeightRaw_23Oct2014.csv')#need raw output to get IND values
+
+#Increment cross-validation WRSA checks
+incrementcheck=tblRetrieve(Parameters=c('TRCHLEN','INCREMENT','RCHWIDTH'),Projects='WRSA',Years=c('2013','2014'),Protocols=c('NRSA13','WRSA14'))
+incrsub=subset(incrementcheck,UID!=10383)#UID:10383  IND 4849393 needs to be deactivated for this to work
+incrementPVT=cast(incrsub,'UID~PARAMETER',value='RESULT')
+incrementsub=subset(incrementPVT,TRCHLEN/0.01!=INCREMENT)#couldn't get this to work so checked this manually in excel and also checked to make sure that RCHWIDTH*40=TRCHLEN and for RCHWIDTH<2.5 INCREMENT=1 and for RCHWIDTH>2.5<4 INCREMENT=1.5
+write.csv(incrementPVT,'incrementPVT.csv')
+weridinc=tblRetrieve(Parameters=c('INCREMENT'),UIDS='11852')
 
 #!TN and TP updates, BMI sampleID updates
 
