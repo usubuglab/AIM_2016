@@ -16,6 +16,9 @@ WQtbl=tblRetrieve(Parameters=c('CONDUCTIVITY','NTL','PTL'),Projects='NorCal')
 WQpvt=cast(WQtbl,'UID~PARAMETER',value='RESULT')
 WQfinal=addKEYS(WQpvt,c('SITE_ID','DATE_COL','LOC_NAME','LAT_DD','LON_DD'))
 
+#Get Site Code to UID, run the water quality lines above and just pull from that...
+UID_SiteCode=WQfinal[,c('UID','SITE_ID')]
+
 #Getting Data for aquamet check of XFC_NAT
 fish=tblRetrieve(Parameters=c('BOULDR','BRUSH','LVTREE','OVRHNG','UNDCUT','WOODY'),Projects='NorCal')
 
