@@ -62,6 +62,46 @@ write.csv(AllWQ2, "N:\\buglab\\Research Projects\\BLM_WRSA_Stream_Surveys\\Resul
 
 
 
+#############################################################################
+#######################     NV MODELS     ###################################
+#############################################################################
+#Pc>0
+#Impaired = 0.6020531
+#Equivalence = 0.6864668
+
+#Pc>=0.5
+#Impaired = 0.6035492
+#Equivalence = 0.701018
+
+#Excel formula: =IF(N3>0.6864668,"Good",IF(N3<0.6020531,"Poor","Fair"))
+
+
+
+
+
+
+#############################################################################
+#######################     CSCI MODELS     #################################
+#############################################################################
+#Uses 0.5 detection!
+#### Mean:  CSCI: 1.010739; O/E: 1.021478
+#### StDv:  CSCI: 0.123775; O/E: 0.190266
+######Current recommendation: classify impairment (poor) as scores falling 1.65 SD  
+######below the Mean (Mean-(1.65*SD));  This is still undergoing discussion in the 
+######SWAMP group, so the traditional 2 SD approach can still be implemented. 
+
+#Index   Likely intact        Possibly intact        Likely altered      Very likely altered
+#          (≥0.30)            (0.10 to 0.30)         (0.01 to 0.10)           (<0.01)
+#CSCI       ≥0.92              0.79 to 0.92	          0.63 to 0.79	       0.00 to 0.63
+#pMMI	      ≥0.91	             0.77 to 0.91	          0.58 to 0.77	       0.00 to 0.58
+#O/E        ≥0.90	             0.76 to 0.90	          0.56 to 0.76	       0.00 to 0.56
+
+
+
+
+
+
+
 
 
 
@@ -156,10 +196,6 @@ IndicatorCond_ECO_LVL_3NAME=rbind(Ind_SierraNV,Ind_NorthBasin,Ind_CastFoot)
 
 
 
-#Trying to see how to get the threshold value
-
-x1=Thresholds_ECO10[3,2]
-x2=Thresholds_ECO10[Thresholds_ECO10$ECO10=='MT-PNW','XFC_NAT_0.05']
 
 
 
