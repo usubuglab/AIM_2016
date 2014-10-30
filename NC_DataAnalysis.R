@@ -59,12 +59,12 @@ write.csv(AllWQ2, "N:\\buglab\\Research Projects\\BLM_WRSA_Stream_Surveys\\Resul
 ##############     Invertebrate condition determinations      ###############
 
 #############################################################################
-
-
+NorCalBugs=read.csv("\\\\share1.bluezone.usu.edu\\miller\\buglab\\Research Projects\\BLM_WRSA_Stream_Surveys\\Results and Reports\\NorCal_2013\\Analysis\\BugModels\\ALL_BugModel_Results.csv")
 
 #############################################################################
 #######################     NV MODELS     ###################################
 #############################################################################
+#Scores below the impaired threshold imply degradation. Scores greater than or equal to the equivalence threshold imply reference condition. 
 #Pc>0
 #Impaired = 0.6020531
 #Equivalence = 0.6864668
@@ -73,22 +73,45 @@ write.csv(AllWQ2, "N:\\buglab\\Research Projects\\BLM_WRSA_Stream_Surveys\\Resul
 #Impaired = 0.6035492
 #Equivalence = 0.701018
 
-#Excel formula: =IF(N3>0.6864668,"Good",IF(N3<0.6020531,"Poor","Fair"))
+#Excel formula: =IF(N3> OR EQUAL TO 0.6864668,"Good",IF(N3<0.6020531,"Poor","Fair"))
 
+NorCalBugs$NV_OE5_Cond=ifelse(NorCalBugs$NV_OE5 >=0.701018,'Good',ifelse(NorCalBugs$NV_OE5 <0.6035492, 'Poor','Fair'))
 
-
-
+NorCalBugs$NV_OE0_Cond=ifelse(NorCalBugs$NV_OE0 >=0.6864668,'Good',ifelse(NorCalBugs$NV_OE0 <0.6020531, 'Poor','Fair'))
 
 
 #############################################################################
 #######################     CSCI MODELS     #################################
 #############################################################################
-#Uses 0.5 detection!
+#Uses 0.5 detection! Poor=(Mean-(1.65*SD)), good is .825*SD
 #### Mean:  CSCI: 1.010739; O/E: 1.021478
 #### StDv:  CSCI: 0.123775; O/E: 0.190266
+### CSCI
+# Good >=0.9086246
+# Fair
+# Poor <0.8067303
+
+###O/E
+# Good >=0.8645086
+# Fair
+# Poor <0.7075391
+
+#Uses 0.5 detection!Poor=(Mean-(2*SD)), good is 1*SD
+### CSCI
+# Good >=0.886964
+# Fair
+# Poor < 0.763189
+
+###O/E
+# Good >=0.831212
+# Fair
+# Poor <0.640946
+
 ######Current recommendation: classify impairment (poor) as scores falling 1.65 SD  
 ######below the Mean (Mean-(1.65*SD));  This is still undergoing discussion in the 
 ######SWAMP group, so the traditional 2 SD approach can still be implemented. 
+
+##########################
 
 #Index   Likely intact        Possibly intact        Likely altered      Very likely altered
 #          (≥0.30)            (0.10 to 0.30)         (0.01 to 0.10)           (<0.01)
@@ -96,17 +119,43 @@ write.csv(AllWQ2, "N:\\buglab\\Research Projects\\BLM_WRSA_Stream_Surveys\\Resul
 #pMMI	      ≥0.91	             0.77 to 0.91	          0.58 to 0.77	       0.00 to 0.58
 #O/E        ≥0.90	             0.76 to 0.90	          0.56 to 0.76	       0.00 to 0.56
 
+#            Good                              Fair                            Poor
+#CSCI      >= 0.855                       <0.855 and >0.71                    < 0.71        	      
+#pMMI	     >= 0.84	                      <0.84 and >0.675                    < 0.675	              
+#O/E       >= 0.83	                      <0.83 and >0.66                     < 0.66	                
+
+
+# My first attempt is to set thresholds based on the Mean and SD for OE and CSCI and then compare to the tabled approach. 
+# However, I will using a three category approach rather than the 4 categories. To do this I will take the midpoint of 
+# each middle category to create one middle category and expanding the thresholds of the "good" and "poor" categories.
+# Column names: CSCI_OE  CSCI_MMI	CSCI_Hybrid
+
+# Using the midpoint criteria 
+NorCalBugs$CSCI_Hybrid_MidCond=ifelse(NorCalBugs$CSCI_Hybrid >=0.855,'Good',ifelse(NorCalBugs$CSCI_Hybrid <0.71, 'Poor','Fair'))
+NorCalBugs$CSCI_MMI_MidCond=ifelse(NorCalBugs$CSCI_MMI >=0.84,'Good',ifelse(NorCalBugs$CSCI_MMI <0.675, 'Poor','Fair'))
+NorCalBugs$CSCI_OE_MidCond=ifelse(NorCalBugs$CSCI_OE >=0.83,'Good',ifelse(NorCalBugs$CSCI_OE <0.66, 'Poor','Fair'))
+
+#Using the two upper categories merged to create just 3 categories rather than 4
+NorCalBugs$CSCI_Hybrid_UpperCond=ifelse(NorCalBugs$CSCI_Hybrid >=0.79,'Good',ifelse(NorCalBugs$CSCI_Hybrid <0.63, 'Poor','Fair'))
+NorCalBugs$CSCI_MMI_UpperCond=ifelse(NorCalBugs$CSCI_MMI >=0.7,'Good',ifelse(NorCalBugs$CSCI_MMI <0.58, 'Poor','Fair'))
+NorCalBugs$CSCI_OE_UpperCond=ifelse(NorCalBugs$CSCI_OE >=0.76,'Good',ifelse(NorCalBugs$CSCI_OE <0.56, 'Poor','Fair'))
 
 
 
 
+Freq1=cbind(count(NorCalBugs,var='CSCI_Hybrid_MidCond'),count(NorCalBugs,var='CSCI_MMI_MidCond'),count(NorCalBugs,var='CSCI_OE_MidCond'),count(NorCalBugs,var='NV_OE0_Cond'),count(NorCalBugs,var='NV_OE5_Cond'),count(NorCalBugs,var='NV_MMI_Cond'),count(NorCalBugs,var='CSCI_OE_UpperCond'),count(NorCalBugs,var='CSCI_Hybrid_UpperCond'),count(NorCalBugs,var='CSCI_MMI_UpperCond'))
 
 
+NorCalCHECK_Bugs=subset(NorCalBugs, SiteCode=='AR-SS-8066'|SiteCode=='SU-SS-8311'|SiteCode=='AR-LS-8018'|SiteCode=='AR-SS-8017'|SiteCode=='HC-SS-8456'|SiteCode=='HC-SS-8475')
+NorCalCHECK_Bugs$NicoleJudge=c('G','P','P','P','G','G')
+  
 
-
-
-
-
+plot(NorCalBugs$NV_OE5,NorCalBugs$CSCI_OE, ylim=c(0,1.4), xlim=c(0,1.4),abline((lm(NorCalBugs$CSCI_OE~NorCalBugs$NV_OE5)), col="blue", lty="longdash"))
+abline(0,1)
+r2=(cor(NorCalBugs$CSCI_OE,NorCalBugs$NV_OE5))^2
+mylabel = bquote(italic(R)^2 == .(format(r2, digits = 3)))
+text(x = .1, y = 1, labels = mylabel)
+  
 #############################################################################
 
 ##############   Physical Habitat condition determinations    ###############
