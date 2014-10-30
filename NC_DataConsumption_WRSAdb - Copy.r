@@ -16,8 +16,8 @@ WQtbl=tblRetrieve(Parameters=c('CONDUCTIVITY','NTL','PTL'),Projects='NorCal')
 WQpvt=cast(WQtbl,'UID~PARAMETER',value='RESULT')
 WQfinal=addKEYS(WQpvt,c('SITE_ID','DATE_COL','LOC_NAME','LAT_DD','LON_DD'))
 
-#Get Site Code to UID, run the water quality lines above and just pull from that...
-UID_SiteCode=WQfinal[,c('UID','SITE_ID')]
+#Get Site Code to UID, run the water quality lines above and just pull from that...This didn't work for what I initially needed, but is a good way to get UID/Sitecode
+#UID_SiteCode=WQfinal[,c('UID','SITE_ID')]
 
 #Getting Data for aquamet check of XFC_NAT
 fish=tblRetrieve(Parameters=c('BOULDR','BRUSH','LVTREE','OVRHNG','UNDCUT','WOODY'),Projects='NorCal')
@@ -31,10 +31,12 @@ Incision=tblRetrieve(Parameters=c('INCISED','BANKHT'),Projects='NorCal')
 #Getting data for aquamet check of pct_safn.
 Sediment=tblRetrieve(Parameters=c('SIZE_CLS','XSIZE_CLS'),Projects='NorCal')
 Sed2014=tblRetrieve(Parameters=c('SIZE_NUM','LOC'),Projects='NorCal')
-WR_Sed2014=tblRetrieve(Parameters=c('SIZE_NUM'),Projects='NorCal')
+
+#WR_Sed2014=tblRetrieve(Parameters=c('SIZE_NUM'),Projects='NorCal')
 
 #Getting data for aquamet check of XCMG
-RipALL=tblRetrieve(Parameters=c("BARE","CANBTRE","CANSTRE","CANVEG","GCNWDY","GCWDY","UNDERVEG","UNDNWDY","UNDWDY"),Projects='NorCal')
+#RipALL=tblRetrieve(Parameters=c("BARE","CANBTRE","CANSTRE","CANVEG","GCNWDY","GCWDY","UNDERVEG","UNDNWDY","UNDWDY"),Projects='NorCal')
+
 RipXCMG=tblRetrieve(Parameters=c("CANBTRE","CANSTRE","GCNWDY","GCWDY","UNDNWDY","UNDWDY"),Projects='NorCal')
 RipWW=tblRetrieve(Parameters=c("CANBTRE","CANSTRE","GCWDY","UNDWDY"),Projects='NorCal')
 

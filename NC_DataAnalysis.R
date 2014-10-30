@@ -309,17 +309,17 @@ IncBnk$LINCIS_H_CHECK=log10(IncBnk$xinc_h_CHECK-IncBnk$xbnk_h_CHECK+0.1)
 #Correct...For 2013 data
 ################################
 ##This is ONLY for 2013 data
-####Doing Sand and fines separately
-Sediment$SA_True=ifelse(Sediment$RESULT == "SA", 1, 0)
-pctsa=setNames((cast(Sediment,'UID~SAMPLE_TYPE', value='SA_True',fun='mean')),c("UID","PCT_SA_CHECK"))
-pctsa$PCT_SA_CHECK=pctsa$PCT_SA_CHECK*100
+####Doing Sand and fines separately: This was a check to figure out how SAFN was calculated and is only needed if you want the individual metrics of Sand and Fines
+#Sediment$SA_True=ifelse(Sediment$RESULT == "SA", 1, 0)
+#pctsa=setNames((cast(Sediment,'UID~SAMPLE_TYPE', value='SA_True',fun='mean')),c("UID","PCT_SA_CHECK"))
+#pctsa$PCT_SA_CHECK=pctsa$PCT_SA_CHECK*100
 
-Sediment$FN_True=ifelse(Sediment$RESULT == "FN", 1, 0)
-pctfn=setNames((cast(Sediment,'UID~SAMPLE_TYPE', value='FN_True',fun='mean')),c("UID","PCT_FN_CHECK"))
-pctfn$PCT_FN_CHECK=pctfn$PCT_FN_CHECK*100
+#Sediment$FN_True=ifelse(Sediment$RESULT == "FN", 1, 0)
+#pctfn=setNames((cast(Sediment,'UID~SAMPLE_TYPE', value='FN_True',fun='mean')),c("UID","PCT_FN_CHECK"))
+#pctfn$PCT_FN_CHECK=pctfn$PCT_FN_CHECK*100
 
-pctSAFN=merge(pctfn,pctsa, All=TRUE)
-pctSAFN$PCT_SAFN_CHECK=pctSAFN$PCT_FN_CHECK+pctSAFN$PCT_SA_CHECK
+#pctSAFN=merge(pctfn,pctsa, All=TRUE)
+#pctSAFN$PCT_SAFN_CHECK=pctSAFN$PCT_FN_CHECK+pctSAFN$PCT_SA_CHECK
 
 
 ####Doing sand and fines together
@@ -350,11 +350,10 @@ F_Sed2014$PCT_SAFN_CHECK=F_Sed2014$PCT_SAFN_CHECK*100
 PCT_SAFN_ALL=rbind(pctsafn,F_Sed2014)
 
 
-
 #############
 ##TO check if bed and bank measurements were included I ran this code. This code does not distinguish between bed or bank just runs to get the mean of all 2014 particles, regardless of location. THis shows that Sarah's code is missing the BED/BANK determinations....
-WR_Sed2014$SAFN_True=ifelse(WR_Sed2014$RESULT == "1", 1, 0)
-WR1_Sed2014=cast(WR_Sed2014,'UID~PARAMETER', value='SAFN_True', fun=mean)
+#WR_Sed2014$SAFN_True=ifelse(WR_Sed2014$RESULT == "1", 1, 0)
+#WR1_Sed2014=cast(WR_Sed2014,'UID~PARAMETER', value='SAFN_True', fun=mean)
 
 
 ###############################################
@@ -392,6 +391,7 @@ XCMG_new=setNames(cast(RipXCMG,'UID+TRANSECT+POINT~ACTIVE', value='ResultsPer',f
 XCMG_new1=setNames(aggregate(VALUE~UID,data=XCMG_new,FUN=mean),list("UID","XCMG_CHECK"))
 
 
+#xcmgw
 #xcmgw=XC+XMW+XGW: However, this is not how aquamet is calculating it, the order of operation would give different results if XC was caluclated and then added to XMW and XMG
 #More true to aquamet calculation: XCMG=XCL+XCS+XMW+XGW 
 #Need to just calculate it by transect side first then average at an entire site. 
@@ -401,7 +401,6 @@ XCMG_new1=setNames(aggregate(VALUE~UID,data=XCMG_new,FUN=mean),list("UID","XCMG_
 RipWW$ResultsPer=ifelse(RipWW$RESULT == 1, 0.05,ifelse(RipWW$RESULT == 2, 0.25,ifelse(RipWW$RESULT == 3, 0.575,ifelse(RipWW$RESULT == 4, 0.875,ifelse(RipWW$RESULT ==0, 0, NA)))))
 XCMGW_new=setNames(cast(RipWW,'UID+TRANSECT+POINT~ACTIVE', value='ResultsPer',fun='sum'),list('UID',  'TRANSECT',  'POINT',	'VALUE'))
 XCMGW_new1=setNames(aggregate(VALUE~UID,data=XCMGW_new,FUN=mean),list("UID","XCMGW_CHECK"))
-
 
 ###############################################
 ##########   TROUBLESHOOTING START  ###########
@@ -452,10 +451,12 @@ XCMGW_new1=setNames(aggregate(VALUE~UID,data=XCMGW_new,FUN=mean),list("UID","XCM
 
 
 #To get all calculated values together... Although some tables still have the metrics included.
-AquametCheckJoin=join_all(list(fishpvt2,DensPvt,XCMGW_new1,XCMG_new1,IncBnk,pctsa,pctfn,pctSAFN,pctsafn,PCT_SAFN_ALL),by="UID")
+AquametCheckJoin=join_all(list(fishpvt2,DensPvt,XCMGW_new1,XCMG_new1,IncBnk,PCT_SAFN_ALL),by="UID")
 #To remove all of the metrics and only get the indicators subset by UID and all those columns ending in "CHECK". Hmm..not really sure what the $ is doing here, the code works without it, but all the examples I've looked at keep the $ so I kept it too... 
 AquametCheck=AquametCheckJoin[,c("UID",grep("CHECK$", colnames(AquametCheckJoin),value=TRUE))]
 write.csv(AquametCheck,"C:\\Users\\Nicole\\Desktop\\AquametCheck2.csv")
+#Remove all other data files as they are no longer needed
+rm(densiom,RipXCMG,XCMG_new,XCMG_new1,RipWW,XCMGW_new,XCMGW_new1,AquametCheckJoin,fish,fishpvt2,MidDensiom,DensPvt,Incision,INCISED,BANKHT,Inc,Bnk,xIncht,xBnkht,IncBnk,Sediment,pctsafn,Sed2014,A_Sed2014,C_Sed2014,E_Sed2014,F_Sed2014,PCT_SAFN_ALL)
 
 #AquametCheck10=join_all(list(fishpvt2,DensPvt,RipXCMGW_Final,RipXCMG_Final,IncBnk,PCT_SAFN_ALL),by="UID")
 #AquametCheck11=AquametCheck10[,c("UID",grep("CHECK$", colnames(AquametCheck10),value=TRUE))]
