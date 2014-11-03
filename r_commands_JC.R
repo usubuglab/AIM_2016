@@ -73,6 +73,9 @@ rcorr(as.matrix(dataframe))
 ks.test(x,y)
 
 & # boolean and
+| #boolean OR
+  
+merge(dataframe1, dataframe2, by=c(), all=T)
 aggregate(width ~ species) #~ function of
 aggregate(cbind(petal.width,length)) #cbind column bind rbind row bind
 

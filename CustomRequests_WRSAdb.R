@@ -57,6 +57,19 @@ SlopeIssues=addKEYS(cast(SlopeIssues,'UID+TRANSECT+POINT+SlopeFLAG~PARAMETER',va
 WQ2=tblRetrieve(Parameters=c('CONDUCTIVITY','PH','CAL_INST_ID'), Comments='Y',Projects='WRSA',Years=c('2013','2014'))
 WQ1=addKEYS(cast(WQ2,'UID~PARAMETER',value='RESULT')  ,c('SITE_ID','DATE_COL','CREW_LEADER'))
 
+#box plot conduct
+#run DataConsumption with Year Project and Parameter filters
+#run top few lines of DataQA_WRSA to read in the data
+#run all outlier code from DataQA_WRSA
+UnionTBL2$EcoReg.f<-factor(UnionTBL2$EcoReg)
+UnionTBL2$RESULT.n<-as.numeric(UnionTBL2$RESULT)
+boxplot(RESULT.n~EcoReg.f,data=UnionTBL2,xlab="EcoRegion",ylab="Conductivity uS/cm")
+UnionTBL2.subset<-subset(UnionTBL2, EcoReg==c('MN','MP','MS','XE','XN','XS'))
+write.csv(UnionTBL2,'Conductivity-boxplot.csv')
+UnionTBL2.subset<-read.csv('Conductivity-boxplot_woOT.csv')
+UnionTBL2.subset<-subset(UnionTBL2, EcoReg=='MN')
+boxplot(RESULT.n~EcoReg.f,data=UnionTBL2.subset,xlab="EcoRegion",ylab="Conductivity uS/cm")
+detach(UnionTBL2)
 #bank cross-validation WRSA checks
 widhgt=tblRetrieve(Parameters=c('BANKHT','INCISED','WETWID','BANKWID','BARWID'), Projects='WRSA',Years=c('2013','2014'))
 widhgt2=tblRetrieve(Parameters=c('BANKHT','INCISED','WETWID','WETWIDTH','BANKWID','BARWID','BARWIDTH'), Projects='WRSA',Years=c('2013','2014'))
@@ -73,6 +86,17 @@ wetwidthchecks=subset(rawwhPVT,WETWID>BANKWID)
 write.csv(bankhtcheck,'bankhtincisedcheck_23Oct2014.csv')
 write.csv(wetwidthchecks,'wetwidthchecks_23Oct2014.csv')
 write.csv(rbind(widhgt2,banks),'WidthHeightRaw_23Oct2014.csv')#need raw output to get IND values
+
+#getting raw bank data for a few problem sites
+widhgt=tblRetrieve(Parameters=c('BANKHT','INCISED','WETWID','BANKWID','BARWID'), Projects='WRSA',Years=c('2013','2014'),SiteCodes=c('MN-SS-1133','MP-SS-2091','MS-SS-3126','XE-RO-5081','XE-SS-5105','XS-SS-6135', 'OT-LS-7001',	'OT-LS-7012',	'MP-SS-2080',	'XE-SS-5150',	'MS-LS-3026',	'OT-LS-7019',	'OT-SS-7133'))
+widhgt2=tblRetrieve(Parameters=c('BANKHT','INCISED','WETWID','WETWIDTH','BANKWID','BARWID','BARWIDTH'), Projects='WRSA',Years=c('2013','2014'),SiteCodes=c('MN-SS-1133','MP-SS-2091','MS-SS-3126','XE-RO-5081','XE-SS-5105','XS-SS-6135', 'OT-LS-7001',  'OT-LS-7012',	'MP-SS-2080',	'XE-SS-5150',	'MS-LS-3026',	'OT-LS-7019',	'OT-SS-7133'))
+widhgt=subset(widhgt,nchar(TRANSECT)==1 | substr(TRANSECT,1,1)=='X')
+
+whPVT=cast(widhgt,'UID+TRANSECT~PARAMETER',value='RESULT')
+wnPVTIND=cast(widhgt,'UID+TRANSECT~PARAMETER',value='IND')     
+rawwhPVT=addKEYS(merge(whPVT,wnPVTIND,by=c('UID','TRANSECT'),all=T) ,c('SITE_ID','DATE_COL'))
+colnames(rawwhPVT)<-c('UID','TRANSECT','BANKHT','BANKWID','BARWID','INCISED','WETWID','BANKHT_IND','BANKWID_IND','BARWID_ID','INCISED_IND','WETWID_ID','DATE_COL','SITE_ID')
+write.csv(rawwhPVT,'problem_sites_cross_valid_bank.csv')
 
 #Increment cross-validation WRSA checks
 incrementcheck=tblRetrieve(Parameters=c('TRCHLEN','INCREMENT','RCHWIDTH'),Projects='WRSA',Years=c('2013','2014'),Protocols=c('NRSA13','WRSA14'))
