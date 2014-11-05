@@ -11,7 +11,7 @@
 #To get the metadata table you must use the SQL code. 
 tblMETADATA= sqlQuery(wrsa1314, "select * from tblMETADATA")
 
-  #To get WQ data for 3 parameters for all NorCal sites
+#To get WQ data for 3 parameters for all NorCal sites
 WQtbl=tblRetrieve(Parameters=c('CONDUCTIVITY','NTL','PTL'),Projects='NorCal')
 WQpvt=cast(WQtbl,'UID~PARAMETER',value='RESULT')
 WQfinal=addKEYS(WQpvt,c('SITE_ID','DATE_COL','LOC_NAME','LAT_DD','LON_DD'))
@@ -36,9 +36,28 @@ Sed2014=tblRetrieve(Parameters=c('SIZE_NUM','LOC'),Projects='NorCal')
 
 #Getting data for aquamet check of XCMG
 #RipALL=tblRetrieve(Parameters=c("BARE","CANBTRE","CANSTRE","CANVEG","GCNWDY","GCWDY","UNDERVEG","UNDNWDY","UNDWDY"),Projects='NorCal')
-
 RipXCMG=tblRetrieve(Parameters=c("CANBTRE","CANSTRE","GCNWDY","GCWDY","UNDNWDY","UNDWDY"),Projects='NorCal')
 RipWW=tblRetrieve(Parameters=c("CANBTRE","CANSTRE","GCWDY","UNDWDY"),Projects='NorCal')
+
+#Getting data for aquamet check W1_HALL
+#Figure out the differences... Human influence sample type...
+Human_Influ=tblRetrieve(Parame ters=c('BUILD','LOG','MINE','PARK','PAST','PAVE','PIPES','ROAD','ROW','TRASH','WALL'), Projects='NorCal')
+
+                                     
+                        
+                        
+#Getting data for aquamet check XEMBED
+EMBED=tblRetrieve(Parameters='EMBED', Projects='NorCal')
+
+
+#Getting data for aquamet check QR1
+#Run densiom, Human_Influ, and RipWW to get the data, code to calculate QR1 is in NC_DataAnalysis file
+
+
+
+
+
+
 
 
 #------------------------------------------------------SARAH'S EXAMPLES------------------------------------------------------------------#

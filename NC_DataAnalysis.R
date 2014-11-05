@@ -151,12 +151,39 @@ NorCalCHECK_Bugs=subset(NorCalBugs, SiteCode=='AR-SS-8066'|SiteCode=='SU-SS-8311
 NorCalCHECK_Bugs$NicoleJudge=c('G','P','P','P','G','G')
   
 
+
+
+#plot O/E
 plot(NorCalBugs$NV_OE5,NorCalBugs$CSCI_OE, ylim=c(0,1.4), xlim=c(0,1.4),abline((lm(NorCalBugs$CSCI_OE~NorCalBugs$NV_OE5)), col="blue", lty="longdash"))
 abline(0,1)
 r2=(cor(NorCalBugs$CSCI_OE,NorCalBugs$NV_OE5))^2
 mylabel = bquote(italic(R)^2 == .(format(r2, digits = 3)))
 text(x = .1, y = 1, labels = mylabel)
+
+#plot MMI
+NorCalBugs$NV_MMI_2=NorCalBugs$NV_MMI/100
+plot(NorCalBugs$NV_MMI_2,NorCalBugs$CSCI_MMI, ylim=c(0,1.4), xlim=c(0,1.4),abline((lm(NorCalBugs$CSCI_MMI~NorCalBugs$NV_MMI_2)), col="blue", lty="longdash"))
+abline(0,1)
+r2=(cor(NorCalBugs$CSCI_MMI,NorCalBugs$NV_MMI_2))^2
+mylabel = bquote(italic(R)^2 == .(format(r2, digits = 3)))
+text(x = .1, y = 1, labels = mylabel)
+
   
+plot(NorCalBugs$NV_MMI_2,NorCalBugs$CSCI_MMI, ylim=c(0,1.4), xlim=c(0,1.4),abline((lm(NorCalBugs$CSCI_MMI~NorCalBugs$NV_MMI_2)), col="blue", lty="longdash"))
+abline(0,1)
+r2=(cor(NorCalBugs$CSCI_MMI,NorCalBugs$NV_MMI_2))^2
+mylabel = bquote(italic(R)^2 == .(format(r2, digits = 3)))
+text(x = .1, y = 1, labels = mylabel)
+
+
+
+
+
+#Second EXAMPLE TEXT IN GRAPH
+#TEXT IN GRAPH
+#plot(Weight~Length)
+#lines(m1,col="red")
+#text(locator(1), " Y=9e-07x^3.4198   R Squared = .92")
 #############################################################################
 
 ##############   Physical Habitat condition determinations    ###############
@@ -485,6 +512,65 @@ rm(densiom,RipXCMG,XCMG_new,XCMG_new1,RipWW,XCMGW_new,XCMGW_new1,AquametCheckJoi
 #AquametCheck10=join_all(list(fishpvt2,DensPvt,RipXCMGW_Final,RipXCMG_Final,IncBnk,PCT_SAFN_ALL),by="UID")
 #AquametCheck11=AquametCheck10[,c("UID",grep("CHECK$", colnames(AquametCheck10),value=TRUE))]
 #write.csv(AquametCheck11,"C:\\Users\\Nicole\\Desktop\\AquametCheck11.csv")
+
+
+#Xembed: Embeddedness
+XEMBED=setNames(cast(EMBED,'UID~PARAMETER', value='RESULT', fun='mean'), list('UID','XEMBED_CHECK'))
+
+
+
+
+
+#W1_HALL
+Human_Influ$Weights=ifelse(Human_Influ$RESULT == "B", 1.5,ifelse(Human_Influ$RESULT == "C", 1.0, ifelse(Human_Influ$RESULT == "P", 0.667, 0))) 
+
+###Definitely NOT!!!
+#Human_Influ_2=setNames(cast(Human_Influ,'UID+TRANSECT+POINT~ACTIVE', value='Weights',fun='sum'),list('UID',  'TRANSECT',  'POINT',  'VALUE'))
+#Human_Influ_3=setNames(aggregate(VALUE~UID,data=Human_Influ_2,FUN=mean),list("UID","W1_HALL_CHECK"))
+
+####Still no cigar... 
+#Human_Influ_A=cast(Human_Influ,'UID~PARAMETER', value='Weights',fun='mean')
+#Human_Influ_A$W1_HALL_CHECK=rowSums(Human_Influ_A[,c(2:12)])       
+
+###Nope
+#Human_Influ_M=setNames((cast(Human_Influ,'UID~SAMPLE_TYPE', value='Weights',fun='mean')),c("UID","W1_HALL_CHECK"))
+
+###NOPE!
+#Human_Influ_5=setNames(cast(Human_Influ,'UID+TRANSECT+POINT~PARAMETER', value='Weights',fun='sum'),list('UID',  'TRANSECT',  'POINT', 'BUILD','LOG','MINE','PARK','PAST','PAVE','PIPES','ROAD','ROW','TRASH','WALL'))
+#Human_Influ_6=setNames(aggregate(BUILD+LOG+MINE+PARK+PAST+PAVE+PIPES+ROAD+ROW+TRASH+WALL~UID,data=Human_Influ_5,FUN=mean),list("UID","W1_HALL_CHECK"))
+
+
+#QR1
+#QR1= {(QRVeg1) (QRVeg2) (QRDIST1)} ^ 0.333; 
+
+#if XCMGW <=2.00, then QRVeg1=.1+(.9 (XCMGW/2.00))
+#if XCMGW >2.00 then QRVeg1=1; 
+#and QRVeg2=0.1 + [0.9(XCDENBK/100)]; 
+#QRDIST1=1/ (1+W1_Hall). 
+
+
+###xcdenbk
+BnkDensiom = subset(densiom, POINT == "LF"|POINT =="RT")
+BnkDensPvt=cast(BnkDensiom,'UID~PARAMETER',value='RESULT',fun=mean)
+BnkDensPvt$xcdenbk_CHECK=(BnkDensPvt$DENSIOM/17)*100
+
+#XCMGW
+XCMGW_new1
+
+#W1_HALL
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
