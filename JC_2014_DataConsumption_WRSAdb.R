@@ -33,8 +33,11 @@ tbl3=addKEYS(tblRetrieve(Parameter='TRCHLEN',Years='2014'),Columns='SITE_ID')
                                        
              
 cast(tbl,'SITE_ID+UID~PARAMETER',value='RESULT',fun.aggregate='mean')# '' are around the entire rows #default to counts if more than one result for each row # can add mean as I did here
-           
-             
+
+angle_outlier<-tblRetrieve(Parameters='ANGLE180', SiteCodes='MN-SS-1121', Projects='WRSA',Protocol='WRSA14',Comments='Y')
+
+undercut_outlier<-tblRetrieve(Parameters='UNDERCUT', UIDS=c(10383,  10380,	10379,	13527,	12730,	12716,	12726,	11849,	11855,	11853,	11786,	11785,	12648,	12649,	11851,	11851,	12732,	13532,	11852,	11852,	12727,	12727,	12714), Projects='WRSA',Protocol='NRSA13',Comments='Y')
+
 trial<-sqlQuery(wrsa1314,"select * from tblPOINT where PARAMETER='slope'") #basic select query must use "
 getmeta<-sqlQuery(wrsa1314,"select * from tblMETADATA")#### getting the metadata table
              
