@@ -514,58 +514,46 @@ rm(densiom,RipXCMG,XCMG_new,XCMG_new1,RipWW,XCMGW_new,XCMGW_new1,AquametCheckJoi
 #write.csv(AquametCheck11,"C:\\Users\\Nicole\\Desktop\\AquametCheck11.csv")
 
 
-#Xembed: Embeddedness
+#Xembed: Embeddedness: 
+#Good to go although this is not yet updated in the IndicatorInventory file, Update file and then delete this note.
 XEMBED=setNames(cast(EMBED,'UID~PARAMETER', value='RESULT', fun='mean'), list('UID','XEMBED_CHECK'))
 
-
-
-
-
 #W1_HALL
-Human_Influ$Weights=ifelse(Human_Influ$RESULT == "B", 1.5,ifelse(Human_Influ$RESULT == "C", 1.0, ifelse(Human_Influ$RESULT == "P", 0.667, 0))) 
-
-###Definitely NOT!!!
-#Human_Influ_2=setNames(cast(Human_Influ,'UID+TRANSECT+POINT~ACTIVE', value='Weights',fun='sum'),list('UID',  'TRANSECT',  'POINT',  'VALUE'))
-#Human_Influ_3=setNames(aggregate(VALUE~UID,data=Human_Influ_2,FUN=mean),list("UID","W1_HALL_CHECK"))
-
-####Still no cigar... 
-#Human_Influ_A=cast(Human_Influ,'UID~PARAMETER', value='Weights',fun='mean')
-#Human_Influ_A$W1_HALL_CHECK=rowSums(Human_Influ_A[,c(2:12)])       
-
-###Nope
-#Human_Influ_M=setNames((cast(Human_Influ,'UID~SAMPLE_TYPE', value='Weights',fun='mean')),c("UID","W1_HALL_CHECK"))
-
-###NOPE!
-#Human_Influ_5=setNames(cast(Human_Influ,'UID+TRANSECT+POINT~PARAMETER', value='Weights',fun='sum'),list('UID',  'TRANSECT',  'POINT', 'BUILD','LOG','MINE','PARK','PAST','PAVE','PIPES','ROAD','ROW','TRASH','WALL'))
-#Human_Influ_6=setNames(aggregate(BUILD+LOG+MINE+PARK+PAST+PAVE+PIPES+ROAD+ROW+TRASH+WALL~UID,data=Human_Influ_5,FUN=mean),list("UID","W1_HALL_CHECK"))
+#Be careful, the documentation says to use P=0.667, but the aquamet code says 0.6667, if there ends up being a lot of P's in the data this makes a difference!!! 
+Human_Influ$Weights=ifelse(Human_Influ$RESULT == "B", 1.5,ifelse(Human_Influ$RESULT == "C", 1.0, ifelse(Human_Influ$RESULT == "P", 0.6667, 0))) 
+W1_HALL=cast(Human_Influ,'UID~PARAMETER', value='Weights',fun='mean')
+W1_HALL$W1_HALL_CHECK=rowSums(W1_HALL[,c(2:12)])       
 
 
 #QR1
 #QR1= {(QRVeg1) (QRVeg2) (QRDIST1)} ^ 0.333; 
-
 #if XCMGW <=2.00, then QRVeg1=.1+(.9 (XCMGW/2.00))
 #if XCMGW >2.00 then QRVeg1=1; 
 #and QRVeg2=0.1 + [0.9(XCDENBK/100)]; 
-#QRDIST1=1/ (1+W1_Hall). 
+#QRDIST1=1/(1+W1_Hall). 
 
+# ADD W1_HALL to this
+QR1=join_all(list(XCMGW_new1,BnkDensPvt,W1_HALL), by='UID')
 
-###xcdenbk
+###xcdenbk: Good to go, need to update in IndicatorInventory??
 BnkDensiom = subset(densiom, POINT == "LF"|POINT =="RT")
 BnkDensPvt=cast(BnkDensiom,'UID~PARAMETER',value='RESULT',fun=mean)
 BnkDensPvt$xcdenbk_CHECK=(BnkDensPvt$DENSIOM/17)*100
 
-#XCMGW
-XCMGW_new1
 
-#W1_HALL
+#QRVeg1
+QR1$QRveg1=ifelse(QR1$XCMGW_CHECK<=2.00,.1*(.9*(XCMGW_new1$XCMGW_CHECK/2)),1)
 
+#QRVeg2
+QR1$QRVeg2=0.1 + (0.9*(QR1$xcdenbk_CHECK/100))
 
+#QRDIST1
+QR1$QRDIST1=1/(1+QR1$W1_HALL_CHECK)
 
+#Final QR1 calculation
+QR1$QR1_CHECK=(QR1$QRVeg1)*(QR1$QRVeg2)*(QR1$QRDIST1)
 
-
-
-
-
+^ 0.333; 
 
 
 
