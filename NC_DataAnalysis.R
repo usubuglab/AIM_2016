@@ -397,7 +397,7 @@ F_Sed2014=setNames(aggregate(E_Sed2014$SAFN_True,list(UID=E_Sed2014$UID),mean), 
 F_Sed2014$PCT_SAFN_CHECK=F_Sed2014$PCT_SAFN_CHECK*100
 
 
-# Now I'd like to combine the two datasets for PCT_SAFN together so that I don't have multiple files for the same thing
+# Combine the two datasets for PCT_SAFN together so that I don't have multiple files for the same thing
 PCT_SAFN_ALL=rbind(pctsafn,F_Sed2014)
 
 
@@ -499,10 +499,46 @@ XCMGW_new1=setNames(aggregate(VALUE~UID,data=XCMGW_new,FUN=mean),list("UID","XCM
 ###############################################
 
 
+#Xembed: Embeddedness: 
+#Good to go although this is not yet updated in the IndicatorInventory file, Update file and then delete this note.
+XEMBED=setNames(cast(EMBED,'UID~PARAMETER', value='RESULT', fun='mean'), list('UID','XEMBED_CHECK'))
+
+
+
+#W1_HALL
+#Be careful, the documentation says to use P=0.667, but the aquamet code says 0.6667, if there ends up being a lot of P's in the data this makes a difference!!! 
+Human_Influ$Weights=ifelse(Human_Influ$RESULT == "B", 1.5,ifelse(Human_Influ$RESULT == "C", 1.0, ifelse(Human_Influ$RESULT == "P", 0.6667, 0))) 
+W1_HALL=cast(Human_Influ,'UID~PARAMETER', value='Weights',fun='mean')
+W1_HALL$W1_HALL_CHECK=rowSums(W1_HALL[,c(2:12)])       
+
+
+###xcdenbk: needed for QR1
+BnkDensiom = subset(densiom, POINT == "LF"|POINT =="RT")
+BnkDensPvt=cast(BnkDensiom,'UID~PARAMETER',value='RESULT',fun=mean)
+BnkDensPvt$xcdenbk_CHECK=(BnkDensPvt$DENSIOM/17)*100
+
+#QR1
+#QR1= {(QRVeg1) (QRVeg2) (QRDIST1)} ^ 0.333; 
+#if XCMGW <=2.00, then QRVeg1=.1+(.9 (XCMGW/2.00))
+#if XCMGW >2.00 then QRVeg1=1; 
+#and QRVeg2=0.1 + [0.9(XCDENBK/100)]; 
+#QRDIST1=1/(1+W1_Hall). 
+
+QR1=join_all(list(XCMGW_new1,BnkDensPvt,W1_HALL), by='UID')
+QR1=setNames(subset(QR1[,c('UID','XCMGW_CHECK','xcdenbk_CHECK','W1_HALL_CHECK')]),list('UID','XCMGW','xcdenbk','W1_HALL'))
+
+#QRVeg1
+QR1$QRveg1=ifelse(QR1$XCMGW<=2.00,.1+(.9*(QR1$XCMGW/2)),1)
+#QRVeg2
+QR1$QRVeg2=0.1 + (0.9*(QR1$xcdenbk/100))
+#QRDIST1
+QR1$QRDIST1=1/(1+QR1$W1_HALL)
+#Final QR1 calculation
+QR1$QR1_CHECK=(QR1$QRveg1*QR1$QRVeg2*QR1$QRDIST1)^0.333
 
 
 #To get all calculated values together... Although some tables still have the metrics included.
-AquametCheckJoin=join_all(list(fishpvt2,DensPvt,XCMGW_new1,XCMG_new1,IncBnk,PCT_SAFN_ALL),by="UID")
+AquametCheckJoin=join_all(list(fishpvt2,DensPvt,XCMGW_new1,XCMG_new1,IncBnk,PCT_SAFN_ALL,QR1),by="UID")
 #To remove all of the metrics and only get the indicators subset by UID and all those columns ending in "CHECK". Hmm..not really sure what the $ is doing here, the code works without it, but all the examples I've looked at keep the $ so I kept it too... 
 AquametCheck=AquametCheckJoin[,c("UID",grep("CHECK$", colnames(AquametCheckJoin),value=TRUE))]
 #write.csv(AquametCheck,"C:\\Users\\Nicole\\Desktop\\AquametCheck2.csv")
@@ -512,51 +548,6 @@ rm(densiom,RipXCMG,XCMG_new,XCMG_new1,RipWW,XCMGW_new,XCMGW_new1,AquametCheckJoi
 #AquametCheck10=join_all(list(fishpvt2,DensPvt,RipXCMGW_Final,RipXCMG_Final,IncBnk,PCT_SAFN_ALL),by="UID")
 #AquametCheck11=AquametCheck10[,c("UID",grep("CHECK$", colnames(AquametCheck10),value=TRUE))]
 #write.csv(AquametCheck11,"C:\\Users\\Nicole\\Desktop\\AquametCheck11.csv")
-
-
-#Xembed: Embeddedness: 
-#Good to go although this is not yet updated in the IndicatorInventory file, Update file and then delete this note.
-XEMBED=setNames(cast(EMBED,'UID~PARAMETER', value='RESULT', fun='mean'), list('UID','XEMBED_CHECK'))
-
-#W1_HALL
-#Be careful, the documentation says to use P=0.667, but the aquamet code says 0.6667, if there ends up being a lot of P's in the data this makes a difference!!! 
-Human_Influ$Weights=ifelse(Human_Influ$RESULT == "B", 1.5,ifelse(Human_Influ$RESULT == "C", 1.0, ifelse(Human_Influ$RESULT == "P", 0.6667, 0))) 
-W1_HALL=cast(Human_Influ,'UID~PARAMETER', value='Weights',fun='mean')
-W1_HALL$W1_HALL_CHECK=rowSums(W1_HALL[,c(2:12)])       
-
-
-#QR1
-#QR1= {(QRVeg1) (QRVeg2) (QRDIST1)} ^ 0.333; 
-#if XCMGW <=2.00, then QRVeg1=.1+(.9 (XCMGW/2.00))
-#if XCMGW >2.00 then QRVeg1=1; 
-#and QRVeg2=0.1 + [0.9(XCDENBK/100)]; 
-#QRDIST1=1/(1+W1_Hall). 
-
-# ADD W1_HALL to this
-QR1=join_all(list(XCMGW_new1,BnkDensPvt,W1_HALL), by='UID')
-
-###xcdenbk: Good to go, need to update in IndicatorInventory??
-BnkDensiom = subset(densiom, POINT == "LF"|POINT =="RT")
-BnkDensPvt=cast(BnkDensiom,'UID~PARAMETER',value='RESULT',fun=mean)
-BnkDensPvt$xcdenbk_CHECK=(BnkDensPvt$DENSIOM/17)*100
-
-
-#QRVeg1
-QR1$QRveg1=ifelse(QR1$XCMGW_CHECK<=2.00,.1*(.9*(XCMGW_new1$XCMGW_CHECK/2)),1)
-
-#QRVeg2
-QR1$QRVeg2=0.1 + (0.9*(QR1$xcdenbk_CHECK/100))
-
-#QRDIST1
-QR1$QRDIST1=1/(1+QR1$W1_HALL_CHECK)
-
-#Final QR1 calculation
-QR1$QR1_CHECK=(QR1$QRVeg1)*(QR1$QRVeg2)*(QR1$QRDIST1)
-
-^ 0.333; 
-
-
-
 
 
 

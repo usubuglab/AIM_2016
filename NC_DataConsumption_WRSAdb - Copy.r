@@ -41,7 +41,7 @@ RipWW=tblRetrieve(Parameters=c("CANBTRE","CANSTRE","GCWDY","UNDWDY"),Projects='N
 
 #Getting data for aquamet check W1_HALL
 #Figure out the differences... Human influence sample type...
-Human_Influ=tblRetrieve(Parame ters=c('BUILD','LOG','MINE','PARK','PAST','PAVE','PIPES','ROAD','ROW','TRASH','WALL'), Projects='NorCal')
+Human_Influ=tblRetrieve(Parameters=c('BUILD','LOG','MINE','PARK','PAST','PAVE','PIPES','ROAD','ROW','TRASH','WALL'), Projects='NorCal')
 
                                      
                         
@@ -50,8 +50,7 @@ Human_Influ=tblRetrieve(Parame ters=c('BUILD','LOG','MINE','PARK','PAST','PAVE',
 EMBED=tblRetrieve(Parameters='EMBED', Projects='NorCal')
 
 
-#Getting data for aquamet check QR1
-#Run densiom, Human_Influ, and RipWW to get the data, code to calculate QR1 is in NC_DataAnalysis file
+#To get data for aquamet check QR1, run densiom, Human_Influ, and RipWW to get the data. Code to calculate QR1 is in NC_DataAnalysis file
 
 
 
