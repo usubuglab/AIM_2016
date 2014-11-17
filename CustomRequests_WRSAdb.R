@@ -39,12 +39,6 @@ write.csv(wh2PVTavg,'WidthHeightAvg_17Sept2014.csv')
 
 
 
-
-
-
-CORRECTED='N'
-
-
 #Jennifer - missing data checks
 
 #Jennifer - Slope checks
@@ -64,6 +58,13 @@ SlopeIssues=addKEYS(cast(SlopeIssues,'UID+TRANSECT+POINT+SlopeFLAG~PARAMETER',va
 #Jennifer - WQ WRSA checks
 WQ2=tblRetrieve(Parameters=c('CONDUCTIVITY','PH','CAL_INST_ID'), Comments='Y',Projects='WRSA',Years=c('2013','2014'))
 WQ1=addKEYS(cast(WQ2,'UID~PARAMETER',value='RESULT')  ,c('SITE_ID','DATE_COL','CREW_LEADER'))
+
+WQ2=tblRetrieve(Parameters=c('CONDUCTIVITY','CORRECTED','TEMPERATURE'), Comments='Y',Projects='WRSA',Years=c('2013','2014'))
+WQ1=cast(WQ2,'UID~PARAMETER',value='RESULT')
+WQind=cast(WQ2,'UID~PARAMETER',value='IND')
+WQ3=addKEYS(merge(WQ1,WQind,by=c('UID'),all=T) ,c('SITE_ID','DATE_COL','CREW_LEADER'))
+WQ3.sub=subset(WQ3,CORRECTED.x!='Y')
+write.csv(WQ3.sub,'not_temp_corrected_conduct.csv')
 
 #box plot conduct
 #run DataConsumption with Year Project and Parameter filters
@@ -122,6 +123,12 @@ rawwhPVT=addKEYS(merge(whPVT,wnPVTIND,by=c('UID','TRANSECT'),all=T) ,c('SITE_ID'
 colnames(rawwhPVT)<-c('UID','TRANSECT','BANKHT','BANKWID','BARWID','INCISED','WETWID','BANKHT_IND','BANKWID_IND','BARWID_ID','INCISED_IND','WETWID_ID','DATE_COL','SITE_ID')
 write.csv(rawwhPVT,'problem_sites_cross_valid_bank.csv')
 
+#third bank parameter check on select UIDs based off of summary
+widhgt=addKEYS(tblRetrieve(Parameters=c('BANKHT'), Projects='WRSA',Years=c('2013','2014'),UIDS=c(10376,10381,13517,11833,12717,11847,12648,11836)),c('SITE_ID','DATE_COL'))
+widhgt.sub=addKEYS(TBLout,c('SITE_ID','DATE_COL'))
+
+tblRetrieve(Parameters='ANGLE180', SiteCodes='XN-RO-4085')
+
 #Increment cross-validation WRSA checks
 incrementcheck=tblRetrieve(Parameters=c('TRCHLEN','INCREMENT','RCHWIDTH'),Projects='WRSA',Years=c('2013','2014'),Protocols=c('NRSA13','WRSA14'))
 incrsub=subset(incrementcheck,UID!=10383)#UID:10383  IND 4849393 needs to be deactivated for this to work
@@ -129,6 +136,12 @@ incrementPVT=cast(incrsub,'UID~PARAMETER',value='RESULT')
 incrementsub=subset(incrementPVT,TRCHLEN/0.01!=INCREMENT)#couldn't get this to work so checked this manually in excel and also checked to make sure that RCHWIDTH*40=TRCHLEN and for RCHWIDTH<2.5 INCREMENT=1 and for RCHWIDTH>2.5<4 INCREMENT=1.5
 write.csv(incrementPVT,'incrementPVT.csv')
 weridinc=tblRetrieve(Parameters=c('INCREMENT'),UIDS='11852')
+
+
+#check 0 substrate flagged in legal values
+substratecheck=addKEYS(tblRetrieve(Parameters=c('SIZE_NUM'),Projects='WRSA',Years=c('2013','2014'),Protocols=c('NRSA13','WRSA14'), Comments='Y'), c('SITE_ID','DATE_COL'))
+zerosubstrate=subset(substratecheck, RESULT==0)
+write.csv(zerosubstrate,'zerosubstrate.csv')
 
 #second round cross validation checks
 #checked bht and bankwidth 1st round checks again and did not find any values that still needed to be changed
@@ -142,6 +155,18 @@ bnkPVTIND=cast(banks,'UID+TRANSECT~PARAMETER+POINT',value='IND')
 rawwhPVT=addKEYS(merge(bnkPVT,bnkPVTIND,by=c('UID','TRANSECT'),all=T) ,c('SITE_ID','DATE_COL'))
 undercut_checks=subset(rawwhPVT,UNDERCUT_LF.x>1|UNDERCUT_RT.x>1)
 write.csv(undercut_checks,'undercut_checks.csv')#many units issues
+
+#checking UID with poor scan
+widhgt=tblRetrieve(Parameters=c('BANKHT','INCISED','WETWID','BANKWID','BARWID'), UIDS='11785')
+widhgt2=tblRetrieve(Parameters=c('BANKHT','INCISED','WETWID','WETWIDTH','BANKWID','BARWID','BARWIDTH'), UIDS='11785')
+banks=tblRetrieve(Parameters=c('ANGLE','UNDERCUT'), UIDS='11785')
+banksnum=subset(banks,is.na(as.numeric(RESULT))==F);banksnum$RESULT=as.numeric(banksnum$RESULT)
+widhgt=subset(widhgt,nchar(TRANSECT)==1 | substr(TRANSECT,1,1)=='X')
+
+whPVT=cast(widhgt,'UID+TRANSECT~PARAMETER',value='RESULT')
+bnkPVT=cast(banks,'UID+TRANSECT~PARAMETER+POINT',value='RESULT')      
+tranPVT=addKEYS(merge(whPVT,bnkPVT,by=c('UID','TRANSECT'),all=T) ,c('SITE_ID','DATE_COL'))# all values match field sheet # no transcription errors for bank measurements so did not check substrate measurements
+
 
 
 #!TN and TP updates, BMI sampleID updates

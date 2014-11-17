@@ -40,6 +40,8 @@ undercut_outlier<-tblRetrieve(Parameters='UNDERCUT', UIDS=c(10383,  10380,	10379
 
 trial<-sqlQuery(wrsa1314,"select * from tblPOINT where PARAMETER='slope'") #basic select query must use "
 getmeta<-sqlQuery(wrsa1314,"select * from tblMETADATA")#### getting the metadata table
+
+sitecodetbl=tblRetrieve(Parameters='SITE_ID', Projects='WRSA', Protocol='WRSA14',Years='2014')#getting all sitecodes for missing data check
              
 
 #--------------------------------------------------------SQL RETRIEVE--------------------------------------------------------#
