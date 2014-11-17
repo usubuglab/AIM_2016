@@ -151,19 +151,49 @@ NorCalCHECK_Bugs=subset(NorCalBugs, SiteCode=='AR-SS-8066'|SiteCode=='SU-SS-8311
 NorCalCHECK_Bugs$NicoleJudge=c('G','P','P','P','G','G')
   
 
+
+
+#plot O/E
 plot(NorCalBugs$NV_OE5,NorCalBugs$CSCI_OE, ylim=c(0,1.4), xlim=c(0,1.4),abline((lm(NorCalBugs$CSCI_OE~NorCalBugs$NV_OE5)), col="blue", lty="longdash"))
 abline(0,1)
 r2=(cor(NorCalBugs$CSCI_OE,NorCalBugs$NV_OE5))^2
 mylabel = bquote(italic(R)^2 == .(format(r2, digits = 3)))
 text(x = .1, y = 1, labels = mylabel)
+
+#plot MMI
+NorCalBugs$NV_MMI_2=NorCalBugs$NV_MMI/100
+plot(NorCalBugs$NV_MMI_2,NorCalBugs$CSCI_MMI, ylim=c(0,1.4), xlim=c(0,1.4),abline((lm(NorCalBugs$CSCI_MMI~NorCalBugs$NV_MMI_2)), col="blue", lty="longdash"))
+abline(0,1)
+r2=(cor(NorCalBugs$CSCI_MMI,NorCalBugs$NV_MMI_2))^2
+mylabel = bquote(italic(R)^2 == .(format(r2, digits = 3)))
+text(x = .1, y = 1, labels = mylabel)
+
   
+plot(NorCalBugs$NV_MMI_2,NorCalBugs$CSCI_MMI, ylim=c(0,1.4), xlim=c(0,1.4),abline((lm(NorCalBugs$CSCI_MMI~NorCalBugs$NV_MMI_2)), col="blue", lty="longdash"))
+abline(0,1)
+r2=(cor(NorCalBugs$CSCI_MMI,NorCalBugs$NV_MMI_2))^2
+mylabel = bquote(italic(R)^2 == .(format(r2, digits = 3)))
+text(x = .1, y = 1, labels = mylabel)
+
+
+
+
+
+#Second EXAMPLE TEXT IN GRAPH
+#TEXT IN GRAPH
+#plot(Weight~Length)
+#lines(m1,col="red")
+#text(locator(1), " Y=9e-07x^3.4198   R Squared = .92")
+
+
+
 #############################################################################
 
 ##############   Physical Habitat condition determinations    ###############
 
 #############################################################################
 
-#First I need to combine Ecoregions to the sample sites. 
+#First I need to combine Ecoregions to the sampled sites. 
 #Read in ecoregion to sample sitecode
 NorCalSites_Ecoregions=read.csv("\\\\share1.bluezone.usu.edu\\miller\\buglab\\Research Projects\\BLM_WRSA_Stream_Surveys\\Results and Reports\\NorCal_2013\\Analysis\\UID_SiteID_Ecoregions.csv")
 #Because UIDs get turned into different values when exported as a csv I was unable to use the merge function because UIDs did not match exactly. Be careful with using this method in the future... 
@@ -171,42 +201,18 @@ t1=NorCalSites_Ecoregions[order(NorCalSites_Ecoregions$UID, decreasing=FALSE),]
 t2=AquametCheck[order(AquametCheck$UID, decreasing=FALSE),]
 t3=cbind(t1,t2)
 t3=t3[,-1] 
-Indicators=t3[,c(4,1,2,3,5:12)]
+Indicators=t3[,c(4,1,2,3,5:17)]
 rm(t1,t2,t3,NorCalSites_Ecoregions)
 
+
+
+
 #Subset all by ecoregions... got to be a better way...
-#ECO10
-#Get a list of the indicators in the file to use for Subsetting
-unique(Indicators$ECO10)
+################################################################
 
-Ind_MT_PNW=subset(Indicators, ECO10=='MT-PNW')
-Ind_XE_NORTH=subset(Indicators, ECO10=='XE-NORTH')
+#Level III ecoregions: Applying Thresholds
 
-
-# MT-PNW for all indicators 
-Ind_MT_PNW$XFC_NAT_COND=ifelse(Ind_MT_PNW$XFC_NAT_CHECK <= (Thresholds_ECO10 [Thresholds_ECO10$ECO10=='MT-PNW', 'XFC_NAT_0.05']),"Poor",ifelse(Ind_MT_PNW$XFC_NAT_CHECK>(Thresholds_ECO10 [Thresholds_ECO10$ECO10=='MT-PNW','XFC_NAT_0.25']),"Good","Fair"))
-Ind_MT_PNW$XCMG_COND=ifelse(Ind_MT_PNW$XCMG_CHECK <= (Thresholds_ECO10 [Thresholds_ECO10$ECO10=='MT-PNW', 'XCMG_0.05']),"Poor",ifelse(Ind_MT_PNW$XCMG_CHECK>(Thresholds_ECO10 [Thresholds_ECO10$ECO10=='MT-PNW','XCMG_0.25']),"Good","Fair"))
-Ind_MT_PNW$XCMGW_COND=ifelse(Ind_MT_PNW$XCMGW_CHECK <= (Thresholds_ECO10 [Thresholds_ECO10$ECO10=='MT-PNW', 'XCMGW_0.05']),"Poor",ifelse(Ind_MT_PNW$XCMGW_CHECK>(Thresholds_ECO10 [Thresholds_ECO10$ECO10=='MT-PNW','XCMGW_0.25']),"Good","Fair"))
-Ind_MT_PNW$XCDENMID_COND=ifelse(Ind_MT_PNW$xcdenmid_CHECK <= (Thresholds_ECO10 [Thresholds_ECO10$ECO10=='MT-PNW', 'XCDENMID_0.05']),"Poor",ifelse(Ind_MT_PNW$xcdenmid_CHECK>(Thresholds_ECO10 [Thresholds_ECO10$ECO10=='MT-PNW','XCDENMID_0.25']),"Good","Fair"))
-Ind_MT_PNW$LINCIS_H_COND=ifelse(Ind_MT_PNW$LINCIS_H_CHECK >= (Thresholds_ECO10 [Thresholds_ECO10$ECO10=='MT-PNW', 'LINCIS_H_0.95']),"Poor",ifelse(Ind_MT_PNW$LINCIS_H_CHECK<(Thresholds_ECO10 [Thresholds_ECO10$ECO10=='MT-PNW','LINCIS_H_0.75']),"Good","Fair"))
-Ind_MT_PNW$PCT_SAFN_COND=ifelse(Ind_MT_PNW$PCT_SAFN_CHECK>= (Thresholds_ECO10 [Thresholds_ECO10$ECO10=='MT-PNW', 'PCT_SAFN_0.95']),"Poor",ifelse(Ind_MT_PNW$PCT_SAFN_CHECK<(Thresholds_ECO10 [Thresholds_ECO10$ECO10=='MT-PNW','PCT_SAFN_0.75']),"Good","Fair"))
-#Still need to create aqumet XEMBED metric
-#Ind_MT_PNW$XEMBED_COND=ifelse(Ind_MT_PNW$XEMBED_CHECK >= (Thresholds_ECO10 [Thresholds_ECO10$ECO10=='MT-PNW', 'XEMBED_0.95']),"Poor",ifelse(Ind_MT_PNW$XEMBED_CHECK<(Thresholds_ECO10 [Thresholds_ECO10$ECO10=='MT-PNW','XEMBED_0.75']),"Good","Fair"))
-
-
-# XE-NORTH for all indicators 
-Ind_XE_NORTH$XFC_NAT_COND=ifelse(Ind_XE_NORTH$XFC_NAT_CHECK <= (Thresholds_ECO10 [Thresholds_ECO10$ECO10=='XE-NORTH', 'XFC_NAT_0.05']),"Poor",ifelse(Ind_XE_NORTH$XFC_NAT_CHECK>(Thresholds_ECO10 [Thresholds_ECO10$ECO10=='XE-NORTH','XFC_NAT_0.25']),"Good","Fair"))
-Ind_XE_NORTH$XCMG_COND=ifelse(Ind_XE_NORTH$XCMG_CHECK <= (Thresholds_ECO10 [Thresholds_ECO10$ECO10=='XE-NORTH', 'XCMG_0.05']),"Poor",ifelse(Ind_XE_NORTH$XCMG_CHECK>(Thresholds_ECO10 [Thresholds_ECO10$ECO10=='XE-NORTH','XCMG_0.25']),"Good","Fair"))
-Ind_XE_NORTH$XCMGW_COND=ifelse(Ind_XE_NORTH$XCMGW_CHECK <= (Thresholds_ECO10 [Thresholds_ECO10$ECO10=='XE-NORTH', 'XCMGW_0.05']),"Poor",ifelse(Ind_XE_NORTH$XCMGW_CHECK>(Thresholds_ECO10 [Thresholds_ECO10$ECO10=='XE-NORTH','XCMGW_0.25']),"Good","Fair"))
-Ind_XE_NORTH$XCDENMID_COND=ifelse(Ind_XE_NORTH$xcdenmid_CHECK <= (Thresholds_ECO10 [Thresholds_ECO10$ECO10=='XE-NORTH', 'XCDENMID_0.05']),"Poor",ifelse(Ind_XE_NORTH$xcdenmid_CHECK>(Thresholds_ECO10 [Thresholds_ECO10$ECO10=='XE-NORTH','XCDENMID_0.25']),"Good","Fair"))
-Ind_XE_NORTH$LINCIS_H_COND=ifelse(Ind_XE_NORTH$LINCIS_H_CHECK >= (Thresholds_ECO10 [Thresholds_ECO10$ECO10=='XE-NORTH', 'LINCIS_H_0.95']),"Poor",ifelse(Ind_XE_NORTH$LINCIS_H_CHECK<(Thresholds_ECO10 [Thresholds_ECO10$ECO10=='XE-NORTH','LINCIS_H_0.75']),"Good","Fair"))
-Ind_XE_NORTH$PCT_SAFN_COND=ifelse(Ind_XE_NORTH$PCT_SAFN_CHECK >= (Thresholds_ECO10 [Thresholds_ECO10$ECO10=='XE-NORTH', 'PCT_SAFN_0.95']),"Poor",ifelse(Ind_XE_NORTH$PCT_SAFN_CHECK<(Thresholds_ECO10 [Thresholds_ECO10$ECO10=='XE-NORTH','PCT_SAFN_0.75']),"Good","Fair"))
-#Still need to create aqumet XEMBED metric
-#Ind_XE_NORTH$XEMBED_COND=ifelse(Ind_XE_NORTH$XEMBED_CHECK >= (Thresholds_ECO10 [Thresholds_ECO10$ECO10=='XE-NORTH', 'XEMBED_0.95']),"Poor",ifelse(Ind_XE_NORTH$XEMBED_CHECK<(Thresholds_ECO10 [Thresholds_ECO10$ECO10=='XE-NORTH','XEMBED_0.75']),"Good","Fair"))
-
-IndicatorCond_ECO10=merge(Ind_XE_NORTH,Ind_MT_PNW, all=TRUE)
-
-#Ecoregion lvl III
+################################################################
 unique(Indicators$ECO_LVL_3NAME)
 
 Ind_CastFoot=subset(Indicators, ECO_LVL_3NAME=='Eastern Cascades Slopes and Foothills')
@@ -220,8 +226,7 @@ Ind_CastFoot$XCMGW_COND=ifelse(Ind_CastFoot$XCMGW_CHECK <= (Thresholds_lvlIII [T
 Ind_CastFoot$XCDENMID_COND=ifelse(Ind_CastFoot$xcdenmid_CHECK <= (Thresholds_lvlIII [Thresholds_lvlIII$ECO_LVL_3NAME=='Eastern Cascades Slopes and Foothills', 'XCDENMID_0.05']),"Poor",ifelse(Ind_CastFoot$xcdenmid_CHECK>(Thresholds_lvlIII [Thresholds_lvlIII$ECO_LVL_3NAME=='Eastern Cascades Slopes and Foothills','XCDENMID_0.25']),"Good","Fair"))
 Ind_CastFoot$LINCIS_H_COND=ifelse(Ind_CastFoot$LINCIS_H_CHECK >= (Thresholds_lvlIII [Thresholds_lvlIII$ECO_LVL_3NAME=='Eastern Cascades Slopes and Foothills', 'LINCIS_H_0.95']),"Poor",ifelse(Ind_CastFoot$LINCIS_H_CHECK<(Thresholds_lvlIII [Thresholds_lvlIII$ECO_LVL_3NAME=='Eastern Cascades Slopes and Foothills','LINCIS_H_0.75']),"Good","Fair"))
 Ind_CastFoot$PCT_SAFN_COND=ifelse(Ind_CastFoot$PCT_SAFN_CHECK >= (Thresholds_lvlIII [Thresholds_lvlIII$ECO_LVL_3NAME=='Eastern Cascades Slopes and Foothills', 'PCT_SAFN_0.95']),"Poor",ifelse(Ind_CastFoot$PCT_SAFN_CHECK<(Thresholds_lvlIII [Thresholds_lvlIII$ECO_LVL_3NAME=='Eastern Cascades Slopes and Foothills','PCT_SAFN_0.75']),"Good","Fair"))
-#Still need to create aqumet XEMBED metric
-#Ind_CastFoot$XEMBED_COND=ifelse(Ind_CastFoot$XEMBED_CHECK >= (Thresholds_lvlIII [Thresholds_lvlIII$ECO_LVL_3NAME=='Eastern Cascades Slopes and Foothills', 'XEMBED_0.95']),"Poor",ifelse(Ind_CastFoot$XEMBED_CHECK<(Thresholds_lvlIII [Thresholds_lvlIII$ECO_LVL_3NAME=='Eastern Cascades Slopes and Foothills','XEMBED_0.75']),"Good","Fair"))
+Ind_CastFoot$XEMBED_COND=ifelse(Ind_CastFoot$XEMBED_CHECK >= (Thresholds_lvlIII [Thresholds_lvlIII$ECO_LVL_3NAME=='Eastern Cascades Slopes and Foothills', 'XEMBED_0.95']),"Poor",ifelse(Ind_CastFoot$XEMBED_CHECK<(Thresholds_lvlIII [Thresholds_lvlIII$ECO_LVL_3NAME=='Eastern Cascades Slopes and Foothills','XEMBED_0.75']),"Good","Fair"))
 
 # Ind_NorthBasin
 Ind_NorthBasin$XFC_NAT_COND=ifelse(Ind_NorthBasin$XFC_NAT_CHECK <= (Thresholds_lvlIII [Thresholds_lvlIII$ECO_LVL_3NAME=='Northern Basin and Range', 'XFC_NAT_0.05']),"Poor",ifelse(Ind_NorthBasin$XFC_NAT_CHECK>(Thresholds_lvlIII [Thresholds_lvlIII$ECO_LVL_3NAME=='Northern Basin and Range','XFC_NAT_0.25']),"Good","Fair"))
@@ -230,8 +235,7 @@ Ind_NorthBasin$XCMGW_COND=ifelse(Ind_NorthBasin$XCMGW_CHECK <= (Thresholds_lvlII
 Ind_NorthBasin$XCDENMID_COND=ifelse(Ind_NorthBasin$xcdenmid_CHECK <= (Thresholds_lvlIII [Thresholds_lvlIII$ECO_LVL_3NAME=='Northern Basin and Range', 'XCDENMID_0.05']),"Poor",ifelse(Ind_NorthBasin$xcdenmid_CHECK>(Thresholds_lvlIII [Thresholds_lvlIII$ECO_LVL_3NAME=='Northern Basin and Range','XCDENMID_0.25']),"Good","Fair"))
 Ind_NorthBasin$LINCIS_H_COND=ifelse(Ind_NorthBasin$LINCIS_H_CHECK >= (Thresholds_lvlIII [Thresholds_lvlIII$ECO_LVL_3NAME=='Northern Basin and Range', 'LINCIS_H_0.95']),"Poor",ifelse(Ind_NorthBasin$LINCIS_H_CHECK<(Thresholds_lvlIII [Thresholds_lvlIII$ECO_LVL_3NAME=='Northern Basin and Range','LINCIS_H_0.75']),"Good","Fair"))
 Ind_NorthBasin$PCT_SAFN_COND=ifelse(Ind_NorthBasin$PCT_SAFN_CHECK >= (Thresholds_lvlIII [Thresholds_lvlIII$ECO_LVL_3NAME=='Northern Basin and Range', 'PCT_SAFN_0.95']),"Poor",ifelse(Ind_NorthBasin$PCT_SAFN_CHECK<(Thresholds_lvlIII [Thresholds_lvlIII$ECO_LVL_3NAME=='Northern Basin and Range','PCT_SAFN_0.75']),"Good","Fair"))
-#Still need to create aqumet XEMBED metric
-#Ind_NorthBasin$XEMBED_COND=ifelse(Ind_NorthBasin$XEMBED_CHECK >= (Thresholds_lvlIII [Thresholds_lvlIII$ECO_LVL_3NAME=='Northern Basin and Range', 'XEMBED_0.95']),"Poor",ifelse(Ind_NorthBasin$XEMBED_CHECK<(Thresholds_lvlIII [Thresholds_lvlIII$ECO_LVL_3NAME=='Northern Basin and Range','XEMBED_0.75']),"Good","Fair"))
+Ind_NorthBasin$XEMBED_COND=ifelse(Ind_NorthBasin$XEMBED_CHECK >= (Thresholds_lvlIII [Thresholds_lvlIII$ECO_LVL_3NAME=='Northern Basin and Range', 'XEMBED_0.95']),"Poor",ifelse(Ind_NorthBasin$XEMBED_CHECK<(Thresholds_lvlIII [Thresholds_lvlIII$ECO_LVL_3NAME=='Northern Basin and Range','XEMBED_0.75']),"Good","Fair"))
 
 
 # Ind_SierraNV
@@ -241,33 +245,93 @@ Ind_SierraNV$XCMGW_COND=ifelse(Ind_SierraNV$XCMGW_CHECK <= (Thresholds_lvlIII [T
 Ind_SierraNV$XCDENMID_COND=ifelse(Ind_SierraNV$xcdenmid_CHECK <= (Thresholds_lvlIII [Thresholds_lvlIII$ECO_LVL_3NAME=='Sierra Nevada', 'XCDENMID_0.05']),"Poor",ifelse(Ind_SierraNV$xcdenmid_CHECK>(Thresholds_lvlIII [Thresholds_lvlIII$ECO_LVL_3NAME=='Sierra Nevada','XCDENMID_0.25']),"Good","Fair"))
 Ind_SierraNV$LINCIS_H_COND=ifelse(Ind_SierraNV$LINCIS_H_CHECK >= (Thresholds_lvlIII [Thresholds_lvlIII$ECO_LVL_3NAME=='Sierra Nevada', 'LINCIS_H_0.95']),"Poor",ifelse(Ind_SierraNV$LINCIS_H_CHECK<(Thresholds_lvlIII [Thresholds_lvlIII$ECO_LVL_3NAME=='Sierra Nevada','LINCIS_H_0.75']),"Good","Fair"))
 Ind_SierraNV$PCT_SAFN_COND=ifelse(Ind_SierraNV$PCT_SAFN_CHECK >= (Thresholds_lvlIII [Thresholds_lvlIII$ECO_LVL_3NAME=='Sierra Nevada', 'PCT_SAFN_0.95']),"Poor",ifelse(Ind_SierraNV$PCT_SAFN_CHECK<(Thresholds_lvlIII [Thresholds_lvlIII$ECO_LVL_3NAME=='Sierra Nevada','PCT_SAFN_0.75']),"Good","Fair"))
-#Still need to create aqumet XEMBED metric
-#Ind_SierraNV$XEMBED_COND=ifelse(Ind_SierraNV$XEMBED_CHECK >= (Thresholds_lvlIII [Thresholds_lvlIII$ECO_LVL_3NAME=='Sierra Nevada', 'XEMBED_0.95']),"Poor",ifelse(Ind_SierraNV$XEMBED_CHECK<(Thresholds_lvlIII [Thresholds_lvlIII$ECO_LVL_3NAME=='Sierra Nevada','XEMBED_0.75']),"Good","Fair"))
+Ind_SierraNV$XEMBED_COND=ifelse(Ind_SierraNV$XEMBED_CHECK >= (Thresholds_lvlIII [Thresholds_lvlIII$ECO_LVL_3NAME=='Sierra Nevada', 'XEMBED_0.95']),"Poor",ifelse(Ind_SierraNV$XEMBED_CHECK<(Thresholds_lvlIII [Thresholds_lvlIII$ECO_LVL_3NAME=='Sierra Nevada','XEMBED_0.75']),"Good","Fair"))
 
 
 IndicatorCond_ECO_LVL_3NAME=rbind(Ind_SierraNV,Ind_NorthBasin,Ind_CastFoot)
 
 
-rm(Ind_MT_PNW,Ind_XE_NORTH,Ind_CastFoot,Ind_NorthBasin,Ind_SierraNV)
+
+rm(Ind_CastFoot,Ind_NorthBasin,Ind_SierraNV)
 
 
+#L_XCMGW thresholds
+IndicatorCond_ECO_LVL_3NAME$L_XCMGW_COND=ifelse(IndicatorCond_ECO_LVL_3NAME$ECO_LVL_3NAME=='Sierra Nevada'|IndicatorCond_ECO_LVL_3NAME$ECO_LVL_3NAME=='Eastern Cascades Slopes and Foothills', 
+                                                ifelse(IndicatorCond_ECO_LVL_3NAME$L_XCMGW_CHECK<(-0.492),"Poor",ifelse(IndicatorCond_ECO_LVL_3NAME$L_XCMGW_CHECK>=-0.261, "Good","Fair")), 
+                                                ifelse(IndicatorCond_ECO_LVL_3NAME$ECO_LVL_3NAME=='Northern Basin and Range',
+                                                       ifelse(IndicatorCond_ECO_LVL_3NAME$L_XCMGW_CHECK<(-0.444),"Poor",ifelse(IndicatorCond_ECO_LVL_3NAME$L_XCMGW_CHECK>=-0.240, "Good","Fair")),"NA"))
+
+
+
+#W1_HALL
+#When using EMAP-West 
+IndicatorCond_ECO_LVL_3NAME$EMAP_W1_HALL_COND=ifelse(IndicatorCond_ECO_LVL_3NAME$ECO_LVL_3NAME=='Sierra Nevada'|IndicatorCond_ECO_LVL_3NAME$ECO_LVL_3NAME=='Eastern Cascades Slopes and Foothills', 
+                                                ifelse(IndicatorCond_ECO_LVL_3NAME$EMAP_W1_HALL_CHECK>0.95,"Poor",ifelse(IndicatorCond_ECO_LVL_3NAME$EMAP_W1_HALL_CHECK<=0.35, "Good","Fair")), 
+                                                ifelse(IndicatorCond_ECO_LVL_3NAME$ECO_LVL_3NAME=='Northern Basin and Range',
+                                                       ifelse(IndicatorCond_ECO_LVL_3NAME$EMAP_W1_HALL_CHECK>0.9,"Poor",ifelse(IndicatorCond_ECO_LVL_3NAME$EMAP_W1_HALL_CHECK<=0.7, "Good","Fair")),"NA"))
+#When using NRSA 
+#If I am going to use this I MUST change the the way it is calculated
+IndicatorCond_ECO_LVL_3NAME$NRSA_W1_HALL_COND=ifelse(IndicatorCond_ECO_LVL_3NAME$NRSA_W1_HALL_CHECK<0.33,"Good",ifelse(IndicatorCond_ECO_LVL_3NAME$NRSA_W1_HALL_CHECK>=1.5,"Poor","Fair"))
+
+
+#QR1: Not sure yet......
+
+
+#How many G, F, P values for each indicator... Not all indicators listed 
 Freq_ECOIII=cbind(count(IndicatorCond_ECO_LVL_3NAME,var='XFC_NAT_COND'),
              count(IndicatorCond_ECO_LVL_3NAME,var='XCMG_COND'),
              count(IndicatorCond_ECO_LVL_3NAME,var='XCMGW_COND'),
+             count(IndicatorCond_ECO_LVL_3NAME,var='L_XCMGW_COND'),
+             count(IndicatorCond_ECO_LVL_3NAME,var='XEMBED_COND'),
+             count(IndicatorCond_ECO_LVL_3NAME,var='EMAP_W1_HALL_COND'),
+             count(IndicatorCond_ECO_LVL_3NAME,var='NRSA_W1_HALL_COND'),
              count(IndicatorCond_ECO_LVL_3NAME,var='XCDENMID_COND'),
              count(IndicatorCond_ECO_LVL_3NAME,var='LINCIS_H_COND'),
              count(IndicatorCond_ECO_LVL_3NAME,var='PCT_SAFN_COND'))
             
+
+
+################################################################
+
+#ECO10: Applying Thresholds
+
+################################################################
+#Get a list of the indicators in the file to use for Subsetting
+unique(Indicators$ECO10)
+
+Ind_MT_PNW=subset(Indicators, ECO10=='MT-PNW')
+Ind_XE_NORTH=subset(Indicators, ECO10=='XE-NORTH')
+
+# MT-PNW for all indicators 
+Ind_MT_PNW$XFC_NAT_COND=ifelse(Ind_MT_PNW$XFC_NAT_CHECK <= (Thresholds_ECO10 [Thresholds_ECO10$ECO10=='MT-PNW', 'XFC_NAT_0.05']),"Poor",ifelse(Ind_MT_PNW$XFC_NAT_CHECK>(Thresholds_ECO10 [Thresholds_ECO10$ECO10=='MT-PNW','XFC_NAT_0.25']),"Good","Fair"))
+Ind_MT_PNW$XCMG_COND=ifelse(Ind_MT_PNW$XCMG_CHECK <= (Thresholds_ECO10 [Thresholds_ECO10$ECO10=='MT-PNW', 'XCMG_0.05']),"Poor",ifelse(Ind_MT_PNW$XCMG_CHECK>(Thresholds_ECO10 [Thresholds_ECO10$ECO10=='MT-PNW','XCMG_0.25']),"Good","Fair"))
+Ind_MT_PNW$XCMGW_COND=ifelse(Ind_MT_PNW$XCMGW_CHECK <= (Thresholds_ECO10 [Thresholds_ECO10$ECO10=='MT-PNW', 'XCMGW_0.05']),"Poor",ifelse(Ind_MT_PNW$XCMGW_CHECK>(Thresholds_ECO10 [Thresholds_ECO10$ECO10=='MT-PNW','XCMGW_0.25']),"Good","Fair"))
+Ind_MT_PNW$XCDENMID_COND=ifelse(Ind_MT_PNW$xcdenmid_CHECK <= (Thresholds_ECO10 [Thresholds_ECO10$ECO10=='MT-PNW', 'XCDENMID_0.05']),"Poor",ifelse(Ind_MT_PNW$xcdenmid_CHECK>(Thresholds_ECO10 [Thresholds_ECO10$ECO10=='MT-PNW','XCDENMID_0.25']),"Good","Fair"))
+Ind_MT_PNW$LINCIS_H_COND=ifelse(Ind_MT_PNW$LINCIS_H_CHECK >= (Thresholds_ECO10 [Thresholds_ECO10$ECO10=='MT-PNW', 'LINCIS_H_0.95']),"Poor",ifelse(Ind_MT_PNW$LINCIS_H_CHECK<(Thresholds_ECO10 [Thresholds_ECO10$ECO10=='MT-PNW','LINCIS_H_0.75']),"Good","Fair"))
+Ind_MT_PNW$PCT_SAFN_COND=ifelse(Ind_MT_PNW$PCT_SAFN_CHECK>= (Thresholds_ECO10 [Thresholds_ECO10$ECO10=='MT-PNW', 'PCT_SAFN_0.95']),"Poor",ifelse(Ind_MT_PNW$PCT_SAFN_CHECK<(Thresholds_ECO10 [Thresholds_ECO10$ECO10=='MT-PNW','PCT_SAFN_0.75']),"Good","Fair"))
+#Still need to create aqumet XEMBED metric
+#Ind_MT_PNW$XEMBED_COND=ifelse(Ind_MT_PNW$XEMBED_CHECK >= (Thresholds_ECO10 [Thresholds_ECO10$ECO10=='MT-PNW', 'XEMBED_0.95']),"Poor",ifelse(Ind_MT_PNW$XEMBED_CHECK<(Thresholds_ECO10 [Thresholds_ECO10$ECO10=='MT-PNW','XEMBED_0.75']),"Good","Fair"))
+
+# XE-NORTH for all indicators 
+Ind_XE_NORTH$XFC_NAT_COND=ifelse(Ind_XE_NORTH$XFC_NAT_CHECK <= (Thresholds_ECO10 [Thresholds_ECO10$ECO10=='XE-NORTH', 'XFC_NAT_0.05']),"Poor",ifelse(Ind_XE_NORTH$XFC_NAT_CHECK>(Thresholds_ECO10 [Thresholds_ECO10$ECO10=='XE-NORTH','XFC_NAT_0.25']),"Good","Fair"))
+Ind_XE_NORTH$XCMG_COND=ifelse(Ind_XE_NORTH$XCMG_CHECK <= (Thresholds_ECO10 [Thresholds_ECO10$ECO10=='XE-NORTH', 'XCMG_0.05']),"Poor",ifelse(Ind_XE_NORTH$XCMG_CHECK>(Thresholds_ECO10 [Thresholds_ECO10$ECO10=='XE-NORTH','XCMG_0.25']),"Good","Fair"))
+Ind_XE_NORTH$XCMGW_COND=ifelse(Ind_XE_NORTH$XCMGW_CHECK <= (Thresholds_ECO10 [Thresholds_ECO10$ECO10=='XE-NORTH', 'XCMGW_0.05']),"Poor",ifelse(Ind_XE_NORTH$XCMGW_CHECK>(Thresholds_ECO10 [Thresholds_ECO10$ECO10=='XE-NORTH','XCMGW_0.25']),"Good","Fair"))
+Ind_XE_NORTH$XCDENMID_COND=ifelse(Ind_XE_NORTH$xcdenmid_CHECK <= (Thresholds_ECO10 [Thresholds_ECO10$ECO10=='XE-NORTH', 'XCDENMID_0.05']),"Poor",ifelse(Ind_XE_NORTH$xcdenmid_CHECK>(Thresholds_ECO10 [Thresholds_ECO10$ECO10=='XE-NORTH','XCDENMID_0.25']),"Good","Fair"))
+Ind_XE_NORTH$LINCIS_H_COND=ifelse(Ind_XE_NORTH$LINCIS_H_CHECK >= (Thresholds_ECO10 [Thresholds_ECO10$ECO10=='XE-NORTH', 'LINCIS_H_0.95']),"Poor",ifelse(Ind_XE_NORTH$LINCIS_H_CHECK<(Thresholds_ECO10 [Thresholds_ECO10$ECO10=='XE-NORTH','LINCIS_H_0.75']),"Good","Fair"))
+Ind_XE_NORTH$PCT_SAFN_COND=ifelse(Ind_XE_NORTH$PCT_SAFN_CHECK >= (Thresholds_ECO10 [Thresholds_ECO10$ECO10=='XE-NORTH', 'PCT_SAFN_0.95']),"Poor",ifelse(Ind_XE_NORTH$PCT_SAFN_CHECK<(Thresholds_ECO10 [Thresholds_ECO10$ECO10=='XE-NORTH','PCT_SAFN_0.75']),"Good","Fair"))
+#Still need to create aqumet XEMBED metric
+#Ind_XE_NORTH$XEMBED_COND=ifelse(Ind_XE_NORTH$XEMBED_CHECK >= (Thresholds_ECO10 [Thresholds_ECO10$ECO10=='XE-NORTH', 'XEMBED_0.95']),"Poor",ifelse(Ind_XE_NORTH$XEMBED_CHECK<(Thresholds_ECO10 [Thresholds_ECO10$ECO10=='XE-NORTH','XEMBED_0.75']),"Good","Fair"))
+
+IndicatorCond_ECO10=merge(Ind_XE_NORTH,Ind_MT_PNW, all=TRUE)
+rm(Ind_MT_PNW,Ind_XE_NORTH)
+
 Freq_ECO10=cbind(count(IndicatorCond_ECO10,var='XFC_NAT_COND'),
             count(IndicatorCond_ECO10,var='XCMG_COND'),
             count(IndicatorCond_ECO10,var='XCMGW_COND'),
             count(IndicatorCond_ECO10,var='XCDENMID_COND'),
             count(IndicatorCond_ECO10,var='LINCIS_H_COND'),
             count(IndicatorCond_ECO10,var='PCT_SAFN_COND'))
-            
-            
-            
-            
+           
             
 
 
@@ -282,10 +346,9 @@ Freq_ECO10=cbind(count(IndicatorCond_ECO10,var='XFC_NAT_COND'),
 ###Get the approrpaite fish parameters from NC_DataConsumption
 ######'BOULDR','BRUSH','LVTREE','OVRHNG','UNDCUT','WOODY'
 ###### Change numeric categories into appropriate percentages, pivot to take the mean or each fish cover category at a site. 
-######Then sum to categories of fish cover for each site to have the final results to compared to aquamet's xfc_nat
+###### Then sum to categories of fish cover for each site to have the final results to compared to aquamet's xfc_nat
 ###### The way this is calculated causes NA's to be treated as blanks that do not count for or against the average. For example if only 1 NA for BOULDR then you would divide boulders by 10 transects instead of 11. See UID 11625 for an example.
 fish$ResultsPer=ifelse(fish$RESULT == 1, 0.05,ifelse(fish$RESULT == 2, 0.25,ifelse(fish$RESULT == 3, 0.575,ifelse(fish$RESULT == 4, 0.875,ifelse(fish$RESULT ==0, 0, NA)))))
-#fishpvt=cast(fish,'UID+TRANSECT~PARAMETER', value='RESULT')
 fishpvt2=cast(fish,'UID~PARAMETER', value='ResultsPer',fun='mean')
 fishpvt2$XFC_NAT_CHECK=rowSums(fishpvt2[,c(2,3,4,5,6,7)])
 
@@ -297,22 +360,6 @@ DensPvt$xcdenmid_CHECK=(DensPvt$DENSIOM/17)*100
 #Dens_Pvt3=cast(MidDens3,'UID+TRANSECT~PARAMETER',value='RESULT',fun=mean)
 
 #LINCIS_H
-
-###############################################
-##########   TROUBLESHOOTING START  ###########
-##IncBnk2=cast(Incision,'UID~PARAMETER', value='RESULT', fun=mean)
-##INCISED=Incision[,c("UID","TRANSECT","PARAMETER","RESULT")]
-#IB=aggregate(Incision)
-#IB=cast(Incision,'UID~PARAMETER',  value='RESULT', fun=aggregate)
-#IBagg=aggregate(Incision,by='PARAMETER',value='RESULT', FUN=mean)
-
-###LINCIS_h REMOVAL OF SIDE CHANNELS TO FIX PLROBLEM.. DIDN'T FIX THE ISSUE... 
-#NoSide= subset(Incision, TRANSECT == "A"|TRANSECT == "B"|TRANSECT == "C"|TRANSECT == "D"|TRANSECT == "E"|TRANSECT == "F"|TRANSECT == "G"|TRANSECT == "H"|TRANSECT == "I"|TRANSECT == "J"|TRANSECT == "K")
-#NS_IncBnk=cast(NoSide,'UID~PARAMETER', value='RESULT', fun=mean)
-#NS_IncBnk$LINCIS_H_Check=log10(NS_InkBnk$INCISED-NS_IncBnk$BANKHT+0.1)
-#########    TROUBLESHOOTING END   ############
-###############################################
-
 ###First the max value of either the side channel or main channel needs to be chosen. To do this I changed all side channels (X-letter) to just the main letter (Sidechannel at A (XA) would be changed to just A).
 ###Then I subset the data so that missing values would not cause errors. 
 ###Then I pivoted by the max to chose the max transect value (If XA=5 and A=2 then the XA value would be chosen and the A value removed, note that it is no longer called XA so there would just be 2 A transects for a site with an A sidechannel)
@@ -327,6 +374,22 @@ xBnkht=setNames(aggregate(Bnk$BANKHT,list(UID=Bnk$UID),mean),c("UID","xbnk_h_CHE
 IncBnk=merge(xBnkht,xIncht,all=TRUE)
 IncBnk$LINCIS_H_CHECK=log10(IncBnk$xinc_h_CHECK-IncBnk$xbnk_h_CHECK+0.1)
 
+###############################################
+##########   TROUBLESHOOTING START  ###########
+##IncBnk2=cast(Incision,'UID~PARAMETER', value='RESULT', fun=mean)
+##INCISED=Incision[,c("UID","TRANSECT","PARAMETER","RESULT")]
+#IB=aggregate(Incision)
+#IB=cast(Incision,'UID~PARAMETER',  value='RESULT', fun=aggregate)
+#IBagg=aggregate(Incision,by='PARAMETER',value='RESULT', FUN=mean)
+###LINCIS_h REMOVAL OF SIDE CHANNELS TO FIX PLROBLEM.. DIDN'T FIX THE ISSUE... 
+#NoSide= subset(Incision, TRANSECT == "A"|TRANSECT == "B"|TRANSECT == "C"|TRANSECT == "D"|TRANSECT == "E"|TRANSECT == "F"|TRANSECT == "G"|TRANSECT == "H"|TRANSECT == "I"|TRANSECT == "J"|TRANSECT == "K")
+#NS_IncBnk=cast(NoSide,'UID~PARAMETER', value='RESULT', fun=mean)
+#NS_IncBnk$LINCIS_H_Check=log10(NS_InkBnk$INCISED-NS_IncBnk$BANKHT+0.1)
+#########    TROUBLESHOOTING END   ############
+###############################################
+
+
+
 
 #pct_safn
 #First you have to take the percent of Sand and percent of fine separately and then add them together... NOPE YOU CAN DO IT EITHER WAY... Just do pct sa and fns works too...
@@ -337,11 +400,11 @@ IncBnk$LINCIS_H_CHECK=log10(IncBnk$xinc_h_CHECK-IncBnk$xbnk_h_CHECK+0.1)
 #Sediment$SA_True=ifelse(Sediment$RESULT == "SA", 1, 0)
 #pctsa=setNames((cast(Sediment,'UID~SAMPLE_TYPE', value='SA_True',fun='mean')),c("UID","PCT_SA_CHECK"))
 #pctsa$PCT_SA_CHECK=pctsa$PCT_SA_CHECK*100
-
+#####################################
 #Sediment$FN_True=ifelse(Sediment$RESULT == "FN", 1, 0)
 #pctfn=setNames((cast(Sediment,'UID~SAMPLE_TYPE', value='FN_True',fun='mean')),c("UID","PCT_FN_CHECK"))
 #pctfn$PCT_FN_CHECK=pctfn$PCT_FN_CHECK*100
-
+##################################
 #pctSAFN=merge(pctfn,pctsa, All=TRUE)
 #pctSAFN$PCT_SAFN_CHECK=pctSAFN$PCT_FN_CHECK+pctSAFN$PCT_SA_CHECK
 
@@ -351,9 +414,7 @@ Sediment$SAFN_True=ifelse(Sediment$RESULT == "SA", 1,ifelse(Sediment$RESULT == "
 pctsafn=setNames((cast(Sediment,'UID~SAMPLE_TYPE', value='SAFN_True',fun='mean')),c("UID","PCT_SAFN_CHECK"))
 pctsafn$PCT_SAFN_CHECK=pctsafn$PCT_SAFN_CHECK*100
 
-
 #Now for 2014 data... 
-
 A_Sed2014=cast(Sed2014,'UID+TRANSECT+POINT~PARAMETER', value='RESULT')
 ##Checking how many records should be deleted by ordering and just looking at how many bank and na locations there are. 
 #B_Sed2014=A_Sed2014[order(A_Sed2014$LOC),]
@@ -369,8 +430,7 @@ E_Sed2014$SAFN_True=ifelse(E_Sed2014$SIZE_NUM == "1", 1, 0)
 F_Sed2014=setNames(aggregate(E_Sed2014$SAFN_True,list(UID=E_Sed2014$UID),mean), c("UID","PCT_SAFN_CHECK"))
 F_Sed2014$PCT_SAFN_CHECK=F_Sed2014$PCT_SAFN_CHECK*100
 
-
-# Now I'd like to combine the two datasets for PCT_SAFN together so that I don't have multiple files for the same thing
+# Combine the two datasets for PCT_SAFN together so that I don't have multiple files for the same thing
 PCT_SAFN_ALL=rbind(pctsafn,F_Sed2014)
 
 
@@ -378,7 +438,6 @@ PCT_SAFN_ALL=rbind(pctsafn,F_Sed2014)
 ##TO check if bed and bank measurements were included I ran this code. This code does not distinguish between bed or bank just runs to get the mean of all 2014 particles, regardless of location. THis shows that Sarah's code is missing the BED/BANK determinations....
 #WR_Sed2014$SAFN_True=ifelse(WR_Sed2014$RESULT == "1", 1, 0)
 #WR1_Sed2014=cast(WR_Sed2014,'UID~PARAMETER', value='SAFN_True', fun=mean)
-
 
 ###############################################
 ##########   TROUBLESHOOTING START  ###########
@@ -413,7 +472,6 @@ PCT_SAFN_ALL=rbind(pctsafn,F_Sed2014)
 RipXCMG$ResultsPer=ifelse(RipXCMG$RESULT == 1, 0.05,ifelse(RipXCMG$RESULT == 2, 0.25,ifelse(RipXCMG$RESULT == 3, 0.575,ifelse(RipXCMG$RESULT == 4, 0.875,ifelse(RipXCMG$RESULT ==0, 0, NA)))))
 XCMG_new=setNames(cast(RipXCMG,'UID+TRANSECT+POINT~ACTIVE', value='ResultsPer',fun='sum'),list('UID',  'TRANSECT',  'POINT',  'VALUE'))
 XCMG_new1=setNames(aggregate(VALUE~UID,data=XCMG_new,FUN=mean),list("UID","XCMG_CHECK"))
-
 
 #xcmgw
 #xcmgw=XC+XMW+XGW: However, this is not how aquamet is calculating it, the order of operation would give different results if XC was caluclated and then added to XMW and XMG
@@ -471,27 +529,72 @@ XCMGW_new1=setNames(aggregate(VALUE~UID,data=XCMGW_new,FUN=mean),list("UID","XCM
 #########    TROUBLESHOOTING END   ############
 ###############################################
 
+#L_XCMGW
+XCMGW_new1$L_XCMGW_CHECK=log10(XCMGW_new1$XCMGW_CHECK)
 
+#Xembed
+XEMBED=setNames(cast(EMBED,'UID~PARAMETER', value='RESULT', fun='mean'), list('UID','XEMBED_CHECK'))
+
+#W1_HALL
+#Be careful, the documentation says to use P=0.667, but the aquamet code says 0.6667, if there ends up being a lot of P's in the data this makes a difference!!! 
+#EMAP_WEST
+Human_Influ$EMAP_Weights=ifelse(Human_Influ$RESULT == "B", 1.5,ifelse(Human_Influ$RESULT == "C", 1.0, ifelse(Human_Influ$RESULT == "P", 0.6667, 0))) 
+W1_HALL=cast(Human_Influ,'UID~PARAMETER', value='EMAP_Weights',fun='mean')
+W1_HALL$EMAP_W1_HALL_CHECK=rowSums(W1_HALL[,c(2:12)])     
+
+# NRSA
+Human_Influ$NRSA_Weights=ifelse(Human_Influ$RESULT == "B", 1.5,ifelse(Human_Influ$RESULT == "C", 1.0, ifelse(Human_Influ$RESULT == "P", 0.5, 0))) 
+W1_HALL_NRSA=cast(Human_Influ,'UID~PARAMETER', value='NRSA_Weights',fun='mean')
+W1_HALL$NRSA_W1_HALL_CHECK=rowSums(W1_HALL_NRSA[,c(2:12)])     
+
+
+###xcdenbk: needed for QR1
+BnkDensiom = subset(densiom, POINT == "LF"|POINT =="RT")
+BnkDensPvt=cast(BnkDensiom,'UID~PARAMETER',value='RESULT',fun=mean)
+BnkDensPvt$xcdenbk_CHECK=(BnkDensPvt$DENSIOM/17)*100
+
+#QR1
+#QR1= {(QRVeg1) (QRVeg2) (QRDIST1)} ^ 0.333; 
+#if XCMGW <=2.00, then QRVeg1=.1+(.9 (XCMGW/2.00))
+#if XCMGW >2.00 then QRVeg1=1; 
+#and QRVeg2=0.1 + [0.9(XCDENBK/100)]; 
+#QRDIST1=1/(1+W1_Hall). 
+QR1=join_all(list(XCMGW_new1,BnkDensPvt,W1_HALL), by='UID')
+QR1=setNames(subset(QR1[,c('UID','XCMGW_CHECK','xcdenbk_CHECK','W1_HALL_CHECK')]),list('UID','XCMGW','xcdenbk','W1_HALL'))
+
+#QRVeg1
+QR1$QRveg1=ifelse(QR1$XCMGW<=2.00,.1+(.9*(QR1$XCMGW/2)),1)
+#QRVeg2
+QR1$QRVeg2=0.1 + (0.9*(QR1$xcdenbk/100))
+#QRDIST1
+QR1$QRDIST1=1/(1+QR1$W1_HALL)
+#Final QR1 calculation
+QR1$QR1_CHECK=(QR1$QRveg1*QR1$QRVeg2*QR1$QRDIST1)^0.333
 
 
 #To get all calculated values together... Although some tables still have the metrics included.
-AquametCheckJoin=join_all(list(fishpvt2,DensPvt,XCMGW_new1,XCMG_new1,IncBnk,PCT_SAFN_ALL),by="UID")
+AquametCheckJoin=join_all(list(fishpvt2,DensPvt,XCMGW_new1,XCMG_new1,IncBnk,PCT_SAFN_ALL,XEMBED,BnkDensPvt,W1_HALL,QR1),by="UID")
 #To remove all of the metrics and only get the indicators subset by UID and all those columns ending in "CHECK". Hmm..not really sure what the $ is doing here, the code works without it, but all the examples I've looked at keep the $ so I kept it too... 
 AquametCheck=AquametCheckJoin[,c("UID",grep("CHECK$", colnames(AquametCheckJoin),value=TRUE))]
 #write.csv(AquametCheck,"C:\\Users\\Nicole\\Desktop\\AquametCheck2.csv")
 #Remove all other data files as they are no longer needed
-rm(densiom,RipXCMG,XCMG_new,XCMG_new1,RipWW,XCMGW_new,XCMGW_new1,AquametCheckJoin,fish,fishpvt2,MidDensiom,DensPvt,Incision,INCISED,BANKHT,Inc,Bnk,xIncht,xBnkht,IncBnk,Sediment,pctsafn,Sed2014,A_Sed2014,C_Sed2014,E_Sed2014,F_Sed2014,PCT_SAFN_ALL)
 
-#AquametCheck10=join_all(list(fishpvt2,DensPvt,RipXCMGW_Final,RipXCMG_Final,IncBnk,PCT_SAFN_ALL),by="UID")
-#AquametCheck11=AquametCheck10[,c("UID",grep("CHECK$", colnames(AquametCheck10),value=TRUE))]
-#write.csv(AquametCheck11,"C:\\Users\\Nicole\\Desktop\\AquametCheck11.csv")
+rm(EMBED,Human_Influ,W1_HALL,W1_HALL_NRSA,QR1,XEMBED,BnkDensPvt,BnkDensiom,densiom,RipXCMG,XCMG_new,XCMG_new1,RipWW,XCMGW_new,XCMGW_new1,AquametCheckJoin,fish,fishpvt2,
+   MidDensiom,DensPvt,Incision,INCISED,BANKHT,Inc,Bnk,xIncht,xBnkht,IncBnk,Sediment,pctsafn,Sed2014,A_Sed2014,C_Sed2014,E_Sed2014,F_Sed2014,PCT_SAFN_ALL)
+
+
+
+
+
+
+
 
 
 
 
 #############################################################################
 
-##############             EPA EMAP and WRSA data             ###############
+##############        Merge EPA's EMAP and WRSA data          ###############
 
 #############################################################################
 
@@ -562,27 +665,16 @@ SED_RS_minusDup= SED_RS_reorder[!duplicated(SED_RS_reorder$DUPLICATE_ID),]
 SED_RS_final=SED_RS_minusDup[order(SED_RS_minusDup$REVISITED_OVERLAP, decreasing=TRUE),]
 
 
+
+
+
+###############################################################################################
+
+# EPA data for level III ecoregions
+
+###############################################################################################
 #To get Sample sizes used to set thresholds
 ##This does not count NAs (good) and was manually checked to determine if it was counting the correct information.
-###FOR eco10
-pvt1=aggregate(XCDENMID~ECO10,data=RIP_RS_final,FUN=length)
-pvt2=aggregate(XCMG~ECO10,data=RIP_RS_final,FUN=length)
-pvt3=aggregate(XCMGW~ECO10,data=RIP_RS_final,FUN=length)
-pvt4=aggregate(PCT_SAFN~ECO10,data=SED_RS_final,FUN=length)
-pvt5=aggregate(DPCT_SF~ECO10,data=SED_RS_final,FUN=length)
-pvt6=aggregate(XFC_NAT~ECO10,data=SED_RS_final,FUN=length)
-pvt7=aggregate(LINCIS_H~ECO10,data=SED_RS_final,FUN=length)
-pvt8=aggregate(XEMBED~ECO10,data=SED_RS_final,FUN=length)
-ECO10_SampSizes=join_all(list(pvt1,pvt2,pvt3,pvt4,pvt5, pvt6, pvt7, pvt8),by="ECO10")
-
-
-#NorCal specific hybrid ecoregions
-ECO10_SampSizes_NC = subset(ECO10_SampSizes, ECO10 == "XE-SOUTH"|ECO10 == "XE-NORTH"|ECO10 == "MT-PNW")
-
-##I wish this would work so that the code was more adaptable, but it won't work with any additional ecoregions... why? 
-#Desired_eco=list("XE-SOUTH","XE-NORTH")
-#ECOtry = subset(ECO10_SampSizes, ECO10_SampSizes$ECO10 == Desired_eco)
-
 ###For ECO_LVL_3NAME 
 pvt11=aggregate(XCDENMID~ECO_LVL_3NAME,data=RIP_RS_final,FUN=length)
 pvt12=aggregate(XCMG~ECO_LVL_3NAME,data=RIP_RS_final,FUN=length)
@@ -598,27 +690,107 @@ ECOIII_SampSizes=join_all(list(pvt11,pvt12,pvt13,pvt14,pvt15, pvt16, pvt17, pvt1
 ECOIII_SampSizes_NC = subset(ECOIII_SampSizes, ECO_LVL_3NAME == "Central Basin and Range"|ECO_LVL_3NAME == "Eastern Cascades Slopes and Foothills"|ECO_LVL_3NAME == "Northern Basin and Range"|ECO_LVL_3NAME == "Sierra Nevada")
 
 #Remove all working objects, leave files that will be used later in code, and open the final sample sizes. 
-rm(RIP_RS_combined,RIP_RS_reorder,RIP_RS_minusDup,SED_RS_combined,SED_RS_reorder,SED_RS_minusDup,pvt1,pvt2,pvt3,pvt4,pvt5, pvt6, pvt7, pvt8,pvt11,pvt12,pvt13,pvt14,pvt15, pvt16, pvt17, pvt18)
-View(ECO10_SampSizes)
-View(ECO10_SampSizes_NC)
-View(ECOIII_SampSizes)
-View(ECOIII_SampSizes_NC)
+rm(pvt11,pvt12,pvt13,pvt14,pvt15, pvt16, pvt17, pvt18)
+#If you do not plan to run hybrid ecoregions (ECO10) run this line, If you do plan to use ECO10 DO NOT RUN THIS LINE
+rm(RIP_RS_combined,RIP_RS_reorder,RIP_RS_minusDup,SED_RS_combined,SED_RS_reorder,SED_RS_minusDup)
+###############################################################################################
 
-###############################
-# IN EXCEL... CHANGE .95 TO .75 OR .25 AND .05 AND CHANGE THE ECOREGION FOR EACH
-#PROBLEM!!!!! Need excel 2010 to do a real percentile!
-#=Percentile.exc
-###############################
+# SETTING THRESHOLDS FOR level III ecoregions!!!
 
+###############################################################################################
+## For Ecoregion level III
+# Use riparian reference sites for:  XCDENMID, XCMG, XCMGW
+#XCDENMID
+T11=setNames(aggregate(RIP_RS_final$XCDENMID, by = list(RIP_RS_final$ECO_LVL_3NAME), FUN = quantile,probs=0.05,na.rm=TRUE), c("ECO_LVL_3NAME","XCDENMID_0.05"))
+T12=setNames(aggregate(RIP_RS_final$XCDENMID, by = list(RIP_RS_final$ECO_LVL_3NAME), FUN = quantile,probs=0.25,na.rm=TRUE), c("ECO_LVL_3NAME","XCDENMID_0.25"))
+T15=join_all(list(T11,T12), by="ECO_LVL_3NAME")
+#XCMG
+T11=setNames(aggregate(RIP_RS_final$XCMG, by = list(RIP_RS_final$ECO_LVL_3NAME), FUN = quantile,probs=0.05,na.rm=TRUE), c("ECO_LVL_3NAME","XCMG_0.05"))
+T12=setNames(aggregate(RIP_RS_final$XCMG, by = list(RIP_RS_final$ECO_LVL_3NAME), FUN = quantile,probs=0.25,na.rm=TRUE), c("ECO_LVL_3NAME","XCMG_0.25"))
+T16=join_all(list(T11,T12), by="ECO_LVL_3NAME")
+#XCMGW
+T11=setNames(aggregate(RIP_RS_final$XCMGW, by = list(RIP_RS_final$ECO_LVL_3NAME), FUN = quantile,probs=0.05,na.rm=TRUE), c("ECO_LVL_3NAME","XCMGW_0.05"))
+T12=setNames(aggregate(RIP_RS_final$XCMGW, by = list(RIP_RS_final$ECO_LVL_3NAME), FUN = quantile,probs=0.25,na.rm=TRUE), c("ECO_LVL_3NAME","XCMGW_0.25"))
+T17=join_all(list(T11,T12), by="ECO_LVL_3NAME")
+##Combine all
+RIP_THRESHOLDS_lvlIII=join_all(list(T15,T16,T17),by="ECO_LVL_3NAME")
+
+###################################################################################
+# Use sediment reference sites for:  PCT_SAFN, DPCT_SF, XEMBED, XFC_NAT,LINCIS_H,
+#PCT_SAFN
+T13=setNames(aggregate(SED_RS_final$PCT_SAFN, by = list(SED_RS_final$ECO_LVL_3NAME), FUN = quantile,probs=0.75,na.rm=TRUE), c("ECO_LVL_3NAME","PCT_SAFN_0.75"))
+T14=setNames(aggregate(SED_RS_final$PCT_SAFN, by = list(SED_RS_final$ECO_LVL_3NAME), FUN = quantile,probs=0.95,na.rm=TRUE), c("ECO_LVL_3NAME","PCT_SAFN_0.95"))
+T15=join_all(list(T13,T14), by="ECO_LVL_3NAME")
+#DPCT_SF
+###Modeled indicator, does not use Ecoregion percentil thresholds as these others do.. 
+#XFC_NAT
+T11=setNames(aggregate(SED_RS_final$XFC_NAT, by = list(SED_RS_final$ECO_LVL_3NAME), FUN = quantile,probs=0.05,na.rm=TRUE), c("ECO_LVL_3NAME","XFC_NAT_0.05"))
+T12=setNames(aggregate(SED_RS_final$XFC_NAT, by = list(SED_RS_final$ECO_LVL_3NAME), FUN = quantile,probs=0.25,na.rm=TRUE), c("ECO_LVL_3NAME","XFC_NAT_0.25"))
+T17=join_all(list(T11,T12), by="ECO_LVL_3NAME")
+#LINCIS_H
+T13=setNames(aggregate(SED_RS_final$LINCIS_H, by = list(SED_RS_final$ECO_LVL_3NAME), FUN = quantile,probs=0.75,na.rm=TRUE), c("ECO_LVL_3NAME","LINCIS_H_0.75"))
+T14=setNames(aggregate(SED_RS_final$LINCIS_H, by = list(SED_RS_final$ECO_LVL_3NAME), FUN = quantile,probs=0.95,na.rm=TRUE), c("ECO_LVL_3NAME","LINCIS_H_0.95"))
+T18=join_all(list(T13,T14), by="ECO_LVL_3NAME")
+#XEMBED
+T13=setNames(aggregate(SED_RS_final$XEMBED, by = list(SED_RS_final$ECO_LVL_3NAME), FUN = quantile,probs=0.75,na.rm=TRUE), c("ECO_LVL_3NAME","XEMBED_0.75"))
+T14=setNames(aggregate(SED_RS_final$XEMBED, by = list(SED_RS_final$ECO_LVL_3NAME), FUN = quantile,probs=0.95,na.rm=TRUE), c("ECO_LVL_3NAME","XEMBED_0.95"))
+T19=join_all(list(T13,T14), by="ECO_LVL_3NAME")
+##Combine all
+SED_THRESHOLDS_lvlIII=join_all(list(T15,T17,T18,T19),by="ECO_LVL_3NAME")
+
+###################################################################################
+# Use set thresholds for:  L_XCMGW, W1_HALL, QR1
+# Defined when thresholds are implemented and applied to field measured indicators.
+###################################################################################
+
+#Make one file for level III thresholds and remove unwanted working files
+Thresholds_lvlIII=merge(RIP_THRESHOLDS_lvlIII,SED_THRESHOLDS_lvlIII, all=TRUE)
+
+rm(T11,T12,T13,T14,T15,T16,T17,T18,T19,RIP_THRESHOLDS_lvlIII,SED_THRESHOLDS_lvlIII,RIP_RS_final,SED_RS_final)
+
+#Make threshold files for NorCal specific ecoregions for ease of looking
+Thresholds_lvlIII_NC=subset(Thresholds_lvlIII, ECO_LVL_3NAME == "Central Basin and Range"|ECO_LVL_3NAME == "Eastern Cascades Slopes and Foothills"|ECO_LVL_3NAME == "Northern Basin and Range"|ECO_LVL_3NAME == "Sierra Nevada")
+
+
+
+
+
+
+
+
+###############################################################################################
+
+# EPA data for ECO10
+
+###############################################################################################
+#To get Sample sizes used to set thresholds
+##This does not count NAs (good) and was manually checked to determine if it was counting the correct information.
+###FOR ECO10
+pvt1=aggregate(XCDENMID~ECO10,data=RIP_RS_final,FUN=length)
+pvt2=aggregate(XCMG~ECO10,data=RIP_RS_final,FUN=length)
+pvt3=aggregate(XCMGW~ECO10,data=RIP_RS_final,FUN=length)
+pvt4=aggregate(PCT_SAFN~ECO10,data=SED_RS_final,FUN=length)
+pvt5=aggregate(DPCT_SF~ECO10,data=SED_RS_final,FUN=length)
+pvt6=aggregate(XFC_NAT~ECO10,data=SED_RS_final,FUN=length)
+pvt7=aggregate(LINCIS_H~ECO10,data=SED_RS_final,FUN=length)
+pvt8=aggregate(XEMBED~ECO10,data=SED_RS_final,FUN=length)
+ECO10_SampSizes=join_all(list(pvt1,pvt2,pvt3,pvt4,pvt5, pvt6, pvt7, pvt8),by="ECO10")
+
+#NorCal specific hybrid ecoregions
+ECO10_SampSizes_NC = subset(ECO10_SampSizes, ECO10 == "XE-SOUTH"|ECO10 == "XE-NORTH"|ECO10 == "MT-PNW")
+
+##I wish this would work so that the code was more adaptable, but it won't work with any additional ecoregions... why? 
+#Desired_eco=list("XE-SOUTH","XE-NORTH")
+#ECOtry = subset(ECO10_SampSizes, ECO10_SampSizes$ECO10 == Desired_eco)
+
+#Remove all working objects, leave files that will be used later in code, and open the final sample sizes. 
+rm(RIP_RS_combined,RIP_RS_reorder,RIP_RS_minusDup,SED_RS_combined,SED_RS_reorder,SED_RS_minusDup,pvt1,pvt2,pvt3,pvt4,pvt5, pvt6, pvt7, pvt8)
+###############################################################################################
+
+# SETTING THRESHOLDS FOR ECO10!!!
+
+###############################################################################################
 # Use riparian reference sites for: XCDENMID, XCMG, XCMGW, 
-
-###
-
-#Wish I could get this or the next line to work, but it won't repeat the ecoregion name and so I have to do it individually....
-#RIP_Thres_XCDENMID = aggregate(Wade_RIP_Final$XCDENMID, by = list(Wade_RIP_Final$ECO10), FUN = function(x) quantile(x, probs = c(0.95,0.75,0.25,0.05),na.rm=TRUE))
-#T4=aggregate(SED_RS_final$XEMBED, by = list(SED_RS_final$ECO10), FUN = function(x) quantile(x,probs=0.95,na.rm=TRUE))
-#trial2 = aggregate(Wade_RIP_Final$XCDENMID, by = list(Wade_RIP_Final$ECO10), FUN = quantile, probs= c(0.05,0.25,0.75,0.95),na.rm=TRUE)
-
 #XCDENMID
 T1=setNames(aggregate(RIP_RS_final$XCDENMID, by = list(RIP_RS_final$ECO10), FUN = quantile,probs=0.05,na.rm=TRUE), c("ECO10","XCDENMID_0.05"))
 T2=setNames(aggregate(RIP_RS_final$XCDENMID, by = list(RIP_RS_final$ECO10), FUN = quantile,probs=0.25,na.rm=TRUE), c("ECO10","XCDENMID_0.25"))
@@ -636,21 +808,13 @@ RIP_THRESHOLDS_ECO10=join_all(list(T5,T6,T7),by="ECO10")
 
 ###################################################################################
 ###################################################################################
-
-
 # Use sediment reference sites for:  PCT_SAFN, DPCT_SF, XEMBED, XFC_NAT,LINCIS_H,
-#SECONDARY INDICATORS: CVDPTH, LRP100, LDVRP100, C1WM100
-
 #PCT_SAFN
 T3=setNames(aggregate(SED_RS_final$PCT_SAFN, by = list(SED_RS_final$ECO10), FUN = quantile,probs=0.75,na.rm=TRUE), c("ECO10","PCT_SAFN_0.75"))
 T4=setNames(aggregate(SED_RS_final$PCT_SAFN, by = list(SED_RS_final$ECO10), FUN = quantile,probs=0.95,na.rm=TRUE), c("ECO10","PCT_SAFN_0.95"))
 T5=join_all(list(T3,T4), by="ECO10")
 #DPCT_SF
-#T1=setNames(aggregate(SED_RS_final$DPCT_SF, by = list(SED_RS_final$ECO10), FUN = quantile,probs=0.05,na.rm=TRUE), c("ECO10","DPCT_SF_0.05"))
-#T2=setNames(aggregate(SED_RS_final$DPCT_SF, by = list(SED_RS_final$ECO10), FUN = quantile,probs=0.25,na.rm=TRUE), c("ECO10","DPCT_SF_0.25"))
-#T3=setNames(aggregate(SED_RS_final$DPCT_SF, by = list(SED_RS_final$ECO10), FUN = quantile,probs=0.75,na.rm=TRUE), c("ECO10","DPCT_SF_0.75"))
-#T4=setNames(aggregate(SED_RS_final$DPCT_SF, by = list(SED_RS_final$ECO10), FUN = quantile,probs=0.95,na.rm=TRUE), c("ECO10","DPCT_SF_0.95"))
-#T6=join_all(list(T1,T2,T3,T4), by="ECO10")
+###Modeled indicator, does not use Ecoregion percentil thresholds as these others do.. 
 #XFC_NAT
 T1=setNames(aggregate(SED_RS_final$XFC_NAT, by = list(SED_RS_final$ECO10), FUN = quantile,probs=0.05,na.rm=TRUE), c("ECO10","XFC_NAT_0.05"))
 T2=setNames(aggregate(SED_RS_final$XFC_NAT, by = list(SED_RS_final$ECO10), FUN = quantile,probs=0.25,na.rm=TRUE), c("ECO10","XFC_NAT_0.25"))
@@ -666,76 +830,32 @@ T9=join_all(list(T3,T4), by="ECO10")
 ##Combine all
 SED_THRESHOLDS_ECO10=join_all(list(T5,T7,T8,T9),by="ECO10")
 
+###################################################################################
+# Use set thresholds for:  L_XCMGW, W1_HALL, QR1
+# Defined when thresholds are implemented and applied to field measured indicators.
+###################################################################################
 
 #Make one file for ECO 10 thresholds and remove unwanted working files
-
 Thresholds_ECO10=merge(SED_THRESHOLDS_ECO10,RIP_THRESHOLDS_ECO10, all=TRUE)
 rm(T1,T2,T3,T4,T5,T6,T7,T8,T9,RIP_THRESHOLDS_ECO10,SED_THRESHOLDS_ECO10)
-# WHAT TO DO WITH: W1_HALL, QR1
-# W1_HALL has set thresholds see \\share1.bluezone.usu.edu\miller\buglab\Research Projects\BLM_WRSA_Stream_Surveys\Analysis\Indicator_Scoping\NorCalIndicatorInventory24Oct2014 (Date may vary)
-
-########################################################################################
-###########################################################################################
-########################################################################################
-## For Ecoregion level III
-
-
-#XCDENMID
-T11=setNames(aggregate(RIP_RS_final$XCDENMID, by = list(RIP_RS_final$ECO_LVL_3NAME), FUN = quantile,probs=0.05,na.rm=TRUE), c("ECO_LVL_3NAME","XCDENMID_0.05"))
-T12=setNames(aggregate(RIP_RS_final$XCDENMID, by = list(RIP_RS_final$ECO_LVL_3NAME), FUN = quantile,probs=0.25,na.rm=TRUE), c("ECO_LVL_3NAME","XCDENMID_0.25"))
-T15=join_all(list(T11,T12), by="ECO_LVL_3NAME")
-#XCMG
-T11=setNames(aggregate(RIP_RS_final$XCMG, by = list(RIP_RS_final$ECO_LVL_3NAME), FUN = quantile,probs=0.05,na.rm=TRUE), c("ECO_LVL_3NAME","XCMG_0.05"))
-T12=setNames(aggregate(RIP_RS_final$XCMG, by = list(RIP_RS_final$ECO_LVL_3NAME), FUN = quantile,probs=0.25,na.rm=TRUE), c("ECO_LVL_3NAME","XCMG_0.25"))
-T16=join_all(list(T11,T12), by="ECO_LVL_3NAME")
-#XCMGW
-T11=setNames(aggregate(RIP_RS_final$XCMGW, by = list(RIP_RS_final$ECO_LVL_3NAME), FUN = quantile,probs=0.05,na.rm=TRUE), c("ECO_LVL_3NAME","XCMGW_0.05"))
-T12=setNames(aggregate(RIP_RS_final$XCMGW, by = list(RIP_RS_final$ECO_LVL_3NAME), FUN = quantile,probs=0.25,na.rm=TRUE), c("ECO_LVL_3NAME","XCMGW_0.25"))
-T17=join_all(list(T11,T12), by="ECO_LVL_3NAME")
-##Combine all
-RIP_THRESHOLDS_lvlIII=join_all(list(T15,T16,T17),by="ECO_LVL_3NAME")
-
-###################################################################################
-###################################################################################
-
-
-# Use sediment reference sites for:  PCT_SAFN, DPCT_SF, XEMBED, XFC_NAT,LINCIS_H,
-#SECONDARY INDICATORS: CVDPTH, LRP100, LDVRP100, C1WM100
-
-#PCT_SAFN
-
-T13=setNames(aggregate(SED_RS_final$PCT_SAFN, by = list(SED_RS_final$ECO_LVL_3NAME), FUN = quantile,probs=0.75,na.rm=TRUE), c("ECO_LVL_3NAME","PCT_SAFN_0.75"))
-T14=setNames(aggregate(SED_RS_final$PCT_SAFN, by = list(SED_RS_final$ECO_LVL_3NAME), FUN = quantile,probs=0.95,na.rm=TRUE), c("ECO_LVL_3NAME","PCT_SAFN_0.95"))
-T15=join_all(list(T13,T14), by="ECO_LVL_3NAME")
-#DPCT_SF 
-#To add this back in you need to add to Join all line at bottom of indicator list and to the line joining all files. 
-#T11=setNames(aggregate(SED_RS_final$DPCT_SF, by = list(SED_RS_final$ECO_LVL_3NAME), FUN = quantile,probs=0.05,na.rm=TRUE), c("ECO_LVL_3NAME","DPCT_SF_0.05"))
-#T12=setNames(aggregate(SED_RS_final$DPCT_SF, by = list(SED_RS_final$ECO_LVL_3NAME), FUN = quantile,probs=0.25,na.rm=TRUE), c("ECO_LVL_3NAME","DPCT_SF_0.25"))
-#T13=setNames(aggregate(SED_RS_final$DPCT_SF, by = list(SED_RS_final$ECO_LVL_3NAME), FUN = quantile,probs=0.75,na.rm=TRUE), c("ECO_LVL_3NAME","DPCT_SF_0.75"))
-#T14=setNames(aggregate(SED_RS_final$DPCT_SF, by = list(SED_RS_final$ECO_LVL_3NAME), FUN = quantile,probs=0.95,na.rm=TRUE), c("ECO_LVL_3NAME","DPCT_SF_0.95"))
-#T16=join_all(list(T11,T12,T13,T14), by="ECO_LVL_3NAME")
-#XFC_NAT
-T11=setNames(aggregate(SED_RS_final$XFC_NAT, by = list(SED_RS_final$ECO_LVL_3NAME), FUN = quantile,probs=0.05,na.rm=TRUE), c("ECO_LVL_3NAME","XFC_NAT_0.05"))
-T12=setNames(aggregate(SED_RS_final$XFC_NAT, by = list(SED_RS_final$ECO_LVL_3NAME), FUN = quantile,probs=0.25,na.rm=TRUE), c("ECO_LVL_3NAME","XFC_NAT_0.25"))
-T17=join_all(list(T11,T12), by="ECO_LVL_3NAME")
-#LINCIS_H
-T13=setNames(aggregate(SED_RS_final$LINCIS_H, by = list(SED_RS_final$ECO_LVL_3NAME), FUN = quantile,probs=0.75,na.rm=TRUE), c("ECO_LVL_3NAME","LINCIS_H_0.75"))
-T14=setNames(aggregate(SED_RS_final$LINCIS_H, by = list(SED_RS_final$ECO_LVL_3NAME), FUN = quantile,probs=0.95,na.rm=TRUE), c("ECO_LVL_3NAME","LINCIS_H_0.95"))
-T18=join_all(list(T13,T14), by="ECO_LVL_3NAME")
-#XEMBED
-T13=setNames(aggregate(SED_RS_final$XEMBED, by = list(SED_RS_final$ECO_LVL_3NAME), FUN = quantile,probs=0.75,na.rm=TRUE), c("ECO_LVL_3NAME","XEMBED_0.75"))
-T14=setNames(aggregate(SED_RS_final$XEMBED, by = list(SED_RS_final$ECO_LVL_3NAME), FUN = quantile,probs=0.95,na.rm=TRUE), c("ECO_LVL_3NAME","XEMBED_0.95"))
-T19=join_all(list(T13,T14), by="ECO_LVL_3NAME")
-##Combine all
-SED_THRESHOLDS_lvlIII=join_all(list(T15,T17,T18,T19),by="ECO_LVL_3NAME")
-
-#Make one file for ECO 10 thresholds and remove unwanted working files
-Thresholds_lvlIII=merge(RIP_THRESHOLDS_lvlIII,SED_THRESHOLDS_lvlIII, all=TRUE)
-rm(T11,T12,T13,T14,T15,T16,T17,T18,T19,RIP_THRESHOLDS_lvlIII,SED_THRESHOLDS_lvlIII,RIP_RS_final,SED_RS_final)
-
-#Make threshold files for NorCal specific ecoregions for ease of looking
-Thresholds_lvlIII_NC=subset(Thresholds_lvlIII, ECO_LVL_3NAME == "Central Basin and Range"|ECO_LVL_3NAME == "Eastern Cascades Slopes and Foothills"|ECO_LVL_3NAME == "Northern Basin and Range"|ECO_LVL_3NAME == "Sierra Nevada")
+#Make NorCal Specific ECO10 threshold files
 Thresholds_ECO10_NC=subset(Thresholds_ECO10, ECO10 == "XE-SOUTH"|ECO10 == "XE-NORTH"|ECO10 == "MT-PNW")
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
