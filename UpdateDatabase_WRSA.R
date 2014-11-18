@@ -21,6 +21,12 @@ TBLout=ColCheck(TBLout,c(VAR,'PARAMETER','RESULT','TRANSECT','POINT'))
 UpdatesTBLnew=ColCheck(subset(UpdatesTBL,is.na(IND) | IND==''),colnames(TBLout));UpdatesTBLnew$INSERTION=as.POSIXct(Sys.Date())
 TBLout=rbind(TBLout,UpdatesTBLnew)
 #DONE!
+
+#JC troubleshooting###
+widhgt=TBLout
+UnionTBL=TBLout
+
+###############################
 assign(TBL,TBLout)
 
 DEVELOPMENT='N'#update query still in development
