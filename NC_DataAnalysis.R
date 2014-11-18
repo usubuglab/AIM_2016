@@ -560,7 +560,7 @@ BnkDensPvt$xcdenbk_CHECK=(BnkDensPvt$DENSIOM/17)*100
 #and QRVeg2=0.1 + [0.9(XCDENBK/100)]; 
 #QRDIST1=1/(1+W1_Hall). 
 QR1=join_all(list(XCMGW_new1,BnkDensPvt,W1_HALL), by='UID')
-QR1=setNames(subset(QR1[,c('UID','XCMGW_CHECK','xcdenbk_CHECK','W1_HALL_CHECK')]),list('UID','XCMGW','xcdenbk','W1_HALL'))
+QR1=setNames(subset(QR1[,c('UID','XCMGW_CHECK','xcdenbk_CHECK','EMAP_W1_HALL_CHECK')]),list('UID','XCMGW','xcdenbk','W1_HALL'))
 
 #QRVeg1
 QR1$QRveg1=ifelse(QR1$XCMGW<=2.00,.1+(.9*(QR1$XCMGW/2)),1)
