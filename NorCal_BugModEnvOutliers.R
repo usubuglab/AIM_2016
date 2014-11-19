@@ -1,8 +1,12 @@
+# To make graphs 4 on a page(2 by 2)
+par(mfrow=c(2,2))
+
+
+
 ############################################################################################
 ################                  NV and NorCal Data                        ################            
 ############################################################################################
 NVNorCalEnv=read.csv("\\\\share1.bluezone.usu.edu\\miller\\buglab\\Research Projects\\BLM_WRSA_Stream_Surveys\\Results and Reports\\NorCal_2013\\Analysis\\BugModels\\EnvirOutliers\\NVandNorCal_EnvData_12Nov2014.csv")
-par(mfrow=c(2,2))
 
 #NVEnv=subset(NVNorCalEnv, Project=="NVmodel")
 #NorCalEnv=subset(NVNorCalEnv, Project=="NorCal")

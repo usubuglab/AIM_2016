@@ -60,12 +60,15 @@ rm(PrdWQresults,AllWQ)
 ##############     Invertebrate condition determinations      ###############
 
 #############################################################################
+#All raw model results
 NorCalBugs=read.csv("\\\\share1.bluezone.usu.edu\\miller\\buglab\\Research Projects\\BLM_WRSA_Stream_Surveys\\Results and Reports\\NorCal_2013\\Analysis\\BugModels\\ALL_BugModel_Results.csv")
 
 #############################################################################
 #######################     NV MODELS     ###################################
 #############################################################################
-#Scores below the impaired threshold imply degradation. Scores greater than or equal to the equivalence threshold imply reference condition. 
+#Scores below the impaired threshold imply degradation. 
+#Scores greater than or equal to the equivalence threshold imply reference condition. 
+#A value between the two thresholds indicates that the score cannot be definitively determined to fall within or below reference condition. (Techinically this does not mean "fair")
 #Pc>0
 #Impaired = 0.6020531
 #Equivalence = 0.6864668
@@ -153,27 +156,92 @@ NorCalCHECK_Bugs$NicoleJudge=c('G','P','P','P','G','G')
 
 
 
-#plot O/E
-plot(NorCalBugs$NV_OE5,NorCalBugs$CSCI_OE, ylim=c(0,1.4), xlim=c(0,1.4),abline((lm(NorCalBugs$CSCI_OE~NorCalBugs$NV_OE5)), col="blue", lty="longdash"))
+####Plotting OE and MMI to compare
+#Must get all scores on same scale so I've divided by the reference score Average
+#CSCI MMI and NV OE Pc=0 both have an average of 1.00 so no adjustment is needed. 
+NorCalBugs$NV_MMI_2=NorCalBugs$NV_MMI/56.04737
+NorCalBugs$NV_OE5_2=NorCalBugs$NV_OE5/1.06
+NorCalBugs$CSCI_OE_2=NorCalBugs$CSCI_OE/1.021478
+NorCalBugs$CSCI_Hybrid_2=NorCalBugs$CSCI_Hybrid/1.010739
+
+par(mfrow=c(1,3))
+
+############  NV Models   ############
+#Plot NV O/E (Pc=0) to NV MMI
+plot(NorCalBugs$NV_OE0,NorCalBugs$NV_MMI_2, ylim=c(0,1.4), xlim=c(0,1.4),abline((lm(NorCalBugs$NV_MMI_2~NorCalBugs$NV_OE0)), col="blue", lty="longdash"))
 abline(0,1)
-r2=(cor(NorCalBugs$CSCI_OE,NorCalBugs$NV_OE5))^2
+r2=(cor(NorCalBugs$NV_MMI_2,NorCalBugs$NV_OE0))^2
+mylabel = bquote(italic(R)^2 == .(format(r2, digits = 3)))
+text(x = .1, y = 1, labels = mylabel)
+#plot NV O/E (0.5) and NV MMI 
+plot(NorCalBugs$NV_OE5_2,NorCalBugs$NV_MMI_2, ylim=c(0,1.4), xlim=c(0,1.4),abline((lm(NorCalBugs$NV_MMI_2~NorCalBugs$NV_OE5_2)), col="blue", lty="longdash"))
+abline(0,1)
+r2=(cor(NorCalBugs$NV_MMI_2,NorCalBugs$NV_OE5_2))^2
+mylabel = bquote(italic(R)^2 == .(format(r2, digits = 3)))
+text(x = .1, y = 1, labels = mylabel)
+#Plot NV O/E (Pc=0) and NV O/E (0.5)
+plot(NorCalBugs$NV_OE5_2,NorCalBugs$NV_OE0, ylim=c(0,1.4), xlim=c(0,1.4),abline((lm(NorCalBugs$NV_OE0~NorCalBugs$NV_OE5_2)), col="blue", lty="longdash"))
+abline(0,1)
+r2=(cor(NorCalBugs$NV_OE0,NorCalBugs$NV_OE5_2))^2
 mylabel = bquote(italic(R)^2 == .(format(r2, digits = 3)))
 text(x = .1, y = 1, labels = mylabel)
 
-#plot MMI
-NorCalBugs$NV_MMI_2=NorCalBugs$NV_MMI/100
+
+############  CSCI Models   ############
+# Plot CSCI OE and CSCI MMI
+plot(NorCalBugs$CSCI_OE_2,NorCalBugs$CSCI_MMI, ylim=c(0,1.1), xlim=c(0,1.1),abline((lm(NorCalBugs$CSCI_MMI~NorCalBugs$CSCI_OE_2)), col="blue", lty="longdash"))
+abline(0,1)
+r2=(cor(NorCalBugs$CSCI_MMI,NorCalBugs$CSCI_OE_2))^2
+mylabel = bquote(italic(R)^2 == .(format(r2, digits = 3)))
+text(x = .1, y = 1, labels = mylabel)
+# Plot CSCI OE and CSCI MMI
+plot(NorCalBugs$CSCI_OE_2,NorCalBugs$CSCI_Hybrid_2, ylim=c(0,1.1), xlim=c(0,1.1),abline((lm(NorCalBugs$CSCI_Hybrid_2~NorCalBugs$CSCI_OE_2)), col="blue", lty="longdash"))
+abline(0,1)
+r2=(cor(NorCalBugs$CSCI_Hybrid_2,NorCalBugs$CSCI_OE_2))^2
+mylabel = bquote(italic(R)^2 == .(format(r2, digits = 3)))
+text(x = .1, y = 1, labels = mylabel)
+# Plot CSCI Hybrid and CSCI MMI
+plot(NorCalBugs$CSCI_Hybrid_2,NorCalBugs$CSCI_MMI, ylim=c(0,1.1), xlim=c(0,1.1),abline((lm(NorCalBugs$CSCI_MMI~NorCalBugs$CSCI_Hybrid_2)), col="blue", lty="longdash"))
+abline(0,1)
+r2=(cor(NorCalBugs$CSCI_MMI,NorCalBugs$CSCI_Hybrid_2))^2
+mylabel = bquote(italic(R)^2 == .(format(r2, digits = 3)))
+text(x = .1, y = 1, labels = mylabel)
+
+
+
+############  NV and CSCI Models   ############
+#plot NV O/E (0.5) and CSCI O/E (also a 0.5 prob of capture)
+plot(NorCalBugs$NV_OE5_2,NorCalBugs$CSCI_OE_2, ylim=c(0,1.4), xlim=c(0,1.4),abline((lm(NorCalBugs$CSCI_OE_2~NorCalBugs$NV_OE5_2)), col="blue", lty="longdash"))
+abline(0,1)
+r2=(cor(NorCalBugs$CSCI_OE_2,NorCalBugs$NV_OE5_2))^2
+mylabel = bquote(italic(R)^2 == .(format(r2, digits = 3)))
+text(x = .1, y = 1, labels = mylabel)
+
+#plot NV O/E (0) and CSCI O/E (0.5 prob of capture)
+plot(NorCalBugs$NV_OE0,NorCalBugs$CSCI_OE_2, ylim=c(0,1.4), xlim=c(0,1.4),abline((lm(NorCalBugs$CSCI_OE_2~NorCalBugs$NV_OE0)), col="blue", lty="longdash"))
+abline(0,1)
+r2=(cor(NorCalBugs$CSCI_OE_2,NorCalBugs$NV_OE0))^2
+mylabel = bquote(italic(R)^2 == .(format(r2, digits = 3)))
+text(x = .1, y = 1, labels = mylabel)
+
+#plot NV and CSCI MMI: PROBLEM scale of NV MMI.... 
 plot(NorCalBugs$NV_MMI_2,NorCalBugs$CSCI_MMI, ylim=c(0,1.4), xlim=c(0,1.4),abline((lm(NorCalBugs$CSCI_MMI~NorCalBugs$NV_MMI_2)), col="blue", lty="longdash"))
 abline(0,1)
 r2=(cor(NorCalBugs$CSCI_MMI,NorCalBugs$NV_MMI_2))^2
 mylabel = bquote(italic(R)^2 == .(format(r2, digits = 3)))
 text(x = .1, y = 1, labels = mylabel)
 
-  
-plot(NorCalBugs$NV_MMI_2,NorCalBugs$CSCI_MMI, ylim=c(0,1.4), xlim=c(0,1.4),abline((lm(NorCalBugs$CSCI_MMI~NorCalBugs$NV_MMI_2)), col="blue", lty="longdash"))
-abline(0,1)
-r2=(cor(NorCalBugs$CSCI_MMI,NorCalBugs$NV_MMI_2))^2
-mylabel = bquote(italic(R)^2 == .(format(r2, digits = 3)))
-text(x = .1, y = 1, labels = mylabel)
+
+
+
+
+
+
+
+
+
+
+
 
 
 
