@@ -9,6 +9,7 @@ View(data[3500:4500,])
 #### ! means negate
 #### | means OR
 
+
 #############################################################################
 
 ##############    Water quality condition determinations      ###############
@@ -147,8 +148,8 @@ NorCalBugs$CSCI_OE_UpperCond=ifelse(NorCalBugs$CSCI_OE >=0.76,'Good',ifelse(NorC
 
 
 
+#### Checking to make sure results make sense 
 Freq1=cbind(count(NorCalBugs,var='CSCI_Hybrid_MidCond'),count(NorCalBugs,var='CSCI_MMI_MidCond'),count(NorCalBugs,var='CSCI_OE_MidCond'),count(NorCalBugs,var='NV_OE0_Cond'),count(NorCalBugs,var='NV_OE5_Cond'),count(NorCalBugs,var='NV_MMI_Cond'),count(NorCalBugs,var='CSCI_OE_UpperCond'),count(NorCalBugs,var='CSCI_Hybrid_UpperCond'),count(NorCalBugs,var='CSCI_MMI_UpperCond'))
-
 
 NorCalCHECK_Bugs=subset(NorCalBugs, SiteCode=='AR-SS-8066'|SiteCode=='SU-SS-8311'|SiteCode=='AR-LS-8018'|SiteCode=='AR-SS-8017'|SiteCode=='HC-SS-8456'|SiteCode=='HC-SS-8475')
 NorCalCHECK_Bugs$NicoleJudge=c('G','P','P','P','G','G')
@@ -164,7 +165,7 @@ NorCalBugs$NV_OE5_2=NorCalBugs$NV_OE5/1.06
 NorCalBugs$CSCI_OE_2=NorCalBugs$CSCI_OE/1.021478
 NorCalBugs$CSCI_Hybrid_2=NorCalBugs$CSCI_Hybrid/1.010739
 
-par(mfrow=c(1,3))
+par(mfrow=c(1,2))
 
 ############  NV Models   ############
 #Plot NV O/E (Pc=0) to NV MMI
@@ -224,7 +225,7 @@ r2=(cor(NorCalBugs$CSCI_OE_2,NorCalBugs$NV_OE0))^2
 mylabel = bquote(italic(R)^2 == .(format(r2, digits = 3)))
 text(x = .1, y = 1, labels = mylabel)
 
-#plot NV and CSCI MMI: PROBLEM scale of NV MMI.... 
+#plot NV and CSCI MMI
 plot(NorCalBugs$NV_MMI_2,NorCalBugs$CSCI_MMI, ylim=c(0,1.4), xlim=c(0,1.4),abline((lm(NorCalBugs$CSCI_MMI~NorCalBugs$NV_MMI_2)), col="blue", lty="longdash"))
 abline(0,1)
 r2=(cor(NorCalBugs$CSCI_MMI,NorCalBugs$NV_MMI_2))^2
@@ -235,10 +236,29 @@ text(x = .1, y = 1, labels = mylabel)
 
 
 
+################# Confusions Matrix of results ##############################
+# Could also use table() but this will not label rows vs columns as xtab does. 
+#NV only
+NorCalBugs$NV_MMI_Cond_2=ifelse(NorCalBugs$NV_MMI_Cond=="Reference","Good",ifelse(NorCalBugs$NV_MMI_Cond=="Impaired","Poor","Fair"))
+xtabs(~NorCalBugs$NV_OE5_Cond+NorCalBugs$NV_MMI_Cond)
 
+xtabs(~NorCalBugs$NV_OE0_Cond+NorCalBugs$NV_MMI_Cond_2)
+xtabs(~NorCalBugs$NV_OE5_Cond+NorCalBugs$NV_OE0_Cond)
 
+#CSCI only
+xtabs(~NorCalBugs$CSCI_OE_MidCond+NorCalBugs$CSCI_MMI_MidCond)
 
+xtabs(~NorCalBugs$CSCI_OE_MidCond+NorCalBugs$CSCI_Hybrid_MidCond)
+xtabs(~NorCalBugs$CSCI_Hybrid_MidCond+NorCalBugs$CSCI_MMI_MidCond)
 
+#CSCI to NV
+xtabs(~NorCalBugs$NV_OE5_Cond+NorCalBugs$CSCI_OE_MidCond)
+xtabs(~NorCalBugs$NV_MMI_Cond_2+NorCalBugs$CSCI_MMI_MidCond)
+
+xtabs(~NorCalBugs$NV_OE5_Cond+NorCalBugs$CSCI_MMI_MidCond)
+xtabs(~NorCalBugs$NV_MMI_Cond_2+NorCalBugs$CSCI_OE_MidCond)
+
+xtabs(~NorCalBugs$NV_OE0_Cond+NorCalBugs$CSCI_OE_MidCond)
 
 
 
@@ -261,15 +281,23 @@ text(x = .1, y = 1, labels = mylabel)
 
 #############################################################################
 
+###### BANKS stability and cover
+IndicatorCheck$BnkStab_BLM_COND=ifelse(IndicatorCheck$BnkStability_BLM_CHECK>0.60,'Good',ifelse(IndicatorCheck$BnkStability_BLM_CHECK<0.40,'Poor','Fair'))
+
+IndicatorCheck$BnkCover_BLM_COND=ifelse(IndicatorCheck$BnkCover_BLM_CHECK>0.60,'Good',ifelse(IndicatorCheck$BnkCover_BLM_CHECK<0.40,'Poor','Fair'))
+
+#IndicatorCheckJoin
+
+
 #First I need to combine Ecoregions to the sampled sites. 
 #Read in ecoregion to sample sitecode
 NorCalSites_Ecoregions=read.csv("\\\\share1.bluezone.usu.edu\\miller\\buglab\\Research Projects\\BLM_WRSA_Stream_Surveys\\Results and Reports\\NorCal_2013\\Analysis\\UID_SiteID_Ecoregions.csv")
 #Because UIDs get turned into different values when exported as a csv I was unable to use the merge function because UIDs did not match exactly. Be careful with using this method in the future... 
 t1=NorCalSites_Ecoregions[order(NorCalSites_Ecoregions$UID, decreasing=FALSE),]
-t2=AquametCheck[order(AquametCheck$UID, decreasing=FALSE),]
+t2=IndicatorCheck[order(IndicatorCheck$UID, decreasing=FALSE),]
 t3=cbind(t1,t2)
 t3=t3[,-1] 
-Indicators=t3[,c(4,1,2,3,5:17)]
+Indicators=t3[,c(4,1,2,3,5:23)]
 rm(t1,t2,t3,NorCalSites_Ecoregions)
 
 
@@ -401,8 +429,22 @@ Freq_ECO10=cbind(count(IndicatorCond_ECO10,var='XFC_NAT_COND'),
             count(IndicatorCond_ECO10,var='PCT_SAFN_COND'))
            
             
+#############################################################################
 
+################    BankStability and Cover Indicators##      ###############
 
+#############################################################################
+#Pivot data so that Each parameter has it's own column
+Banks=cast(BankStab, 'UID+TRANSECT+POINT~PARAMETER', value='RESULT', fun=max)
+#I want to calculate the percent of banks that are Covered.  
+Banks$CoverValue=as.numeric(ifelse(Banks$COVER=='UC',"0",ifelse(Banks$COVER=='CV',"1","NA")))
+BnkCvr=setNames(aggregate(CoverValue~UID,data=Banks, FUN=mean), c('UID','BnkCover_BLM_CHECK'))
+
+#I want to calculate the percent of banks that are Stable (Absent) 
+# Unstable==(Fracture, slump, slough, eroding)
+
+Banks$StableValue=as.numeric(ifelse(Banks$STABLE=='SP'|Banks$STABLE=='ER'|Banks$STABLE=='LH'|Banks$STABLE=='FC',"0",ifelse(Banks$STABLE=='AB',"1","NA")))
+BnkStb=setNames(aggregate(StableValue~UID,data=Banks, FUN=mean), c('UID','BnkStability_BLM_CHECK'))
 
 #############################################################################
 
@@ -641,13 +683,13 @@ QR1$QR1_CHECK=(QR1$QRveg1*QR1$QRVeg2*QR1$QRDIST1)^0.333
 
 
 #To get all calculated values together... Although some tables still have the metrics included.
-AquametCheckJoin=join_all(list(fishpvt2,DensPvt,XCMGW_new1,XCMG_new1,IncBnk,PCT_SAFN_ALL,XEMBED,BnkDensPvt,W1_HALL,QR1),by="UID")
+IndicatorCheckJoin=join_all(list(fishpvt2,DensPvt,XCMGW_new1,XCMG_new1,IncBnk,PCT_SAFN_ALL,XEMBED,BnkDensPvt,W1_HALL,QR1, BnkCvr,BnkStb),by="UID")
 #To remove all of the metrics and only get the indicators subset by UID and all those columns ending in "CHECK". Hmm..not really sure what the $ is doing here, the code works without it, but all the examples I've looked at keep the $ so I kept it too... 
-AquametCheck=AquametCheckJoin[,c("UID",grep("CHECK$", colnames(AquametCheckJoin),value=TRUE))]
-#write.csv(AquametCheck,"C:\\Users\\Nicole\\Desktop\\AquametCheck2.csv")
+IndicatorCheck=IndicatorCheckJoin[,c("UID",grep("CHECK$", colnames(IndicatorCheckJoin),value=TRUE))]
+#write.csv(IndicatorCheck,"C:\\Users\\Nicole\\Desktop\\IndicatorCheck2.csv")
 #Remove all other data files as they are no longer needed
 
-rm(EMBED,Human_Influ,W1_HALL,W1_HALL_NRSA,QR1,XEMBED,BnkDensPvt,BnkDensiom,densiom,RipXCMG,XCMG_new,XCMG_new1,RipWW,XCMGW_new,XCMGW_new1,AquametCheckJoin,fish,fishpvt2,
+rm(EMBED,Human_Influ,W1_HALL,W1_HALL_NRSA,QR1,XEMBED,BnkDensPvt,BnkDensiom,densiom,RipXCMG,XCMG_new,XCMG_new1,RipWW,XCMGW_new,XCMGW_new1,IndicatorCheckJoin,fish,fishpvt2,
    MidDensiom,DensPvt,Incision,INCISED,BANKHT,Inc,Bnk,xIncht,xBnkht,IncBnk,Sediment,pctsafn,Sed2014,A_Sed2014,C_Sed2014,E_Sed2014,F_Sed2014,PCT_SAFN_ALL)
 
 

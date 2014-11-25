@@ -52,7 +52,8 @@ EMBED=tblRetrieve(Parameters='EMBED', Projects='NorCal')
 
 #To get data for aquamet check QR1, run densiom, Human_Influ, and RipWW to get the data. Code to calculate QR1 is in NC_DataAnalysis file
 
-
+#Bank Stability
+BankStab=tblRetrieve(Parameters=c('STABLE','EROSION','COVER'), Projects='NorCal')
 
 
 
