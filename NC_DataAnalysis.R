@@ -262,8 +262,17 @@ xtabs(~NorCalBugs$NV_OE0_Cond+NorCalBugs$CSCI_OE_MidCond)
 
 
 
+# If NV=CA in concordance, if in dicordance with Good and Fair them is gets Bad_Discord, but if it is just one step of discordance it is Med_Discord
+# Checked with the count function to make sure the values were the same as the xtab tables above. 
+NorCalBugs$MMI_ModAgreement=ifelse(NorCalBugs$NV_MMI_Cond_2==NorCalBugs$CSCI_MMI_MidCond,"Concord",
+       ifelse(NorCalBugs$NV_MMI_Cond_2=="Good" & NorCalBugs$CSCI_MMI_MidCond=="Poor"|NorCalBugs$NV_MMI_Cond_2=="Poor" & NorCalBugs$CSCI_MMI_MidCond=="Good",'Bad_Discord',
+              ifelse(NorCalBugs$NV_MMI_Cond_2=="Fair" & NorCalBugs$CSCI_MMI_MidCond=="Poor"|NorCalBugs$NV_MMI_Cond_2=="Fair" & NorCalBugs$CSCI_MMI_MidCond=="Good"|NorCalBugs$NV_MMI_Cond_2=="Poor" & NorCalBugs$CSCI_MMI_MidCond=="Fair"|NorCalBugs$NV_MMI_Cond_2=="Good" & NorCalBugs$CSCI_MMI_MidCond=="Fair",
+                     "Med_Discord",0)))
 
-
+NorCalBugs$OE5_ModAgreement=ifelse(NorCalBugs$NV_OE5_Cond==NorCalBugs$CSCI_OE_MidCond,"Concord",
+                                   ifelse(NorCalBugs$NV_OE5_Cond=="Good" & NorCalBugs$CSCI_OE_MidCond=="Poor"|NorCalBugs$NV_OE5_Cond=="Poor" & NorCalBugs$CSCI_OE_MidCond=="Good",'Bad_Discord',
+                                          ifelse(NorCalBugs$NV_OE5_Cond=="Fair" & NorCalBugs$CSCI_OE_MidCond=="Poor"|NorCalBugs$NV_OE5_Cond=="Fair" & NorCalBugs$CSCI_OE_MidCond=="Good"|NorCalBugs$NV_OE5_Cond=="Poor" & NorCalBugs$CSCI_OE_MidCond=="Fair"|NorCalBugs$NV_OE5_Cond=="Good" & NorCalBugs$CSCI_OE_MidCond=="Fair",
+                                                 "Med_Discord",0)))
 
 
 
