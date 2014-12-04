@@ -57,3 +57,43 @@ boxplot(PCT_SEDIM~Project, data=CSCI_NorCal,ylab="PCT_SEDIM",main='CSCI',col=c("
 
 summary(subset(CSCI_NorCal, Project=='CSCImodel', select=PCT_SEDIM))
 summary(subset(CSCI_NorCal, Project=='NorCal', select=PCT_SEDIM))
+
+
+
+
+############################################################################################
+############################################################################################
+############################################################################################
+
+#Ordinations Try
+
+NV_NC_Env=read.csv('\\\\share1.bluezone.usu.edu\\miller\\buglab\\Research Projects\\BLM_WRSA_Stream_Surveys\\Results and Reports\\NorCal_2013\\Analysis\\BugModels\\EnvirOutliers\\NVandNorCal_EnvData_12Nov2014.csv')
+
+
+library("vegan", lib.loc="~/R/win-library/2.15")
+
+#Add a column using JUST numbers
+NV_NC_Env$UID_1=1:238
+#Put that column first
+NV_NC_Env=NV_NC_Env[,c(25,1:24)]
+#Make a reference for what numbers go to which sites
+UID_1_Ref=NV_NC_Env[,1:5]
+
+# Remove the unneeded columns
+NV_NC_EnvInput=NV_NC_Env[,c(1,6:20)]
+
+
+#Standardize the data. Divide each observation by the column mean
+#Arg, off to excel
+nv1=read.csv('C:\\Users\\Nicole\\Desktop\\NV1.csv')
+ord_m=metaMDS(nv1)
+plot(ord_m)
+#Species=columns Sites=rows
+#plot(ord_m, type="t", display='species')
+plot(ord_m, type="n")
+UID_1_Ref$color=ifelse(UID_1_Ref$Project=='NVmodel','blue','red')
+points(ord_m, display = 'sites', col= UID_1_Ref[,6])
+ordihull(ord_m, UID_1_Ref$Project, col = "green", lty = 1, lwd=1)
+
+
+
