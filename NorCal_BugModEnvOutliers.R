@@ -92,6 +92,8 @@ nv1=read.csv('C:\\Users\\Nicole\\Desktop\\NV1.csv')
 nv2=read.csv('C:\\Users\\Nicole\\Desktop\\NV2.csv')
 nv22=nv2[,2:16]
 
+UID_1_Ref$color=ifelse(UID_1_Ref$Project=='NVmodel','blue','red')
+
 ########################
 ######    NMDS    ######
 
@@ -101,7 +103,6 @@ plot(ord_m)
 #Species=columns Sites=rows
 #plot(ord_m, type="t", display='species')
 plot(ord_m, type="n")
-UID_1_Ref$color=ifelse(UID_1_Ref$Project=='NVmodel','blue','red')
 points(ord_m, display = 'sites', col= UID_1_Ref[,6])
 ordihull(ord_m, UID_1_Ref$Project, col = "green", lty = 1, lwd=1)
 
@@ -111,7 +112,6 @@ plot(ord_m2)
 #Species=columns Sites=rows
 #plot(ord_m2, type="t", display='species')
 plot(ord_m2, type="n")
-UID_1_Ref$color=ifelse(UID_1_Ref$Project=='NVmodel','blue','red')
 points(ord_m2, display = 'sites', col= UID_1_Ref[,6])
 ordihull(ord_m2, UID_1_Ref$Project, col = "green", lty = 1, lwd=1)
 
@@ -122,7 +122,6 @@ plot(ord_m3)
 #Species=columns Sites=rows
 #plot(ord_m3, type="t", display='species')
 plot(ord_m3, type="n")
-UID_1_Ref$color=ifelse(UID_1_Ref$Project=='NVmodel','blue','red')
 points(ord_m3, display = 'sites', col= UID_1_Ref[,6])
 ordihull(ord_m3, UID_1_Ref$Project, col = "green", lty = 1, lwd=1)
 
@@ -133,14 +132,8 @@ plot(ord_m4)
 #Species=columns Sites=rows
 #plot(ord_m4, type="t", display='species')
 plot(ord_m4, type="n")
-UID_1_Ref$color=ifelse(UID_1_Ref$Project=='NVmodel','blue','red')
 points(ord_m4, display = 'sites', col= UID_1_Ref[,6])
 ordihull(ord_m4, UID_1_Ref$Project, col = "green", lty = 1, lwd=1)
-
-
-
-
-
 
 ###### stop NMDS  ######
 ########################
@@ -187,10 +180,52 @@ attr(,"centre")
 MDS1                         MDS2 
 0.0000000000000000012468325 -0.0000000000000000003489776 
 
-
+#WHY DOES THIS NO LONGER WORK!!!
 #To identify just a couple points on the graph.. 
 # Run Fig and identify species or sites one at a time
 # Click on points you want to ID, then ESCAPE and the points will be labeled on the graph
-Fig=ordiplot(ord_m)
+Fig=ordiplot(ord_m23)
 identify(fig,'spec')
 identify(fig,'sites')
+
+
+
+#####################################################
+#######   DETRENDED CORRESPONDENCE ANALYSIS   #######
+
+
+ord_d =decorana(nv24)
+summary(ord_d)
+plot(ord_d, type='n')
+points(ord_d, display = "sites", col= UID_1_Ref[,6])
+text(ord_d, display = "spec", cex=0.7, col="blue")
+ordihull(ord_d, UID_1_Ref$Project, col = "green", lty = 1, lwd=1)
+####### STOP DETRENDED CORRESPONDENCE ANALYSIS#######
+#####################################################
+
+
+
+#####################################################
+#######          CONSTRAINED ORDINATION        ######
+
+### NOT SURE THAT THIS IS EVEN WORKING CORRECTLY!!!! or even really what is going on.... 
+
+ord_c = cca(nv24 ~ UID_1_Ref$Project)
+ord_c
+
+plot(ord_c)
+plot(ord_c, scaling = 3, display = c('sp'))
+plot(ord_c, scaling = 3, display = c('wa'))
+plot(ord_c, scaling = 3, display = c('cn'))
+
+
+
+p1=ordiplot3d(ord_c, type = "p")
+points(p1, "points",display = "sites", col= UID_1_Ref[,6])
+
+
+
+ordiplot3d(ord_c, type = "h")
+
+
+
