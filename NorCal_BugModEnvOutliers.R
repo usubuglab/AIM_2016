@@ -85,7 +85,17 @@ NV_NC_EnvInput=NV_NC_Env[,c(1,6:20)]
 
 #Standardize the data. Divide each observation by the column mean
 #Arg, off to excel
+#Also deleted the UID column in excel otherwise it gets used as an environmental variable
+#nv1= standardized data by mean. 
+#nv2= SQ_KM was log+1, Sope_WS log+3, then standardaized data by mean
 nv1=read.csv('C:\\Users\\Nicole\\Desktop\\NV1.csv')
+nv2=read.csv('C:\\Users\\Nicole\\Desktop\\NV2.csv')
+nv22=nv2[,2:16]
+
+########################
+######    NMDS    ######
+
+#### Try 1 Data has only been standardized by mean
 ord_m=metaMDS(nv1)
 plot(ord_m)
 #Species=columns Sites=rows
@@ -95,5 +105,92 @@ UID_1_Ref$color=ifelse(UID_1_Ref$Project=='NVmodel','blue','red')
 points(ord_m, display = 'sites', col= UID_1_Ref[,6])
 ordihull(ord_m, UID_1_Ref$Project, col = "green", lty = 1, lwd=1)
 
+#### Try 2 with transormed sqkm and slope
+ord_m2=metaMDS(nv22)
+plot(ord_m2)
+#Species=columns Sites=rows
+#plot(ord_m2, type="t", display='species')
+plot(ord_m2, type="n")
+UID_1_Ref$color=ifelse(UID_1_Ref$Project=='NVmodel','blue','red')
+points(ord_m2, display = 'sites', col= UID_1_Ref[,6])
+ordihull(ord_m2, UID_1_Ref$Project, col = "green", lty = 1, lwd=1)
+
+#Remove tmax_pt
+nv23=nv22[,c(1:12,14:15)]
+ord_m3=metaMDS(nv23)
+plot(ord_m3)
+#Species=columns Sites=rows
+#plot(ord_m3, type="t", display='species')
+plot(ord_m3, type="n")
+UID_1_Ref$color=ifelse(UID_1_Ref$Project=='NVmodel','blue','red')
+points(ord_m3, display = 'sites', col= UID_1_Ref[,6])
+ordihull(ord_m3, UID_1_Ref$Project, col = "green", lty = 1, lwd=1)
+
+#Remove Pmax_pt and tmax
+nv24=nv22[,c(1:11,14:15)]
+ord_m4=metaMDS(nv24)
+plot(ord_m4)
+#Species=columns Sites=rows
+#plot(ord_m4, type="t", display='species')
+plot(ord_m4, type="n")
+UID_1_Ref$color=ifelse(UID_1_Ref$Project=='NVmodel','blue','red')
+points(ord_m4, display = 'sites', col= UID_1_Ref[,6])
+ordihull(ord_m4, UID_1_Ref$Project, col = "green", lty = 1, lwd=1)
 
 
+
+
+
+
+###### stop NMDS  ######
+########################
+      
+
+
+
+
+
+
+names(ord_m)
+[1] "nobj"       "nfix"       "ndim"       "ndis"       "ngrp"       "diss"      
+[7] "iidx"       "jidx"       "xinit"      "istart"     "isform"     "ities"     
+[13] "iregn"      "iscal"      "maxits"     "sratmx"     "strmin"     "sfgrmn"    
+[19] "dist"       "dhat"       "points"     "stress"     "grstress"   "iters"     
+[25] "icause"     "call"       "model"      "distmethod" "distcall"   "data"      
+[31] "distance"   "converged"  "tries"      "engine"     "species"   
+> ord_m$distance
+[1] "bray"
+> ord_m$distmethod
+[1] "bray"
+> ord_m$species
+MDS1         MDS2
+UID_1      -0.086701181  0.166138283
+ELVmin_WS   0.034379442 -0.026875454
+ELVmax_WS   0.010673494 -0.042107350
+ELVmean_WS  0.028990189 -0.034315138
+SQ_KM      -0.596909587 -0.147056050
+HYDR_WS     0.039593044  0.004767528
+WDmax_WS    0.004283417  0.029267891
+Pmax_WS     0.090295027  0.073430158
+Pmin_WS     0.040281430 -0.062163804
+Tmax_WS    -0.049701403 -0.006321269
+BFI_WS     -0.002457994 -0.019678490
+ELVcv_PT   -0.010719821  0.028368492
+Pmax_PT     0.096415008  0.100305670
+Tmax_PT    -0.046605331 -0.015508897
+PrdCond    -0.126553090 -0.053996567
+Slope_WS    0.166008267 -0.077430217
+attr(,"shrinkage")
+MDS1        MDS2 
+0.020673860 0.007810754 
+attr(,"centre")
+MDS1                         MDS2 
+0.0000000000000000012468325 -0.0000000000000000003489776 
+
+
+#To identify just a couple points on the graph.. 
+# Run Fig and identify species or sites one at a time
+# Click on points you want to ID, then ESCAPE and the points will be labeled on the graph
+Fig=ordiplot(ord_m)
+identify(fig,'spec')
+identify(fig,'sites')
