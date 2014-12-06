@@ -303,6 +303,7 @@ IndicatorCheck$BnkCover_BLM_COND=ifelse(IndicatorCheck$BnkCover_BLM_CHECK>0.60,'
 #First I need to combine Ecoregions to the sampled sites. 
 #Read in ecoregion to sample sitecode
 NorCalSites_Ecoregions=read.csv("\\\\share1.bluezone.usu.edu\\miller\\buglab\\Research Projects\\BLM_WRSA_Stream_Surveys\\Results and Reports\\NorCal_2013\\Analysis\\UID_SiteID_Ecoregions.csv")
+
 #Because UIDs get turned into different values when exported as a csv I was unable to use the merge function because UIDs did not match exactly. Be careful with using this method in the future... 
 t1=NorCalSites_Ecoregions[order(NorCalSites_Ecoregions$UID, decreasing=FALSE),]
 t2=IndicatorCheck[order(IndicatorCheck$UID, decreasing=FALSE),]
@@ -311,7 +312,32 @@ t3=t3[,-1]
 Indicators=t3[,c(4,1,2,3,5:23)]
 rm(t1,t2,t3,NorCalSites_Ecoregions)
 
+## PH: This should be temporary. I should add PH to the indicators file, but xcmgnew1 or something was having issues... 
+t1=NorCalSites_Ecoregions[order(NorCalSites_Ecoregions$UID, decreasing=FALSE),]
+t2=PHfinal[order(PHfinal$UID, decreasing=FALSE),]
+t3=cbind(t1,t2)
+t3=t3[,-c(5:6)] 
+PH_Indicators=t3[,c(1,2,5,6,3,4,7)]
+rm(t1,t2,t3,NorCalSites_Ecoregions)
+#Apply pH thresholds
+Ind_CastFoot=subset(PH_Indicators, ECO_LVL_3NAME=='Eastern Cascades Slopes and Foothills')
+Ind_NorthBasin=subset(PH_Indicators, ECO_LVL_3NAME=='Northern Basin and Range')
+Ind_SierraNV=subset(PH_Indicators, ECO_LVL_3NAME=='Sierra Nevada')
 
+Ind_CastFoot$PH1=ifelse(Ind_CastFoot$PH <= (Thresholds_lvlIII [Thresholds_lvlIII$ECO_LVL_3NAME=='Eastern Cascades Slopes and Foothills', 'PH_0.05'])
+                       |Ind_CastFoot$PH >= (Thresholds_lvlIII [Thresholds_lvlIII$ECO_LVL_3NAME=='Eastern Cascades Slopes and Foothills', 'PH_0.95']),"Poor",
+                       ifelse(Ind_CastFoot$PH>(Thresholds_lvlIII [Thresholds_lvlIII$ECO_LVL_3NAME=='Eastern Cascades Slopes and Foothills','PH_0.25']) &
+                              Ind_CastFoot$PH<(Thresholds_lvlIII [Thresholds_lvlIII$ECO_LVL_3NAME=='Eastern Cascades Slopes and Foothills','PH_0.75']),"Good","Fair"))
+
+Ind_NorthBasin$PH1=ifelse(Ind_NorthBasin$PH <= (Thresholds_lvlIII [Thresholds_lvlIII$ECO_LVL_3NAME=='Northern Basin and Range', 'PH_0.05'])
+                        |Ind_NorthBasin$PH >= (Thresholds_lvlIII [Thresholds_lvlIII$ECO_LVL_3NAME=='Northern Basin and Range', 'PH_0.95']),"Poor",
+                        ifelse(Ind_NorthBasin$PH>(Thresholds_lvlIII [Thresholds_lvlIII$ECO_LVL_3NAME=='Northern Basin and Range','PH_0.25']) &
+                                 Ind_NorthBasin$PH<(Thresholds_lvlIII [Thresholds_lvlIII$ECO_LVL_3NAME=='Northern Basin and Range','PH_0.75']),"Good","Fair"))
+
+Ind_SierraNV$PH1=ifelse(Ind_SierraNV$PH <= (Thresholds_lvlIII [Thresholds_lvlIII$ECO_LVL_3NAME=='Sierra Nevada', 'PH_0.05'])
+                          |Ind_SierraNV$PH >= (Thresholds_lvlIII [Thresholds_lvlIII$ECO_LVL_3NAME=='Sierra Nevada', 'PH_0.95']),"Poor",
+                          ifelse(Ind_SierraNV$PH>(Thresholds_lvlIII [Thresholds_lvlIII$ECO_LVL_3NAME=='Sierra Nevada','PH_0.25']) &
+                                   Ind_SierraNV$PH<(Thresholds_lvlIII [Thresholds_lvlIII$ECO_LVL_3NAME=='Sierra Nevada','PH_0.75']),"Good","Fair"))
 
 
 #Subset all by ecoregions... got to be a better way...
@@ -773,6 +799,8 @@ RIP_RS_minusDup= RIP_RS_reorder[!duplicated(RIP_RS_reorder$DUPLICATE_ID),]
 #View(RIP_RS_minusDup[1000:1999,])
 RIP_RS_final=RIP_RS_minusDup[order(RIP_RS_minusDup$REVISITED_OVERLAP, decreasing=TRUE),]
 
+
+
 #To subset for reference to use on SEDIMENT and INSTREAM indicators.
 #First subset the data to only include sites with R or S designations
 SED_RS_combined=subset(combined, RST_FSED_AND_RMD_PHAB == "R"|RST_FSED_AND_RMD_PHAB == "S")
@@ -820,7 +848,7 @@ rm(RIP_RS_combined,RIP_RS_reorder,RIP_RS_minusDup,SED_RS_combined,SED_RS_reorder
 
 ###############################################################################################
 ## For Ecoregion level III
-# Use riparian reference sites for:  XCDENMID, XCMG, XCMGW
+# Use riparian reference sites for:  XCDENMID, XCMG, XCMGW, and PH!!
 #XCDENMID
 T11=setNames(aggregate(RIP_RS_final$XCDENMID, by = list(RIP_RS_final$ECO_LVL_3NAME), FUN = quantile,probs=0.05,na.rm=TRUE), c("ECO_LVL_3NAME","XCDENMID_0.05"))
 T12=setNames(aggregate(RIP_RS_final$XCDENMID, by = list(RIP_RS_final$ECO_LVL_3NAME), FUN = quantile,probs=0.25,na.rm=TRUE), c("ECO_LVL_3NAME","XCDENMID_0.25"))
@@ -833,8 +861,21 @@ T16=join_all(list(T11,T12), by="ECO_LVL_3NAME")
 T11=setNames(aggregate(RIP_RS_final$XCMGW, by = list(RIP_RS_final$ECO_LVL_3NAME), FUN = quantile,probs=0.05,na.rm=TRUE), c("ECO_LVL_3NAME","XCMGW_0.05"))
 T12=setNames(aggregate(RIP_RS_final$XCMGW, by = list(RIP_RS_final$ECO_LVL_3NAME), FUN = quantile,probs=0.25,na.rm=TRUE), c("ECO_LVL_3NAME","XCMGW_0.25"))
 T17=join_all(list(T11,T12), by="ECO_LVL_3NAME")
+#PH
+#A few pH issues
+PH_EPA=RIP_RS_final[,1:25]
+#Replace NAs with if statement to combine columns
+PH_EPA$PH=ifelse(is.na(PH_EPA$PHLAB),PH_EPA$PHSTVL,PH_EPA$PHLAB)
+#thresholds
+T11=setNames(aggregate(PH_EPA$PH, by = list(PH_EPA$ECO_LVL_3NAME), FUN = quantile,probs=0.05,na.rm=TRUE), c("ECO_LVL_3NAME","PH_0.05"))
+T12=setNames(aggregate(PH_EPA$PH, by = list(PH_EPA$ECO_LVL_3NAME), FUN = quantile,probs=0.25,na.rm=TRUE), c("ECO_LVL_3NAME","PH_0.25"))
+T13=setNames(aggregate(PH_EPA$PH, by = list(PH_EPA$ECO_LVL_3NAME), FUN = quantile,probs=0.95,na.rm=TRUE), c("ECO_LVL_3NAME","PH_0.95"))
+T14=setNames(aggregate(PH_EPA$PH, by = list(PH_EPA$ECO_LVL_3NAME), FUN = quantile,probs=0.75,na.rm=TRUE), c("ECO_LVL_3NAME","PH_0.75"))
+T18=join_all(list(T11,T12,T14,T13), by="ECO_LVL_3NAME")
+
+
 ##Combine all
-RIP_THRESHOLDS_lvlIII=join_all(list(T15,T16,T17),by="ECO_LVL_3NAME")
+RIP_THRESHOLDS_lvlIII=join_all(list(T15,T16,T17,T18),by="ECO_LVL_3NAME")
 
 ###################################################################################
 # Use sediment reference sites for:  PCT_SAFN, DPCT_SF, XEMBED, XFC_NAT,LINCIS_H,

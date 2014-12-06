@@ -106,7 +106,7 @@ plot(ord_m, type="n")
 points(ord_m, display = 'sites', col= UID_1_Ref[,6])
 ordihull(ord_m, UID_1_Ref$Project, col = "green", lty = 1, lwd=1)
 
-#### Try 2 with transormed sqkm and slope
+#### Try 2 with transformed sqkm and slope
 ord_m2=metaMDS(nv22)
 plot(ord_m2)
 #Species=columns Sites=rows
@@ -131,17 +131,13 @@ ord_m4=metaMDS(nv24)
 plot(ord_m4)
 #Species=columns Sites=rows
 #plot(ord_m4, type="t", display='species')
+#plot(ord_m4, type="t", display='sites')
 plot(ord_m4, type="n")
 points(ord_m4, display = 'sites', col= UID_1_Ref[,6])
 ordihull(ord_m4, UID_1_Ref$Project, col = "green", lty = 1, lwd=1)
 
 ###### stop NMDS  ######
 ########################
-      
-
-
-
-
 
 
 names(ord_m)
@@ -226,6 +222,19 @@ points(p1, "points",display = "sites", col= UID_1_Ref[,6])
 
 
 ordiplot3d(ord_c, type = "h")
+
+
+
+
+
+#####################################################
+#######                PCA                     ######
+
+nv_pca = rda(nv23)
+plot(nv_pca)
+biplot(nv_pca)
+
+
 
 
 

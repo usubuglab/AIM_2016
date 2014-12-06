@@ -16,6 +16,14 @@ WQtbl=tblRetrieve(Parameters=c('CONDUCTIVITY','NTL','PTL'),Projects='NorCal')
 WQpvt=cast(WQtbl,'UID~PARAMETER',value='RESULT')
 WQfinal=addKEYS(WQpvt,c('SITE_ID','DATE_COL','LOC_NAME','LAT_DD','LON_DD'))
 
+#Get pH for NorCal
+PHtbl=tblRetrieve(Parameters=c('PH'),Projects='NorCal')
+PHpvt=cast(PHtbl,'UID~PARAMETER',value='RESULT')
+PHfinal=addKEYS(PHpvt,c('SITE_ID','DATE_COL','LOC_NAME'))
+PHfinal=PHfinal[,c(1,5,4,3,2)]
+rm(PHtbl,PHpvt)
+
+
 #Get Site Code to UID, run the water quality lines above and just pull from that...This didn't work for what I initially needed, but is a good way to get UID/Sitecode
 #UID_SiteCode=WQfinal[,c('UID','SITE_ID')]
 
