@@ -15,6 +15,7 @@ tblMETADATA= sqlQuery(wrsa1314, "select * from tblMETADATA")
 WQtbl=tblRetrieve(Parameters=c('CONDUCTIVITY','NTL','PTL'),Projects='NorCal')
 WQpvt=cast(WQtbl,'UID~PARAMETER',value='RESULT')
 WQfinal=addKEYS(WQpvt,c('SITE_ID','DATE_COL','LOC_NAME','LAT_DD','LON_DD'))
+rm(WQtbl,WQpvt)
 
 #Get pH for NorCal
 PHtbl=tblRetrieve(Parameters=c('PH'),Projects='NorCal')
@@ -22,7 +23,6 @@ PHpvt=cast(PHtbl,'UID~PARAMETER',value='RESULT')
 PHfinal=addKEYS(PHpvt,c('SITE_ID','DATE_COL','LOC_NAME'))
 PHfinal=PHfinal[,c(1,5,4,3,2)]
 rm(PHtbl,PHpvt)
-
 
 #Get Site Code to UID, run the water quality lines above and just pull from that...This didn't work for what I initially needed, but is a good way to get UID/Sitecode
 #UID_SiteCode=WQfinal[,c('UID','SITE_ID')]
@@ -49,14 +49,10 @@ RipWW=tblRetrieve(Parameters=c("CANBTRE","CANSTRE","GCWDY","UNDWDY"),Projects='N
 
 #Getting data for aquamet check W1_HALL
 #Figure out the differences... Human influence sample type...
-Human_Influ=tblRetrieve(Parameters=c('BUILD','LOG','MINE','PARK','PAST','PAVE','PIPES','ROAD','ROW','TRASH','WALL'), Projects='NorCal')
-
-                                     
-                        
+Human_Influ=tblRetrieve(Parameters=c('BUILD','LOG','MINE','PARK','PAST','PAVE','PIPES','ROAD','ROW','TRASH','WALL'), Projects='NorCal')                       
                         
 #Getting data for aquamet check XEMBED
 EMBED=tblRetrieve(Parameters='EMBED', Projects='NorCal')
-
 
 #To get data for aquamet check QR1, run densiom, Human_Influ, and RipWW to get the data. Code to calculate QR1 is in NC_DataAnalysis file
 
