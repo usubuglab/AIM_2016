@@ -19,6 +19,11 @@ siteeval=subset(siteeval,(UID %in% omitUIDanalysis)==FALSE)
 siteeval=subset(siteeval,is.na(VISIT_NO) | (VISIT_NO==2)==FALSE)#omit repeat QA visits
 #View(siteeval) or otherwise check for data gaps and expected # of sites
 
+#NorCal Specific: The one line of code below will change the value of the first HC-LS to NT rather than NN so that it can recieve a weight. 
+#This is a temporary TRIAL and must be permanently updated in Access if it is decided to keep this change. 
+#Data file to alter[row number, "column name"]="value you want there instead of what is there"
+#siteeval[siteeval$UID=='13712',"EvalStatus"]='NT'
+
 ###Final Designation reconcilation###
 #reconcilation was done manually for norcal 2013-4 (took approx 1 hour), the following needs to be implemented for a more streamlined process:
 #!prep: for all sites (sampled/visited and failed), qa lat/long (add intended location if failed site), make sure minimum parameters are present (even for "NN" and "NSF" and "UNK" sites!): 'SITE_ID','DATE_COL','VALXSITE','STRATUM','MDCATY','WGT' ,'PROJECT','VISIT_NO','LAT_DD','LON_DD','PROTOCOL'
