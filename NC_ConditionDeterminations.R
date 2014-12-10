@@ -165,7 +165,7 @@ NorCalBugs$NV_OE5_2=NorCalBugs$NV_OE5/1.06
 NorCalBugs$CSCI_OE_2=NorCalBugs$CSCI_OE/1.021478
 NorCalBugs$CSCI_Hybrid_2=NorCalBugs$CSCI_Hybrid/1.010739
 
-par(mfrow=c(1,2))
+par(mfrow=c(1,3))
 
 ############  NV Models   ############
 #Plot NV O/E (Pc=0) to NV MMI
@@ -174,18 +174,46 @@ abline(0,1)
 r2=(cor(NorCalBugs$NV_MMI_2,NorCalBugs$NV_OE0))^2
 mylabel = bquote(italic(R)^2 == .(format(r2, digits = 3)))
 text(x = .1, y = 1, labels = mylabel)
+
+abline(0.4857937, 0.5143079, col='purple')
+abline(v=.6020531,col="red")
+abline(v=.6864668,col="orange")
+abline(h=.79543437,col="red")
+abline(h=.838849,col="orange")
+
+
 #plot NV O/E (0.5) and NV MMI 
 plot(NorCalBugs$NV_OE5_2,NorCalBugs$NV_MMI_2, ylim=c(0,1.4), xlim=c(0,1.4),abline((lm(NorCalBugs$NV_MMI_2~NorCalBugs$NV_OE5_2)), col="blue", lty="longdash"))
 abline(0,1)
 r2=(cor(NorCalBugs$NV_MMI_2,NorCalBugs$NV_OE5_2))^2
 mylabel = bquote(italic(R)^2 == .(format(r2, digits = 3)))
 text(x = .1, y = 1, labels = mylabel)
+
+abline(0.526601,0.4454208,col="purple")
+abline(v=.6035492,col="red")
+abline(v=.701018,col="orange")
+abline(h=.79543437,col="red")
+abline(h=.838849,col="orange")
+
+
+load("C:\\Users\\Nicole\\Desktop\\2014_Work_NV_OE_MMI\\NV_MMI\\2014_NV_MMI\\OE_MMI_models.rdata")
+MMI=data.frame(ref.MMI.score)
+OE=data.frame(refOE.scores)
+MMI$score=MMI$ref.MMI.score/56.047
+plot(OE$OoverE,MMI$score,abline((lm(MMI$score~OE$OoverE))), ylim=c(0,1.4),xlim=c(0,1.45))
+abline(0,1)
+
+
+
+
 #Plot NV O/E (Pc=0) and NV O/E (0.5)
 plot(NorCalBugs$NV_OE5_2,NorCalBugs$NV_OE0, ylim=c(0,1.4), xlim=c(0,1.4),abline((lm(NorCalBugs$NV_OE0~NorCalBugs$NV_OE5_2)), col="blue", lty="longdash"))
 abline(0,1)
 r2=(cor(NorCalBugs$NV_OE0,NorCalBugs$NV_OE5_2))^2
 mylabel = bquote(italic(R)^2 == .(format(r2, digits = 3)))
 text(x = .1, y = 1, labels = mylabel)
+
+
 
 
 ############  CSCI Models   ############
@@ -293,7 +321,7 @@ NorCalBugs$OE5_ModAgreement=ifelse(NorCalBugs$NV_OE5_Cond==NorCalBugs$CSCI_OE_Mi
 #############################################################################
 
 ###### BANKS stability and cover
-IndicatorCheck$BnkStab_BLM_COND=ifelse(IndicatorCheck$BnkStability_BLM_CHECK>0.60,'Good',ifelse(IndicatorCheck$BnkStability_BLM_CHECK<0.40,'Poor','Fair'))
+IndicatorCheck$BnkStab_BLM_COND=ifelse(IndicatorCheck$BnkStability_BLM_CHECK>0.80,'Good',ifelse(IndicatorCheck$BnkStability_BLM_CHECK<0.60,'Poor','Fair'))
 
 IndicatorCheck$BnkCover_BLM_COND=ifelse(IndicatorCheck$BnkCover_BLM_CHECK>0.60,'Good',ifelse(IndicatorCheck$BnkCover_BLM_CHECK<0.40,'Poor','Fair'))
 

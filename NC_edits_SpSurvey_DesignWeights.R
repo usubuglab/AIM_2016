@@ -1,9 +1,9 @@
 library("spsurvey", lib.loc="~/R/win-library/3.1")
 
 ###------------------------------------------------pull in relevant SiteInfo------------------------------------------------###
-siteeval=tblRetrieve(Table='',Parameters=c('VALXSITE','STRATUM','MDCATY','WGT'),Projects="NorCal",
+siteeval1=tblRetrieve(Table='',Parameters=c('VALXSITE','STRATUM','MDCATY','WGT'),Projects="NorCal",
                     Protocols='')#forcing all protocols despite global DataConsumption settings to pull in Failed sites
-siteeval=addKEYS(cast(siteeval,'UID~PARAMETER',value='RESULT'),c('SITE_ID','DATE_COL','PROJECT','VISIT_NO','LAT_DD','LON_DD'))
+siteeval1=addKEYS(cast(siteeval1,'UID~PARAMETER',value='RESULT'),c('SITE_ID','DATE_COL','PROJECT','VISIT_NO','LAT_DD','LON_DD'))
 #View(siteeval) or otherwise check for data gaps and expected # of sites
 
 ###Final Designation reconcilation###
@@ -39,16 +39,17 @@ TS_VALXSITE=c('WADEABLE','BOATABLE','PARBYWADE', 'PARBYBOAT','INTWADE', 'INTBOAT
 NT_VALXSITE=c('DRYVISIT', 'DRYNOVISIT', 'WETLAND', 'MAPERROR', 'IMPOUNDED', 'TIDAL','NT') 
 IA_VALXSITE=c('OTHER_NST','NOTBOAT','NOTWADE', 'OTHER_NOACCESS','NOACCESS', 'INACCPERM','INACCTEMP')#! should we be more careful to distinguish IA sites that had physical barriers (i.e. bushes) but were clearly target vs. streams we never saw which are truly unknown - either way, they are assumed TS, but need to determine if IA vs. UNK is important for our tabulations (see section 3 of spsurvey/GRTS practitioner guide); if long strings of IA with no subsequent TS, then set to NN. Tony lumps IA into a broader "UNK"
 NN_VALXSITE=c('NSF',"NN")# not needed because not in sample frame (ex: 2013-15 canals omitted a priori) or unevaluated
-siteeval$EvalStatus=ifelse(siteeval$VALXSITE %in% TS_VALXSITE, 'TS',ifelse(siteeval$VALXSITE %in% IA_VALXSITE, 'IA',ifelse(siteeval$VALXSITE %in% NT_VALXSITE, 'NT',ifelse(siteeval$VALXSITE %in% NN_VALXSITE, 'NN','UNK'))))
+siteeval1$EvalStatus=ifelse(siteeval1$VALXSITE %in% TS_VALXSITE, 'TS',ifelse(siteeval1$VALXSITE %in% IA_VALXSITE, 'IA',ifelse(siteeval1$VALXSITE %in% NT_VALXSITE, 'NT',ifelse(siteeval1$VALXSITE %in% NN_VALXSITE, 'NN','UNK'))))
 #The one line of code below will change the value of the first HC-LS to NT rather than NN so that it can recieve a weight. 
 #This is a temporary TRIAL and must be permanently updated in Access if it is decided to keep this change. 
 #Data file to alter[row number, "column name"]="value you want there instead of what is there"
-siteeval[61,"EvalStatus"]='NT'
+siteeval1[siteeval1$UID=='13712',"EvalStatus"]='NT'
+#siteeval1[61,"EvalStatus"]='NT'
 
-UNKeval=subset(siteeval,EvalStatus=='UNK'); if(nrow(UNKeval)>0){print('The VALXSITE for the following sites was not recognized. Please reconcile, or it will be assumed to be unevaluated (UNK)');print(UNKeval)}
+UNKeval=subset(siteeval1,EvalStatus=='UNK'); if(nrow(UNKeval)>0){print('The VALXSITE for the following sites was not recognized. Please reconcile, or it will be assumed to be unevaluated (UNK)');print(UNKeval)}
 omitUIDanalysis=c(11799)#11799=omit NorCal random reference site
-siteeval=subset(siteeval,(UID %in% omitUIDanalysis)==FALSE)
-siteeval=subset(siteeval,is.na(VISIT_NO) | (VISIT_NO==2)==FALSE)#omit repeat QA visits
+siteeval1=subset(siteeval1,(UID %in% omitUIDanalysis)==FALSE)
+siteeval1=subset(siteeval1,is.na(VISIT_NO) | (VISIT_NO==2)==FALSE)#omit repeat QA visits
 
 ###------------------------------------------------assign weights------------------------------------------------###
 #read in the target population
@@ -102,8 +103,6 @@ siteeval$Wgt_Final <- adjwgt(sites=siteeval$EvalStatus != "NN",
                              wtcat=siteeval$wgt_cat, framesize=frmszARRY)
 
 sum(siteeval$Wgt_Final)
-
-
 
 write.csv(siteeval,'NC_AdjustedWeights.csv');View(siteeval)
 
