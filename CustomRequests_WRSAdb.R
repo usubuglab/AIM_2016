@@ -7,6 +7,14 @@ AKminesASSESS=addKEYS(tblRetrieve(Comments='Y',Parameters=c('IND_MINES','MINE'),
 
 write.csv(AKminesASSESS,'AKmine.csv')
 
+##Alaska data for Franklin Creek
+AKstability=addKEYS(tblRetrieve(Parameters=c('STABLE','EROSION','COVER'),SiteCodes=c('AA-STR-0001','AA-STR-0005'),Comments='Y'),c('SITE_ID'))
+pvtAKstability=addKEYS(cast(AKstability,'UID+TRANSECT+POINT~PARAMETER',value='RESULT'),c('SITE_ID'))
+
+AKbank=addKEYS(tblRetrieve(Parameters=c('INCISED','BANKHT'),SiteCodes=c('AA-STR-0001','AA-STR-0005'),Comments='Y'),c('SITE_ID'))
+pvtAKbank=addKEYS(cast(AKbank,'UID+TRANSECT~PARAMETER',value='RESULT'), c('SITE_ID'))
+
+
 ##NorCal QC followup
 #PilotDB - verify areas
 BERW=setdiff(unclass(sqlQuery(wrsa1314,"select PARAMETER from tblMetadata where Sample_TYPE='BERWx'"))$PARAMETER,c("SHIPPING_METHOD","CHANNEL","NOT_COLLECTED","SAMPLE_ID","ACTUAL_DATE","SUBSTRATE"))
@@ -137,7 +145,6 @@ incrementsub=subset(incrementPVT,TRCHLEN/0.01!=INCREMENT)#couldn't get this to w
 write.csv(incrementPVT,'incrementPVT.csv')
 weridinc=tblRetrieve(Parameters=c('INCREMENT'),UIDS='11852')
 
-
 #check 0 substrate flagged in legal values
 substratecheck=addKEYS(tblRetrieve(Parameters=c('SIZE_NUM'),Projects='WRSA',Years=c('2013','2014'),Protocols=c('NRSA13','WRSA14'), Comments='Y'), c('SITE_ID','DATE_COL'))
 zerosubstrate=subset(substratecheck, RESULT==0)
@@ -167,7 +174,31 @@ whPVT=cast(widhgt,'UID+TRANSECT~PARAMETER',value='RESULT')
 bnkPVT=cast(banks,'UID+TRANSECT~PARAMETER+POINT',value='RESULT')      
 tranPVT=addKEYS(merge(whPVT,bnkPVT,by=c('UID','TRANSECT'),all=T) ,c('SITE_ID','DATE_COL'))# all values match field sheet # no transcription errors for bank measurements so did not check substrate measurements
 
+#summary stats site issues
+issue<-addKEYS(tblRetrieve(Parameters='INCISED',SiteCodes=c('XE-SS-5105'),Comments='Y'),c('SITE_ID'))
+issue<-addKEYS(tblRetrieve(Parameters='BANKWID',SiteCodes=c('OT-LS-7001','XS-SS-6135','MS-SS-3126'),Comments='Y'),c('SITE_ID'))
+issue<-addKEYS(tblRetrieve(Parameters='DEPTH',SiteCodes=c('XE-LS-5021','MP-LS-2010'),Comments='Y'),c('SITE_ID'))
+issue<-addKEYS(tblRetrieve(Parameters='INCISED',SiteCodes=c('MP-LS-2003','XN-RO-4086','XN-SS-4135','MN-LS-1009','XE-SS-5105','XE-SS-5105','MN-SS-1134','MP-LS-2017','XE-SS-5114','MP-LS-2003','XE-SS-5114','MP-LS-2003'),Comments='Y'),c('SITE_ID'))
 
+#checking all sites have correct project
+listsites=tblRetrieve(Parameters='SITE_ID',Projects='WRSA',Protocols=c('WRSA14'))
+ 
+
+#missing data additional checks
+tbl=tblRetrieve(Parameters=c('BANKHT','INCISED','WETWID','WETWIDTH','BANKWID','BANKWIDTH'),Projects='WRSA', Years='2014')
+tbl.PVT=addKEYS(cast(tbl,'UID~PARAMETER',value='RESULT'),c('SITE_ID'))
+
+tbl=tblRetrieve(Parameters=c('EMBED'),Projects='WRSA', Years='2014')
+tbl.PVT=addKEYS(cast(tbl,'UID~PARAMETER',value='RESULT'),c('SITE_ID'))
+
+tbl=tblRetrieve(Parameters=c('PTAILDEP','MAXDEPTH','LENGTH'),Project='WRSA',Year='2014')
+tbl.PVT=addKEYS(cast(tbl,'UID~PARAMETER',value='RESULT'),c('SITE_ID'))
+
+tbl=tblRetrieve(Parameters=c('DEPTH'),Project='WRSA', Years='2014')
+tbl.2=tblRetrieve(Parameters=c('SUB_5_7'),Project='WRSA', Years='2014')
+tbl3=cast(tbl.2,'UID~PARAMETER',value='RESULT',mean)
+tbl.PVT=addKEYS(cast(tbl,'UID~PARAMETER',value='RESULT'),c('SITE_ID'))
+thalweg.missing=merge(tbl.PVT,tbl3, by='UID')
 
 #!TN and TP updates, BMI sampleID updates
 
