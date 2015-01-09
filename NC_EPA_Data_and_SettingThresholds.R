@@ -108,6 +108,9 @@ rm(RIP_RS_combined,RIP_RS_reorder,RIP_RS_minusDup,SED_RS_combined,SED_RS_reorder
 ###############################################################################################
 ## For Ecoregion level III
 # Use riparian reference sites for:  XCDENMID, XCMG, XCMGW, and PH!!
+#Use riparian reference for PH because 
+## 1) P-hab reference were selected using a variety of filters, since we do not have specific chemical reference sites we used p-hab reference
+## 2) There are a few more reference sites for riparian than for sediment so Riparian was used over Sediment.  
 #XCDENMID
 T11=setNames(aggregate(RIP_RS_final$XCDENMID, by = list(RIP_RS_final$ECO_LVL_3NAME), FUN = quantile,probs=0.05,na.rm=TRUE), c("ECO_LVL_3NAME","XCDENMID_0.05"))
 T12=setNames(aggregate(RIP_RS_final$XCDENMID, by = list(RIP_RS_final$ECO_LVL_3NAME), FUN = quantile,probs=0.25,na.rm=TRUE), c("ECO_LVL_3NAME","XCDENMID_0.25"))
