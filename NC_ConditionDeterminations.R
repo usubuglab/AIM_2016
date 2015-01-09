@@ -381,6 +381,19 @@ Ind_SierraNV$PH_CHECKrtg=ifelse(Ind_SierraNV$PH_CHECK <= (Thresholds_lvlIII [Thr
                         ifelse(Ind_SierraNV$PH_CHECK>(Thresholds_lvlIII [Thresholds_lvlIII$ECO_LVL_3NAME=='Sierra Nevada','PH_0.25']) &
                                  Ind_SierraNV$PH_CHECK<(Thresholds_lvlIII [Thresholds_lvlIII$ECO_LVL_3NAME=='Sierra Nevada','PH_0.75']),"Good","Fair"))
 
+###### Checking how other pH thresholds would alter G, F, P classifications
+### Checking CA/NV state and national standards... 
+# THis was created and run out of order so it cannot just be run again.... 
+#IndicatorCond_ECO_LVL_3NAME$PH_StateThresh=ifelse(IndicatorCond_ECO_LVL_3NAME$PH_CHECK<6.5|IndicatorCond_ECO_LVL_3NAME$PH_CHECK>9,"Poor","Good")
+#IndicatorCond_ECO_LVL_3NAME$PH_CHECKrtg_75_25=ifelse(IndicatorCond_ECO_LVL_3NAME$PH_CHECK<7.3325|IndicatorCond_ECO_LVL_3NAME$PH_CHECK>8.365,"Poor","Good")
+#IndicatorCond_ECO_LVL_3NAME$PH_CHECKrtg_5_95=ifelse(IndicatorCond_ECO_LVL_3NAME$PH_CHECK<6.769|IndicatorCond_ECO_LVL_3NAME$PH_CHECK>8.626,"Poor","Good")
+#count(IndicatorCond_ECO_LVL_3NAME$PH_StateThresh)
+#count(IndicatorCond_ECO_LVL_3NAME$PH_CHECKrtg)
+#count(IndicatorCond_ECO_LVL_3NAME$PH_CHECKrtg_75_25)
+#count(IndicatorCond_ECO_LVL_3NAME$PH_CHECKrtg_5_95)
+
+
+
 # Eastern Cascades Slopes and Foothills
 Ind_CastFoot$XFC_NAT_CHECKrtg=ifelse(Ind_CastFoot$XFC_NAT_CHECK <= (Thresholds_lvlIII [Thresholds_lvlIII$ECO_LVL_3NAME=='Eastern Cascades Slopes and Foothills', 'XFC_NAT_0.05']),"Poor",ifelse(Ind_CastFoot$XFC_NAT_CHECK>(Thresholds_lvlIII [Thresholds_lvlIII$ECO_LVL_3NAME=='Eastern Cascades Slopes and Foothills','XFC_NAT_0.25']),"Good","Fair"))
 Ind_CastFoot$XCMG_CHECKrtg=ifelse(Ind_CastFoot$XCMG_CHECK <= (Thresholds_lvlIII [Thresholds_lvlIII$ECO_LVL_3NAME=='Eastern Cascades Slopes and Foothills', 'XCMG_0.05']),"Poor",ifelse(Ind_CastFoot$XCMG_CHECK>(Thresholds_lvlIII [Thresholds_lvlIII$ECO_LVL_3NAME=='Eastern Cascades Slopes and Foothills','XCMG_0.25']),"Good","Fair"))
