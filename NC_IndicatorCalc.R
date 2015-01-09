@@ -65,6 +65,18 @@ xBnkht=setNames(aggregate(Bnk$BANKHT,list(UID=Bnk$UID),mean),c("UID","xbnk_h_CHE
 IncBnk=merge(xBnkht,xIncht,all=TRUE)
 IncBnk$LINCIS_H_CHECK=log10(IncBnk$xinc_h_CHECK-IncBnk$xbnk_h_CHECK+0.1)
 
+#######JC update work around#############
+Incision$TRANSECT.x=mapvalues(Incision$TRANSECT.x, c("XA", "XB","XC","XD","XE","XF","XG","XH","XI","XJ","XK" ),c("A", "B","C","D","E","F","G","H","I","J","K"))
+INCISED=subset(Incision, PARAMETER.x=="INCISED")
+BANKHT=subset(Incision, PARAMETER.x=="BANKHT")
+Inc=cast(INCISED,'UID.x+TRANSECT.x~PARAMETER.x', value='RESULT', fun=max)
+Bnk=cast(BANKHT,'UID.x+TRANSECT.x~PARAMETER.x', value='RESULT', fun=max)
+xIncht=setNames(aggregate(Inc$INCISED,list(UID=Inc$UID),mean),c("UID","xinc_h_CHECK"))
+xBnkht=setNames(aggregate(Bnk$BANKHT,list(UID=Bnk$UID),mean),c("UID","xbnk_h_CHECK"))
+IncBnk=merge(xBnkht,xIncht,all=TRUE)
+IncBnk$LINCIS_H_CHECK=log10(IncBnk$xinc_h_CHECK-IncBnk$xbnk_h_CHECK+0.1)
+
+
 ###############################################
 ##########   TROUBLESHOOTING START  ###########
 ##IncBnk2=cast(Incision,'UID~PARAMETER', value='RESULT', fun=mean)
