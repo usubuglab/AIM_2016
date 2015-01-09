@@ -24,7 +24,7 @@ tables <- c("bankgeometry", "channelcover", "chandepth", "channelchar",
 if(readEXTERNAL=='N'){
 #WRSA data conversion
 #assumes DB connection remains open
-XwalkUnion=tblRetrieve(Table='',Parameters='',ALLp=AllParam,UIDS=UIDs,ALL=AllData,Filter=filter,SiteCodes=sitecodes,Dates=dates,Years=years,Projects=projects,Protocols=protocols)#XwalkUniontmp=XwalkUnion
+XwalkUnion=tblRetrieve(Table='',Parameters='',Projects='WRSA', Protocols=c('NRSA13','WRSA14')) #ALLp=AllParam,UIDS=UIDs,ALL=AllData,Filter=filter,SiteCodes=sitecodes,Dates=dates,Years=years,Projects=projects,Protocols=protocols)#XwalkUniontmp=XwalkUnion
 #protocol and parameter conversions #! these conversions also need to be done when relaying back to EPA
 XwalkUnion=bintranslate(Table='XwalkUnion',ST='CROSSSECW',PM='SIZE_NUM')
 #!should undercut (PIBO>EPA) be translated? otherwise non-existent for 2014
@@ -207,6 +207,9 @@ for (m in 1:length(outls)){
 }
 if(writeEXTERNAL=='Y'){write.csv(METmaster,file=sprintf('metsAquamet_%s.csv',Sys.Date()),row.names=FALSE)}
 
+
+#####JC pivot check 
+pivot.METmaster=cast(METmaster, 'UID~METRIC',value='RESULT')
 
 
 #xcmg check
