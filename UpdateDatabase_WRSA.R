@@ -2,6 +2,7 @@
 
 #export from Access using SavedExport Export-Office_Updates3
 UpdatesTBL=read.csv('Office_Updates.csv')
+#UpdatesTBL=read.csv('revisons_deletions_SRM.csv')
 #IND is required!!! all "TBD" IND will be ignored, all blank IND will be added as a new row
 UpdatesTBL=subset(UpdatesTBL,UPDATE=='' & IND !='TBD')
 
@@ -25,6 +26,13 @@ TBLout=rbind(TBLout,UpdatesTBLnew)
 #JC troubleshooting###
 widhgt=TBLout
 UnionTBL=TBLout
+
+#######JC temporary SRM workaround
+TBLout=Incision
+TBLout=merge(TBLout,UpdatesTBL,by='IND',all.x=T)
+TBLout$RESULT=ifelse(is.na(TBLout$RESULT.y  ) ,TBLout$RESULT.x,TBLout$RESULT.y)  #if nervous, stop to verify which result will be used                                                                  
+TBLout.sub=subset(TBLout, is.na(INACTIVATE)|INACTIVATE=='0')
+Incision=TBLout.sub
 
 ###############################
 assign(TBL,TBLout)
