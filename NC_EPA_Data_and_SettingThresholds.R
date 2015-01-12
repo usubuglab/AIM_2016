@@ -215,7 +215,10 @@ rm(RIP_RS_combined,RIP_RS_reorder,RIP_RS_minusDup,SED_RS_combined,SED_RS_reorder
 # SETTING THRESHOLDS FOR ECO10!!!
 
 ###############################################################################################
-# Use riparian reference sites for: XCDENMID, XCMG, XCMGW, 
+# Use riparian reference sites for:  XCDENMID, XCMG, XCMGW, and PH!!
+#Use riparian reference for PH because 
+## 1) P-hab reference were selected using a variety of filters, since we do not have specific chemical reference sites we used p-hab reference
+## 2) There are a few more reference sites for riparian than for sediment so Riparian was used over Sediment.  
 #XCDENMID
 T1=setNames(aggregate(RIP_RS_final$XCDENMID, by = list(RIP_RS_final$ECO10), FUN = quantile,probs=0.05,na.rm=TRUE), c("ECO10","XCDENMID_0.05"))
 T2=setNames(aggregate(RIP_RS_final$XCDENMID, by = list(RIP_RS_final$ECO10), FUN = quantile,probs=0.25,na.rm=TRUE), c("ECO10","XCDENMID_0.25"))
@@ -228,8 +231,21 @@ T6=join_all(list(T1,T2), by="ECO10")
 T1=setNames(aggregate(RIP_RS_final$XCMGW, by = list(RIP_RS_final$ECO10), FUN = quantile,probs=0.05,na.rm=TRUE), c("ECO10","XCMGW_0.05"))
 T2=setNames(aggregate(RIP_RS_final$XCMGW, by = list(RIP_RS_final$ECO10), FUN = quantile,probs=0.25,na.rm=TRUE), c("ECO10","XCMGW_0.25"))
 T7=join_all(list(T1,T2), by="ECO10")
+
+#PH
+#A few pH issues
+PH_EPA=RIP_RS_final[,1:25]
+#Replace NAs with if statement to combine columns
+PH_EPA$PH=ifelse(is.na(PH_EPA$PHLAB),PH_EPA$PHSTVL,PH_EPA$PHLAB)
+#thresholds
+T11=setNames(aggregate(PH_EPA$PH, by = list(PH_EPA$ECO10), FUN = quantile,probs=0.05,na.rm=TRUE), c("ECO10","PH_0.05"))
+T12=setNames(aggregate(PH_EPA$PH, by = list(PH_EPA$ECO10), FUN = quantile,probs=0.25,na.rm=TRUE), c("ECO10","PH_0.25"))
+T13=setNames(aggregate(PH_EPA$PH, by = list(PH_EPA$ECO10), FUN = quantile,probs=0.95,na.rm=TRUE), c("ECO10","PH_0.95"))
+T14=setNames(aggregate(PH_EPA$PH, by = list(PH_EPA$ECO10), FUN = quantile,probs=0.75,na.rm=TRUE), c("ECO10","PH_0.75"))
+T18=join_all(list(T11,T12,T14,T13), by="ECO10")
+
 ##Combine all
-RIP_THRESHOLDS_ECO10=join_all(list(T5,T6,T7),by="ECO10")
+RIP_THRESHOLDS_ECO10=join_all(list(T5,T6,T7,T18),by="ECO10")
 
 ###################################################################################
 ###################################################################################
