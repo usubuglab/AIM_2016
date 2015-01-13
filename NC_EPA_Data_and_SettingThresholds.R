@@ -123,21 +123,25 @@ T16=join_all(list(T11,T12), by="ECO_LVL_3NAME")
 T11=setNames(aggregate(RIP_RS_final$XCMGW, by = list(RIP_RS_final$ECO_LVL_3NAME), FUN = quantile,probs=0.10,na.rm=TRUE), c("ECO_LVL_3NAME","XCMGW_0.10"))
 T12=setNames(aggregate(RIP_RS_final$XCMGW, by = list(RIP_RS_final$ECO_LVL_3NAME), FUN = quantile,probs=0.30,na.rm=TRUE), c("ECO_LVL_3NAME","XCMGW_0.30"))
 T17=join_all(list(T11,T12), by="ECO_LVL_3NAME")
+
 #PH
+#PH threshols were determine to be too strict so we are using the national standards of <6.5 and >9.0 as Poor, >7 and <8.5 as Good.
+#if EPA reference thresholds want to be used you must uncomment the below code and add "18" to the liste of code to join it back into the RIP_THRESHOLDS_lvlIII object
 #A few pH issues
-PH_EPA=RIP_RS_final[,1:25]
+#PH_EPA=RIP_RS_final[,1:25]
 #Replace NAs with if statement to combine columns
-PH_EPA$PH=ifelse(is.na(PH_EPA$PHLAB),PH_EPA$PHSTVL,PH_EPA$PHLAB)
+#PH_EPA$PH=ifelse(is.na(PH_EPA$PHLAB),PH_EPA$PHSTVL,PH_EPA$PHLAB)
 #thresholds
-T11=setNames(aggregate(PH_EPA$PH, by = list(PH_EPA$ECO_LVL_3NAME), FUN = quantile,probs=0.10,na.rm=TRUE), c("ECO_LVL_3NAME","PH_0.10"))
-T12=setNames(aggregate(PH_EPA$PH, by = list(PH_EPA$ECO_LVL_3NAME), FUN = quantile,probs=0.30,na.rm=TRUE), c("ECO_LVL_3NAME","PH_0.30"))
-T13=setNames(aggregate(PH_EPA$PH, by = list(PH_EPA$ECO_LVL_3NAME), FUN = quantile,probs=0.90,na.rm=TRUE), c("ECO_LVL_3NAME","PH_0.90"))
-T14=setNames(aggregate(PH_EPA$PH, by = list(PH_EPA$ECO_LVL_3NAME), FUN = quantile,probs=0.70,na.rm=TRUE), c("ECO_LVL_3NAME","PH_0.70"))
-T18=join_all(list(T11,T12,T14,T13), by="ECO_LVL_3NAME")
+#T11=setNames(aggregate(PH_EPA$PH, by = list(PH_EPA$ECO_LVL_3NAME), FUN = quantile,probs=0.10,na.rm=TRUE), c("ECO_LVL_3NAME","PH_0.10"))
+#T12=setNames(aggregate(PH_EPA$PH, by = list(PH_EPA$ECO_LVL_3NAME), FUN = quantile,probs=0.30,na.rm=TRUE), c("ECO_LVL_3NAME","PH_0.30"))
+#T13=setNames(aggregate(PH_EPA$PH, by = list(PH_EPA$ECO_LVL_3NAME), FUN = quantile,probs=0.90,na.rm=TRUE), c("ECO_LVL_3NAME","PH_0.90"))
+#T14=setNames(aggregate(PH_EPA$PH, by = list(PH_EPA$ECO_LVL_3NAME), FUN = quantile,probs=0.70,na.rm=TRUE), c("ECO_LVL_3NAME","PH_0.70"))
+#T18=join_all(list(T11,T12,T14,T13), by="ECO_LVL_3NAME")
 
 
 ##Combine all
-RIP_THRESHOLDS_lvlIII=join_all(list(T15,T16,T17,T18),by="ECO_LVL_3NAME")
+RIP_THRESHOLDS_lvlIII=join_all(list(T15,T16,T17),by="ECO_LVL_3NAME")
+
 
 ###################################################################################
 # Use sediment reference sites for:  PCT_SAFN, DPCT_SF, XEMBED, XFC_NAT,LINCIS_H,
@@ -162,21 +166,29 @@ T19=join_all(list(T13,T14), by="ECO_LVL_3NAME")
 ##Combine all
 SED_THRESHOLDS_lvlIII=join_all(list(T15,T17,T18,T19),by="ECO_LVL_3NAME")
 
+
+
 ###################################################################################
 # Use set thresholds for:  L_XCMGW, W1_HALL, QR1
 # Defined when thresholds are implemented and applied to field measured indicators.
 ###################################################################################
 
+
 #Make one file for level III thresholds and remove unwanted working files
 Thresholds_lvlIII=merge(RIP_THRESHOLDS_lvlIII,SED_THRESHOLDS_lvlIII, all=TRUE)
+# Add pH thresholds
+#Using National standards NOT EPA regional reference approach. See above for code to use EPA regional reference approach and notes on why this was a problem to use. 
+Thresholds_lvlIII$PH_0.10=6.5
+Thresholds_lvlIII$PH_0.30=7
+Thresholds_lvlIII$PH_0.70=8.5
+Thresholds_lvlIII$PH_0.90=9
 
-rm(T11,T12,T13,T14,T15,T16,T17,T18,T19,RIP_THRESHOLDS_lvlIII,SED_THRESHOLDS_lvlIII,RIP_RS_final,SED_RS_final)
 
 #Make threshold files for NorCal specific ecoregions for ease of looking
 Thresholds_lvlIII_NC=subset(Thresholds_lvlIII, ECO_LVL_3NAME == "Central Basin and Range"|ECO_LVL_3NAME == "Eastern Cascades Slopes and Foothills"|ECO_LVL_3NAME == "Northern Basin and Range"|ECO_LVL_3NAME == "Sierra Nevada")
 
 
-
+rm(T11,T12,T13,T14,T15,T16,T17,T18,T19,RIP_THRESHOLDS_lvlIII,SED_THRESHOLDS_lvlIII,RIP_RS_final,SED_RS_final)
 
 
 
