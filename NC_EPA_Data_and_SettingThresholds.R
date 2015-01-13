@@ -29,7 +29,7 @@ final1=t(Merged2)
 #Yes! This works! To keep column 1 from the transposed data as column headings
 Final2=setNames(data.frame(t(Merged2[,-1])), Merged2[,1])
 
-#CLEAN UP DATA LIST AND WRITE OUT CSV!!!!!!!
+#CLEAN UP DATA LIST AND WRITE OUT CSV!!!!!!! #deleting indicators that weren't needed
 rm(EMAP,NRSA,T_NRSA,T_EMAP,Merged2,final1)
 #Write out because I cannot figure out how do deal with this in R....
 #write.csv(Final2, "\\\\share1.bluezone.usu.edu\\miller\\buglab\\Research Projects\\BLM_WRSA_Stream_Surveys\\Results and Reports\\EPA_Data\\Mass_Combination_NRSA_EMAP.csv")
@@ -112,16 +112,16 @@ rm(RIP_RS_combined,RIP_RS_reorder,RIP_RS_minusDup,SED_RS_combined,SED_RS_reorder
 ## 1) P-hab reference were selected using a variety of filters, since we do not have specific chemical reference sites we used p-hab reference
 ## 2) There are a few more reference sites for riparian than for sediment so Riparian was used over Sediment.  
 #XCDENMID
-T11=setNames(aggregate(RIP_RS_final$XCDENMID, by = list(RIP_RS_final$ECO_LVL_3NAME), FUN = quantile,probs=0.05,na.rm=TRUE), c("ECO_LVL_3NAME","XCDENMID_0.05"))
-T12=setNames(aggregate(RIP_RS_final$XCDENMID, by = list(RIP_RS_final$ECO_LVL_3NAME), FUN = quantile,probs=0.25,na.rm=TRUE), c("ECO_LVL_3NAME","XCDENMID_0.25"))
+T11=setNames(aggregate(RIP_RS_final$XCDENMID, by = list(RIP_RS_final$ECO_LVL_3NAME), FUN = quantile,probs=0.10,na.rm=TRUE), c("ECO_LVL_3NAME","XCDENMID_0.10"))
+T12=setNames(aggregate(RIP_RS_final$XCDENMID, by = list(RIP_RS_final$ECO_LVL_3NAME), FUN = quantile,probs=0.30,na.rm=TRUE), c("ECO_LVL_3NAME","XCDENMID_0.30"))
 T15=join_all(list(T11,T12), by="ECO_LVL_3NAME")
 #XCMG
-T11=setNames(aggregate(RIP_RS_final$XCMG, by = list(RIP_RS_final$ECO_LVL_3NAME), FUN = quantile,probs=0.05,na.rm=TRUE), c("ECO_LVL_3NAME","XCMG_0.05"))
-T12=setNames(aggregate(RIP_RS_final$XCMG, by = list(RIP_RS_final$ECO_LVL_3NAME), FUN = quantile,probs=0.25,na.rm=TRUE), c("ECO_LVL_3NAME","XCMG_0.25"))
+T11=setNames(aggregate(RIP_RS_final$XCMG, by = list(RIP_RS_final$ECO_LVL_3NAME), FUN = quantile,probs=0.10,na.rm=TRUE), c("ECO_LVL_3NAME","XCMG_0.10"))
+T12=setNames(aggregate(RIP_RS_final$XCMG, by = list(RIP_RS_final$ECO_LVL_3NAME), FUN = quantile,probs=0.30,na.rm=TRUE), c("ECO_LVL_3NAME","XCMG_0.30"))
 T16=join_all(list(T11,T12), by="ECO_LVL_3NAME")
 #XCMGW
-T11=setNames(aggregate(RIP_RS_final$XCMGW, by = list(RIP_RS_final$ECO_LVL_3NAME), FUN = quantile,probs=0.05,na.rm=TRUE), c("ECO_LVL_3NAME","XCMGW_0.05"))
-T12=setNames(aggregate(RIP_RS_final$XCMGW, by = list(RIP_RS_final$ECO_LVL_3NAME), FUN = quantile,probs=0.25,na.rm=TRUE), c("ECO_LVL_3NAME","XCMGW_0.25"))
+T11=setNames(aggregate(RIP_RS_final$XCMGW, by = list(RIP_RS_final$ECO_LVL_3NAME), FUN = quantile,probs=0.10,na.rm=TRUE), c("ECO_LVL_3NAME","XCMGW_0.10"))
+T12=setNames(aggregate(RIP_RS_final$XCMGW, by = list(RIP_RS_final$ECO_LVL_3NAME), FUN = quantile,probs=0.30,na.rm=TRUE), c("ECO_LVL_3NAME","XCMGW_0.30"))
 T17=join_all(list(T11,T12), by="ECO_LVL_3NAME")
 #PH
 #A few pH issues
@@ -129,10 +129,10 @@ PH_EPA=RIP_RS_final[,1:25]
 #Replace NAs with if statement to combine columns
 PH_EPA$PH=ifelse(is.na(PH_EPA$PHLAB),PH_EPA$PHSTVL,PH_EPA$PHLAB)
 #thresholds
-T11=setNames(aggregate(PH_EPA$PH, by = list(PH_EPA$ECO_LVL_3NAME), FUN = quantile,probs=0.05,na.rm=TRUE), c("ECO_LVL_3NAME","PH_0.05"))
-T12=setNames(aggregate(PH_EPA$PH, by = list(PH_EPA$ECO_LVL_3NAME), FUN = quantile,probs=0.25,na.rm=TRUE), c("ECO_LVL_3NAME","PH_0.25"))
-T13=setNames(aggregate(PH_EPA$PH, by = list(PH_EPA$ECO_LVL_3NAME), FUN = quantile,probs=0.95,na.rm=TRUE), c("ECO_LVL_3NAME","PH_0.95"))
-T14=setNames(aggregate(PH_EPA$PH, by = list(PH_EPA$ECO_LVL_3NAME), FUN = quantile,probs=0.75,na.rm=TRUE), c("ECO_LVL_3NAME","PH_0.75"))
+T11=setNames(aggregate(PH_EPA$PH, by = list(PH_EPA$ECO_LVL_3NAME), FUN = quantile,probs=0.10,na.rm=TRUE), c("ECO_LVL_3NAME","PH_0.10"))
+T12=setNames(aggregate(PH_EPA$PH, by = list(PH_EPA$ECO_LVL_3NAME), FUN = quantile,probs=0.30,na.rm=TRUE), c("ECO_LVL_3NAME","PH_0.30"))
+T13=setNames(aggregate(PH_EPA$PH, by = list(PH_EPA$ECO_LVL_3NAME), FUN = quantile,probs=0.90,na.rm=TRUE), c("ECO_LVL_3NAME","PH_0.90"))
+T14=setNames(aggregate(PH_EPA$PH, by = list(PH_EPA$ECO_LVL_3NAME), FUN = quantile,probs=0.70,na.rm=TRUE), c("ECO_LVL_3NAME","PH_0.70"))
 T18=join_all(list(T11,T12,T14,T13), by="ECO_LVL_3NAME")
 
 
@@ -142,22 +142,22 @@ RIP_THRESHOLDS_lvlIII=join_all(list(T15,T16,T17,T18),by="ECO_LVL_3NAME")
 ###################################################################################
 # Use sediment reference sites for:  PCT_SAFN, DPCT_SF, XEMBED, XFC_NAT,LINCIS_H,
 #PCT_SAFN
-T13=setNames(aggregate(SED_RS_final$PCT_SAFN, by = list(SED_RS_final$ECO_LVL_3NAME), FUN = quantile,probs=0.75,na.rm=TRUE), c("ECO_LVL_3NAME","PCT_SAFN_0.75"))
-T14=setNames(aggregate(SED_RS_final$PCT_SAFN, by = list(SED_RS_final$ECO_LVL_3NAME), FUN = quantile,probs=0.95,na.rm=TRUE), c("ECO_LVL_3NAME","PCT_SAFN_0.95"))
+T13=setNames(aggregate(SED_RS_final$PCT_SAFN, by = list(SED_RS_final$ECO_LVL_3NAME), FUN = quantile,probs=0.70,na.rm=TRUE), c("ECO_LVL_3NAME","PCT_SAFN_0.70"))
+T14=setNames(aggregate(SED_RS_final$PCT_SAFN, by = list(SED_RS_final$ECO_LVL_3NAME), FUN = quantile,probs=0.90,na.rm=TRUE), c("ECO_LVL_3NAME","PCT_SAFN_0.90"))
 T15=join_all(list(T13,T14), by="ECO_LVL_3NAME")
 #DPCT_SF
 ###Modeled indicator, does not use Ecoregion percentil thresholds as these others do.. 
 #XFC_NAT
-T11=setNames(aggregate(SED_RS_final$XFC_NAT, by = list(SED_RS_final$ECO_LVL_3NAME), FUN = quantile,probs=0.05,na.rm=TRUE), c("ECO_LVL_3NAME","XFC_NAT_0.05"))
-T12=setNames(aggregate(SED_RS_final$XFC_NAT, by = list(SED_RS_final$ECO_LVL_3NAME), FUN = quantile,probs=0.25,na.rm=TRUE), c("ECO_LVL_3NAME","XFC_NAT_0.25"))
+T11=setNames(aggregate(SED_RS_final$XFC_NAT, by = list(SED_RS_final$ECO_LVL_3NAME), FUN = quantile,probs=0.10,na.rm=TRUE), c("ECO_LVL_3NAME","XFC_NAT_0.10"))
+T12=setNames(aggregate(SED_RS_final$XFC_NAT, by = list(SED_RS_final$ECO_LVL_3NAME), FUN = quantile,probs=0.30,na.rm=TRUE), c("ECO_LVL_3NAME","XFC_NAT_0.30"))
 T17=join_all(list(T11,T12), by="ECO_LVL_3NAME")
 #LINCIS_H
-T13=setNames(aggregate(SED_RS_final$LINCIS_H, by = list(SED_RS_final$ECO_LVL_3NAME), FUN = quantile,probs=0.75,na.rm=TRUE), c("ECO_LVL_3NAME","LINCIS_H_0.75"))
-T14=setNames(aggregate(SED_RS_final$LINCIS_H, by = list(SED_RS_final$ECO_LVL_3NAME), FUN = quantile,probs=0.95,na.rm=TRUE), c("ECO_LVL_3NAME","LINCIS_H_0.95"))
+T13=setNames(aggregate(SED_RS_final$LINCIS_H, by = list(SED_RS_final$ECO_LVL_3NAME), FUN = quantile,probs=0.70,na.rm=TRUE), c("ECO_LVL_3NAME","LINCIS_H_0.70"))
+T14=setNames(aggregate(SED_RS_final$LINCIS_H, by = list(SED_RS_final$ECO_LVL_3NAME), FUN = quantile,probs=0.90,na.rm=TRUE), c("ECO_LVL_3NAME","LINCIS_H_0.90"))
 T18=join_all(list(T13,T14), by="ECO_LVL_3NAME")
 #XEMBED
-T13=setNames(aggregate(SED_RS_final$XEMBED, by = list(SED_RS_final$ECO_LVL_3NAME), FUN = quantile,probs=0.75,na.rm=TRUE), c("ECO_LVL_3NAME","XEMBED_0.75"))
-T14=setNames(aggregate(SED_RS_final$XEMBED, by = list(SED_RS_final$ECO_LVL_3NAME), FUN = quantile,probs=0.95,na.rm=TRUE), c("ECO_LVL_3NAME","XEMBED_0.95"))
+T13=setNames(aggregate(SED_RS_final$XEMBED, by = list(SED_RS_final$ECO_LVL_3NAME), FUN = quantile,probs=0.70,na.rm=TRUE), c("ECO_LVL_3NAME","XEMBED_0.70"))
+T14=setNames(aggregate(SED_RS_final$XEMBED, by = list(SED_RS_final$ECO_LVL_3NAME), FUN = quantile,probs=0.90,na.rm=TRUE), c("ECO_LVL_3NAME","XEMBED_0.90"))
 T19=join_all(list(T13,T14), by="ECO_LVL_3NAME")
 ##Combine all
 SED_THRESHOLDS_lvlIII=join_all(list(T15,T17,T18,T19),by="ECO_LVL_3NAME")
@@ -215,42 +215,58 @@ rm(RIP_RS_combined,RIP_RS_reorder,RIP_RS_minusDup,SED_RS_combined,SED_RS_reorder
 # SETTING THRESHOLDS FOR ECO10!!!
 
 ###############################################################################################
-# Use riparian reference sites for: XCDENMID, XCMG, XCMGW, 
+# Use riparian reference sites for:  XCDENMID, XCMG, XCMGW, and PH!!
+#Use riparian reference for PH because 
+## 1) P-hab reference were selected using a variety of filters, since we do not have specific chemical reference sites we used p-hab reference
+## 2) There are a few more reference sites for riparian than for sediment so Riparian was used over Sediment.  
 #XCDENMID
-T1=setNames(aggregate(RIP_RS_final$XCDENMID, by = list(RIP_RS_final$ECO10), FUN = quantile,probs=0.05,na.rm=TRUE), c("ECO10","XCDENMID_0.05"))
-T2=setNames(aggregate(RIP_RS_final$XCDENMID, by = list(RIP_RS_final$ECO10), FUN = quantile,probs=0.25,na.rm=TRUE), c("ECO10","XCDENMID_0.25"))
+T1=setNames(aggregate(RIP_RS_final$XCDENMID, by = list(RIP_RS_final$ECO10), FUN = quantile,probs=0.10,na.rm=TRUE), c("ECO10","XCDENMID_0.10"))
+T2=setNames(aggregate(RIP_RS_final$XCDENMID, by = list(RIP_RS_final$ECO10), FUN = quantile,probs=0.30,na.rm=TRUE), c("ECO10","XCDENMID_0.30"))
 T5=join_all(list(T1,T2), by="ECO10")
 #XCMG
-T1=setNames(aggregate(RIP_RS_final$XCMG, by = list(RIP_RS_final$ECO10), FUN = quantile,probs=0.05,na.rm=TRUE), c("ECO10","XCMG_0.05"))
-T2=setNames(aggregate(RIP_RS_final$XCMG, by = list(RIP_RS_final$ECO10), FUN = quantile,probs=0.25,na.rm=TRUE), c("ECO10","XCMG_0.25"))
+T1=setNames(aggregate(RIP_RS_final$XCMG, by = list(RIP_RS_final$ECO10), FUN = quantile,probs=0.10,na.rm=TRUE), c("ECO10","XCMG_0.10"))#changing alpha
+T2=setNames(aggregate(RIP_RS_final$XCMG, by = list(RIP_RS_final$ECO10), FUN = quantile,probs=0.30,na.rm=TRUE), c("ECO10","XCMG_0.30"))#changing alpha
 T6=join_all(list(T1,T2), by="ECO10")
 #XCMGW
-T1=setNames(aggregate(RIP_RS_final$XCMGW, by = list(RIP_RS_final$ECO10), FUN = quantile,probs=0.05,na.rm=TRUE), c("ECO10","XCMGW_0.05"))
-T2=setNames(aggregate(RIP_RS_final$XCMGW, by = list(RIP_RS_final$ECO10), FUN = quantile,probs=0.25,na.rm=TRUE), c("ECO10","XCMGW_0.25"))
+T1=setNames(aggregate(RIP_RS_final$XCMGW, by = list(RIP_RS_final$ECO10), FUN = quantile,probs=0.10,na.rm=TRUE), c("ECO10","XCMGW_0.10"))
+T2=setNames(aggregate(RIP_RS_final$XCMGW, by = list(RIP_RS_final$ECO10), FUN = quantile,probs=0.30,na.rm=TRUE), c("ECO10","XCMGW_0.30"))
 T7=join_all(list(T1,T2), by="ECO10")
+
+#PH
+#A few pH issues
+PH_EPA=RIP_RS_final[,1:25]
+#Replace NAs with if statement to combine columns
+PH_EPA$PH=ifelse(is.na(PH_EPA$PHLAB),PH_EPA$PHSTVL,PH_EPA$PHLAB)
+#thresholds
+T11=setNames(aggregate(PH_EPA$PH, by = list(PH_EPA$ECO10), FUN = quantile,probs=0.10,na.rm=TRUE), c("ECO10","PH_0.10"))
+T12=setNames(aggregate(PH_EPA$PH, by = list(PH_EPA$ECO10), FUN = quantile,probs=0.30,na.rm=TRUE), c("ECO10","PH_0.30"))
+T13=setNames(aggregate(PH_EPA$PH, by = list(PH_EPA$ECO10), FUN = quantile,probs=0.90,na.rm=TRUE), c("ECO10","PH_0.90"))
+T14=setNames(aggregate(PH_EPA$PH, by = list(PH_EPA$ECO10), FUN = quantile,probs=0.70,na.rm=TRUE), c("ECO10","PH_0.70"))
+T18=join_all(list(T11,T12,T14,T13), by="ECO10")
+
 ##Combine all
-RIP_THRESHOLDS_ECO10=join_all(list(T5,T6,T7),by="ECO10")
+RIP_THRESHOLDS_ECO10=join_all(list(T5,T6,T7,T18),by="ECO10")
 
 ###################################################################################
 ###################################################################################
 # Use sediment reference sites for:  PCT_SAFN, DPCT_SF, XEMBED, XFC_NAT,LINCIS_H,
 #PCT_SAFN
-T3=setNames(aggregate(SED_RS_final$PCT_SAFN, by = list(SED_RS_final$ECO10), FUN = quantile,probs=0.75,na.rm=TRUE), c("ECO10","PCT_SAFN_0.75"))
-T4=setNames(aggregate(SED_RS_final$PCT_SAFN, by = list(SED_RS_final$ECO10), FUN = quantile,probs=0.95,na.rm=TRUE), c("ECO10","PCT_SAFN_0.95"))
+T3=setNames(aggregate(SED_RS_final$PCT_SAFN, by = list(SED_RS_final$ECO10), FUN = quantile,probs=0.70,na.rm=TRUE), c("ECO10","PCT_SAFN_0.70"))
+T4=setNames(aggregate(SED_RS_final$PCT_SAFN, by = list(SED_RS_final$ECO10), FUN = quantile,probs=0.90,na.rm=TRUE), c("ECO10","PCT_SAFN_0.90"))
 T5=join_all(list(T3,T4), by="ECO10")
 #DPCT_SF
 ###Modeled indicator, does not use Ecoregion percentil thresholds as these others do.. 
 #XFC_NAT
-T1=setNames(aggregate(SED_RS_final$XFC_NAT, by = list(SED_RS_final$ECO10), FUN = quantile,probs=0.05,na.rm=TRUE), c("ECO10","XFC_NAT_0.05"))
-T2=setNames(aggregate(SED_RS_final$XFC_NAT, by = list(SED_RS_final$ECO10), FUN = quantile,probs=0.25,na.rm=TRUE), c("ECO10","XFC_NAT_0.25"))
+T1=setNames(aggregate(SED_RS_final$XFC_NAT, by = list(SED_RS_final$ECO10), FUN = quantile,probs=0.10,na.rm=TRUE), c("ECO10","XFC_NAT_0.10"))
+T2=setNames(aggregate(SED_RS_final$XFC_NAT, by = list(SED_RS_final$ECO10), FUN = quantile,probs=0.30,na.rm=TRUE), c("ECO10","XFC_NAT_0.30"))
 T7=join_all(list(T1,T2), by="ECO10")
 #LINCIS_H
-T3=setNames(aggregate(SED_RS_final$LINCIS_H, by = list(SED_RS_final$ECO10), FUN = quantile,probs=0.75,na.rm=TRUE), c("ECO10","LINCIS_H_0.75"))
-T4=setNames(aggregate(SED_RS_final$LINCIS_H, by = list(SED_RS_final$ECO10), FUN = quantile,probs=0.95,na.rm=TRUE), c("ECO10","LINCIS_H_0.95"))
+T3=setNames(aggregate(SED_RS_final$LINCIS_H, by = list(SED_RS_final$ECO10), FUN = quantile,probs=0.70,na.rm=TRUE), c("ECO10","LINCIS_H_0.70"))
+T4=setNames(aggregate(SED_RS_final$LINCIS_H, by = list(SED_RS_final$ECO10), FUN = quantile,probs=0.90,na.rm=TRUE), c("ECO10","LINCIS_H_0.90"))
 T8=join_all(list(T3,T4), by="ECO10")
 #XEMBED
-T3=setNames(aggregate(SED_RS_final$XEMBED, by = list(SED_RS_final$ECO10), FUN = quantile,probs=0.75,na.rm=TRUE), c("ECO10","XEMBED_0.75"))
-T4=setNames(aggregate(SED_RS_final$XEMBED, by = list(SED_RS_final$ECO10), FUN = quantile,probs=0.95,na.rm=TRUE), c("ECO10","XEMBED_0.95"))
+T3=setNames(aggregate(SED_RS_final$XEMBED, by = list(SED_RS_final$ECO10), FUN = quantile,probs=0.70,na.rm=TRUE), c("ECO10","XEMBED_0.70"))
+T4=setNames(aggregate(SED_RS_final$XEMBED, by = list(SED_RS_final$ECO10), FUN = quantile,probs=0.90,na.rm=TRUE), c("ECO10","XEMBED_0.90"))
 T9=join_all(list(T3,T4), by="ECO10")
 ##Combine all
 SED_THRESHOLDS_ECO10=join_all(list(T5,T7,T8,T9),by="ECO10")

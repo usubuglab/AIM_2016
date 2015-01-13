@@ -34,7 +34,7 @@ AllWQ2=AllWQ[,c('UID','SITE_ID','LOC_NAME','DATE_COL','PrdCond','Pred_TN','Pred_
 #Now subtract Observe - expected to get the OE score to be classified as G F P. Then set thresholds for each indicator
 #If o-e is > lower limit it is fair, if it is > upper limit its poor, if it is < lower limit it is good(all else is good)
 
-###Conductivity 
+###Conductivity #Modelled thresholds
 AllWQ2$OE_Conduct = AllWQ2$CONDUCTIVITY - AllWQ2$PrdCond 
 AllWQ2$OE_Conductrtg=ifelse(AllWQ2$OE_Conduct <=27.1,'Good',ifelse(AllWQ2$OE_Conduct >53.7, 'Poor','Fair'))
 
@@ -361,15 +361,15 @@ rm(t1,t2,t3,NorCalSites_Ecoregions)
 ################################################################
 unique(Indicators$ECO_LVL_3NAME)
 
-Ind_CastFoot=subset(Indicators, ECO_LVL_3NAME=='Eastern Cascades Slopes and Foothills')
+Ind_PL_NCULT=subset(Indicators, ECO_LVL_3NAME=='Eastern Cascades Slopes and Foothills')
 Ind_NorthBasin=subset(Indicators, ECO_LVL_3NAME=='Northern Basin and Range')
 Ind_SierraNV=subset(Indicators, ECO_LVL_3NAME=='Sierra Nevada')
 
 #Apply pH thresholds
-Ind_CastFoot$PH_CHECKrtg=ifelse(Ind_CastFoot$PH_CHECK <= (Thresholds_lvlIII [Thresholds_lvlIII$ECO_LVL_3NAME=='Eastern Cascades Slopes and Foothills', 'PH_0.05'])
-                        |Ind_CastFoot$PH_CHECK >= (Thresholds_lvlIII [Thresholds_lvlIII$ECO_LVL_3NAME=='Eastern Cascades Slopes and Foothills', 'PH_0.95']),"Poor",
-                        ifelse(Ind_CastFoot$PH_CHECK>(Thresholds_lvlIII [Thresholds_lvlIII$ECO_LVL_3NAME=='Eastern Cascades Slopes and Foothills','PH_0.25']) &
-                                 Ind_CastFoot$PH_CHECK<(Thresholds_lvlIII [Thresholds_lvlIII$ECO_LVL_3NAME=='Eastern Cascades Slopes and Foothills','PH_0.75']),"Good","Fair"))
+Ind_PL_NCULT$PH_CHECKrtg=ifelse(Ind_PL_NCULT$PH_CHECK <= (Thresholds_lvlIII [Thresholds_lvlIII$ECO_LVL_3NAME=='Eastern Cascades Slopes and Foothills', 'PH_0.05'])
+                        |Ind_PL_NCULT$PH_CHECK >= (Thresholds_lvlIII [Thresholds_lvlIII$ECO_LVL_3NAME=='Eastern Cascades Slopes and Foothills', 'PH_0.95']),"Poor",
+                        ifelse(Ind_PL_NCULT$PH_CHECK>(Thresholds_lvlIII [Thresholds_lvlIII$ECO_LVL_3NAME=='Eastern Cascades Slopes and Foothills','PH_0.25']) &
+                                 Ind_PL_NCULT$PH_CHECK<(Thresholds_lvlIII [Thresholds_lvlIII$ECO_LVL_3NAME=='Eastern Cascades Slopes and Foothills','PH_0.75']),"Good","Fair"))
 
 Ind_NorthBasin$PH_CHECKrtg=ifelse(Ind_NorthBasin$PH_CHECK <= (Thresholds_lvlIII [Thresholds_lvlIII$ECO_LVL_3NAME=='Northern Basin and Range', 'PH_0.05'])
                           |Ind_NorthBasin$PH_CHECK >= (Thresholds_lvlIII [Thresholds_lvlIII$ECO_LVL_3NAME=='Northern Basin and Range', 'PH_0.95']),"Poor",
@@ -395,13 +395,13 @@ Ind_SierraNV$PH_CHECKrtg=ifelse(Ind_SierraNV$PH_CHECK <= (Thresholds_lvlIII [Thr
 
 
 # Eastern Cascades Slopes and Foothills
-Ind_CastFoot$XFC_NAT_CHECKrtg=ifelse(Ind_CastFoot$XFC_NAT_CHECK <= (Thresholds_lvlIII [Thresholds_lvlIII$ECO_LVL_3NAME=='Eastern Cascades Slopes and Foothills', 'XFC_NAT_0.05']),"Poor",ifelse(Ind_CastFoot$XFC_NAT_CHECK>(Thresholds_lvlIII [Thresholds_lvlIII$ECO_LVL_3NAME=='Eastern Cascades Slopes and Foothills','XFC_NAT_0.25']),"Good","Fair"))
-Ind_CastFoot$XCMG_CHECKrtg=ifelse(Ind_CastFoot$XCMG_CHECK <= (Thresholds_lvlIII [Thresholds_lvlIII$ECO_LVL_3NAME=='Eastern Cascades Slopes and Foothills', 'XCMG_0.05']),"Poor",ifelse(Ind_CastFoot$XCMG_CHECK>(Thresholds_lvlIII [Thresholds_lvlIII$ECO_LVL_3NAME=='Eastern Cascades Slopes and Foothills','XCMG_0.25']),"Good","Fair"))
-Ind_CastFoot$XCMGW_CHECKrtg=ifelse(Ind_CastFoot$XCMGW_CHECK <= (Thresholds_lvlIII [Thresholds_lvlIII$ECO_LVL_3NAME=='Eastern Cascades Slopes and Foothills', 'XCMGW_0.05']),"Poor",ifelse(Ind_CastFoot$XCMGW_CHECK>(Thresholds_lvlIII [Thresholds_lvlIII$ECO_LVL_3NAME=='Eastern Cascades Slopes and Foothills','XCMGW_0.25']),"Good","Fair"))
-Ind_CastFoot$xcdenmid_CHECKrtg=ifelse(Ind_CastFoot$xcdenmid_CHECK <= (Thresholds_lvlIII [Thresholds_lvlIII$ECO_LVL_3NAME=='Eastern Cascades Slopes and Foothills', 'XCDENMID_0.05']),"Poor",ifelse(Ind_CastFoot$xcdenmid_CHECK>(Thresholds_lvlIII [Thresholds_lvlIII$ECO_LVL_3NAME=='Eastern Cascades Slopes and Foothills','XCDENMID_0.25']),"Good","Fair"))
-Ind_CastFoot$LINCIS_H_CHECKrtg=ifelse(Ind_CastFoot$LINCIS_H_CHECK >= (Thresholds_lvlIII [Thresholds_lvlIII$ECO_LVL_3NAME=='Eastern Cascades Slopes and Foothills', 'LINCIS_H_0.95']),"Poor",ifelse(Ind_CastFoot$LINCIS_H_CHECK<(Thresholds_lvlIII [Thresholds_lvlIII$ECO_LVL_3NAME=='Eastern Cascades Slopes and Foothills','LINCIS_H_0.75']),"Good","Fair"))
-Ind_CastFoot$PCT_SAFN_CHECKrtg=ifelse(Ind_CastFoot$PCT_SAFN_CHECK >= (Thresholds_lvlIII [Thresholds_lvlIII$ECO_LVL_3NAME=='Eastern Cascades Slopes and Foothills', 'PCT_SAFN_0.95']),"Poor",ifelse(Ind_CastFoot$PCT_SAFN_CHECK<(Thresholds_lvlIII [Thresholds_lvlIII$ECO_LVL_3NAME=='Eastern Cascades Slopes and Foothills','PCT_SAFN_0.75']),"Good","Fair"))
-Ind_CastFoot$XEMBED_CHECKrtg=ifelse(Ind_CastFoot$XEMBED_CHECK >= (Thresholds_lvlIII [Thresholds_lvlIII$ECO_LVL_3NAME=='Eastern Cascades Slopes and Foothills', 'XEMBED_0.95']),"Poor",ifelse(Ind_CastFoot$XEMBED_CHECK<(Thresholds_lvlIII [Thresholds_lvlIII$ECO_LVL_3NAME=='Eastern Cascades Slopes and Foothills','XEMBED_0.75']),"Good","Fair"))
+Ind_PL_NCULT$XFC_NAT_CHECKrtg=ifelse(Ind_PL_NCULT$XFC_NAT_CHECK <= (Thresholds_lvlIII [Thresholds_lvlIII$ECO_LVL_3NAME=='Eastern Cascades Slopes and Foothills', 'XFC_NAT_0.05']),"Poor",ifelse(Ind_PL_NCULT$XFC_NAT_CHECK>(Thresholds_lvlIII [Thresholds_lvlIII$ECO_LVL_3NAME=='Eastern Cascades Slopes and Foothills','XFC_NAT_0.25']),"Good","Fair"))
+Ind_PL_NCULT$XCMG_CHECKrtg=ifelse(Ind_PL_NCULT$XCMG_CHECK <= (Thresholds_lvlIII [Thresholds_lvlIII$ECO_LVL_3NAME=='Eastern Cascades Slopes and Foothills', 'XCMG_0.05']),"Poor",ifelse(Ind_PL_NCULT$XCMG_CHECK>(Thresholds_lvlIII [Thresholds_lvlIII$ECO_LVL_3NAME=='Eastern Cascades Slopes and Foothills','XCMG_0.25']),"Good","Fair"))
+Ind_PL_NCULT$XCMGW_CHECKrtg=ifelse(Ind_PL_NCULT$XCMGW_CHECK <= (Thresholds_lvlIII [Thresholds_lvlIII$ECO_LVL_3NAME=='Eastern Cascades Slopes and Foothills', 'XCMGW_0.05']),"Poor",ifelse(Ind_PL_NCULT$XCMGW_CHECK>(Thresholds_lvlIII [Thresholds_lvlIII$ECO_LVL_3NAME=='Eastern Cascades Slopes and Foothills','XCMGW_0.25']),"Good","Fair"))
+Ind_PL_NCULT$xcdenmid_CHECKrtg=ifelse(Ind_PL_NCULT$xcdenmid_CHECK <= (Thresholds_lvlIII [Thresholds_lvlIII$ECO_LVL_3NAME=='Eastern Cascades Slopes and Foothills', 'XCDENMID_0.05']),"Poor",ifelse(Ind_PL_NCULT$xcdenmid_CHECK>(Thresholds_lvlIII [Thresholds_lvlIII$ECO_LVL_3NAME=='Eastern Cascades Slopes and Foothills','XCDENMID_0.25']),"Good","Fair"))
+Ind_PL_NCULT$LINCIS_H_CHECKrtg=ifelse(Ind_PL_NCULT$LINCIS_H_CHECK >= (Thresholds_lvlIII [Thresholds_lvlIII$ECO_LVL_3NAME=='Eastern Cascades Slopes and Foothills', 'LINCIS_H_0.95']),"Poor",ifelse(Ind_PL_NCULT$LINCIS_H_CHECK<(Thresholds_lvlIII [Thresholds_lvlIII$ECO_LVL_3NAME=='Eastern Cascades Slopes and Foothills','LINCIS_H_0.75']),"Good","Fair"))
+Ind_PL_NCULT$PCT_SAFN_CHECKrtg=ifelse(Ind_PL_NCULT$PCT_SAFN_CHECK >= (Thresholds_lvlIII [Thresholds_lvlIII$ECO_LVL_3NAME=='Eastern Cascades Slopes and Foothills', 'PCT_SAFN_0.95']),"Poor",ifelse(Ind_PL_NCULT$PCT_SAFN_CHECK<(Thresholds_lvlIII [Thresholds_lvlIII$ECO_LVL_3NAME=='Eastern Cascades Slopes and Foothills','PCT_SAFN_0.75']),"Good","Fair"))
+Ind_PL_NCULT$XEMBED_CHECKrtg=ifelse(Ind_PL_NCULT$XEMBED_CHECK >= (Thresholds_lvlIII [Thresholds_lvlIII$ECO_LVL_3NAME=='Eastern Cascades Slopes and Foothills', 'XEMBED_0.95']),"Poor",ifelse(Ind_PL_NCULT$XEMBED_CHECK<(Thresholds_lvlIII [Thresholds_lvlIII$ECO_LVL_3NAME=='Eastern Cascades Slopes and Foothills','XEMBED_0.75']),"Good","Fair"))
 
 # Ind_NorthBasin
 Ind_NorthBasin$XFC_NAT_CHECKrtg=ifelse(Ind_NorthBasin$XFC_NAT_CHECK <= (Thresholds_lvlIII [Thresholds_lvlIII$ECO_LVL_3NAME=='Northern Basin and Range', 'XFC_NAT_0.05']),"Poor",ifelse(Ind_NorthBasin$XFC_NAT_CHECK>(Thresholds_lvlIII [Thresholds_lvlIII$ECO_LVL_3NAME=='Northern Basin and Range','XFC_NAT_0.25']),"Good","Fair"))
@@ -423,9 +423,9 @@ Ind_SierraNV$PCT_SAFN_CHECKrtg=ifelse(Ind_SierraNV$PCT_SAFN_CHECK >= (Thresholds
 Ind_SierraNV$XEMBED_CHECKrtg=ifelse(Ind_SierraNV$XEMBED_CHECK >= (Thresholds_lvlIII [Thresholds_lvlIII$ECO_LVL_3NAME=='Sierra Nevada', 'XEMBED_0.95']),"Poor",ifelse(Ind_SierraNV$XEMBED_CHECK<(Thresholds_lvlIII [Thresholds_lvlIII$ECO_LVL_3NAME=='Sierra Nevada','XEMBED_0.75']),"Good","Fair"))
 
 
-IndicatorCond_ECO_LVL_3NAME=rbind(Ind_SierraNV,Ind_NorthBasin,Ind_CastFoot)
+IndicatorCond_ECO_LVL_3NAME=rbind(Ind_SierraNV,Ind_NorthBasin,Ind_PL_NCULT)
 
-rm(Ind_CastFoot,Ind_NorthBasin,Ind_SierraNV)
+rm(Ind_PL_NCULT,Ind_NorthBasin,Ind_SierraNV)
 
 
 #L_XCMGW thresholds
@@ -445,7 +445,7 @@ IndicatorCond_ECO_LVL_3NAME$EMAP_W1_HALL_CHECKrtg=ifelse(IndicatorCond_ECO_LVL_3
 IndicatorCond_ECO_LVL_3NAME$NRSA_W1_HALL_CHECKrtg=ifelse(IndicatorCond_ECO_LVL_3NAME$NRSA_W1_HALL_CHECK<0.33,"Good",ifelse(IndicatorCond_ECO_LVL_3NAME$NRSA_W1_HALL_CHECK>=1.5,"Poor","Fair"))
 
 
-#QR1: Not sure yet......
+#QR1: Not sure yet......#WI_Hall used for QR1
 #QR1 doesn't have a threshold
 
 #Add bug, conductivity, and other WQ columns to the Indicator Conditions file. 
@@ -504,41 +504,193 @@ Freq_ECOIII=cbind(count(IndicatorCond_ECO_LVL_3NAME,var='XFC_NAT_CHECKrtg'),
 #ECO10: Applying Thresholds
 
 ################################################################
+
+Indicators=read.csv('Z:\\buglab\\Research Projects\\BLM_WRSA_Stream_Surveys\\Results and Reports\\SRM_2015\\final_updated_crosschecked_metrics.csv')
+
+
 #Get a list of the indicators in the file to use for Subsetting
-#pH is not listed here, see above for how to apply thresholds. 
 unique(Indicators$ECO10)
 
+Ind_MT_NROCK=subset(Indicators, ECO10=='MT-NROCK')
 Ind_MT_PNW=subset(Indicators, ECO10=='MT-PNW')
+Ind_MT_SROCK=subset(Indicators, ECO10=='MT-SROCK')
+Ind_MT_SWEST=subset(Indicators, ECO10=='MT-SWEST')
+Ind_PL_NCULT=subset(Indicators, ECO10=='PLN-CULT')
+Ind_PL_RANGE=subset(Indicators, ECO10=='PL-RANGE')
+Ind_XE_CALIF=subset(Indicators, ECO10=='XE-CALIF')
+Ind_XE_EPLAT=subset(Indicators, ECO10=='XE-EPLAT')
+Ind_XE_SOUTH=subset(Indicators, ECO10=='XE-SOUTH')
 Ind_XE_NORTH=subset(Indicators, ECO10=='XE-NORTH')
 
-# MT-PNW for all indicators 
+#############################################################
+########trial iteration #doesn't work
+
+DesiredEco=c('XE-NORTH','MT-SWEST','XE-EPLAT')
+for (i in 1:length(DesiredEco)){
+  #Apply pH thresholds
+  ifelse(Indicator$ECO10==DesiredEco[i],PH_CHECK)
+  Ind_Eco_Sub$PH_CHECKrtg=ifelse(Ind_Eco_Sub$PH_CHECK <= (Thresholds_ECO10 [Thresholds_ECO10$ECO10==DesiredEco[i], 'PH_0.05'])
+                                                                     |Ind_Eco_Sub$PH_CHECK >= (Thresholds_ECO10 [Thresholds_ECO10$ECO10==DesiredEco[i], 'PH_0.95']),"Poor",
+                                                                     ifelse(Ind_Eco_Sub$PH_CHECK>(Thresholds_ECO10 [Thresholds_ECO10$ECO10==DesiredEco[i],'PH_0.25']) &
+                                                                              Ind_Eco_Sub$PH_CHECK<(Thresholds_ECO10 [Thresholds_ECO10$ECO10==DesiredEco[i],'PH_0.75']),"Good","Fair"))}        
+#trying to rename
+Ind_Eco_Sub$print(sprintf('PH_CHECKrtg_%s',DesiredEco[[i]]))=ifelse(Ind_Eco_Sub$PH_CHECK <= (Thresholds_ECO10 [Thresholds_ECO10$ECO10==DesiredEco[i], 'PH_0.05'])
+                                  |Ind_Eco_Sub$PH_CHECK >= (Thresholds_ECO10 [Thresholds_ECO10$ECO10==DesiredEco[i], 'PH_0.95']),"Poor",
+                                  ifelse(Ind_Eco_Sub$PH_CHECK>(Thresholds_ECO10 [Thresholds_ECO10$ECO10==DesiredEco[i],'PH_0.25']) &
+                                  Ind_Eco_Sub$PH_CHECK<(Thresholds_ECO10 [Thresholds_ECO10$ECO10==DesiredEco[i],'PH_0.75']),"Good","Fair"))}        
+#trying not to subset
+Ind_Eco_Sub$PH_CHECKrtg=ifelse(Indicators$PH_CHECK <= (Thresholds_ECO10 [Thresholds_ECO10$ECO10==DesiredEco[i], 'PH_0.05'])                  
+                                |Indicators$PH_CHECK >= (Thresholds_ECO10 [Thresholds_ECO10$ECO10==DesiredEco[i], 'PH_0.95']),"Poor",
+                                ifelse(Indicators$PH_CHECK>(Thresholds_ECO10 [Thresholds_ECO10$ECO10==DesiredEco[i],'PH_0.25']) &
+                                Indicators$PH_CHECK<(Thresholds_ECO10 [Thresholds_ECO10$ECO10==DesiredEco[i],'PH_0.75']),"Good","Fair"))}                                      
+
+###############################################################
+  
+  
+#Apply pH thresholds
+Ind_MT_NROCK$PH_CHECKrtg=ifelse(Ind_MT_NROCK$PH_CHECK <= (Thresholds_ECO10 [Thresholds_ECO10$ECO10=='MT-NROCK', 'PH_0.05'])
+                                |Ind_MT_NROCK$PH_CHECK >= (Thresholds_ECO10 [Thresholds_ECO10$ECO10=='MT-NROCK', 'PH_0.95']),"Poor",
+                                ifelse(Ind_MT_NROCK$PH_CHECK>(Thresholds_ECO10 [Thresholds_ECO10$ECO10=='MT-NROCK','PH_0.25']) &
+                                         Ind_MT_NROCK$PH_CHECK<(Thresholds_ECO10 [Thresholds_ECO10$ECO10=='MT-NROCK','PH_0.75']),"Good","Fair"))
+Ind_MT_PNW$PH_CHECKrtg=ifelse(Ind_MT_PNW$PH_CHECK <= (Thresholds_ECO10 [Thresholds_ECO10$ECO10=='MT-PNW', 'PH_0.05'])
+                                |Ind_MT_PNW$PH_CHECK >= (Thresholds_ECO10 [Thresholds_ECO10$ECO10=='MT-PNW', 'PH_0.95']),"Poor",
+                                ifelse(Ind_MT_PNW$PH_CHECK>(Thresholds_ECO10 [Thresholds_ECO10$ECO10=='MT-PNW','PH_0.25']) &
+                                         Ind_MT_PNW$PH_CHECK<(Thresholds_ECO10 [Thresholds_ECO10$ECO10=='MT-PNW','PH_0.75']),"Good","Fair"))
+Ind_MT_SROCK$PH_CHECKrtg=ifelse(Ind_MT_SROCK$PH_CHECK <= (Thresholds_ECO10 [Thresholds_ECO10$ECO10=='MT-SROCK', 'PH_0.05'])
+                                |Ind_MT_SROCK$PH_CHECK >= (Thresholds_ECO10 [Thresholds_ECO10$ECO10=='MT-SROCK', 'PH_0.95']),"Poor",
+                                ifelse(Ind_MT_SROCK$PH_CHECK>(Thresholds_ECO10 [Thresholds_ECO10$ECO10=='MT-SROCK','PH_0.25']) &
+                                         Ind_MT_SROCK$PH_CHECK<(Thresholds_ECO10 [Thresholds_ECO10$ECO10=='MT-SROCK','PH_0.75']),"Good","Fair"))
+Ind_XE_NORTH$PH_CHECKrtg=ifelse(Ind_XE_NORTH$PH_CHECK <= (Thresholds_ECO10 [Thresholds_ECO10$ECO10=='XE-NORTH', 'PH_0.05'])
+                                |Ind_XE_NORTH$PH_CHECK >= (Thresholds_ECO10 [Thresholds_ECO10$ECO10=='XE-NORTH', 'PH_0.95']),"Poor",
+                                ifelse(Ind_XE_NORTH$PH_CHECK>(Thresholds_ECO10 [Thresholds_ECO10$ECO10=='XE-NORTH','PH_0.25']) &
+                                         Ind_XE_NORTH$PH_CHECK<(Thresholds_ECO10 [Thresholds_ECO10$ECO10=='XE-NORTH','PH_0.75']),"Good","Fair"))
+Ind_PL_NCULT$PH_CHECKrtg=ifelse(Ind_PL_NCULT$PH_CHECK <= (Thresholds_ECO10 [Thresholds_ECO10$ECO10=='PL-NCULT', 'PH_0.05'])
+                                |Ind_PL_NCULT$PH_CHECK >= (Thresholds_ECO10 [Thresholds_ECO10$ECO10=='PL-NCULT', 'PH_0.95']),"Poor",
+                                ifelse(Ind_PL_NCULT$PH_CHECK>(Thresholds_ECO10 [Thresholds_ECO10$ECO10=='PL-NCULT','PH_0.25']) &
+                                         Ind_PL_NCULT$PH_CHECK<(Thresholds_ECO10 [Thresholds_ECO10$ECO10=='PL-NCULT','PH_0.75']),"Good","Fair"))
+Ind_PL_RANGE$PH_CHECKrtg=ifelse(Ind_PL_RANGE$PH_CHECK <= (Thresholds_ECO10 [Thresholds_ECO10$ECO10=='PL-RANGE', 'PH_0.05'])
+                                |Ind_PL_RANGE$PH_CHECK >= (Thresholds_ECO10 [Thresholds_ECO10$ECO10=='PL-RANGE', 'PH_0.95']),"Poor",
+                                ifelse(Ind_PL_RANGE$PH_CHECK>(Thresholds_ECO10 [Thresholds_ECO10$ECO10=='PL-RANGE','PH_0.25']) &
+                                         Ind_PL_RANGE$PH_CHECK<(Thresholds_ECO10 [Thresholds_ECO10$ECO10=='PL-RANGE','PH_0.75']),"Good","Fair"))
+Ind_XE_CALIF$PH_CHECKrtg=ifelse(Ind_XE_CALIF$PH_CHECK <= (Thresholds_ECO10 [Thresholds_ECO10$ECO10=='XE-CALIF', 'PH_0.05'])
+                                |Ind_XE_CALIF$PH_CHECK >= (Thresholds_ECO10 [Thresholds_ECO10$ECO10=='XE-CALIF', 'PH_0.95']),"Poor",
+                                ifelse(Ind_XE_CALIF$PH_CHECK>(Thresholds_ECO10 [Thresholds_ECO10$ECO10=='XE-CALIF','PH_0.25']) &
+                                         Ind_XE_CALIF$PH_CHECK<(Thresholds_ECO10 [Thresholds_ECO10$ECO10=='XE-CALIF','PH_0.75']),"Good","Fair"))
+Ind_XE_EPLAT$PH_CHECKrtg=ifelse(Ind_XE_EPLAT$PH_CHECK <= (Thresholds_ECO10 [Thresholds_ECO10$ECO10=='XE-EPLAT', 'PH_0.05'])
+                                |Ind_XE_EPLAT$PH_CHECK >= (Thresholds_ECO10 [Thresholds_ECO10$ECO10=='XE-EPLAT', 'PH_0.95']),"Poor",
+                                ifelse(Ind_XE_EPLAT$PH_CHECK>(Thresholds_ECO10 [Thresholds_ECO10$ECO10=='XE-EPLAT','PH_0.25']) &
+                                         Ind_XE_EPLAT$PH_CHECK<(Thresholds_ECO10 [Thresholds_ECO10$ECO10=='XE-EPLAT','PH_0.75']),"Good","Fair"))
+Ind_MT_SWEST$PH_CHECKrtg=ifelse(Ind_MT_SWEST$PH_CHECK <= (Thresholds_ECO10 [Thresholds_ECO10$ECO10=='MT-SWEST', 'PH_0.05'])
+                                |Ind_MT_SWEST$PH_CHECK >= (Thresholds_ECO10 [Thresholds_ECO10$ECO10=='MT-SWEST', 'PH_0.95']),"Poor",
+                                ifelse(Ind_MT_SWEST$PH_CHECK>(Thresholds_ECO10 [Thresholds_ECO10$ECO10=='MT-SWEST','PH_0.25']) &
+                                         Ind_MT_SWEST$PH_CHECK<(Thresholds_ECO10 [Thresholds_ECO10$ECO10=='MT-SWEST','PH_0.75']),"Good","Fair"))
+Ind_XE_SOUTH$PH_CHECKrtg=ifelse(Ind_XE_SOUTH$PH_CHECK <= (Thresholds_ECO10 [Thresholds_ECO10$ECO10=='XE-SOUTH', 'PH_0.05'])
+                                |Ind_XE_SOUTH$PH_CHECK >= (Thresholds_ECO10 [Thresholds_ECO10$ECO10=='XE-SOUTH', 'PH_0.95']),"Poor",
+                                ifelse(Ind_XE_SOUTH$PH_CHECK>(Thresholds_ECO10 [Thresholds_ECO10$ECO10=='XE-SOUTH','PH_0.25']) &
+                                         Ind_XE_SOUTH$PH_CHECK<(Thresholds_ECO10 [Thresholds_ECO10$ECO10=='XE-SOUTH','PH_0.75']),"Good","Fair"))
+
+
+
+# MT_PNW for all indicators 
 Ind_MT_PNW$XFC_NAT_COND=ifelse(Ind_MT_PNW$XFC_NAT_CHECK <= (Thresholds_ECO10 [Thresholds_ECO10$ECO10=='MT-PNW', 'XFC_NAT_0.05']),"Poor",ifelse(Ind_MT_PNW$XFC_NAT_CHECK>(Thresholds_ECO10 [Thresholds_ECO10$ECO10=='MT-PNW','XFC_NAT_0.25']),"Good","Fair"))
 Ind_MT_PNW$XCMG_COND=ifelse(Ind_MT_PNW$XCMG_CHECK <= (Thresholds_ECO10 [Thresholds_ECO10$ECO10=='MT-PNW', 'XCMG_0.05']),"Poor",ifelse(Ind_MT_PNW$XCMG_CHECK>(Thresholds_ECO10 [Thresholds_ECO10$ECO10=='MT-PNW','XCMG_0.25']),"Good","Fair"))
-Ind_MT_PNW$XCMGW_COND=ifelse(Ind_MT_PNW$XCMGW_CHECK <= (Thresholds_ECO10 [Thresholds_ECO10$ECO10=='MT-PNW', 'XCMGW_0.05']),"Poor",ifelse(Ind_MT_PNW$XCMGW_CHECK>(Thresholds_ECO10 [Thresholds_ECO10$ECO10=='MT-PNW','XCMGW_0.25']),"Good","Fair"))
-Ind_MT_PNW$XCDENMID_COND=ifelse(Ind_MT_PNW$xcdenmid_CHECK <= (Thresholds_ECO10 [Thresholds_ECO10$ECO10=='MT-PNW', 'XCDENMID_0.05']),"Poor",ifelse(Ind_MT_PNW$xcdenmid_CHECK>(Thresholds_ECO10 [Thresholds_ECO10$ECO10=='MT-PNW','XCDENMID_0.25']),"Good","Fair"))
+#Ind_MT_PNW$XCMGW_COND=ifelse(Ind_MT_PNW$XCMGW_CHECK <= (Thresholds_ECO10 [Thresholds_ECO10$ECO10=='MT-PNW', 'XCMGW_0.05']),"Poor",ifelse(Ind_MT_PNW$XCMGW_CHECK>(Thresholds_ECO10 [Thresholds_ECO10$ECO10=='MT-PNW','XCMGW_0.25']),"Good","Fair"))
+#Ind_MT_PNW$XCDENMID_COND=ifelse(Ind_MT_PNW$xcdenmid_CHECK <= (Thresholds_ECO10 [Thresholds_ECO10$ECO10=='MT-PNW', 'XCDENMID_0.05']),"Poor",ifelse(Ind_MT_PNW$xcdenmid_CHECK>(Thresholds_ECO10 [Thresholds_ECO10$ECO10=='MT-PNW','XCDENMID_0.25']),"Good","Fair"))
 Ind_MT_PNW$LINCIS_H_COND=ifelse(Ind_MT_PNW$LINCIS_H_CHECK >= (Thresholds_ECO10 [Thresholds_ECO10$ECO10=='MT-PNW', 'LINCIS_H_0.95']),"Poor",ifelse(Ind_MT_PNW$LINCIS_H_CHECK<(Thresholds_ECO10 [Thresholds_ECO10$ECO10=='MT-PNW','LINCIS_H_0.75']),"Good","Fair"))
-Ind_MT_PNW$PCT_SAFN_COND=ifelse(Ind_MT_PNW$PCT_SAFN_CHECK>= (Thresholds_ECO10 [Thresholds_ECO10$ECO10=='MT-PNW', 'PCT_SAFN_0.95']),"Poor",ifelse(Ind_MT_PNW$PCT_SAFN_CHECK<(Thresholds_ECO10 [Thresholds_ECO10$ECO10=='MT-PNW','PCT_SAFN_0.75']),"Good","Fair"))
-#Still need to create aqumet XEMBED metric
-#Ind_MT_PNW$XEMBED_COND=ifelse(Ind_MT_PNW$XEMBED_CHECK >= (Thresholds_ECO10 [Thresholds_ECO10$ECO10=='MT-PNW', 'XEMBED_0.95']),"Poor",ifelse(Ind_MT_PNW$XEMBED_CHECK<(Thresholds_ECO10 [Thresholds_ECO10$ECO10=='MT-PNW','XEMBED_0.75']),"Good","Fair"))
+#Ind_MT_PNW$PCT_SAFN_COND=ifelse(Ind_MT_PNW$PCT_SAFN_CHECK>= (Thresholds_ECO10 [Thresholds_ECO10$ECO10=='MT-PNW', 'PCT_SAFN_0.95']),"Poor",ifelse(Ind_MT_PNW$PCT_SAFN_CHECK<(Thresholds_ECO10 [Thresholds_ECO10$ECO10=='MT-PNW','PCT_SAFN_0.75']),"Good","Fair"))
+Ind_MT_PNW$XEMBED_COND=ifelse(Ind_MT_PNW$XEMBED_CHECK >= (Thresholds_ECO10 [Thresholds_ECO10$ECO10=='MT-PNW', 'XEMBED_0.95']),"Poor",ifelse(Ind_MT_PNW$XEMBED_CHECK<(Thresholds_ECO10 [Thresholds_ECO10$ECO10=='MT-PNW','XEMBED_0.75']),"Good","Fair"))
 
-# XE-NORTH for all indicators 
+# MT_SWEST for all indicators 
+Ind_MT_SWEST$XFC_NAT_COND=ifelse(Ind_MT_SWEST$XFC_NAT_CHECK <= (Thresholds_ECO10 [Thresholds_ECO10$ECO10=='MT-SWEST', 'XFC_NAT_0.05']),"Poor",ifelse(Ind_MT_SWEST$XFC_NAT_CHECK>(Thresholds_ECO10 [Thresholds_ECO10$ECO10=='MT-SWEST','XFC_NAT_0.25']),"Good","Fair"))
+Ind_MT_SWEST$XCMG_COND=ifelse(Ind_MT_SWEST$XCMG_CHECK <= (Thresholds_ECO10 [Thresholds_ECO10$ECO10=='MT-SWEST', 'XCMG_0.05']),"Poor",ifelse(Ind_MT_SWEST$XCMG_CHECK>(Thresholds_ECO10 [Thresholds_ECO10$ECO10=='MT-SWEST','XCMG_0.25']),"Good","Fair"))
+#Ind_MT_SWEST$XCMGW_COND=ifelse(Ind_MT_SWEST$XCMGW_CHECK <= (Thresholds_ECO10 [Thresholds_ECO10$ECO10=='MT-SWEST', 'XCMGW_0.05']),"Poor",ifelse(Ind_MT_SWEST$XCMGW_CHECK>(Thresholds_ECO10 [Thresholds_ECO10$ECO10=='MT-SWEST','XCMGW_0.25']),"Good","Fair"))
+#Ind_MT_SWEST$XCDENMID_COND=ifelse(Ind_MT_SWEST$xcdenmid_CHECK <= (Thresholds_ECO10 [Thresholds_ECO10$ECO10=='MT-SWEST', 'XCDENMID_0.05']),"Poor",ifelse(Ind_MT_SWEST$xcdenmid_CHECK>(Thresholds_ECO10 [Thresholds_ECO10$ECO10=='MT-SWEST','XCDENMID_0.25']),"Good","Fair"))
+Ind_MT_SWEST$LINCIS_H_COND=ifelse(Ind_MT_SWEST$LINCIS_H_CHECK >= (Thresholds_ECO10 [Thresholds_ECO10$ECO10=='MT-SWEST', 'LINCIS_H_0.95']),"Poor",ifelse(Ind_MT_SWEST$LINCIS_H_CHECK<(Thresholds_ECO10 [Thresholds_ECO10$ECO10=='MT-SWEST','LINCIS_H_0.75']),"Good","Fair"))
+#Ind_MT_SWEST$PCT_SAFN_COND=ifelse(Ind_MT_SWEST$PCT_SAFN_CHECK >= (Thresholds_ECO10 [Thresholds_ECO10$ECO10=='MT-SWEST', 'PCT_SAFN_0.95']),"Poor",ifelse(Ind_MT_SWEST$PCT_SAFN_CHECK<(Thresholds_ECO10 [Thresholds_ECO10$ECO10=='MT-SWEST','PCT_SAFN_0.75']),"Good","Fair"))
+Ind_MT_SWEST$XEMBED_COND=ifelse(Ind_MT_SWEST$XEMBED_CHECK >= (Thresholds_ECO10 [Thresholds_ECO10$ECO10=='MT-SWEST', 'XEMBED_0.95']),"Poor",ifelse(Ind_MT_SWEST$XEMBED_CHECK<(Thresholds_ECO10 [Thresholds_ECO10$ECO10=='MT-SWEST','XEMBED_0.75']),"Good","Fair"))
+
+# XE-EPLAT for all indicators 
+Ind_XE_EPLAT$XFC_NAT_COND=ifelse(Ind_XE_EPLAT$XFC_NAT_CHECK <= (Thresholds_ECO10 [Thresholds_ECO10$ECO10=='XE-EPLAT', 'XFC_NAT_0.05']),"Poor",ifelse(Ind_XE_EPLAT$XFC_NAT_CHECK>(Thresholds_ECO10 [Thresholds_ECO10$ECO10=='XE-EPLAT','XFC_NAT_0.25']),"Good","Fair"))
+Ind_XE_EPLAT$XCMG_COND=ifelse(Ind_XE_EPLAT$XCMG_CHECK <= (Thresholds_ECO10 [Thresholds_ECO10$ECO10=='XE-EPLAT','XCMG_0.05']),"Poor",ifelse(Ind_XE_EPLAT$XCMG_CHECK>(Thresholds_ECO10 [Thresholds_ECO10$ECO10=='XE-EPLAT','XCMG_0.25']),"Good","Fair"))
+#Ind_XE_EPLAT$XCMGW_COND=ifelse(Ind_XE_EPLAT$XCMGW_CHECK <= (Thresholds_ECO10 [Thresholds_ECO10$ECO10=='XE-EPLAT', 'XCMGW_0.05']),"Poor",ifelse(Ind_XE_EPLAT$XCMGW_CHECK>(Thresholds_ECO10 [Thresholds_ECO10$ECO10=='XE-EPLAT','XCMGW_0.25']),"Good","Fair"))
+#Ind_XE_EPLAT$XCDENMID_COND=ifelse(Ind_XE_EPLAT$xcdenmid_CHECK <= (Thresholds_ECO10 [Thresholds_ECO10$ECO10=='XE-EPLAT', 'XCDENMID_0.05']),"Poor",ifelse(Ind_XE_EPLAT$xcdenmid_CHECK>(Thresholds_ECO10 [Thresholds_ECO10$ECO10=='XE-EPLAT','XCDENMID_0.25']),"Good","Fair"))
+Ind_XE_EPLAT$LINCIS_H_COND=ifelse(Ind_XE_EPLAT$LINCIS_H_CHECK >= (Thresholds_ECO10 [Thresholds_ECO10$ECO10=='XE-EPLAT', 'LINCIS_H_0.95']),"Poor",ifelse(Ind_XE_EPLAT$LINCIS_H_CHECK<(Thresholds_ECO10 [Thresholds_ECO10$ECO10=='XE-EPLAT','LINCIS_H_0.75']),"Good","Fair"))
+#Ind_XE_EPLAT$PCT_SAFN_COND=ifelse(Ind_XE_EPLAT$PCT_SAFN_CHECK >= (Thresholds_ECO10 [Thresholds_ECO10$ECO10=='XE-EPLAT', 'PCT_SAFN_0.95']),"Poor",ifelse(Ind_XE_EPLAT$PCT_SAFN_CHECK<(Thresholds_ECO10 [Thresholds_ECO10$ECO10=='XE-EPLAT','PCT_SAFN_0.75']),"Good","Fair"))
+Ind_XE_EPLAT$XEMBED_COND=ifelse(Ind_XE_EPLAT$XEMBED_CHECK >= (Thresholds_ECO10 [Thresholds_ECO10$ECO10=='XE-EPLAT', 'XEMBED_0.95']),"Poor",ifelse(Ind_XE_EPLAT$XEMBED_CHECK<(Thresholds_ECO10 [Thresholds_ECO10$ECO10=='XE-EPLAT','XEMBED_0.75']),"Good","Fair"))
+
+# MT_NROCK for all indicators 
+Ind_MT_NROCK$XFC_NAT_COND=ifelse(Ind_MT_NROCK$XFC_NAT_CHECK <= (Thresholds_ECO10 [Thresholds_ECO10$ECO10=='MT-NROCK', 'XFC_NAT_0.05']),"Poor",ifelse(Ind_MT_NROCK$XFC_NAT_CHECK>(Thresholds_ECO10 [Thresholds_ECO10$ECO10=='MT-NROCK','XFC_NAT_0.25']),"Good","Fair"))
+Ind_MT_NROCK$XCMG_COND=ifelse(Ind_MT_NROCK$XCMG_CHECK <= (Thresholds_ECO10 [Thresholds_ECO10$ECO10=='MT-NROCK', 'XCMG_0.05']),"Poor",ifelse(Ind_MT_NROCK$XCMG_CHECK>(Thresholds_ECO10 [Thresholds_ECO10$ECO10=='MT-NROCK','XCMG_0.25']),"Good","Fair"))
+#Ind_MT_NROCK$XCMGW_COND=ifelse(Ind_MT_NROCK$XCMGW_CHECK <= (Thresholds_ECO10 [Thresholds_ECO10$ECO10=='MT-NROCK', 'XCMGW_0.05']),"Poor",ifelse(Ind_MT_NROCK$XCMGW_CHECK>(Thresholds_ECO10 [Thresholds_ECO10$ECO10=='MT-NROCK','XCMGW_0.25']),"Good","Fair"))
+#Ind_MT_NROCK$XCDENMID_COND=ifelse(Ind_MT_NROCK$xcdenmid_CHECK <= (Thresholds_ECO10 [Thresholds_ECO10$ECO10=='MT-NROCK', 'XCDENMID_0.05']),"Poor",ifelse(Ind_MT_NROCK$xcdenmid_CHECK>(Thresholds_ECO10 [Thresholds_ECO10$ECO10=='MT-NROCK','XCDENMID_0.25']),"Good","Fair"))
+Ind_MT_NROCK$LINCIS_H_COND=ifelse(Ind_MT_NROCK$LINCIS_H_CHECK >= (Thresholds_ECO10 [Thresholds_ECO10$ECO10=='MT-NROCK', 'LINCIS_H_0.95']),"Poor",ifelse(Ind_MT_NROCK$LINCIS_H_CHECK<(Thresholds_ECO10 [Thresholds_ECO10$ECO10=='MT-NROCK','LINCIS_H_0.75']),"Good","Fair"))
+#Ind_MT_NROCK$PCT_SAFN_COND=ifelse(Ind_MT_NROCK$PCT_SAFN_CHECK>= (Thresholds_ECO10 [Thresholds_ECO10$ECO10=='MT-NROCK', 'PCT_SAFN_0.95']),"Poor",ifelse(Ind_MT_NROCK$PCT_SAFN_CHECK<(Thresholds_ECO10 [Thresholds_ECO10$ECO10=='MT-NROCK','PCT_SAFN_0.75']),"Good","Fair"))
+Ind_MT_NROCK$XEMBED_COND=ifelse(Ind_MT_NROCK$XEMBED_CHECK >= (Thresholds_ECO10 [Thresholds_ECO10$ECO10=='MT-NROCK', 'XEMBED_0.95']),"Poor",ifelse(Ind_MT_NROCK$XEMBED_CHECK<(Thresholds_ECO10 [Thresholds_ECO10$ECO10=='MT-NROCK','XEMBED_0.75']),"Good","Fair"))
+
+# MT_SROCK for all indicators 
+Ind_MT_SROCK$XFC_NAT_COND=ifelse(Ind_MT_SROCK$XFC_NAT_CHECK <= (Thresholds_ECO10 [Thresholds_ECO10$ECO10=='MT-SROCK', 'XFC_NAT_0.05']),"Poor",ifelse(Ind_MT_SROCK$XFC_NAT_CHECK>(Thresholds_ECO10 [Thresholds_ECO10$ECO10=='MT-SROCK','XFC_NAT_0.25']),"Good","Fair"))
+Ind_MT_SROCK$XCMG_COND=ifelse(Ind_MT_SROCK$XCMG_CHECK <= (Thresholds_ECO10 [Thresholds_ECO10$ECO10=='MT-SROCK', 'XCMG_0.05']),"Poor",ifelse(Ind_MT_SROCK$XCMG_CHECK>(Thresholds_ECO10 [Thresholds_ECO10$ECO10=='MT-SROCK','XCMG_0.25']),"Good","Fair"))
+#Ind_MT_SROCK$XCMGW_COND=ifelse(Ind_MT_SROCK$XCMGW_CHECK <= (Thresholds_ECO10 [Thresholds_ECO10$ECO10=='MT-SROCK', 'XCMGW_0.05']),"Poor",ifelse(Ind_MT_SROCK$XCMGW_CHECK>(Thresholds_ECO10 [Thresholds_ECO10$ECO10=='MT-SROCK','XCMGW_0.25']),"Good","Fair"))
+#Ind_MT_SROCK$XCDENMID_COND=ifelse(Ind_MT_SROCK$xcdenmid_CHECK <= (Thresholds_ECO10 [Thresholds_ECO10$ECO10=='MT-SROCK', 'XCDENMID_0.05']),"Poor",ifelse(Ind_MT_SROCK$xcdenmid_CHECK>(Thresholds_ECO10 [Thresholds_ECO10$ECO10=='MT-SROCK','XCDENMID_0.25']),"Good","Fair"))
+Ind_MT_SROCK$LINCIS_H_COND=ifelse(Ind_MT_SROCK$LINCIS_H_CHECK >= (Thresholds_ECO10 [Thresholds_ECO10$ECO10=='MT-SROCK', 'LINCIS_H_0.95']),"Poor",ifelse(Ind_MT_SROCK$LINCIS_H_CHECK<(Thresholds_ECO10 [Thresholds_ECO10$ECO10=='MT-SROCK','LINCIS_H_0.75']),"Good","Fair"))
+#Ind_MT_SROCK$PCT_SAFN_COND=ifelse(Ind_MT_SROCK$PCT_SAFN_CHECK>= (Thresholds_ECO10 [Thresholds_ECO10$ECO10=='MT-SROCK', 'PCT_SAFN_0.95']),"Poor",ifelse(Ind_MT_SROCK$PCT_SAFN_CHECK<(Thresholds_ECO10 [Thresholds_ECO10$ECO10=='MT-SROCK','PCT_SAFN_0.75']),"Good","Fair"))
+Ind_MT_SROCK$XEMBED_COND=ifelse(Ind_MT_SROCK$XEMBED_CHECK >= (Thresholds_ECO10 [Thresholds_ECO10$ECO10=='MT-SROCK', 'XEMBED_0.95']),"Poor",ifelse(Ind_MT_SROCK$XEMBED_CHECK<(Thresholds_ECO10 [Thresholds_ECO10$ECO10=='MT-SROCK','XEMBED_0.75']),"Good","Fair"))
+
+# XE_NORTH for all indicators 
 Ind_XE_NORTH$XFC_NAT_COND=ifelse(Ind_XE_NORTH$XFC_NAT_CHECK <= (Thresholds_ECO10 [Thresholds_ECO10$ECO10=='XE-NORTH', 'XFC_NAT_0.05']),"Poor",ifelse(Ind_XE_NORTH$XFC_NAT_CHECK>(Thresholds_ECO10 [Thresholds_ECO10$ECO10=='XE-NORTH','XFC_NAT_0.25']),"Good","Fair"))
 Ind_XE_NORTH$XCMG_COND=ifelse(Ind_XE_NORTH$XCMG_CHECK <= (Thresholds_ECO10 [Thresholds_ECO10$ECO10=='XE-NORTH', 'XCMG_0.05']),"Poor",ifelse(Ind_XE_NORTH$XCMG_CHECK>(Thresholds_ECO10 [Thresholds_ECO10$ECO10=='XE-NORTH','XCMG_0.25']),"Good","Fair"))
-Ind_XE_NORTH$XCMGW_COND=ifelse(Ind_XE_NORTH$XCMGW_CHECK <= (Thresholds_ECO10 [Thresholds_ECO10$ECO10=='XE-NORTH', 'XCMGW_0.05']),"Poor",ifelse(Ind_XE_NORTH$XCMGW_CHECK>(Thresholds_ECO10 [Thresholds_ECO10$ECO10=='XE-NORTH','XCMGW_0.25']),"Good","Fair"))
-Ind_XE_NORTH$XCDENMID_COND=ifelse(Ind_XE_NORTH$xcdenmid_CHECK <= (Thresholds_ECO10 [Thresholds_ECO10$ECO10=='XE-NORTH', 'XCDENMID_0.05']),"Poor",ifelse(Ind_XE_NORTH$xcdenmid_CHECK>(Thresholds_ECO10 [Thresholds_ECO10$ECO10=='XE-NORTH','XCDENMID_0.25']),"Good","Fair"))
+#Ind_XE_NORTH$XCMGW_COND=ifelse(Ind_XE_NORTH$XCMGW_CHECK <= (Thresholds_ECO10 [Thresholds_ECO10$ECO10=='XE-NORTH', 'XCMGW_0.05']),"Poor",ifelse(Ind_XE_NORTH$XCMGW_CHECK>(Thresholds_ECO10 [Thresholds_ECO10$ECO10=='XE-NORTH','XCMGW_0.25']),"Good","Fair"))
+#Ind_XE_NORTH$XCDENMID_COND=ifelse(Ind_XE_NORTH$xcdenmid_CHECK <= (Thresholds_ECO10 [Thresholds_ECO10$ECO10=='XE-NORTH', 'XCDENMID_0.05']),"Poor",ifelse(Ind_XE_NORTH$xcdenmid_CHECK>(Thresholds_ECO10 [Thresholds_ECO10$ECO10=='XE-NORTH','XCDENMID_0.25']),"Good","Fair"))
 Ind_XE_NORTH$LINCIS_H_COND=ifelse(Ind_XE_NORTH$LINCIS_H_CHECK >= (Thresholds_ECO10 [Thresholds_ECO10$ECO10=='XE-NORTH', 'LINCIS_H_0.95']),"Poor",ifelse(Ind_XE_NORTH$LINCIS_H_CHECK<(Thresholds_ECO10 [Thresholds_ECO10$ECO10=='XE-NORTH','LINCIS_H_0.75']),"Good","Fair"))
-Ind_XE_NORTH$PCT_SAFN_COND=ifelse(Ind_XE_NORTH$PCT_SAFN_CHECK >= (Thresholds_ECO10 [Thresholds_ECO10$ECO10=='XE-NORTH', 'PCT_SAFN_0.95']),"Poor",ifelse(Ind_XE_NORTH$PCT_SAFN_CHECK<(Thresholds_ECO10 [Thresholds_ECO10$ECO10=='XE-NORTH','PCT_SAFN_0.75']),"Good","Fair"))
-#Still need to create aqumet XEMBED metric
-#Ind_XE_NORTH$XEMBED_COND=ifelse(Ind_XE_NORTH$XEMBED_CHECK >= (Thresholds_ECO10 [Thresholds_ECO10$ECO10=='XE-NORTH', 'XEMBED_0.95']),"Poor",ifelse(Ind_XE_NORTH$XEMBED_CHECK<(Thresholds_ECO10 [Thresholds_ECO10$ECO10=='XE-NORTH','XEMBED_0.75']),"Good","Fair"))
+#Ind_XE_NORTH$PCT_SAFN_COND=ifelse(Ind_XE_NORTH$PCT_SAFN_CHECK>= (Thresholds_ECO10 [Thresholds_ECO10$ECO10=='XE-NORTH', 'PCT_SAFN_0.95']),"Poor",ifelse(Ind_XE_NORTH$PCT_SAFN_CHECK<(Thresholds_ECO10 [Thresholds_ECO10$ECO10=='XE-NORTH','PCT_SAFN_0.75']),"Good","Fair"))
+Ind_XE_NORTH$XEMBED_COND=ifelse(Ind_XE_NORTH$XEMBED_CHECK >= (Thresholds_ECO10 [Thresholds_ECO10$ECO10=='XE-NORTH', 'XEMBED_0.95']),"Poor",ifelse(Ind_XE_NORTH$XEMBED_CHECK<(Thresholds_ECO10 [Thresholds_ECO10$ECO10=='XE-NORTH','XEMBED_0.75']),"Good","Fair"))
 
-IndicatorCond_ECO10=merge(Ind_XE_NORTH,Ind_MT_PNW, all=TRUE)
-rm(Ind_MT_PNW,Ind_XE_NORTH)
+# PL_NCULT for all indicators 
+Ind_PL_NCULT$XFC_NAT_COND=ifelse(Ind_PL_NCULT$XFC_NAT_CHECK <= (Thresholds_ECO10 [Thresholds_ECO10$ECO10=='PL-NCULT', 'XFC_NAT_0.05']),"Poor",ifelse(Ind_PL_NCULT$XFC_NAT_CHECK>(Thresholds_ECO10 [Thresholds_ECO10$ECO10=='PL-NCULT','XFC_NAT_0.25']),"Good","Fair"))
+Ind_PL_NCULT$XCMG_COND=ifelse(Ind_PL_NCULT$XCMG_CHECK <= (Thresholds_ECO10 [Thresholds_ECO10$ECO10=='PL-NCULT', 'XCMG_0.05']),"Poor",ifelse(Ind_PL_NCULT$XCMG_CHECK>(Thresholds_ECO10 [Thresholds_ECO10$ECO10=='PL-NCULT','XCMG_0.25']),"Good","Fair"))
+#Ind_PL_NCULT$XCMGW_COND=ifelse(Ind_PL_NCULT$XCMGW_CHECK <= (Thresholds_ECO10 [Thresholds_ECO10$ECO10=='PL-NCULT', 'XCMGW_0.05']),"Poor",ifelse(Ind_PL_NCULT$XCMGW_CHECK>(Thresholds_ECO10 [Thresholds_ECO10$ECO10=='PL-NCULT','XCMGW_0.25']),"Good","Fair"))
+#Ind_PL_NCULT$XCDENMID_COND=ifelse(Ind_PL_NCULT$xcdenmid_CHECK <= (Thresholds_ECO10 [Thresholds_ECO10$ECO10=='PL-NCULT', 'XCDENMID_0.05']),"Poor",ifelse(Ind_PL_NCULT$xcdenmid_CHECK>(Thresholds_ECO10 [Thresholds_ECO10$ECO10=='PL-NCULT','XCDENMID_0.25']),"Good","Fair"))
+Ind_PL_NCULT$LINCIS_H_COND=ifelse(Ind_PL_NCULT$LINCIS_H_CHECK >= (Thresholds_ECO10 [Thresholds_ECO10$ECO10=='PL-NCULT', 'LINCIS_H_0.95']),"Poor",ifelse(Ind_PL_NCULT$LINCIS_H_CHECK<(Thresholds_ECO10 [Thresholds_ECO10$ECO10=='PL-NCULT','LINCIS_H_0.75']),"Good","Fair"))
+#Ind_PL_NCULT$PCT_SAFN_COND=ifelse(Ind_PL_NCULT$PCT_SAFN_CHECK>= (Thresholds_ECO10 [Thresholds_ECO10$ECO10=='PL-NCULT', 'PCT_SAFN_0.95']),"Poor",ifelse(Ind_PL_NCULT$PCT_SAFN_CHECK<(Thresholds_ECO10 [Thresholds_ECO10$ECO10=='PL-NCULT','PCT_SAFN_0.75']),"Good","Fair"))
+Ind_PL_NCULT$XEMBED_COND=ifelse(Ind_PL_NCULT$XEMBED_CHECK >= (Thresholds_ECO10 [Thresholds_ECO10$ECO10=='PL-NCULT', 'XEMBED_0.95']),"Poor",ifelse(Ind_PL_NCULT$XEMBED_CHECK<(Thresholds_ECO10 [Thresholds_ECO10$ECO10=='PL-NCULT','XEMBED_0.75']),"Good","Fair"))
+
+# PL-RANGE for all indicators 
+Ind_PL_RANGE$XFC_NAT_COND=ifelse(Ind_PL_RANGE$XFC_NAT_CHECK <= (Thresholds_ECO10 [Thresholds_ECO10$ECO10=='PL-RANGE', 'XFC_NAT_0.05']),"Poor",ifelse(Ind_PL_RANGE$XFC_NAT_CHECK>(Thresholds_ECO10 [Thresholds_ECO10$ECO10=='PL-RANGE','XFC_NAT_0.25']),"Good","Fair"))
+Ind_PL_RANGE$XCMG_COND=ifelse(Ind_PL_RANGE$XCMG_CHECK <= (Thresholds_ECO10 [Thresholds_ECO10$ECO10=='PL-RANGE', 'XCMG_0.05']),"Poor",ifelse(Ind_PL_RANGE$XCMG_CHECK>(Thresholds_ECO10 [Thresholds_ECO10$ECO10=='PL-RANGE','XCMG_0.25']),"Good","Fair"))
+#Ind_PL_RANGE$XCMGW_COND=ifelse(Ind_PL_RANGE$XCMGW_CHECK <= (Thresholds_ECO10 [Thresholds_ECO10$ECO10=='PL-RANGE', 'XCMGW_0.05']),"Poor",ifelse(Ind_PL_RANGE$XCMGW_CHECK>(Thresholds_ECO10 [Thresholds_ECO10$ECO10=='PL-RANGE','XCMGW_0.25']),"Good","Fair"))
+#Ind_PL_RANGE$XCDENMID_COND=ifelse(Ind_PL_RANGE$xcdenmid_CHECK <= (Thresholds_ECO10 [Thresholds_ECO10$ECO10=='PL-RANGE', 'XCDENMID_0.05']),"Poor",ifelse(Ind_PL_RANGE$xcdenmid_CHECK>(Thresholds_ECO10 [Thresholds_ECO10$ECO10=='PL-RANGE','XCDENMID_0.25']),"Good","Fair"))
+Ind_PL_RANGE$LINCIS_H_COND=ifelse(Ind_PL_RANGE$LINCIS_H_CHECK >= (Thresholds_ECO10 [Thresholds_ECO10$ECO10=='PL-RANGE', 'LINCIS_H_0.95']),"Poor",ifelse(Ind_PL_RANGE$LINCIS_H_CHECK<(Thresholds_ECO10 [Thresholds_ECO10$ECO10=='PL-RANGE','LINCIS_H_0.75']),"Good","Fair"))
+#Ind_PL_RANGE$PCT_SAFN_COND=ifelse(Ind_PL_RANGE$PCT_SAFN_CHECK>= (Thresholds_ECO10 [Thresholds_ECO10$ECO10=='PL-RANGE', 'PCT_SAFN_0.95']),"Poor",ifelse(Ind_PL_RANGE$PCT_SAFN_CHECK<(Thresholds_ECO10 [Thresholds_ECO10$ECO10=='PL-RANGE','PCT_SAFN_0.75']),"Good","Fair"))
+Ind_PL_RANGE$XEMBED_COND=ifelse(Ind_PL_RANGE$XEMBED_CHECK >= (Thresholds_ECO10 [Thresholds_ECO10$ECO10=='PL-RANGE', 'XEMBED_0.95']),"Poor",ifelse(Ind_PL_RANGE$XEMBED_CHECK<(Thresholds_ECO10 [Thresholds_ECO10$ECO10=='PL-RANGE','XEMBED_0.75']),"Good","Fair"))
+
+# XE_CALIF for all indicators 
+Ind_XE_CALIF$XFC_NAT_COND=ifelse(Ind_XE_CALIF$XFC_NAT_CHECK <= (Thresholds_ECO10 [Thresholds_ECO10$ECO10=='XE-CALIF', 'XFC_NAT_0.05']),"Poor",ifelse(Ind_XE_CALIF$XFC_NAT_CHECK>(Thresholds_ECO10 [Thresholds_ECO10$ECO10=='XE-CALIF','XFC_NAT_0.25']),"Good","Fair"))
+Ind_XE_CALIF$XCMG_COND=ifelse(Ind_XE_CALIF$XCMG_CHECK <= (Thresholds_ECO10 [Thresholds_ECO10$ECO10=='XE-CALIF', 'XCMG_0.05']),"Poor",ifelse(Ind_XE_CALIF$XCMG_CHECK>(Thresholds_ECO10 [Thresholds_ECO10$ECO10=='XE-CALIF','XCMG_0.25']),"Good","Fair"))
+#Ind_XE_CALIF$XCMGW_COND=ifelse(Ind_XE_CALIF$XCMGW_CHECK <= (Thresholds_ECO10 [Thresholds_ECO10$ECO10=='XE-CALIF', 'XCMGW_0.05']),"Poor",ifelse(Ind_XE_CALIF$XCMGW_CHECK>(Thresholds_ECO10 [Thresholds_ECO10$ECO10=='XE-CALIF','XCMGW_0.25']),"Good","Fair"))
+#Ind_XE_CALIF$XCDENMID_COND=ifelse(Ind_XE_CALIF$xcdenmid_CHECK <= (Thresholds_ECO10 [Thresholds_ECO10$ECO10=='XE-CALIF', 'XCDENMID_0.05']),"Poor",ifelse(Ind_XE_CALIF$xcdenmid_CHECK>(Thresholds_ECO10 [Thresholds_ECO10$ECO10=='XE-CALIF','XCDENMID_0.25']),"Good","Fair"))
+Ind_XE_CALIF$LINCIS_H_COND=ifelse(Ind_XE_CALIF$LINCIS_H_CHECK >= (Thresholds_ECO10 [Thresholds_ECO10$ECO10=='XE-CALIF', 'LINCIS_H_0.95']),"Poor",ifelse(Ind_XE_CALIF$LINCIS_H_CHECK<(Thresholds_ECO10 [Thresholds_ECO10$ECO10=='XE-CALIF','LINCIS_H_0.75']),"Good","Fair"))
+#Ind_XE_CALIF$PCT_SAFN_COND=ifelse(Ind_XE_CALIF$PCT_SAFN_CHECK>= (Thresholds_ECO10 [Thresholds_ECO10$ECO10=='XE-CALIF', 'PCT_SAFN_0.95']),"Poor",ifelse(Ind_XE_CALIF$PCT_SAFN_CHECK<(Thresholds_ECO10 [Thresholds_ECO10$ECO10=='XE-CALIF','PCT_SAFN_0.75']),"Good","Fair"))
+Ind_XE_CALIF$XEMBED_COND=ifelse(Ind_XE_CALIF$XEMBED_CHECK >= (Thresholds_ECO10 [Thresholds_ECO10$ECO10=='XE-CALIF', 'XEMBED_0.95']),"Poor",ifelse(Ind_XE_CALIF$XEMBED_CHECK<(Thresholds_ECO10 [Thresholds_ECO10$ECO10=='XE-CALIF','XEMBED_0.75']),"Good","Fair"))
+
+# XE_SOUTH for all indicators 
+Ind_XE_SOUTH$XFC_NAT_COND=ifelse(Ind_XE_SOUTH$XFC_NAT_CHECK <= (Thresholds_ECO10 [Thresholds_ECO10$ECO10=='XE-SOUTH', 'XFC_NAT_0.05']),"Poor",ifelse(Ind_XE_SOUTH$XFC_NAT_CHECK>(Thresholds_ECO10 [Thresholds_ECO10$ECO10=='XE-SOUTH','XFC_NAT_0.25']),"Good","Fair"))
+Ind_XE_SOUTH$XCMG_COND=ifelse(Ind_XE_SOUTH$XCMG_CHECK <= (Thresholds_ECO10 [Thresholds_ECO10$ECO10=='XE-SOUTH', 'XCMG_0.05']),"Poor",ifelse(Ind_XE_SOUTH$XCMG_CHECK>(Thresholds_ECO10 [Thresholds_ECO10$ECO10=='XE-SOUTH','XCMG_0.25']),"Good","Fair"))
+#Ind_XE_SOUTH$XCMGW_COND=ifelse(Ind_XE_SOUTH$XCMGW_CHECK <= (Thresholds_ECO10 [Thresholds_ECO10$ECO10=='XE-SOUTH', 'XCMGW_0.05']),"Poor",ifelse(Ind_XE_SOUTH$XCMGW_CHECK>(Thresholds_ECO10 [Thresholds_ECO10$ECO10=='XE-SOUTH','XCMGW_0.25']),"Good","Fair"))
+#Ind_XE_SOUTH$XCDENMID_COND=ifelse(Ind_XE_SOUTH$xcdenmid_CHECK <= (Thresholds_ECO10 [Thresholds_ECO10$ECO10=='XE-SOUTH', 'XCDENMID_0.05']),"Poor",ifelse(Ind_XE_SOUTH$xcdenmid_CHECK>(Thresholds_ECO10 [Thresholds_ECO10$ECO10=='XE-SOUTH','XCDENMID_0.25']),"Good","Fair"))
+Ind_XE_SOUTH$LINCIS_H_COND=ifelse(Ind_XE_SOUTH$LINCIS_H_CHECK >= (Thresholds_ECO10 [Thresholds_ECO10$ECO10=='XE-SOUTH', 'LINCIS_H_0.95']),"Poor",ifelse(Ind_XE_SOUTH$LINCIS_H_CHECK<(Thresholds_ECO10 [Thresholds_ECO10$ECO10=='XE-SOUTH','LINCIS_H_0.75']),"Good","Fair"))
+#Ind_XE_SOUTH$PCT_SAFN_COND=ifelse(Ind_XE_SOUTH$PCT_SAFN_CHECK>= (Thresholds_ECO10 [Thresholds_ECO10$ECO10=='XE-SOUTH', 'PCT_SAFN_0.95']),"Poor",ifelse(Ind_XE_SOUTH$PCT_SAFN_CHECK<(Thresholds_ECO10 [Thresholds_ECO10$ECO10=='XE-SOUTH','PCT_SAFN_0.75']),"Good","Fair"))
+Ind_XE_SOUTH$XEMBED_COND=ifelse(Ind_XE_SOUTH$XEMBED_CHECK >= (Thresholds_ECO10 [Thresholds_ECO10$ECO10=='XE-SOUTH', 'XEMBED_0.95']),"Poor",ifelse(Ind_XE_SOUTH$XEMBED_CHECK<(Thresholds_ECO10 [Thresholds_ECO10$ECO10=='XE-SOUTH','XEMBED_0.75']),"Good","Fair"))
+
+
+IndicatorCond_ECO10=rbind(Ind_MT_NROCK, Ind_MT_SROCK, Ind_MT_SWEST, Ind_PL_NCULT, Ind_PL_RANGE, Ind_XE_CALIF, Ind_MT_PNW,Ind_XE_NORTH, Ind_XE_SOUTH, Ind_XE_EPLAT,all=TRUE)
+rm(Ind_MT_SWEST,Ind_MT_SWEST)
 
 Freq_ECO10=cbind(count(IndicatorCond_ECO10,var='XFC_NAT_COND'),
             count(IndicatorCond_ECO10,var='XCMG_COND'),
-            count(IndicatorCond_ECO10,var='XCMGW_COND'),
-            count(IndicatorCond_ECO10,var='XCDENMID_COND'),
-            count(IndicatorCond_ECO10,var='LINCIS_H_COND'),
-            count(IndicatorCond_ECO10,var='PCT_SAFN_COND'))
-           
+            count(IndicatorCond_ECO10,var='PH_CHECKrtg'),
+            count(IndicatorCond_ECO10,var='LINCIS_H_COND'),     
+            count(IndicatorCond_ECO10,var='XEMBED_COND'))
 
+#count(IndicatorCond_ECO10,var='XCMGW_COND'),
+#count(IndicatorCond_ECO10,var='XCDENMID_COND'),    
+#count(IndicatorCond_ECO10,var='PCT_SAFN_COND'),
