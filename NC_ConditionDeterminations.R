@@ -34,7 +34,7 @@ AllWQ2=AllWQ[,c('UID','SITE_ID','LOC_NAME','DATE_COL','PrdCond','Pred_TN','Pred_
 #Now subtract Observe - expected to get the OE score to be classified as G F P. Then set thresholds for each indicator
 #If o-e is > lower limit it is fair, if it is > upper limit its poor, if it is < lower limit it is good(all else is good)
 
-###Conductivity 
+###Conductivity #Modelled thresholds
 AllWQ2$OE_Conduct = AllWQ2$CONDUCTIVITY - AllWQ2$PrdCond 
 AllWQ2$OE_Conductrtg=ifelse(AllWQ2$OE_Conduct <=27.1,'Good',ifelse(AllWQ2$OE_Conduct >53.7, 'Poor','Fair'))
 
