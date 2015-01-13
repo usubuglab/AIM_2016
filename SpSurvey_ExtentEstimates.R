@@ -68,7 +68,7 @@ designCON=data.frame(siteID=siteeval$SITE_ID,
 #ResponseInfo=read.csv('\\\\share2.bluezone.usu.edu\\miller\\buglab\\Research Projects\\BLM_WRSA_Stream_Surveys\\Results and Reports\\NorCal_2013\\AquametTEST\\metsSubstrateCharacterization.csv')
 ######NorCal examples#########
 #PIVOT
-ResponseInfo=read.csv('\\\\share2.bluezone.usu.edu\\miller\\buglab\\Research Projects\\BLM_WRSA_Stream_Surveys\\Results and Reports\\NorCal_2013\\Analysis\\BugModels\\NV.MMI.InputExtentTRIAL.2014_gfp_panel_trial.csv')
+ResponseInfo=read.csv('\\\\share1.bluezone.usu.edu\\miller\\buglab\\Research Projects\\BLM_WRSA_Stream_Surveys\\Results and Reports\\NorCal_2013\\Analysis\\BugModels\\NV.MMI.InputExtentTRIAL.2014_gfp_panel_trial.csv')
 #FLAT
 #ResponseInfo=read.csv('\\\\share2.bluezone.usu.edu\\miller\\buglab\\Research Projects\\BLM_WRSA_Stream_Surveys\\Results and Reports\\NorCal_2013\\AquametTEST\\Test2\\10-08input_ToDelete\\metsAquamet_2014-10-02.csv')
 

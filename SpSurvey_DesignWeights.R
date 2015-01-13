@@ -49,7 +49,7 @@ siteeval=subset(siteeval,is.na(VISIT_NO) | (VISIT_NO==2)==FALSE)#omit repeat QA 
 #load("C:/Users/Sarah/Desktop/NAMCdevelopmentLocal/WRSA/GRTS_NHDworkspace.RData")#takes a while to read in att, so saved to workspace
 #att="N:\\GIS\\Projects\\NRSA\\BLM_NRSA.dbf"#att = Tony (BLM_NRSA NHD)
 #att2="N:\\GIS\\GIS_Stats\\Streams\\NHD4GRTS7.dbf"# att2 = Lokteff NHD (updated with correct south dakota; supposed to move location ("N:\GIS\Projects\NHD_GRTS_Process\NHD_AllStreams_Classification.dbf") and get a better name soon!!), worried about StrCalc used to liberally to denote braided channels resulting in too many unconnected and arid streams being omitted
-att3=read.dbf('\\\\share2.bluezone.usu.edu\\miller\\GIS\\Projects\\CAblm\\Olsen_EPA_Design\\OriginalDesign\\SWJ_TargetPopClip\\NHD4GRTS7_NorCalFO.dbf') #
+att3=read.dbf('\\\\share1.bluezone.usu.edu\\miller\\GIS\\Projects\\CAblm\\Olsen_EPA_Design\\OriginalDesign\\SWJ_TargetPopClip\\NHD4GRTS7_NorCalFO.dbf') #
 att3$mdcaty=ifelse(att3$StreamOr_1<3,"SmallStreams",ifelse(att3$StreamOr<5,"LargeStreams","RiversOther"))
 att3$stratum=ifelse(att3$FO=='Surprise','Surprise Field Office',ifelse(att3$FO=='EagleLake','Eagle Lake Field Offfice',ifelse(att3$FO=='Alturas','Alturas Field Office',NA)))
 att3$stratum=ifelse(is.na(att3$ALT),att3$stratum,ifelse(att3$ALT=='HomeCamp','Surprise Field Office Home Camp',ifelse(att3$ALT=='TwinPeaks','Eagle Lake Field Office Twin Peaks',att3$stratum)))
