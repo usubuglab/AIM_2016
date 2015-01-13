@@ -125,8 +125,8 @@ T12=setNames(aggregate(RIP_RS_final$XCMGW, by = list(RIP_RS_final$ECO_LVL_3NAME)
 T17=join_all(list(T11,T12), by="ECO_LVL_3NAME")
 
 #PH
-#PH threshols were determine to be too strict so we are using the national standards of <6.5 and >9.0 as Poor, >7 and <8.5 as Good.
-#if EPA reference thresholds want to be used you must uncomment the below code and add "18" to the liste of code to join it back into the RIP_THRESHOLDS_lvlIII object
+#PH thresholds were determine to be too strict so we are using the national standards of <6.5 and >9.0 as Poor, >7 and <8.5 as Good.
+#if EPA reference thresholds want to be used you must uncomment the below code and add "T18" to the liste of code to join it back into the RIP_THRESHOLDS_lvlIII object
 #A few pH issues
 #PH_EPA=RIP_RS_final[,1:25]
 #Replace NAs with if statement to combine columns
@@ -177,7 +177,8 @@ SED_THRESHOLDS_lvlIII=join_all(list(T15,T17,T18,T19),by="ECO_LVL_3NAME")
 #Make one file for level III thresholds and remove unwanted working files
 Thresholds_lvlIII=merge(RIP_THRESHOLDS_lvlIII,SED_THRESHOLDS_lvlIII, all=TRUE)
 # Add pH thresholds
-#Using National standards NOT EPA regional reference approach. See above for code to use EPA regional reference approach and notes on why this was a problem to use. 
+#Using National standards NOT EPA regional reference approach. See above for code to use EPA regional reference approach and notes on why this was a problem to use.
+#Column names of 0.10, 0.30, 0.70, and 0.90 were used so the ConditionDeterminations code did not need to be updated regardless of if you were using National standards or EPA regional reference thresholds.
 Thresholds_lvlIII$PH_0.10=6.5
 Thresholds_lvlIII$PH_0.30=7
 Thresholds_lvlIII$PH_0.70=8.5
@@ -245,19 +246,21 @@ T2=setNames(aggregate(RIP_RS_final$XCMGW, by = list(RIP_RS_final$ECO10), FUN = q
 T7=join_all(list(T1,T2), by="ECO10")
 
 #PH
+#PH thresholds were determine to be too strict so we are using the national standards of <6.5 and >9.0 as Poor, >7 and <8.5 as Good.
+#if EPA reference thresholds want to be used you must uncomment the below code and add "T18" to the liste of code to join it back into the RIP_THRESHOLDS_lvlIII object
 #A few pH issues
-PH_EPA=RIP_RS_final[,1:25]
+#PH_EPA=RIP_RS_final[,1:25]
 #Replace NAs with if statement to combine columns
-PH_EPA$PH=ifelse(is.na(PH_EPA$PHLAB),PH_EPA$PHSTVL,PH_EPA$PHLAB)
+#PH_EPA$PH=ifelse(is.na(PH_EPA$PHLAB),PH_EPA$PHSTVL,PH_EPA$PHLAB)
 #thresholds
-T11=setNames(aggregate(PH_EPA$PH, by = list(PH_EPA$ECO10), FUN = quantile,probs=0.10,na.rm=TRUE), c("ECO10","PH_0.10"))
-T12=setNames(aggregate(PH_EPA$PH, by = list(PH_EPA$ECO10), FUN = quantile,probs=0.30,na.rm=TRUE), c("ECO10","PH_0.30"))
-T13=setNames(aggregate(PH_EPA$PH, by = list(PH_EPA$ECO10), FUN = quantile,probs=0.90,na.rm=TRUE), c("ECO10","PH_0.90"))
-T14=setNames(aggregate(PH_EPA$PH, by = list(PH_EPA$ECO10), FUN = quantile,probs=0.70,na.rm=TRUE), c("ECO10","PH_0.70"))
-T18=join_all(list(T11,T12,T14,T13), by="ECO10")
+#T11=setNames(aggregate(PH_EPA$PH, by = list(PH_EPA$ECO10), FUN = quantile,probs=0.10,na.rm=TRUE), c("ECO10","PH_0.10"))
+#T12=setNames(aggregate(PH_EPA$PH, by = list(PH_EPA$ECO10), FUN = quantile,probs=0.30,na.rm=TRUE), c("ECO10","PH_0.30"))
+#T13=setNames(aggregate(PH_EPA$PH, by = list(PH_EPA$ECO10), FUN = quantile,probs=0.90,na.rm=TRUE), c("ECO10","PH_0.90"))
+#T14=setNames(aggregate(PH_EPA$PH, by = list(PH_EPA$ECO10), FUN = quantile,probs=0.70,na.rm=TRUE), c("ECO10","PH_0.70"))
+#T18=join_all(list(T11,T12,T14,T13), by="ECO10")
 
 ##Combine all
-RIP_THRESHOLDS_ECO10=join_all(list(T5,T6,T7,T18),by="ECO10")
+RIP_THRESHOLDS_ECO10=join_all(list(T5,T6,T7,),by="ECO10")
 
 ###################################################################################
 ###################################################################################
@@ -290,6 +293,17 @@ SED_THRESHOLDS_ECO10=join_all(list(T5,T7,T8,T9),by="ECO10")
 
 #Make one file for ECO 10 thresholds and remove unwanted working files
 Thresholds_ECO10=merge(SED_THRESHOLDS_ECO10,RIP_THRESHOLDS_ECO10, all=TRUE)
+# Add pH thresholds
+#Using National standards NOT EPA regional reference approach. See above for code to use EPA regional reference approach and notes on why this was a problem to use.
+#Column names of 0.10, 0.30, 0.70, and 0.90 were used so the ConditionDeterminations code did not need to be updated regardless of if you were using National standards or EPA regional reference thresholds.
+Thresholds_ECO10$PH_0.10=6.5
+Thresholds_ECO10$PH_0.30=7
+Thresholds_ECO10$PH_0.70=8.5
+Thresholds_ECO10$PH_0.90=9
+
+
 rm(T1,T2,T3,T4,T5,T6,T7,T8,T9,RIP_THRESHOLDS_ECO10,SED_THRESHOLDS_ECO10)
+
+
 #Make NorCal Specific ECO10 threshold files
 Thresholds_ECO10_NC=subset(Thresholds_ECO10, ECO10 == "XE-SOUTH"|ECO10 == "XE-NORTH"|ECO10 == "MT-PNW")
