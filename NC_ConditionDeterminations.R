@@ -516,11 +516,11 @@ DesiredEco=c('XE-NORTH','MT-SWEST','XE-EPLAT')
 for (i in 1:length(DesiredEco)){
   #Apply pH thresholds
   ifelse(Indicator$ECO10==DesiredEco[i],PH_CHECK)
-  Ind_Eco_Sub=subset(Indicators, ECO10==DesiredEco[i])
   Ind_Eco_Sub$PH_CHECKrtg=ifelse(Ind_Eco_Sub$PH_CHECK <= (Thresholds_ECO10 [Thresholds_ECO10$ECO10==DesiredEco[i], 'PH_0.05'])
                                                                      |Ind_Eco_Sub$PH_CHECK >= (Thresholds_ECO10 [Thresholds_ECO10$ECO10==DesiredEco[i], 'PH_0.95']),"Poor",
                                                                      ifelse(Ind_Eco_Sub$PH_CHECK>(Thresholds_ECO10 [Thresholds_ECO10$ECO10==DesiredEco[i],'PH_0.25']) &
                                                                               Ind_Eco_Sub$PH_CHECK<(Thresholds_ECO10 [Thresholds_ECO10$ECO10==DesiredEco[i],'PH_0.75']),"Good","Fair"))}        
+#trying to rename
 Ind_Eco_Sub$print(sprintf('PH_CHECKrtg_%s',DesiredEco[[i]]))=ifelse(Ind_Eco_Sub$PH_CHECK <= (Thresholds_ECO10 [Thresholds_ECO10$ECO10==DesiredEco[i], 'PH_0.05'])
                                   |Ind_Eco_Sub$PH_CHECK >= (Thresholds_ECO10 [Thresholds_ECO10$ECO10==DesiredEco[i], 'PH_0.95']),"Poor",
                                   ifelse(Ind_Eco_Sub$PH_CHECK>(Thresholds_ECO10 [Thresholds_ECO10$ECO10==DesiredEco[i],'PH_0.25']) &
@@ -674,11 +674,10 @@ rm(Ind_MT_SWEST,Ind_MT_SWEST)
 
 Freq_ECO10=cbind(count(IndicatorCond_ECO10,var='XFC_NAT_COND'),
             count(IndicatorCond_ECO10,var='XCMG_COND'),
-            #count(IndicatorCond_ECO10,var='XCMGW_COND'),
-           #count(IndicatorCond_ECO10,var='XCDENMID_COND'),
-            count(IndicatorCond_ECO10,var='PH_CHECKrtg')
-            count(IndicatorCond_ECO10,var='LINCIS_H_COND'),
-            #count(IndicatorCond_ECO10,var='PCT_SAFN_COND')
-                 count(IndicatorCond_ECO10,var='XEMBED_COND'))
-           
+            count(IndicatorCond_ECO10,var='PH_CHECKrtg'),
+            count(IndicatorCond_ECO10,var='LINCIS_H_COND'),     
+            count(IndicatorCond_ECO10,var='XEMBED_COND'))
 
+#count(IndicatorCond_ECO10,var='XCMGW_COND'),
+#count(IndicatorCond_ECO10,var='XCDENMID_COND'),    
+#count(IndicatorCond_ECO10,var='PCT_SAFN_COND'),
