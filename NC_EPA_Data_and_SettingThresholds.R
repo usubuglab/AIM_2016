@@ -260,7 +260,7 @@ T7=join_all(list(T1,T2), by="ECO10")
 #T18=join_all(list(T11,T12,T14,T13), by="ECO10")
 
 ##Combine all
-RIP_THRESHOLDS_ECO10=join_all(list(T5,T6,T7,),by="ECO10")
+RIP_THRESHOLDS_ECO10=join_all(list(T5,T6,T7),by="ECO10")
 
 ###################################################################################
 ###################################################################################
