@@ -285,6 +285,7 @@ RFIndNat.all=randomForest(NV_MMI~NTL+OE_TN+OE_TP+XCMG+IntDensC+AREA_SQKM+S_Mean,
                       data=RFdata, importance=TRUE, proximity=TRUE, bias.corr=TRUE)
 RFIndNat.all
 varImpPlot(RFIndNat.all)
+
 # 8
 RFIndNat.all=randomForest(NV_MMI~NTL+XCMG+IntDensC+AREA_SQKM+S_Mean, 
                       data=RFdata, importance=TRUE, proximity=TRUE, bias.corr=TRUE)
@@ -432,16 +433,42 @@ partialPlot(RFoe, RFdata,AREA_SQKM, cex.main=1)
 partialPlot(RFoe, RFdata,Tmax_PT, cex.main=1)
 
 ################################################################################
-NVnat=randomForest(NV_OE0~ELVmin_WS+ELVmax_WS+ELVmean_WS+SQ_KM+HYDR_WS+WDmax_WS+
-                     Pmax_WS+Pmin_WS+Tmax_WS+BFI_WS+Tmax_PT+PrdCond+Slope_WS,
-                   data=RF_NVnat, importance=TRUE, proximity=TRUE, bias.corr=TRUE)
-NVnat
-varImpPlot(NVnat)
-#2) Run RF For subset natural preds from the NV MMI GIS input file.
-NVnat=randomForest(NV_MMI~ELVmin_WS+SQ_KM+Tmax_PT,
-                   data=RF_NVnat, importance=TRUE, proximity=TRUE, bias.corr=TRUE)
-NVnat
-varImpPlot(NVnat)
+# Some initial trial and error:
+
+#Try to rerun some of the "best" model replacing measured WQ with OE WQ To better tell the story... 
+#OE_Conduct+OE_TN+OE_TP
+
+# 8 Original 
+RFIndNat.all=randomForest(NV_MMI~NTL+XCMG+IntDensC+AREA_SQKM+S_Mean, 
+                          data=RFdata, importance=TRUE, proximity=TRUE, bias.corr=TRUE)
+RFIndNat.all
+varImpPlot(RFIndNat.all)
+
+# 8 Rerun 
+RFIndNat.all=randomForest(NV_MMI~OE_TN+XCMG+IntDensC+AREA_SQKM+S_Mean, 
+                          data=RFdata, importance=TRUE, proximity=TRUE, bias.corr=TRUE)
+RFIndNat.all
+varImpPlot(RFIndNat.all)
+
+
+# Run with subset of BLM select indicators (measured water chem only, not modeled) and subset natural
+# 4 Original
+RFIndNat.BLM.MWQ=randomForest(NV_MMI~CONDUCTIVITY+NTL+PTL+XCMG+IntDensC+AREA_SQKM+S_Mean, 
+                              data=RFdata, importance=TRUE, proximity=TRUE, bias.corr=TRUE)
+RFIndNat.BLM.MWQ
+varImpPlot(RFIndNat.BLM.MWQ)
+
+# Run with subset of BLM select indicators (measured water chem only, not modeled) and subset natural
+# 4 Rerun
+RFIndNat.BLM.MWQ=randomForest(NV_MMI~OE_Conduct+OE_TN+OE_TP+XCMG+IntDensC+AREA_SQKM+S_Mean, 
+                              data=RFdata, importance=TRUE, proximity=TRUE, bias.corr=TRUE)
+RFIndNat.BLM.MWQ
+varImpPlot(RFIndNat.BLM.MWQ)
+
+
+
+
+
 
 
 ########################################################################################################
