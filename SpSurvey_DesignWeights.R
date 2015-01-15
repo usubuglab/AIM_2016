@@ -1,10 +1,29 @@
-library("spsurvey", lib.loc="~/R/win-library/3.1")
-
 ###------------------------------------------------pull in relevant SiteInfo------------------------------------------------###
-siteeval1=tblRetrieve(Table='',Parameters=c('VALXSITE','STRATUM','MDCATY','WGT'),Projects="NorCal",
-                    Protocols='')#forcing all protocols despite global DataConsumption settings to pull in Failed sites
-siteeval1=addKEYS(cast(siteeval1,'UID~PARAMETER',value='RESULT'),c('SITE_ID','DATE_COL','PROJECT','VISIT_NO','LAT_DD','LON_DD'))
+siteeval=tblRetrieve(Table='',Parameters=c('VALXSITE','STRATUM','MDCATY','WGT'),UIDS=UIDs,ALL=AllData,Filter=filter,SiteCodes=sitecodes,Dates=dates,Years=years,Projects=projects,
+                    Protocols='')####comment out other filters if not needed####
+                    #forcing all protocols despite global DataConsumption settings to pull in Failed sites
+                    #siteeval[3,6]="WADE"#test for UNKeval
+# Below code is NorCal specific
+#siteeval=tblRetrieve(Table='',Parameters=c('VALXSITE','STRATUM','MDCATY','WGT'),Projects='NorCal',Protocols='')
+
+#translate to EvalStatus
+siteeval=bintranslate(Table='siteeval',ST='VERIF',PM='VALXSITE') 
+Eval=sqlQuery(wrsa1314,"select * from tblmetadatabin where Parameter='VALXSITE'")
+siteeval$PARAMETER=ifelse(siteeval$PARAMETER=='VALXSITE','EvalStatus',siteeval$PARAMETER)
+siteeval$RESULT=ifelse((siteeval$RESULT %in% Eval$BIN)==FALSE & siteeval$PARAMETER=='EvalStatus','UNK',siteeval$RESULT)
+UNKeval=subset(siteeval,RESULT=='UNK'); if(nrow(UNKeval)>0){print('The VALXSITE RESULTorg for the following sites was not recognized. Please reconcile, or it will be assumed to be unevaluated (UNK)');print(UNKeval)}
+#add identifiers
+siteeval=addKEYS(cast(siteeval,'UID~PARAMETER',value='RESULT'),c('SITE_ID','DATE_COL','PROJECT','VISIT_NO','LAT_DD','LON_DD','VALXSITE'))
+#clean up
+omitUIDanalysis=c(11799)#11799=omit NorCal random reference site
+siteeval=subset(siteeval,(UID %in% omitUIDanalysis)==FALSE)
+siteeval=subset(siteeval,is.na(VISIT_NO) | (VISIT_NO==2)==FALSE)#omit repeat QA visits
 #View(siteeval) or otherwise check for data gaps and expected # of sites
+
+#NorCal Specific: The one line of code below will change the value of the first HC-LS to NT rather than NN so that it can recieve a weight. 
+#This is a temporary TRIAL and must be permanently updated in Access if it is decided to keep this change. 
+#Data file to alter[row number, "column name"]="value you want there instead of what is there"
+#siteeval[siteeval$UID=='13712',"EvalStatus"]='NT'
 
 ###Final Designation reconcilation###
 #reconcilation was done manually for norcal 2013-4 (took approx 1 hour), the following needs to be implemented for a more streamlined process:
@@ -24,32 +43,6 @@ siteeval1=addKEYS(cast(siteeval1,'UID~PARAMETER',value='RESULT'),c('SITE_ID','DA
 #!merge SiteWeights to original design file or frame metadata to get original weights (see ProbSurveydb query Stats_Weights_Sites and/or table GRTS_Design)
 #! NN (not evaluated sites get omitted, do they even need to be brought back in?) if so, need to assign null EvalStatus to be NN
 
-###------------------------------------------------translate to EvalStatus------------------------------------------------##
-##previous Access iif statements (which also handle duplicate reconciled sites)
-#EvalStatus_Target: IIf([NonTarget]=Yes,"NT",IIf(IsNull([minofScoutDate]),"NN",IIf((([minofunsuccessreason]=[maxofunsuccessreason]) Or ([minofunsuccessreason]=62 And [maxofunsuccessreason]=63)) And ([minofunsuccessreason] In (62,63)) And IsNull([sampledate]),"NT",IIf([office_site].[unsuccessReason] In (62,63),"NT",IIf((([minofunsuccessreason] In (65,67)) Or ([minofunsuccessreason]<>[maxofunsuccessreason])) And IsNull([sampledate]) And IsNull([office_site].[unsuccessreason]),"UNK","TS")))))
-#EvalStatus_Access: IIf([EvalStatus_Target]="NT","NT",IIf([SampleEvent].[ProbeReachID] Is Not Null,"TS",IIf((([minofunsuccessreason]=[maxofunsuccessreason]) And [minofunsuccessreason] In (60,61)) Or [office_site].[unsuccessreason] In (60,61),"IA",[EvalStatus_Target])))
-##Site Status Codes stored in ProbSurvey_DB.accdb Options Category=EvalStatus
-# TS: Target Sampled
-# NT: Non-Target (dry, too shallow,...)
-# NN: Not Needed (not evaluated)
-# IA: Inaccessible - any type of Access Issue (landowner, gate, distance, etc), i.e. assumed to still be in target pop, but use as a measure of uncertainty (X% unknown) - combines EMAP "Land Owner Denied" and "Access" (LD/PB) categories
-#!IA --> TS for reweighting, but that and any other categories can be used to separate in bar charts
-#!migrate to "translation" table/function planned for Size_NUM, LWD, etc. binning
-TS_VALXSITE=c('WADEABLE','BOATABLE','PARBYWADE', 'PARBYBOAT','INTWADE', 'INTBOAT', 'ALTERED')
-NT_VALXSITE=c('DRYVISIT', 'DRYNOVISIT', 'WETLAND', 'MAPERROR', 'IMPOUNDED', 'TIDAL','NT') 
-IA_VALXSITE=c('OTHER_NST','NOTBOAT','NOTWADE', 'OTHER_NOACCESS','NOACCESS', 'INACCPERM','INACCTEMP')#! should we be more careful to distinguish IA sites that had physical barriers (i.e. bushes) but were clearly target vs. streams we never saw which are truly unknown - either way, they are assumed TS, but need to determine if IA vs. UNK is important for our tabulations (see section 3 of spsurvey/GRTS practitioner guide); if long strings of IA with no subsequent TS, then set to NN. Tony lumps IA into a broader "UNK"
-NN_VALXSITE=c('NSF',"NN")# not needed because not in sample frame (ex: 2013-15 canals omitted a priori) or unevaluated
-siteeval1$EvalStatus=ifelse(siteeval1$VALXSITE %in% TS_VALXSITE, 'TS',ifelse(siteeval1$VALXSITE %in% IA_VALXSITE, 'IA',ifelse(siteeval1$VALXSITE %in% NT_VALXSITE, 'NT',ifelse(siteeval1$VALXSITE %in% NN_VALXSITE, 'NN','UNK'))))
-#The one line of code below will change the value of the first HC-LS to NT rather than NN so that it can recieve a weight. 
-#This is a temporary TRIAL and must be permanently updated in Access if it is decided to keep this change. 
-#Data file to alter[row number, "column name"]="value you want there instead of what is there"
-siteeval1[siteeval1$UID=='13712',"EvalStatus"]='NT'
-#siteeval1[61,"EvalStatus"]='NT'
-
-UNKeval=subset(siteeval1,EvalStatus=='UNK'); if(nrow(UNKeval)>0){print('The VALXSITE for the following sites was not recognized. Please reconcile, or it will be assumed to be unevaluated (UNK)');print(UNKeval)}
-omitUIDanalysis=c(11799)#11799=omit NorCal random reference site
-siteeval1=subset(siteeval1,(UID %in% omitUIDanalysis)==FALSE)
-siteeval1=subset(siteeval1,is.na(VISIT_NO) | (VISIT_NO==2)==FALSE)#omit repeat QA visits
 
 ###------------------------------------------------assign weights------------------------------------------------###
 #read in the target population
@@ -57,7 +50,7 @@ siteeval1=subset(siteeval1,is.na(VISIT_NO) | (VISIT_NO==2)==FALSE)#omit repeat Q
 #load("C:/Users/Sarah/Desktop/NAMCdevelopmentLocal/WRSA/GRTS_NHDworkspace.RData")#takes a while to read in att, so saved to workspace
 #att="N:\\GIS\\Projects\\NRSA\\BLM_NRSA.dbf"#att = Tony (BLM_NRSA NHD)
 #att2="N:\\GIS\\GIS_Stats\\Streams\\NHD4GRTS7.dbf"# att2 = Lokteff NHD (updated with correct south dakota; supposed to move location ("N:\GIS\Projects\NHD_GRTS_Process\NHD_AllStreams_Classification.dbf") and get a better name soon!!), worried about StrCalc used to liberally to denote braided channels resulting in too many unconnected and arid streams being omitted
-att3=read.dbf('N:\\GIS\\Projects\\CAblm\\Olsen_EPA_Design\\OriginalDesign\\SWJ_TargetPopClip\\NHD4GRTS7_NorCalFO.dbf') #
+att3=read.dbf('\\\\share1.bluezone.usu.edu\\miller\\GIS\\Projects\\CAblm\\Olsen_EPA_Design\\OriginalDesign\\SWJ_TargetPopClip\\NHD4GRTS7_NorCalFO.dbf') #
 att3$mdcaty=ifelse(att3$StreamOr_1<3,"SmallStreams",ifelse(att3$StreamOr<5,"LargeStreams","RiversOther"))
 att3$stratum=ifelse(att3$FO=='Surprise','Surprise Field Office',ifelse(att3$FO=='EagleLake','Eagle Lake Field Offfice',ifelse(att3$FO=='Alturas','Alturas Field Office',NA)))
 att3$stratum=ifelse(is.na(att3$ALT),att3$stratum,ifelse(att3$ALT=='HomeCamp','Surprise Field Office Home Camp',ifelse(att3$ALT=='TwinPeaks','Eagle Lake Field Office Twin Peaks',att3$stratum)))
@@ -99,12 +92,12 @@ siteeval$wgt_cat <- factor(paste(siteeval$STRATUM, siteeval$MDCATY, sep="_"))
 summary(siteeval$wgt_cat) # look at all categories
 
 siteeval$Wgt_Final <- adjwgt(sites=siteeval$EvalStatus != "NN", 
-                             wgt=as.numeric(siteeval$WGT),
+                             wgt=as.numeric(siteeval$WGT), #!Main thing I still don't understand: Why Tony even bothers to assign original weights since he throws them out the window in the end. Perhaps just for bookkeeping in case the target population file is lost and to make sure all weights are within orders of magnitudes of each other? It seems these are evaluated to determine proportionality of classes, but not in a significant way that can't be recomputed on the fly using the target population kilometers.
                              wtcat=siteeval$wgt_cat, framesize=frmszARRY)
 
 sum(siteeval$Wgt_Final)
 
-write.csv(siteeval,'NC_AdjustedWeights.csv');View(siteeval)
+write.csv(siteeval,'AdjustedWeights.csv');View(siteeval)
 
 #go to SpSurvey_ExtentEstimates.R for extent estimates
 #source('SpSurvey_ExtentEstimates.R')
