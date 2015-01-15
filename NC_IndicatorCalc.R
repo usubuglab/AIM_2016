@@ -1,3 +1,65 @@
+#To get the metadata table you must use the SQL code. 
+#tblMETADATA= sqlQuery(wrsa1314, "select * from tblMETADATA")
+
+# FIRST Run the settup section of DataConsumption_WRSAdb.R
+
+#############################################################################
+
+######################    Getting all of the Data      ######################
+
+#############################################################################
+
+#To get WQ data for 3 parameters for all NorCal sites
+WQtbl=tblRetrieve(Parameters=c('CONDUCTIVITY','NTL','PTL'),Projects='NorCal')
+WQpvt=cast(WQtbl,'UID~PARAMETER',value='RESULT')
+WQfinal=addKEYS(WQpvt,c('SITE_ID','DATE_COL','LOC_NAME','LAT_DD','LON_DD'))
+rm(WQtbl,WQpvt)
+
+#Get pH for NorCal
+PHtbl=tblRetrieve(Parameters=c('PH'),Projects='NorCal')
+PHpvt=cast(PHtbl,'UID~PARAMETER',value='RESULT')
+PHfinal=addKEYS(PHpvt,c('SITE_ID','DATE_COL','LOC_NAME'))
+PHfinal=PHfinal[,c(1,5,4,3,2)]
+rm(PHtbl,PHpvt)
+
+#Get Site Code to UID, run the water quality lines above and just pull from that...This didn't work for what I initially needed, but is a good way to get UID/Sitecode
+#UID_SiteCode=WQfinal[,c('UID','SITE_ID')]
+
+#Getting Data for aquamet check of XFC_NAT
+fish=tblRetrieve(Parameters=c('BOULDR','BRUSH','LVTREE','OVRHNG','UNDCUT','WOODY'),Projects='NorCal')
+
+#Getting data for aquamet check of xcdenmid
+densiom=tblRetrieve(Parameters='DENSIOM',Projects='NorCal')
+
+#Getting data for aquamet check of LINCIS_H, I need bankfull height and incision height for this metric
+Incision=tblRetrieve(Parameters=c('INCISED','BANKHT'),Projects='NorCal')
+
+#Getting data for aquamet check of pct_safn.
+Sediment=tblRetrieve(Parameters=c('SIZE_CLS','XSIZE_CLS'),Projects='NorCal')
+Sed2014=tblRetrieve(Parameters=c('SIZE_NUM','LOC'),Projects='NorCal')
+
+#WR_Sed2014=tblRetrieve(Parameters=c('SIZE_NUM'),Projects='NorCal')
+
+#Getting data for aquamet check of XCMG
+#RipALL=tblRetrieve(Parameters=c("BARE","CANBTRE","CANSTRE","CANVEG","GCNWDY","GCWDY","UNDERVEG","UNDNWDY","UNDWDY"),Projects='NorCal')
+RipXCMG=tblRetrieve(Parameters=c("CANBTRE","CANSTRE","GCNWDY","GCWDY","UNDNWDY","UNDWDY"),Projects='NorCal')
+RipWW=tblRetrieve(Parameters=c("CANBTRE","CANSTRE","GCWDY","UNDWDY"),Projects='NorCal')
+
+#Getting data for aquamet check W1_HALL
+#Figure out the differences... Human influence sample type...
+Human_Influ=tblRetrieve(Parameters=c('BUILD','LOG','MINE','PARK','PAST','PAVE','PIPES','ROAD','ROW','TRASH','WALL'), Projects='NorCal')                       
+
+#Getting data for aquamet check XEMBED
+EMBED=tblRetrieve(Parameters='EMBED', Projects='NorCal')
+
+#To get data for aquamet check QR1, run densiom, Human_Influ, and RipWW to get the data. Code to calculate QR1 is in NC_DataAnalysis file
+
+#Bank Stability
+BankStab=tblRetrieve(Parameters=c('STABLE','EROSION','COVER'), Projects='NorCal')
+
+
+### Getting Data to calculate Indicators Stops here
+
 
 #############################################################################
 
