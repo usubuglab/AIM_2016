@@ -2,6 +2,20 @@
 #source('SpSurvey_DesignWeights.R')
 #source('SpSurvey_ExtentEstimates.R')
 
+#Line 28 and 31, 48, adjust x-axis scales
+
+# Line 92 (around BarEXT=barplot) 
+#### Turn off Good Fair Poor labeles: make names.arg=''
+#### Turn on Good Fair Poor Labels: make names.arg=BarData$Category
+
+#Line 33 for x axis of "absolute"
+### Graph is being cut off at times so a temportary change to help with this is making XmaxPoor=2*sum(BarDataPoor$X)
+
+#Lines 64 and 104 xpd=NA was added to prevents the numeric % from being cut off at the edge of the graph
+
+# Line 54 to change the margins so as not to cut off the labels of bars, or the 100% (where a bar may = 100% the numeric % was extremely close to edge)
+### change the margins using par(mar = c(Bottom margin, Left Margin, Top Margin, Right margin) 
+
 ##EXTENT FIGURES##
 #Global Figure parameters#
 axissize=2#cex
@@ -24,7 +38,7 @@ for (s in 1:length(SubpopTypes)){#Temporary! only all and district - length(Subp
                                XmaxPoor=100 ## x axis max limit for poor extent figures in % #setting at 100 sometimes causes problems with large error bars
     } else{ BarDataPoor$X= BarDataPoor$Estimate.U; 
             BarDataPoor$UConf= BarDataPoor$UCB95Pct.U; BarDataPoor$LConf= BarDataPoor$LCB95Pct.U
-            XmaxPoor=2*sum(BarDataPoor$X) ##changes x scale on poor extent for scale bars in absolute stream km
+            XmaxPoor=sum(BarDataPoor$X) ##changes x scale on poor extent for scale bars in absolute stream km
     }
     #code repeated from below, consolidate
     if(s==1 & length(SubpopStrata)==1){#set variable order for remainder
@@ -38,16 +52,17 @@ for (s in 1:length(SubpopTypes)){#Temporary! only all and district - length(Subp
     BarDataPoor=BarDataPoor[with(BarDataPoor,order(NumericOrder)),]
     if (s!=1 & SubpopSort=='Y'){BarDataPoor=BarDataPoor[with(BarDataPoor,order(X)),]}
     png(sprintf('ExtentPOOR_%s-%s.png',ExtentSuffix,selectVARchoice),width=800,height=700, bg='transparent')
-    par(mar = c(2, 1,2 ,0)  ,oma = c(2,7, 1, 2),cex=axissize)   
+    par(mar = c(2, 5.5,2 ,2)  ,oma = c(2,7, 1, 2),cex=axissize)  ## Adjusted for NorCal titles to fit, if the same titles are used will work for WRSA 
+    #par(mar = c(2, 1, 2, 0)  ,oma = c(2,7, 1, 2),cex=axissize) ## Orginal Margin size
     #modeled after Fig 23 - http://www.epa.gov/owow/streamsurvey/pdf/WSA_Assessment_May2007.pdf
     #Category barchart: http://www.epa.gov/nheerl/arm/orpages/streamorimpair.htm (cleaner examples in EMAP report)    
     BarEXTp=barplot( BarDataPoor$X,xlim=c(0,XmaxPoor),#XmaxPoor is the x axis max limit #FIX! Note 1157 total stream km seems low  (adjwgt adds to 3305, original was **)
                      xlab=ScaleTYPE,
                      names.arg= BarDataPoor$names,horiz=T,
                      col=BarDataPoor$color,las=1) #Temporary! make color global and assign specfically to variables
-    title(sprintf('Extent Poor\n%s: %s',SubpopTypes[[s]],SubpopStrata[[t]])
-          ,cex=.1) # can comment this out to make it disappear from poor extent figures
-    mtext(ifelse(ScaleTYPE=='Percent','% of Stream KM','Stream KM'),side=1,line=2,cex=axissize,xpd=NA)#not sure why xlab is not working in barplot
+    #title(sprintf('Extent Poor\n%s: %s',SubpopTypes[[s]],SubpopStrata[[t]])
+          #,cex=.1) # can comment this out to make it disappear from poor extent figures
+    mtext(ifelse(ScaleTYPE=='Percent','% of Stream KM','Stream KM'),side=1,line=2,cex=axissize)#not sure why xlab is not working in barplot
     BarDataPoor$UConf=ifelse(is.na(BarDataPoor$UConf),0,BarDataPoor$UConf) ; BarDataPoor$X=ifelse(is.na(BarDataPoor$X),0,round(BarDataPoor$X,1))     
     arrows(x0=BarDataPoor$LConf,x1=BarDataPoor$UConf,y0=BarEXTp,length=.1,angle=90,code=3)#use Conf or StErr? why are upper limits so much higher?
     text(y=BarEXTp,x=BarDataPoor$UConf-1, cex=.5,labels=sprintf('%s%s',BarDataPoor$X,ifelse(ScaleTYPE=='Percent','%','')),pos=4,srt=360, xpd=NA)#Replace labels with % stream  (from Cell Proportion) 
@@ -87,10 +102,10 @@ for (s in 1:length(SubpopTypes)){#Temporary! only all and district - length(Subp
                       xlab=ScaleTYPE2,
                       names.arg= "",horiz=T,col=GFPcol,las=1)
       # title(sprintf('Extent: %s\n%s: %s',varNAME,SubpopTypes[[s]],SubpopStrata[[t]])    ,cex=.5, line=1) 
-      mtext(ifelse(ScaleTYPE2=='Percent','% of Stream KM','Stream KM'),side=1,line=2,cex=axissize, xpd=NA)#not sure why xlab is not working in barplot
+      mtext(ifelse(ScaleTYPE2=='Percent','% of Stream KM','Stream KM'),side=1,line=2,cex=axissize)#not sure why xlab is not working in barplot
       arrows(x0=BarData$LConf,x1=BarData$UConf,y0=BarEXT,length=.1,angle=90,code=3)#use Conf or StErr? why are upper limits so much higher?
       text(y=BarEXT,x=BarData$UConf, cex=.5,labels=sprintf('%s%s',round(BarData$X,1),ifelse(ScaleTYPE2=='Percent','%','')),pos=4,srt=360,xpd=NA)#Replace labels with % stream  (from Cell Proportion) 
-      text(y=0,x=0,WARNsort,cex=5,col='purple',xpd=NA)
+      text(y=0,x=0,WARNsort,cex=5,col='purple')
       # if(Export=='PNL') { assign(sprintf('Extent%s%s%s',varNAME,SubpopTypes[[s]],SubpopStrata[[t]]),recordPlot())  }#temporarily wrapped in if, but recordplot alternative did not work
       graphics.off()
       #         png(sprintf('ExtentPIE_%s_%s.png', varNAME,ExtentSuffix),width=800,height=600)
