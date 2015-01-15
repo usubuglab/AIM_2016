@@ -2,18 +2,18 @@
 #source('SpSurvey_DesignWeights.R')
 #source('SpSurvey_ExtentEstimates.R')
 
-#Line 28 and 31, 48, adjust x-axis scales
+#Line 38, 41, and 59 adjust x-axis scales
 
-# Line 92 (around BarEXT=barplot) 
+# Line 101 (around BarEXT=barplot) 
 #### Turn off Good Fair Poor labeles: make names.arg=''
 #### Turn on Good Fair Poor Labels: make names.arg=BarData$Category
 
-#Line 33 for x axis of "absolute"
+#Line 41 for x axis of "absolute"
 ### Graph is being cut off at times so a temportary change to help with this is making XmaxPoor=2*sum(BarDataPoor$X)
 
-#Lines 64 and 104 xpd=NA was added to prevents the numeric % from being cut off at the edge of the graph
+#Lines 68 and 107 xpd=NA was added to the text=... to prevents the numeric % from being cut off at the edge of the graph
 
-# Line 54 to change the margins so as not to cut off the labels of bars, or the 100% (where a bar may = 100% the numeric % was extremely close to edge)
+# Line 55 to change the margins so as not to cut off the labels of bars, or the 100% (where a bar may = 100% the numeric % was extremely close to edge)
 ### change the margins using par(mar = c(Bottom margin, Left Margin, Top Margin, Right margin) 
 
 ##EXTENT FIGURES##
