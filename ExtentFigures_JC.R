@@ -8,7 +8,7 @@ axissize=2#cex
 GFPcol=c('firebrick','gold','lightgreen')#c('red','yellow','green')#fix to be global (category can be fed into to only generate relevant colors), needs to be in this order for current code to color good, fair, poor correctly
 
 #Export='PNL'#options: 'PNG' (exported png); 'PNL' (saved to workspace for later panelling) ## not working as anticipated
-ScaleTYPE='Absolute'#options: Percent, Absolute (meaning Percentage (Segments or StreamKM same) or StreamKM ) # set to absolute by default if an extent variable
+ScaleTYPE='Percent'#options: Percent, Absolute (meaning Percentage (Segments or StreamKM same) or StreamKM ) # set to absolute by default if an extent variable
 SubpopTypes=unique(results.cat$Type)#SubpopTypes=c('Districts','Utah')
 SubpopSort='N'#TO DO! if SubpopSort='Y', will sort each subpopulation based on its own order (may need additional improvement for matching RelExtentPoor to RelRisk...probably saving variableORDER with a district speficic name and then calling via eval at relrisk)
 ResponseInclude='Y'# set to "Y" for UTBLM 2014 report in which OE is treated as an equal metric, not the main response variable
@@ -47,10 +47,10 @@ for (s in 1:length(SubpopTypes)){#Temporary! only all and district - length(Subp
                      col=BarDataPoor$color,las=1) #Temporary! make color global and assign specfically to variables
     title(sprintf('Extent Poor\n%s: %s',SubpopTypes[[s]],SubpopStrata[[t]])
           ,cex=.1) # can comment this out to make it disappear from poor extent figures
-    mtext(ifelse(ScaleTYPE=='Percent','% of Stream KM','Stream KM'),side=1,line=2,cex=axissize)#not sure why xlab is not working in barplot
+    mtext(ifelse(ScaleTYPE=='Percent','% of Stream KM','Stream KM'),side=1,line=2,cex=axissize,xpd=NA)#not sure why xlab is not working in barplot
     BarDataPoor$UConf=ifelse(is.na(BarDataPoor$UConf),0,BarDataPoor$UConf) ; BarDataPoor$X=ifelse(is.na(BarDataPoor$X),0,round(BarDataPoor$X,1))     
     arrows(x0=BarDataPoor$LConf,x1=BarDataPoor$UConf,y0=BarEXTp,length=.1,angle=90,code=3)#use Conf or StErr? why are upper limits so much higher?
-    text(y=BarEXTp,x=BarDataPoor$UConf-1, cex=.5,labels=sprintf('%s%s',BarDataPoor$X,ifelse(ScaleTYPE=='Percent','%','')),pos=4,srt=360)#Replace labels with % stream  (from Cell Proportion) 
+    text(y=BarEXTp,x=BarDataPoor$UConf-1, cex=.5,labels=sprintf('%s%s',BarDataPoor$X,ifelse(ScaleTYPE=='Percent','%','')),pos=4,srt=360, xpd=NA)#Replace labels with % stream  (from Cell Proportion) 
     graphics.off()
     variablesUSE=c(variablesrtg,extentVAR)#variablesUSE=c(extentVAR,variablesrtg[[1]])#
     for (i in 1:length(variablesUSE)){
@@ -85,12 +85,12 @@ for (s in 1:length(SubpopTypes)){#Temporary! only all and district - length(Subp
       #Category barchart: http://www.epa.gov/nheerl/arm/orpages/streamorimpair.htm (cleaner examples in EMAP report)    
       BarEXT=barplot( BarData$X,xlim=c(0,Xmax),#######################this is where you can change the x axis max for the NT.IA, and TS graphs
                       xlab=ScaleTYPE2,
-                      names.arg= BarData$Category,horiz=T,col=GFPcol,las=1)
+                      names.arg= "",horiz=T,col=GFPcol,las=1)
       # title(sprintf('Extent: %s\n%s: %s',varNAME,SubpopTypes[[s]],SubpopStrata[[t]])    ,cex=.5, line=1) 
-      mtext(ifelse(ScaleTYPE2=='Percent','% of Stream KM','Stream KM'),side=1,line=2,cex=axissize)#not sure why xlab is not working in barplot
+      mtext(ifelse(ScaleTYPE2=='Percent','% of Stream KM','Stream KM'),side=1,line=2,cex=axissize, xpd=NA)#not sure why xlab is not working in barplot
       arrows(x0=BarData$LConf,x1=BarData$UConf,y0=BarEXT,length=.1,angle=90,code=3)#use Conf or StErr? why are upper limits so much higher?
-      text(y=BarEXT,x=BarData$UConf, cex=.5,labels=sprintf('%s%s',round(BarData$X,1),ifelse(ScaleTYPE2=='Percent','%','')),pos=4,srt=360)#Replace labels with % stream  (from Cell Proportion) 
-      text(y=0,x=0,WARNsort,cex=5,col='purple')
+      text(y=BarEXT,x=BarData$UConf, cex=.5,labels=sprintf('%s%s',round(BarData$X,1),ifelse(ScaleTYPE2=='Percent','%','')),pos=4,srt=360,xpd=NA)#Replace labels with % stream  (from Cell Proportion) 
+      text(y=0,x=0,WARNsort,cex=5,col='purple',xpd=NA)
       # if(Export=='PNL') { assign(sprintf('Extent%s%s%s',varNAME,SubpopTypes[[s]],SubpopStrata[[t]]),recordPlot())  }#temporarily wrapped in if, but recordplot alternative did not work
       graphics.off()
       #         png(sprintf('ExtentPIE_%s_%s.png', varNAME,ExtentSuffix),width=800,height=600)
