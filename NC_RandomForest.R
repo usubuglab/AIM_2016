@@ -2,9 +2,19 @@
 #Random Forest for Northern California to determine most important stressors to biological conditions
 ##############################################################################################################################################################################################
 
+
+##########################################################
+#Set up
+##########################################################
+
+####################
 ##loading package
+####################
 library (randomForest)
 
+####################
+##loading data
+####################
 ##load Bug File
 #Bugs=read.csv("\\\\share1.bluezone.usu.edu\\miller\\buglab\\Research Projects\\BLM_WRSA_Stream_Surveys\\Results and Reports\\NorCal_2013\\Analysis\\RandomForest\\NV_BugResults.csv")
 #Load Indicator File
@@ -13,20 +23,94 @@ library (randomForest)
 #Bugs, Indicators, and Natural Variables. 
 RFdata=read.csv("\\\\share1.bluezone.usu.edu\\miller\\buglab\\Research Projects\\BLM_WRSA_Stream_Surveys\\Results and Reports\\NorCal_2013\\Analysis\\RandomForest\\All_BugsIndicatorsNatural_11Jan2015.csv")
 
+#Natural predictors alone
+RF_NVnat=read.csv("\\\\share1.bluezone.usu.edu\\miller\\buglab\\Research Projects\\BLM_WRSA_Stream_Surveys\\Results and Reports\\NorCal_2013\\Analysis\\RandomForest\\NV_GISvariables_RFinput_11Jan2015.csv")
+RF_CAnat=read.csv("\\\\share1.bluezone.usu.edu\\miller\\buglab\\Research Projects\\BLM_WRSA_Stream_Surveys\\Results and Reports\\NorCal_2013\\Analysis\\RandomForest\\CSCI_GISvariables_RFinput_11Jan2015.csv")
+RF_LUnat=read.csv("\\\\share1.bluezone.usu.edu\\miller\\buglab\\Research Projects\\BLM_WRSA_Stream_Surveys\\Results and Reports\\NorCal_2013\\Analysis\\RandomForest\\NaturalVariables_RFinput_11Jan2015.csv")
+
+
+####################
+# 3-D Plot function
+####################
+#Once function is run you can use it to create 3-D plots, below two lines of code are an example of info needed for function
+#nump = 15
+#bpp.out = bivarpartialPlot.randomForest(RF model, data, first variable, second variable, ylab="rating", n1.pt=nump, n2.pt=nump, theta=40) 
+bivarpartialPlot.randomForest <-
+  function (x, pred.data, x1.var, x2.var, which.class, w,
+            n1.pt = min(length(unique(pred.data[, x1name])), 51),
+            n2.pt = min(length(unique(pred.data[, x2name])), 51),
+            x1lab=deparse(substitute(x1.var)),
+            x2lab=deparse(substitute(x2.var)), ylab="",
+            main=paste("Partial Dependence on", deparse(substitute(x1.var)),"and",deparse(substitute(x2.var))),
+            ...)
+  {
+    classRF <- x$type != "regression"
+    if (is.null(x$forest)) stop("The randomForest object must contain the forest.\\n")
+    x1.var <- substitute(x1.var)
+    x2.var <- substitute(x2.var)
+    x1name <- if (is.character(x1.var)) x1.var else {
+      if (is.name(x1.var)) deparse(x1.var) else {
+        eval(x1.var)
+      }
+    }
+    x2name <- if (is.character(x2.var)) x2.var else {
+      if (is.name(x2.var)) deparse(x2.var) else {
+        eval(x2.var)
+      }
+    }
+    n <- nrow(pred.data)
+    if (missing(w)) w <- rep(1, n)
+    if (classRF) {
+      if (missing(which.class)) {
+        focus <- 1
+      }
+      else {
+        focus <- charmatch(which.class, colnames(x$votes))
+        if (is.na(focus))
+          stop(which.class, "is not one of the class labels.")
+      }
+    }
+    # the first predictor variable
+    xv1 <- pred.data[, x1name]
+    x1.pt <- seq(min(xv1), max(xv1), length = n1.pt)
+    # the second predictor variable
+    xv2 <- pred.data[, x2name]
+    x2.pt <- seq(min(xv2), max(xv2), length = n2.pt)
+    # y is big!
+    y.pt <- matrix(0, nrow=n1.pt, ncol=n2.pt)
+    for (i in 1:n1.pt) {
+      for (j in 1:n2.pt) {
+        x.data <- pred.data
+        x.data[, x1name] <- rep(x1.pt[i], n)
+        x.data[, x2name] <- rep(x2.pt[j], n)
+        if (classRF) {
+          pr <- predict(x, x.data, type = "prob")
+          y.pt[i,j] <- weighted.mean(log(ifelse(pr[, focus] == 0, 1, pr[, focus]))
+                                     - rowMeans(log(ifelse(pr == 0, 1, pr))), w, na.rm=TRUE)
+        } else {
+          y.pt[i,j] <- weighted.mean(predict(x, x.data), w, na.rm=TRUE)
+        }
+      }
+    }
+    # output is ready for persp
+    persp(y.pt, xlab=x1lab, ylab=x2lab, zlab="",main=main,...)
+  }
+
+
+
+
 ####################
 #Correlations
 ####################
 # Indicators and Natural
 IndicNatSubset=RFdata[,8:59]
 IndicNatCor=cor(IndicNatSubset)
-write.csv(IndicNatCor,'\\\\share1.bluezone.usu.edu\\miller\\buglab\\Research Projects\\BLM_WRSA_Stream_Surveys\\Results and Reports\\NorCal_2013\\Analysis\\RandomForest\\CorrelationResults.csv')
+#write.csv(IndicNatCor,'\\\\share1.bluezone.usu.edu\\miller\\buglab\\Research Projects\\BLM_WRSA_Stream_Surveys\\Results and Reports\\NorCal_2013\\Analysis\\RandomForest\\CorrelationResults.csv')
 
 
-#Still need to bring in natural predictors 
-RF_NVnat=read.csv("\\\\share1.bluezone.usu.edu\\miller\\buglab\\Research Projects\\BLM_WRSA_Stream_Surveys\\Results and Reports\\NorCal_2013\\Analysis\\RandomForest\\NV_GISvariables_RFinput_11Jan2015.csv")
-RF_CAnat=read.csv("\\\\share1.bluezone.usu.edu\\miller\\buglab\\Research Projects\\BLM_WRSA_Stream_Surveys\\Results and Reports\\NorCal_2013\\Analysis\\RandomForest\\CSCI_GISvariables_RFinput_11Jan2015.csv")
-RF_LUnat=read.csv("\\\\share1.bluezone.usu.edu\\miller\\buglab\\Research Projects\\BLM_WRSA_Stream_Surveys\\Results and Reports\\NorCal_2013\\Analysis\\RandomForest\\NaturalVariables_RFinput_11Jan2015.csv")
-
+####################
+#Random Forest Models
+####################
 
 ###################################################################
 # NV model natural variables.
@@ -431,11 +515,16 @@ partialPlot(RFoe, RFdata,XCMG, cex.main=1)
 #partialPlot(RFoe, RFdata,ELVmin_WS, cex.main=1)
 partialPlot(RFoe, RFdata,AREA_SQKM, cex.main=1)
 partialPlot(RFoe, RFdata,Tmax_PT, cex.main=1)
+########################################################################################################
+# Stop trying with OE
+########################################################################################################
+########################################################################################################
+########################################################################################################
 
-################################################################################
-# Some initial trial and error:
+# Some initial trial and error: 
 
 #Try to rerun some of the "best" model replacing measured WQ with OE WQ To better tell the story... 
+### RESULTS: Once replace OE WQ results do not change the model results so use the OE results since it makes more sense.
 #OE_Conduct+OE_TN+OE_TP
 
 # 8 Original 
@@ -464,98 +553,170 @@ RFIndNat.BLM.MWQ=randomForest(NV_MMI~OE_Conduct+OE_TN+OE_TP+XCMG+IntDensC+AREA_S
                               data=RFdata, importance=TRUE, proximity=TRUE, bias.corr=TRUE)
 RFIndNat.BLM.MWQ
 varImpPlot(RFIndNat.BLM.MWQ)
+########################################################################################################
+########################################################################################################
+#What data needs/should be transformed
+
+boxplotdata=RFdata[,c(6:59)]
+par(mfrow=c(2,6))
+for (i in 1:length(boxplotdata)) {
+  boxplot(boxplotdata[,i], main=names(boxplotdata[i]))
+}
+
+# Transformations: 
+# If values have negatives need to assess how to Log (e.g., OR WQ)
+# Calculated summary stats to know if ) were present, ect. summary(RFdata$PerDensC)
+RFtransdata=RFdata
+RFtransdata$Log_AREA_SQKM=log10(RFtransdata$AREA_SQKM)
+RFtransdata$Log_OE_TN=log10(ifelse(RFtransdata$OE_TN<0,0,RFtransdata$OE_TN)+1)
+RFtransdata$Log_OE_TP=log10(ifelse(RFtransdata$OE_TP<0,0,RFtransdata$OE_TP)+1)
+RFtransdata$Log_alru_dom=log10(RFtransdata$alru_dom+1)
+RFtransdata$Log_SprgNum_WS=log10(RFtransdata$SprgNum_WS+1)
+RFtransdata$Log_PerDensC=log10(RFtransdata$PerDensC+1)
+RFtransdata$Log_Slope_WS=log10(RFtransdata$Slope_WS)
+RFtransdata$Log_HYDR_WS=log10(RFtransdata$HYDR_WS)
+RFtransdata$Sqrt_BnkStability_BLM=sqrt(RFtransdata$BnkStability_BLM)
+
+# Look at how transformations changed data
+boxplotdata=RFtransdata[,c(6:68)]
+par(mfrow=c(2,6))
+for (i in 1:length(boxplotdata)) {
+  boxplot(boxplotdata[,i], main=names(boxplotdata[i]))
+}
 
 
+# Run RF with Transformed Variables. 
+# 1 ALLL 
+T_RFIndNat.all=randomForest(NV_MMI~PrdCond+Pred_TN+Pred_TP+CONDUCTIVITY+NTL+PTL+OE_Conduct+Log_OE_TN+Log_OE_TP+PH+BnkCover_BLM+Sqrt_BnkStability_BLM+
+                            XFC_NAT+xcdenmid+LINCIS_H+PCT_SAFN+XEMBED+xcdenbk+XCMG+XCMGW+L_XCMGW+xbnk_h+xinc_h+EMAP_W1_HALL+NRSA_W1_HALL+QR1+
+                            Log_SprgNum_WS+SpNum300m+SpNum800m+StreamDens+Log_PerDensC+IntDensC+StmOrd+Log_HYDR_WS+GW_P_Sp_Mx+Log_Slope_WS+Log_AREA_SQKM+Volcanic_7+
+                            SITE_ELEV+ELEV_RANGE+ELVmin_WS+Pmax_WS+TMAX_WS+UCS_Mean+CaO_Mean+S_Mean+KFCT_AVE+PRMH_AVE+Log_alru_dom+Evergr_ave+Tmax_PT+TEMP_00_09, 
+                          data=RFtransdata, importance=TRUE, proximity=TRUE, bias.corr=TRUE)
+T_RFIndNat.all
+varImpPlot(T_RFIndNat.all)
 
 
+# 4 ALLL 
+T_RFIndNat.all=randomForest(NV_MMI~Log_OE_TN+Log_OE_TP+
+                              XCMG+xbnk_h+xinc_h+QR1+
+                             SpNum800m+StreamDens+IntDensC+Log_Slope_WS+Log_AREA_SQKM+
+                              ELVmin_WS+S_Mean, 
+                            data=RFtransdata, importance=TRUE, proximity=TRUE, bias.corr=TRUE)
+T_RFIndNat.all
+varImpPlot(T_RFIndNat.all)
+
+# 5 ALLL 
+T_RFIndNat.all=randomForest(NV_MMI~Log_OE_TN+Log_OE_TP+
+                              XCMG+QR1+
+                              StreamDens+IntDensC+Log_AREA_SQKM+
+                              S_Mean, 
+                            data=RFtransdata, importance=TRUE, proximity=TRUE, bias.corr=TRUE)
+T_RFIndNat.all
+varImpPlot(T_RFIndNat.all)
+
+# 6 ALLL 
+T_RFIndNat.all=randomForest(NV_MMI~Log_OE_TN+Log_OE_TP+
+                              XCMG+QR1+
+                             IntDensC+Log_AREA_SQKM+
+                              S_Mean, 
+                            data=RFtransdata, importance=TRUE, proximity=TRUE, bias.corr=TRUE)
+T_RFIndNat.all
+varImpPlot(T_RFIndNat.all)
 
 
+# 8 ALLL SAME MODEL AS WITHOUT TRANSFORMATIONS!!! 
+T_RFIndNat.all=randomForest(NV_MMI~Log_OE_TN+
+                              XCMG+
+                              IntDensC+Log_AREA_SQKM+
+                              S_Mean, 
+                            data=RFtransdata, importance=TRUE, proximity=TRUE, bias.corr=TRUE)
+T_RFIndNat.all
+varImpPlot(T_RFIndNat.all)
+##########################
 
+cor(RFtransdata[,c('Log_OE_TN','Log_AREA_SQKM','XCMG','IntDensC','S_Mean')])
+########################################################################################################
+########################################################################################################
+# Run with Transformed data and JUST BLM indicators
+#1
+T_RFIndNat.BLM=randomForest(NV_MMI~OE_Conduct+Log_OE_TN+Log_OE_TP+PH+Sqrt_BnkStability_BLM+
+                              XFC_NAT+xcdenmid+LINCIS_H+PCT_SAFN+XCMG+
+                              Log_SprgNum_WS+SpNum300m+SpNum800m+StreamDens+Log_PerDensC+IntDensC+StmOrd+Log_HYDR_WS+GW_P_Sp_Mx+Log_Slope_WS+Log_AREA_SQKM+Volcanic_7+
+                              SITE_ELEV+ELEV_RANGE+ELVmin_WS+Pmax_WS+TMAX_WS+UCS_Mean+CaO_Mean+S_Mean+KFCT_AVE+PRMH_AVE+Log_alru_dom+Evergr_ave+Tmax_PT+TEMP_00_09, 
+                            data=RFtransdata, importance=TRUE, proximity=TRUE, bias.corr=TRUE)
+T_RFIndNat.BLM
+varImpPlot(T_RFIndNat.BLM)
+
+#2
+T_RFIndNat.BLM=randomForest(NV_MMI~Log_OE_TN+Log_OE_TP+
+                              XCMG+
+                             IntDensC+Log_AREA_SQKM+
+                              ELEV_RANGE+ELVmin_WS+UCS_Mean+S_Mean+PRMH_AVE+Tmax_PT, 
+                            data=RFtransdata, importance=TRUE, proximity=TRUE, bias.corr=TRUE)
+T_RFIndNat.BLM
+varImpPlot(T_RFIndNat.BLM)
+
+#3
+T_RFIndNat.BLM=randomForest(NV_MMI~Log_OE_TN+Log_OE_TP+
+                              XCMG+
+                              IntDensC+Log_AREA_SQKM+
+                              S_Mean, 
+                            data=RFtransdata, importance=TRUE, proximity=TRUE, bias.corr=TRUE)
+T_RFIndNat.BLM
+varImpPlot(T_RFIndNat.BLM)
+
+
+#4
+T_RFIndNat.BLM=randomForest(NV_MMI~Log_OE_TN+
+                              XCMG+
+                              IntDensC+Log_AREA_SQKM+
+                              S_Mean, 
+                            data=RFtransdata, importance=TRUE, proximity=TRUE, bias.corr=TRUE)
+T_RFIndNat.BLM
+varImpPlot(T_RFIndNat.BLM)
+
+#################################
 ########################################################################################################
 ########################################################################################################
 ########################################################################################################
 ########################################################################################################
-#3-D plots
 
-##randomforest modeling - best model
-MSD5red.rf = randomForest (MStdev5~ StrmDensity+PctForested+Precip30+Area, data = MSD5, importance = TRUE, proximity = TRUE, bias.corr = TRUE)
-MSD5red.rf
-varImpPlot(MSD5red.rf)
-partialPlot(MSD5red.rf,MSD5,Precip30)
-
-par(mai=c(1.2,1.2,0.2,0.2))
-sapply(unique(MSD5$MStdev5),function(grp){
-  partialPlot(MSD5red.rf,pred.data=MSD5, x.var= CVPrecip12m,main=paste("",""),xlab="CV of 12 m Precipitation",ylab="SD of modeled O/E scores", lwd=5, mai=c(0.75,0.75,0.75,0.75), cex.lab=2, cex.axis=2)});
-
-##random forest bivariate partial plot - first block of codes is boilerplate required for partial plot setup
+#3-D plots (Can take a bit of time to run)
+#Original Model run #4
+RFIndNat.BLM.MWQ=randomForest(NV_MMI~OE_Conduct+OE_TN+OE_TP+XCMG+IntDensC+AREA_SQKM+S_Mean, 
+                              data=RFdata, importance=TRUE, proximity=TRUE, bias.corr=TRUE)
+RFIndNat.BLM.MWQ
+varImpPlot(RFIndNat.BLM.MWQ)
 
 
-bivarpartialPlot.randomForest <-
-  function (x, pred.data, x1.var, x2.var, which.class, w,
-            n1.pt = min(length(unique(pred.data[, x1name])), 51),
-            n2.pt = min(length(unique(pred.data[, x2name])), 51),
-            x1lab=deparse(substitute(x1.var)),
-            x2lab=deparse(substitute(x2.var)), ylab="",
-            main=paste("Partial Dependence on", deparse(substitute(x1.var)),"and",deparse(substitute(x2.var))),
-            ...)
-  {
-    classRF <- x$type != "regression"
-    if (is.null(x$forest)) stop("The randomForest object must contain the forest.\\n")
-    x1.var <- substitute(x1.var)
-    x2.var <- substitute(x2.var)
-    x1name <- if (is.character(x1.var)) x1.var else {
-      if (is.name(x1.var)) deparse(x1.var) else {
-        eval(x1.var)
-      }
-    }
-    x2name <- if (is.character(x2.var)) x2.var else {
-      if (is.name(x2.var)) deparse(x2.var) else {
-        eval(x2.var)
-      }
-    }
-    n <- nrow(pred.data)
-    if (missing(w)) w <- rep(1, n)
-    if (classRF) {
-      if (missing(which.class)) {
-        focus <- 1
-      }
-      else {
-        focus <- charmatch(which.class, colnames(x$votes))
-        if (is.na(focus))
-          stop(which.class, "is not one of the class labels.")
-      }
-    }
-    # the first predictor variable
-    xv1 <- pred.data[, x1name]
-    x1.pt <- seq(min(xv1), max(xv1), length = n1.pt)
-    # the second predictor variable
-    xv2 <- pred.data[, x2name]
-    x2.pt <- seq(min(xv2), max(xv2), length = n2.pt)
-    # y is big!
-    y.pt <- matrix(0, nrow=n1.pt, ncol=n2.pt)
-    for (i in 1:n1.pt) {
-      for (j in 1:n2.pt) {
-        x.data <- pred.data
-        x.data[, x1name] <- rep(x1.pt[i], n)
-        x.data[, x2name] <- rep(x2.pt[j], n)
-        if (classRF) {
-          pr <- predict(x, x.data, type = "prob")
-          y.pt[i,j] <- weighted.mean(log(ifelse(pr[, focus] == 0, 1, pr[, focus]))
-                                     - rowMeans(log(ifelse(pr == 0, 1, pr))), w, na.rm=TRUE)
-        } else {
-          y.pt[i,j] <- weighted.mean(predict(x, x.data), w, na.rm=TRUE)
-        }
-      }
-    }
-    # output is ready for persp
-    persp(y.pt, xlab=x1lab, ylab=x2lab, zlab="",main=main,...)
-  }
 
-## once you have defined the bivariate plot function (with above code), use this code to create one.  it takes 5-10 mins, so be patient:
+RFIndNat.BLM.MWQ=randomForest(NV_MMI~OE_Conduct+OE_TN+OE_TP+XCMG+IntDensC+log10(AREA_SQKM)+S_Mean, 
+                              data=RFdata, importance=TRUE, proximity=TRUE, bias.corr=TRUE)
+RFIndNat.BLM.MWQ
+varImpPlot(RFIndNat.BLM.MWQ)
 
 
-nump = 10
-bpp.out = bivarpartialPlot.randomForest(MSD5red.rf, MSD5, StrmDensity, Precip30, ylab="rating", n1.pt=nump, n2.pt=nump, theta=40) #change theta on this one, can't use factors
+RFIndNat.BLM.MWQ=randomForest(NV_MMI~OE_Conduct+Log_OE_TN+Log_OE_TP+XCMG+IntDensC+Log_AREA_SQKM+S_Mean, 
+                              data=RFtransdata, importance=TRUE, proximity=TRUE, bias.corr=TRUE)
+RFIndNat.BLM.MWQ
+varImpPlot(RFIndNat.BLM.MWQ)
+
+
+# Not sure yet what all parameters do, Most left as Scott's defaults sent to me
+# nump= Changes the number of "data points" used to make the graph
+par(mfrow=c(2,2))
+nump = 15
+bpp.out = bivarpartialPlot.randomForest(RFIndNat.BLM.MWQ, RFtransdata, Log_AREA_SQKM, IntDensC, ylab="rating", n1.pt=nump, n2.pt=nump, theta=40) #change theta on this one, can't use factors
+bpp.out = bivarpartialPlot.randomForest(RFIndNat.BLM.MWQ, RFdata, OE_Conduct, AREA_SQKM, ylab="rating", n1.pt=nump, n2.pt=nump, theta=40) #change theta on this one, can't use factors
+bpp.out = bivarpartialPlot.randomForest(RFIndNat.BLM.MWQ, RFdata, OE_TN, AREA_SQKM, ylab="rating", n1.pt=nump, n2.pt=nump, theta=40) #change theta on this one, can't use factors
+bpp.out = bivarpartialPlot.randomForest(RFIndNat.BLM.MWQ, RFdata, OE_TP, AREA_SQKM, ylab="rating", n1.pt=nump, n2.pt=nump, theta=40) #change theta on this one, can't use factors
+bpp.out = bivarpartialPlot.randomForest(RFIndNat.BLM.MWQ, RFdata, AREA_SQKM, XCMG, ylab="rating", n1.pt=nump, n2.pt=nump, theta=40) #change theta on this one, can't use factors
+
+bpp.out = bivarpartialPlot.randomForest(RFIndNat.BLM.MWQ, RFtransdata, IntDensC, Log_AREA_SQKM, ylab="rating", n1.pt=nump, n2.pt=nump, theta=40) #change theta on this one, can't use factors
+bpp.out = bivarpartialPlot.randomForest(RFIndNat.BLM.MWQ, RFdata, OE_Conduct, IntDensC, ylab="rating", n1.pt=nump, n2.pt=nump, theta=40) #change theta on this one, can't use factors
+bpp.out = bivarpartialPlot.randomForest(RFIndNat.BLM.MWQ, RFdata, OE_TN, IntDensC, ylab="rating", n1.pt=nump, n2.pt=nump, theta=40) #change theta on this one, can't use factors
+bpp.out = bivarpartialPlot.randomForest(RFIndNat.BLM.MWQ, RFdata, OE_TP, IntDensC, ylab="rating", n1.pt=nump, n2.pt=nump, theta=40) #change theta on this one, can't use factors
+bpp.out = bivarpartialPlot.randomForest(RFIndNat.BLM.MWQ, RFdata, IntDensC, XCMG,ylab="rating", n1.pt=nump, n2.pt=nump, theta=40) #change theta on this one, can't use factors
 
 
 
@@ -565,15 +726,35 @@ bpp.out = bivarpartialPlot.randomForest(MSD5red.rf, MSD5, StrmDensity, Precip30,
 
 
 
+boxplotdata=RFtransdata[,c(6:62)]
+par(mfrow=c(2,6))
+for (i in 1:length(boxplotdata)) {
+  boxplot(boxplotdata[,i], main=names(boxplotdata[i]), type="l")
+  
+}
 
 
+ab=c(1:5)
+for(i in 1:length(ab)) {
+  ifelse(ab[i]>2, print(2), print(1))
+}
 
 
-
-
-
-
-
+-#iteration example
+  -list=c(1,2,4,5,6,7)
+-for (i in 1:length(list)){
+  -  if(list[i]<5){
+    -    print(list[i] + 2)
+    -  } else {print(list[i] *5 )}
+  -}
+-
+  -#Nicole's Iteration ex
+  -n.list=c(0,1,2,3,5,7,9)
+-for(i in 1:length(n.list)){ 
+  -  if(n.list[i]<5){
+    -    print(n.list[i]+2) 
+    -    } else{print(n.list[i]+7)}
+  -}
 
 
 
