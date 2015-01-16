@@ -70,6 +70,9 @@ designCON=data.frame(siteID=siteeval$SITE_ID,
 #PIVOT
 ResponseInfo=read.csv('\\\\share1.bluezone.usu.edu\\miller\\buglab\\Research Projects\\BLM_WRSA_Stream_Surveys\\Results and Reports\\NorCal_2013\\Analysis\\ExtentEstimates\\NorCal_ExtEst_Input.csv')
 
+#######SRM input file
+ResponseInfo=read.csv('Z:\\buglab\\Research Projects\\BLM_WRSA_Stream_Surveys\\Results and Reports\\SRM_2015\\ResponseInfo.csv')
+
 #This is NorCal specific BUT should NOT be commented out. 
 #Should not change the WRSA info because the UIDs will not match. 
 #In short this code should just not do anything to the dataframe if it is not NorCal data
@@ -108,10 +111,15 @@ SiteInfo=merge(siteeval,ResponseInfo,by=intersect(colnames(siteeval),colnames(Re
 # responseVAR=c('OE')
 # stressorsVAR=c('PCT_SAFN','LSUB_DMM')#UTBLM final list: stressorsVAR=c('InvasivesYN','EC','TP','TN','AugST','LBFXWRat','C1WM100','XCDENMID','Stab2','PCT_SAFN')#must be Access names with a matching 'rtg' variable: to view, str(ResponseInfo)
 #########NorCal examples###########
+# selectVARauto='N'; selectVARchoice=ifelse(selectVARauto=='Y','AllVar','CustomVar')#automatically select all variables
+# extentVAR=c('TNT','EvalStatus','VALXSITE')#NOT extentVAR=c('MMI','trial','EvalStatus','VALXSITE')#Extent Estimate added here since weights the same (rather than running cat.analysis twice)
+# responseVAR=c('NV_MMI')#NOT responseVAR=c('MMI','trial')
+# stressorsVAR=c("OE_Conduct","OE_TN","OE_TP","PH_CHECK","BnkStability_BLM_CHECK","PCT_SAFN_CHECK","XCMG_CHECK","XFC_NAT_CHECK","LINCIS_H_CHECK","xcdenmid_CHECK")#,"XEMBED_CHECK")#NOT stressorsVAR=c('MMI')   ####'PCT_SAFN','LSUB_DMM')#UTBLM final list: stressorsVAR=c('InvasivesYN','EC','TP','TN','AugST','LBFXWRat','C1WM100','XCDENMID','Stab2','PCT_SAFN')#must be Access names with a matching 'rtg' variable: to view, str(ResponseInfo)
+##########SRM ###################
 selectVARauto='N'; selectVARchoice=ifelse(selectVARauto=='Y','AllVar','CustomVar')#automatically select all variables
-extentVAR=c('TNT','EvalStatus','VALXSITE')#NOT extentVAR=c('MMI','trial','EvalStatus','VALXSITE')#Extent Estimate added here since weights the same (rather than running cat.analysis twice)
-responseVAR=c('NV_MMI')#NOT responseVAR=c('MMI','trial')
-stressorsVAR=c("OE_Conduct","OE_TN","OE_TP","PH_CHECK","BnkStability_BLM_CHECK","PCT_SAFN_CHECK","XCMG_CHECK","XFC_NAT_CHECK","LINCIS_H_CHECK","xcdenmid_CHECK")#NOT stressorsVAR=c('MMI')   ####'PCT_SAFN','LSUB_DMM')#UTBLM final list: stressorsVAR=c('InvasivesYN','EC','TP','TN','AugST','LBFXWRat','C1WM100','XCDENMID','Stab2','PCT_SAFN')#must be Access names with a matching 'rtg' variable: to view, str(ResponseInfo)
+extentVAR=c('TNT')#NOT extentVAR=c('MMI','trial','EvalStatus','VALXSITE')#Extent Estimate added here since weights the same (rather than running cat.analysis twice)
+responseVAR=c('XCMG_CHECK')#NOT responseVAR=c('MMI','trial')
+stressorsVAR=c("PH_CHECK","XCMG_CHECK","XFC_NAT_CHECK","LINCIS_H_CHECK","XEMBED_CHECK")#NOT stressorsVAR=c('MMI')   ####'PCT_SAFN','LSUB_DMM')#UTBLM final list: stressorsVAR=c('InvasivesYN','EC','TP','TN','AugST','LBFXWRat','C1WM100','XCDENMID','Stab2','PCT_SAFN')#must be Access names with a matching 'rtg' variable: to view, str(ResponseInfo)
 #save previous variable lists here:
 #initial run variables (default): c('TotalHA','RIPARIAN',"EC","TN","TP",'MWMT','PCT_SAFN')
 #Scott November 2012 figures: c('EC','TP','TN','RIPARIAN','MWMT','PCT_SAFN')
@@ -145,7 +153,7 @@ stressorsVAR=setdiff(stressorsVAR,omitVAR)
 #NorCal
 NV_MMIname='Nevada MMI';OE_TNname='Total Nitrogen';OE_TPname='Total Phosphorus';OE_Conductname='Conductivity';PH_CHECKname='pH';
 BnkStability_BLM_CHECKname='Bank Stability';PCT_SAFN_CHECKname='Percent Fine Sediment';XCMG_CHECKname='Riparian Habitat Complexity';
-XFC_NAT_CHECKname='Instream Habitat Complexity';LINCIS_H_CHECKname='Incision Height';xcdenmid_CHECKname='Riparian Canopy Cover'
+XFC_NAT_CHECKname='Instream Habitat Complexity';LINCIS_H_CHECKname='Incision Height';xcdenmid_CHECKname='Riparian Canopy Cover';XEMBED_CHECKname='Embeddedness'
 
 TotalHAname='Habitat'; RIPARIANname='Riparian Alt.'; AugSTname= 'Stream Temp.'; SummerSTname= 'Stream Temp (Sum)';
 C1WM100name='LWD*';XCDENMIDname = 'Canopy*' ; PCT_SAFNname = 'Fines'; LBFXWRatname='Flood Inundation*' ; Stab2name='Bank Stability'; MMIname='MMI';trialname='trial'
@@ -156,6 +164,14 @@ C1WM100name='LWD*';XCDENMIDname = 'Canopy*' ; PCT_SAFNname = 'Fines'; LBFXWRatna
 
 ###-------------------------------------------Run Categorical Analysis------------------------------------------###
 catdata=subset(SiteInfo, select=c('SITE_ID',extentVAR,variablesrtg))
+
+###########################------SRM input for figures---------------------------###########################################
+sitesCON=read.csv('Z:\\buglab\\Research Projects\\BLM_WRSA_Stream_Surveys\\Results and Reports\\SRM_2015\\sitesCON.csv')
+subpopCON=read.csv('Z:\\buglab\\Research Projects\\BLM_WRSA_Stream_Surveys\\Results and Reports\\SRM_2015\\subpopCON.csv')
+designCON=read.csv('Z:\\buglab\\Research Projects\\BLM_WRSA_Stream_Surveys\\Results and Reports\\SRM_2015\\designCON.csv')
+catdata=read.csv('Z:\\buglab\\Research Projects\\BLM_WRSA_Stream_Surveys\\Results and Reports\\SRM_2015\\catdata.csv')
+rm(sitesCON,subpopCON,designCON,catdata)
+############################################################################################################################
 
 results.cat <- cat.analysis(sites = sitesCON, 
                             subpop = subpopCON, 
