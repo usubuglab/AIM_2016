@@ -549,10 +549,20 @@ varImpPlot(RFIndNat.BLM.MWQ)
 
 # Run with subset of BLM select indicators (measured water chem only, not modeled) and subset natural
 # 4 Rerun
-RFIndNat.BLM.MWQ=randomForest(NV_MMI~OE_Conduct+OE_TN+OE_TP+XCMG+IntDensC+AREA_SQKM+S_Mean, 
+RFIndNat.BLM.OEWQ=randomForest(NV_MMI~OE_Conduct+OE_TN+OE_TP+XCMG+IntDensC+AREA_SQKM+S_Mean, 
                               data=RFdata, importance=TRUE, proximity=TRUE, bias.corr=TRUE)
-RFIndNat.BLM.MWQ
-varImpPlot(RFIndNat.BLM.MWQ)
+RFIndNat.BLM.OEWQ
+varImpPlot(RFIndNat.BLM.OEWQ)
+
+par(mfrow=c(2,4))
+partialPlot(RFIndNat.BLM.OEWQ, RFdata,OE_Conduct, cex.main=1)
+partialPlot(RFIndNat.BLM.OEWQ, RFdata,OE_TN, cex.main=1)
+partialPlot(RFIndNat.BLM.OEWQ, RFdata,OE_TP, cex.main=1)
+partialPlot(RFIndNat.BLM.OEWQ, RFdata,XCMG, cex.main=1)
+partialPlot(RFIndNat.BLM.OEWQ, RFdata,IntDensC, cex.main=1)
+partialPlot(RFIndNat.BLM.OEWQ, RFdata,AREA_SQKM, cex.main=1)
+partialPlot(RFIndNat.BLM.OEWQ, RFdata,S_Mean, cex.main=1)
+
 ########################################################################################################
 ########################################################################################################
 #What data needs/should be transformed
@@ -584,6 +594,8 @@ for (i in 1:length(boxplotdata)) {
   boxplot(boxplotdata[,i], main=names(boxplotdata[i]))
 }
 
+########################################################################################################
+########################################################################################################
 
 # Run RF with Transformed Variables. 
 # 1 ALLL 
@@ -596,7 +608,7 @@ T_RFIndNat.all
 varImpPlot(T_RFIndNat.all)
 
 
-# 4 ALLL 
+# 2 ALLL 
 T_RFIndNat.all=randomForest(NV_MMI~Log_OE_TN+Log_OE_TP+
                               XCMG+xbnk_h+xinc_h+QR1+
                              SpNum800m+StreamDens+IntDensC+Log_Slope_WS+Log_AREA_SQKM+
@@ -605,7 +617,7 @@ T_RFIndNat.all=randomForest(NV_MMI~Log_OE_TN+Log_OE_TP+
 T_RFIndNat.all
 varImpPlot(T_RFIndNat.all)
 
-# 5 ALLL 
+# 3 ALLL 
 T_RFIndNat.all=randomForest(NV_MMI~Log_OE_TN+Log_OE_TP+
                               XCMG+QR1+
                               StreamDens+IntDensC+Log_AREA_SQKM+
@@ -614,7 +626,7 @@ T_RFIndNat.all=randomForest(NV_MMI~Log_OE_TN+Log_OE_TP+
 T_RFIndNat.all
 varImpPlot(T_RFIndNat.all)
 
-# 6 ALLL 
+# 4 ALLL 
 T_RFIndNat.all=randomForest(NV_MMI~Log_OE_TN+Log_OE_TP+
                               XCMG+QR1+
                              IntDensC+Log_AREA_SQKM+
@@ -624,10 +636,26 @@ T_RFIndNat.all
 varImpPlot(T_RFIndNat.all)
 
 
-# 8 ALLL SAME MODEL AS WITHOUT TRANSFORMATIONS!!! 
+# 5 ALLL SAME MODEL AS WITHOUT TRANSFORMATIONS!!! 
 T_RFIndNat.all=randomForest(NV_MMI~Log_OE_TN+
                               XCMG+
                               IntDensC+Log_AREA_SQKM+
+                              S_Mean, 
+                            data=RFtransdata, importance=TRUE, proximity=TRUE, bias.corr=TRUE)
+T_RFIndNat.all
+varImpPlot(T_RFIndNat.all)
+
+par(mfrow=c(2,3))
+partialPlot(T_RFIndNat.all, RFtransdata,Log_OE_TN, cex.main=1)
+partialPlot(T_RFIndNat.all, RFtransdata,XCMG, cex.main=1)
+partialPlot(T_RFIndNat.all, RFtransdata,IntDensC, cex.main=1)
+partialPlot(T_RFIndNat.all, RFtransdata,Log_AREA_SQKM, cex.main=1)
+partialPlot(T_RFIndNat.all, RFtransdata,S_Mean, cex.main=1)
+
+
+# 6 ALLL SAME MODEL AS WITHOUT TRANSFORMATIONS!!! 
+T_RFIndNat.all=randomForest(NV_MMI~Log_OE_TN+
+                              Log_AREA_SQKM+
                               S_Mean, 
                             data=RFtransdata, importance=TRUE, proximity=TRUE, bias.corr=TRUE)
 T_RFIndNat.all
@@ -675,64 +703,149 @@ T_RFIndNat.BLM=randomForest(NV_MMI~Log_OE_TN+
 T_RFIndNat.BLM
 varImpPlot(T_RFIndNat.BLM)
 
+par(mfrow=c(2,3))
+partialPlot(T_RFIndNat.BLM, RFtransdata,Log_OE_TN, cex.main=1)
+partialPlot(T_RFIndNat.BLM, RFtransdata,XCMG, cex.main=1)
+partialPlot(T_RFIndNat.BLM, RFtransdata,IntDensC, cex.main=1)
+partialPlot(T_RFIndNat.BLM, RFtransdata,Log_AREA_SQKM, cex.main=1)
+partialPlot(T_RFIndNat.BLM, RFtransdata,S_Mean, cex.main=1)
+
+
+#5
+T_RFIndNat.BLM=randomForest(NV_MMI~Log_OE_TN+
+                              XCMG+
+                              Log_AREA_SQKM, 
+                            data=RFtransdata, importance=TRUE, proximity=TRUE, bias.corr=TRUE)
+T_RFIndNat.BLM
+varImpPlot(T_RFIndNat.BLM)
 #################################
 ########################################################################################################
 ########################################################################################################
 ########################################################################################################
 ########################################################################################################
-
+########################################################################################################
+########################################################################################################
 #3-D plots (Can take a bit of time to run)
+######################
 #Original Model run #4
 RFIndNat.BLM.MWQ=randomForest(NV_MMI~OE_Conduct+OE_TN+OE_TP+XCMG+IntDensC+AREA_SQKM+S_Mean, 
                               data=RFdata, importance=TRUE, proximity=TRUE, bias.corr=TRUE)
 RFIndNat.BLM.MWQ
 varImpPlot(RFIndNat.BLM.MWQ)
-
-
-
-RFIndNat.BLM.MWQ=randomForest(NV_MMI~OE_Conduct+OE_TN+OE_TP+XCMG+IntDensC+log10(AREA_SQKM)+S_Mean, 
-                              data=RFdata, importance=TRUE, proximity=TRUE, bias.corr=TRUE)
-RFIndNat.BLM.MWQ
-varImpPlot(RFIndNat.BLM.MWQ)
-
-
-RFIndNat.BLM.MWQ=randomForest(NV_MMI~OE_Conduct+Log_OE_TN+Log_OE_TP+XCMG+IntDensC+Log_AREA_SQKM+S_Mean, 
-                              data=RFtransdata, importance=TRUE, proximity=TRUE, bias.corr=TRUE)
-RFIndNat.BLM.MWQ
-varImpPlot(RFIndNat.BLM.MWQ)
-
-
-# Not sure yet what all parameters do, Most left as Scott's defaults sent to me
 # nump= Changes the number of "data points" used to make the graph
-par(mfrow=c(2,2))
+par(mfrow=c(2,4))
 nump = 15
-bpp.out = bivarpartialPlot.randomForest(RFIndNat.BLM.MWQ, RFtransdata, Log_AREA_SQKM, IntDensC, ylab="rating", n1.pt=nump, n2.pt=nump, theta=40) #change theta on this one, can't use factors
-bpp.out = bivarpartialPlot.randomForest(RFIndNat.BLM.MWQ, RFdata, OE_Conduct, AREA_SQKM, ylab="rating", n1.pt=nump, n2.pt=nump, theta=40) #change theta on this one, can't use factors
-bpp.out = bivarpartialPlot.randomForest(RFIndNat.BLM.MWQ, RFdata, OE_TN, AREA_SQKM, ylab="rating", n1.pt=nump, n2.pt=nump, theta=40) #change theta on this one, can't use factors
-bpp.out = bivarpartialPlot.randomForest(RFIndNat.BLM.MWQ, RFdata, OE_TP, AREA_SQKM, ylab="rating", n1.pt=nump, n2.pt=nump, theta=40) #change theta on this one, can't use factors
-bpp.out = bivarpartialPlot.randomForest(RFIndNat.BLM.MWQ, RFdata, AREA_SQKM, XCMG, ylab="rating", n1.pt=nump, n2.pt=nump, theta=40) #change theta on this one, can't use factors
+bpp.out = bivarpartialPlot.randomForest(RFIndNat.BLM.MWQ, RFtransdata, AREA_SQKM, IntDensC, ylab="rating", n1.pt=nump, n2.pt=nump, theta=40) #change theta on this one, can't use factors
+bpp.out = bivarpartialPlot.randomForest(RFIndNat.BLM.MWQ, RFtransdata, OE_Conduct, AREA_SQKM, ylab="rating", n1.pt=nump, n2.pt=nump, theta=40) #change theta on this one, can't use factors
+bpp.out = bivarpartialPlot.randomForest(RFIndNat.BLM.MWQ, RFtransdata, OE_TN, AREA_SQKM, ylab="rating", n1.pt=nump, n2.pt=nump, theta=40) #change theta on this one, can't use factors
+bpp.out = bivarpartialPlot.randomForest(RFIndNat.BLM.MWQ, RFtransdata, OE_TP, AREA_SQKM, ylab="rating", n1.pt=nump, n2.pt=nump, theta=40) #change theta on this one, can't use factors
+bpp.out = bivarpartialPlot.randomForest(RFIndNat.BLM.MWQ, RFtransdata, AREA_SQKM, XCMG, ylab="rating", n1.pt=nump, n2.pt=nump, theta=40) #change theta on this one, can't use factors
+bpp.out = bivarpartialPlot.randomForest(RFIndNat.BLM.MWQ, RFtransdata, AREA_SQKM, S_Mean, ylab="rating", n1.pt=nump, n2.pt=nump, theta=40) #change theta on this one, can't use factors
 
-bpp.out = bivarpartialPlot.randomForest(RFIndNat.BLM.MWQ, RFtransdata, IntDensC, Log_AREA_SQKM, ylab="rating", n1.pt=nump, n2.pt=nump, theta=40) #change theta on this one, can't use factors
-bpp.out = bivarpartialPlot.randomForest(RFIndNat.BLM.MWQ, RFdata, OE_Conduct, IntDensC, ylab="rating", n1.pt=nump, n2.pt=nump, theta=40) #change theta on this one, can't use factors
-bpp.out = bivarpartialPlot.randomForest(RFIndNat.BLM.MWQ, RFdata, OE_TN, IntDensC, ylab="rating", n1.pt=nump, n2.pt=nump, theta=40) #change theta on this one, can't use factors
-bpp.out = bivarpartialPlot.randomForest(RFIndNat.BLM.MWQ, RFdata, OE_TP, IntDensC, ylab="rating", n1.pt=nump, n2.pt=nump, theta=40) #change theta on this one, can't use factors
-bpp.out = bivarpartialPlot.randomForest(RFIndNat.BLM.MWQ, RFdata, IntDensC, XCMG,ylab="rating", n1.pt=nump, n2.pt=nump, theta=40) #change theta on this one, can't use factors
+bpp.out = bivarpartialPlot.randomForest(RFIndNat.BLM.MWQ, RFtransdata, OE_Conduct, IntDensC, ylab="rating", n1.pt=nump, n2.pt=nump, theta=40) #change theta on this one, can't use factors
+bpp.out = bivarpartialPlot.randomForest(RFIndNat.BLM.MWQ, RFtransdata, OE_TN, IntDensC, ylab="rating", n1.pt=nump, n2.pt=nump, theta=40) #change theta on this one, can't use factors
+bpp.out = bivarpartialPlot.randomForest(RFIndNat.BLM.MWQ, RFtransdata, OE_TP, IntDensC, ylab="rating", n1.pt=nump, n2.pt=nump, theta=40) #change theta on this one, can't use factors
+bpp.out = bivarpartialPlot.randomForest(RFIndNat.BLM.MWQ, RFtransdata, IntDensC, XCMG,ylab="rating", n1.pt=nump, n2.pt=nump, theta=40) #change theta on this one, can't use factors
+bpp.out = bivarpartialPlot.randomForest(RFIndNat.BLM.MWQ, RFtransdata, IntDensC, S_Mean, ylab="rating", n1.pt=nump, n2.pt=nump, theta=40) #change theta on this one, can't use factors
+
+bpp.out = bivarpartialPlot.randomForest(RFIndNat.BLM.MWQ, RFtransdata, OE_TN, OE_Conduct, ylab="rating", n1.pt=nump, n2.pt=nump, theta=40) #change theta on this one, can't use factors
+bpp.out = bivarpartialPlot.randomForest(RFIndNat.BLM.MWQ, RFtransdata, OE_TP, OE_Conduct, ylab="rating", n1.pt=nump, n2.pt=nump, theta=40) #change theta on this one, can't use factors
+bpp.out = bivarpartialPlot.randomForest(RFIndNat.BLM.MWQ, RFtransdata, OE_Conduct, XCMG, ylab="rating", n1.pt=nump, n2.pt=nump, theta=40) #change theta on this one, can't use factors
+bpp.out = bivarpartialPlot.randomForest(RFIndNat.BLM.MWQ, RFtransdata, OE_Conduct, S_Mean, ylab="rating", n1.pt=nump, n2.pt=nump, theta=40) #change theta on this one, can't use factors
+
+bpp.out = bivarpartialPlot.randomForest(RFIndNat.BLM.MWQ, RFtransdata, OE_TN, OE_TP, ylab="rating", n1.pt=nump, n2.pt=nump, theta=40) #change theta on this one, can't use factors
+bpp.out = bivarpartialPlot.randomForest(RFIndNat.BLM.MWQ, RFtransdata, OE_TN, XCMG,ylab="rating", n1.pt=nump, n2.pt=nump, theta=40) #change theta on this one, can't use factors
+bpp.out = bivarpartialPlot.randomForest(RFIndNat.BLM.MWQ, RFtransdata, OE_TP, XCMG,ylab="rating", n1.pt=nump, n2.pt=nump, theta=40) #change theta on this one, can't use factors
+bpp.out = bivarpartialPlot.randomForest(RFIndNat.BLM.MWQ, RFtransdata, OE_TP, S_Mean, ylab="rating", n1.pt=nump, n2.pt=nump, theta=40) #change theta on this one, can't use factors
+bpp.out = bivarpartialPlot.randomForest(RFIndNat.BLM.MWQ, RFtransdata, OE_TN, S_Mean, ylab="rating", n1.pt=nump, n2.pt=nump, theta=40) #change theta on this one, can't use factors
+bpp.out = bivarpartialPlot.randomForest(RFIndNat.BLM.MWQ, RFtransdata, XCMG, S_Mean, ylab="rating", n1.pt=nump, n2.pt=nump, theta=40) #change theta on this one, can't use factors
+
+
+
+
+#Original Model run #4 WITH transformed data
+T_RFIndNat.BLM.MWQ=randomForest(NV_MMI~OE_Conduct+Log_OE_TN+Log_OE_TP+XCMG+IntDensC+Log_AREA_SQKM+S_Mean, 
+                              data=RFtransdata, importance=TRUE, proximity=TRUE, bias.corr=TRUE)
+T_RFIndNat.BLM.MWQ
+varImpPlot(T_RFIndNat.BLM.MWQ)
+# nump= Changes the number of "data points" used to make the graph
+par(mfrow=c(2,4))
+nump = 15
+bpp.out = bivarpartialPlot.randomForest(T_RFIndNat.BLM.MWQ, RFtransdata, IntDensC, Log_AREA_SQKM, ylab="rating", n1.pt=nump, n2.pt=nump, theta=40) #change theta on this one, can't use factors
+bpp.out = bivarpartialPlot.randomForest(T_RFIndNat.BLM.MWQ, RFtransdata, OE_Conduct, Log_AREA_SQKM, ylab="rating", n1.pt=nump, n2.pt=nump, theta=40) #change theta on this one, can't use factors
+bpp.out = bivarpartialPlot.randomForest(T_RFIndNat.BLM.MWQ, RFtransdata, Log_OE_TN, Log_AREA_SQKM, ylab="rating", n1.pt=nump, n2.pt=nump, theta=40) #change theta on this one, can't use factors
+bpp.out = bivarpartialPlot.randomForest(T_RFIndNat.BLM.MWQ, RFtransdata, Log_OE_TP, Log_AREA_SQKM, ylab="rating", n1.pt=nump, n2.pt=nump, theta=40) #change theta on this one, can't use factors
+bpp.out = bivarpartialPlot.randomForest(T_RFIndNat.BLM.MWQ, RFtransdata, Log_AREA_SQKM, XCMG, ylab="rating", n1.pt=nump, n2.pt=nump, theta=40) #change theta on this one, can't use factors
+bpp.out = bivarpartialPlot.randomForest(T_RFIndNat.BLM.MWQ, RFtransdata, Log_AREA_SQKM, S_Mean, ylab="rating", n1.pt=nump, n2.pt=nump, theta=40) #change theta on this one, can't use factors
+
+bpp.out = bivarpartialPlot.randomForest(T_RFIndNat.BLM.MWQ, RFtransdata, IntDensC,OE_Conduct,  ylab="rating", n1.pt=nump, n2.pt=nump, theta=40) #change theta on this one, can't use factors
+bpp.out = bivarpartialPlot.randomForest(T_RFIndNat.BLM.MWQ, RFtransdata, Log_OE_TN, IntDensC, ylab="rating", n1.pt=nump, n2.pt=nump, theta=40) #change theta on this one, can't use factors
+bpp.out = bivarpartialPlot.randomForest(T_RFIndNat.BLM.MWQ, RFtransdata, Log_OE_TP, IntDensC, ylab="rating", n1.pt=nump, n2.pt=nump, theta=40) #change theta on this one, can't use factors
+bpp.out = bivarpartialPlot.randomForest(T_RFIndNat.BLM.MWQ, RFtransdata, IntDensC, XCMG,ylab="rating", n1.pt=nump, n2.pt=nump, theta=40) #change theta on this one, can't use factors
+bpp.out = bivarpartialPlot.randomForest(T_RFIndNat.BLM.MWQ, RFtransdata, IntDensC, S_Mean, ylab="rating", n1.pt=nump, n2.pt=nump, theta=40) #change theta on this one, can't use factors
+
+bpp.out = bivarpartialPlot.randomForest(T_RFIndNat.BLM.MWQ, RFtransdata, Log_OE_TN, OE_Conduct, ylab="rating", n1.pt=nump, n2.pt=nump, theta=40) #change theta on this one, can't use factors
+bpp.out = bivarpartialPlot.randomForest(T_RFIndNat.BLM.MWQ, RFtransdata, Log_OE_TP, OE_Conduct, ylab="rating", n1.pt=nump, n2.pt=nump, theta=40) #change theta on this one, can't use factors
+bpp.out = bivarpartialPlot.randomForest(T_RFIndNat.BLM.MWQ, RFtransdata, OE_Conduct, XCMG, ylab="rating", n1.pt=nump, n2.pt=nump, theta=40) #change theta on this one, can't use factors
+bpp.out = bivarpartialPlot.randomForest(T_RFIndNat.BLM.MWQ, RFtransdata, OE_Conduct, S_Mean, ylab="rating", n1.pt=nump, n2.pt=nump, theta=40) #change theta on this one, can't use factors
+
+bpp.out = bivarpartialPlot.randomForest(T_RFIndNat.BLM.MWQ, RFtransdata, Log_OE_TN, Log_OE_TP, ylab="rating", n1.pt=nump, n2.pt=nump, theta=40) #change theta on this one, can't use factors
+bpp.out = bivarpartialPlot.randomForest(T_RFIndNat.BLM.MWQ, RFtransdata, Log_OE_TN, XCMG,ylab="rating", n1.pt=nump, n2.pt=nump, theta=40) #change theta on this one, can't use factors
+bpp.out = bivarpartialPlot.randomForest(T_RFIndNat.BLM.MWQ, RFtransdata, Log_OE_TP, XCMG,ylab="rating", n1.pt=nump, n2.pt=nump, theta=40) #change theta on this one, can't use factors
+bpp.out = bivarpartialPlot.randomForest(T_RFIndNat.BLM.MWQ, RFtransdata, Log_OE_TP, S_Mean, ylab="rating", n1.pt=nump, n2.pt=nump, theta=40) #change theta on this one, can't use factors
+bpp.out = bivarpartialPlot.randomForest(T_RFIndNat.BLM.MWQ, RFtransdata, Log_OE_TN, S_Mean, ylab="rating", n1.pt=nump, n2.pt=nump, theta=40) #change theta on this one, can't use factors
+bpp.out = bivarpartialPlot.randomForest(T_RFIndNat.BLM.MWQ, RFtransdata, XCMG, S_Mean, ylab="rating", n1.pt=nump, n2.pt=nump, theta=40) #change theta on this one, can't use factors
+
+
+
+######################
+
+#3
+T_RFIndNat.BLM=randomForest(NV_MMI~Log_OE_TN+Log_OE_TP+
+                              XCMG+
+                              IntDensC+Log_AREA_SQKM+
+                              S_Mean, 
+                            data=RFtransdata, importance=TRUE, proximity=TRUE, bias.corr=TRUE)
+T_RFIndNat.BLM
+varImpPlot(T_RFIndNat.BLM)
+
+
+
+# 2-D plots
+par(mfrow=c(2,3))
+partialPlot(T_RFIndNat.BLM, RFtransdata,Log_OE_TN, cex.main=1)
+partialPlot(T_RFIndNat.BLM, RFtransdata,Log_OE_TP, cex.main=1)
+partialPlot(T_RFIndNat.BLM, RFtransdata,XCMG, cex.main=1)
+partialPlot(T_RFIndNat.BLM, RFtransdata,IntDensC, cex.main=1)
+partialPlot(T_RFIndNat.BLM, RFtransdata,Log_AREA_SQKM, cex.main=1)
+partialPlot(T_RFIndNat.BLM, RFtransdata,S_Mean, cex.main=1)
+
+# nump= Changes the number of "data points" used to make the graph
+par(mfrow=c(2,3))
+nump = 15
+bpp.out = bivarpartialPlot.randomForest(T_RFIndNat.BLM, RFtransdata, IntDensC, Log_AREA_SQKM, ylab="rating", n1.pt=nump, n2.pt=nump, theta=40) #change theta on this one, can't use factors
+bpp.out = bivarpartialPlot.randomForest(T_RFIndNat.BLM, RFtransdata, Log_OE_TN, Log_AREA_SQKM, ylab="rating", n1.pt=nump, n2.pt=nump, theta=40) #change theta on this one, can't use factors
+bpp.out = bivarpartialPlot.randomForest(T_RFIndNat.BLM, RFtransdata, Log_OE_TP, Log_AREA_SQKM, ylab="rating", n1.pt=nump, n2.pt=nump, theta=40) #change theta on this one, can't use factors
+bpp.out = bivarpartialPlot.randomForest(T_RFIndNat.BLM, RFtransdata, Log_AREA_SQKM, XCMG, ylab="rating", n1.pt=nump, n2.pt=nump, theta=40) #change theta on this one, can't use factors
+bpp.out = bivarpartialPlot.randomForest(T_RFIndNat.BLM, RFtransdata, Log_AREA_SQKM, S_Mean, ylab="rating", n1.pt=nump, n2.pt=nump, theta=40) #change theta on this one, can't use factors
+
+bpp.out = bivarpartialPlot.randomForest(T_RFIndNat.BLM, RFtransdata, Log_OE_TN, IntDensC, ylab="rating", n1.pt=nump, n2.pt=nump, theta=40) #change theta on this one, can't use factors
+bpp.out = bivarpartialPlot.randomForest(T_RFIndNat.BLM, RFtransdata, Log_OE_TP, IntDensC, ylab="rating", n1.pt=nump, n2.pt=nump, theta=40) #change theta on this one, can't use factors
+bpp.out = bivarpartialPlot.randomForest(T_RFIndNat.BLM, RFtransdata, IntDensC, XCMG,ylab="rating", n1.pt=nump, n2.pt=nump, theta=40) #change theta on this one, can't use factors
+bpp.out = bivarpartialPlot.randomForest(T_RFIndNat.BLM, RFtransdata, IntDensC, S_Mean, ylab="rating", n1.pt=nump, n2.pt=nump, theta=40) #change theta on this one, can't use factors
+
+bpp.out = bivarpartialPlot.randomForest(T_RFIndNat.BLM, RFtransdata, Log_OE_TN, Log_OE_TP, ylab="rating", n1.pt=nump, n2.pt=nump, theta=40) #change theta on this one, can't use factors
+bpp.out = bivarpartialPlot.randomForest(T_RFIndNat.BLM, RFtransdata, Log_OE_TN, XCMG,ylab="rating", n1.pt=nump, n2.pt=nump, theta=40) #change theta on this one, can't use factors
+bpp.out = bivarpartialPlot.randomForest(T_RFIndNat.BLM, RFtransdata, Log_OE_TP, XCMG,ylab="rating", n1.pt=nump, n2.pt=nump, theta=40) #change theta on this one, can't use factors
+bpp.out = bivarpartialPlot.randomForest(T_RFIndNat.BLM, RFtransdata, Log_OE_TP, S_Mean, ylab="rating", n1.pt=nump, n2.pt=nump, theta=40) #change theta on this one, can't use factors
+bpp.out = bivarpartialPlot.randomForest(T_RFIndNat.BLM, RFtransdata, Log_OE_TN, S_Mean, ylab="rating", n1.pt=nump, n2.pt=nump, theta=40) #change theta on this one, can't use factors
+bpp.out = bivarpartialPlot.randomForest(T_RFIndNat.BLM, RFtransdata, XCMG, S_Mean, ylab="rating", n1.pt=nump, n2.pt=nump, theta=40) #change theta on this one, can't use factors
 
 
 
 
 
-
-
-
-
-boxplotdata=RFtransdata[,c(6:62)]
-par(mfrow=c(2,6))
-for (i in 1:length(boxplotdata)) {
-  boxplot(boxplotdata[,i], main=names(boxplotdata[i]), type="l")
-  
-}
-
+##
 
 ab=c(1:5)
 for(i in 1:length(ab)) {
