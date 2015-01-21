@@ -16,6 +16,8 @@
 # Line 55 to change the margins so as not to cut off the labels of bars, or the 100% (where a bar may = 100% the numeric % was extremely close to edge)
 ### change the margins using par(mar = c(Bottom margin, Left Margin, Top Margin, Right margin) 
 
+# Error bars based on 90% confidence NOT 95. MUST match whatever you entered in the extent estimates! 
+
 ##EXTENT FIGURES##
 #Global Figure parameters#
 axissize=2#cex
@@ -34,10 +36,10 @@ for (s in 1:length(SubpopTypes)){#Temporary! only all and district - length(Subp
     if(ResponseInclude=='Y') {BarDataPoor=subset(results.cat,subset=Subpopulation==SubpopStrata[[t]]  & Category=='Poor')
     } else if (ResponseInclude=='N'){BarDataPoor=subset(results.cat,subset=Subpopulation==SubpopStrata[[t]]  & Category=='Poor'& Indicator %in% sprintf('%srtg',responseVAR) ==FALSE)}
     if (ScaleTYPE=='Percent'){ BarDataPoor$X= BarDataPoor$Estimate.P; 
-                               BarDataPoor$UConf= BarDataPoor$UCB95Pct.P; BarDataPoor$LConf= BarDataPoor$LCB95Pct.P;
+                               BarDataPoor$UConf= BarDataPoor$UCB90Pct.P; BarDataPoor$LConf= BarDataPoor$LCB90Pct.P;
                                XmaxPoor=100 ## x axis max limit for poor extent figures in % #setting at 100 sometimes causes problems with large error bars
     } else{ BarDataPoor$X= BarDataPoor$Estimate.U; 
-            BarDataPoor$UConf= BarDataPoor$UCB95Pct.U; BarDataPoor$LConf= BarDataPoor$LCB95Pct.U
+            BarDataPoor$UConf= BarDataPoor$UCB90Pct.U; BarDataPoor$LConf= BarDataPoor$LCB90Pct.U
             XmaxPoor=sum(BarDataPoor$X) ##changes x scale on poor extent for scale bars in absolute stream km
     }
     #code repeated from below, consolidate
@@ -85,11 +87,11 @@ for (s in 1:length(SubpopTypes)){#Temporary! only all and district - length(Subp
         WARNsort=ifelse(BarData$Indicator %in% extentVAR | (BarData$Category[[1]]=='Poor' & BarData$Category[[3]]=='Good'),'',print(sprintf('SORT incorrect-%s-%s-%s',varNAME,SubpopTypes[[s]],SubpopStrata[[t]])))#I think this is corrected with the double sort, but left in just to be safe
              }
       if (ScaleTYPE2=='Percent'){BarData$X=BarData$Estimate.P;
-                                BarData$UConf=BarData$UCB95Pct.P;BarData$LConf=BarData$LCB95Pct.P;
+                                BarData$UConf=BarData$UCB90Pct.P;BarData$LConf=BarData$LCB90Pct.P;
                                 Xmax=100
       } else{BarData$X=BarData$Estimate.U;
-             BarData$UConf=BarData$UCB95Pct.U;BarData$LConf=BarData$LCB95Pct.U;
-             if(varNAME %in% extentVAR){XmaxKM=max(results.cat$UCB95Pct.U)} else{XmaxKM=max(results.cat$UCB95Pct.U[(results.cat$Indicator %in% extentVAR)==FALSE])}
+             BarData$UConf=BarData$UCB90Pct.U;BarData$LConf=BarData$LCB90Pct.U;
+             if(varNAME %in% extentVAR){XmaxKM=max(results.cat$UCB90Pct.U)} else{XmaxKM=max(results.cat$UCB90Pct.U[(results.cat$Indicator %in% extentVAR)==FALSE])}
              Xmax=round(XmaxKM,0)  #the highest upper confidence rounded to the nearest 1000 (actual adjusted pop size is 2500 down from the original 3300)
       }
       #custom sort order for access #BarData=BarData[with(BarData,order(Estimate.U)),] 
@@ -214,7 +216,7 @@ for (g in 1:varLEN){
   rc= rc + geom_bar(stat = "identity")   + scale_fill_identity(labels=c('Most',"Moderate","Least"),guide=guide_legend(size=50,title='Condition',reverse=T,direction='horizontal')) + 
     coord_flip() + facet_grid(. +  Subpop ~ Indicator ,labeller=labelALL) + #using labeller now, but still need to replace the variable to support ordering by factor; previous: would prefer to use ggplot labeller rather than new columns, but works very inconsistently and doesn't sort - see label_WQ
     labs(y='% of Stream Length',x='') +
-    geom_errorbar(aes(ymax = UCB95Pct.P, ymin =LCB95Pct.P), width = .3,colour='black',size=LineSize) + #run to here to see fully labelled panels before stripping off
+    geom_errorbar(aes(ymax = UCB90Pct.P, ymin =LCB90Pct.P), width = .3,colour='black',size=LineSize) + #run to here to see fully labelled panels before stripping off
     theme(panel.grid.major.y = element_blank(), panel.grid.minor.y = element_blank(),axis.text.y = element_blank(),axis.ticks.y = element_blank(),#get rid of horizontal grid and axis
           panel.grid.major.x = element_blank(),panel.grid.minor.x = element_blank(),# element_line(size=LineSize/2),
           axis.line=element_line(size = LineSize/2,colour='black'),axis.ticks.x = element_line(size = LineSize/2,colour='black'),axis.ticks.length = unit( LineSize/2, "lines"),axis.text.x=element_text(colour='black'),#xaxis settings (visible)
@@ -262,7 +264,7 @@ for (g in 1:varLEN){
 
 
 ##split screen attempt
-# split.screen(rbind(c(0.1,0.292,0.1, 0.98), c(0.312, 0.95, 0.1, 0.98)))
+# split.screen(rbind(c(0.1,0.292,0.1, 0.98), c(0.312, 0.90, 0.1, 0.98)))
 # screen(1)
 # par(mar = c(0, 0, 0, 0))
 # plot(1:30, rnorm(30), xaxs = "i", ylim = c(-3, 3), xaxt = "n")
@@ -310,11 +312,11 @@ for (g in 1:varLEN){
 #         WARNsort=ifelse(BarData$Category[[1]]=='Poor' & BarData$Category[[3]]=='Good','',print(sprintf('SORT incorrect-%s-%s-%s',varNAME,SubpopTypes[[s]],SubpopStrata[[t]])))#I think this is corrected with the double sort, but left in just to be safe
 #       }
 #       if (ScaleTYPE=='Percent'){BarData$X=BarData$Estimate.P;
-#                                 BarData$UConf=BarData$UCB95Pct.P;BarData$LConf=BarData$LCB95Pct.P;
+#                                 BarData$UConf=BarData$UCB90Pct.P;BarData$LConf=BarData$LCB90Pct.P;
 #                                 Xmax=100
 #       } else{BarData$X=BarData$Estimate.U;
-#              BarData$UConf=BarData$UCB95Pct.U;BarData$LConf=BarData$LCB95Pct.U;
-#              Xmax=round(max(results.cat$UCB95Pct.U[results.cat$Indicator!='EvalStatus_Access']),-3)  #the highest upper confidence rounded to the nearest 1000 (actual adjusted pop size is 2500 down from the original 3300)
+#              BarData$UConf=BarData$UCB90Pct.U;BarData$LConf=BarData$LCB90Pct.U;
+#              Xmax=round(max(results.cat$UCB90Pct.U[results.cat$Indicator!='EvalStatus_Access']),-3)  #the highest upper confidence rounded to the nearest 1000 (actual adjusted pop size is 2500 down from the original 3300)
 #       }
 #       #modeled after Fig 23 - http://www.epa.gov/owow/streamsurvey/pdf/WSA_Assessment_May2007.pdf
 #       #Category barchart: http://www.epa.gov/nheerl/arm/orpages/streamorimpair.htm (cleaner examples in EMAP report)    
