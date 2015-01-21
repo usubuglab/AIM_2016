@@ -31,6 +31,9 @@ AllWQ=merge(PrdWQresults,WQfinal)
 AllWQ2=AllWQ[,c('UID','SITE_ID','LOC_NAME','DATE_COL','PrdCond','Pred_TN','Pred_TP','CONDUCTIVITY',	'NTL',	'PTL')]
 #Trial2=AllWQ[,c(7,1,13,11,6,5,4,8,9,10)]
 
+#SRM input
+#AllWQ2=read.csv('Z:\\buglab\\Research Projects\\BLM_WRSA_Stream_Surveys\\Results and Reports\\SRM_2015\\final_updated_crosschecked_metrics.csv')
+
 #Now subtract Observe - expected to get the OE score to be classified as G F P. Then set thresholds for each indicator
 #If o-e is > lower limit it is fair, if it is > upper limit its poor, if it is < lower limit it is good(all else is good)
 
