@@ -77,19 +77,19 @@ ResponseInfo=read.csv('Z:\\buglab\\Research Projects\\BLM_WRSA_Stream_Surveys\\R
 #This code looks for the UIDs that start with the first three numbers in the input file and replace with the actual UID
 #However, if this code does not work or gives errors for ANY lines view the ResponseInfo and check that the first 3 values of the UID are the same as rounding CAN occur while reading the csv to R
 #NEEDS to be commented out in case the WRSA UIDs start with any of the same 3 values. 
-#ResponseInfo[grep('^172.*?',ResponseInfo$UID),'UID']='171984519050561'
-#ResponseInfo[grep('^228.*?',ResponseInfo$UID),'UID']='228284433826712128'
-#ResponseInfo[grep('^535.*?',ResponseInfo$UID),'UID']='535384124962793152'
-#ResponseInfo[grep('^746.*?',ResponseInfo$UID),'UID']='745880431965292672'
-#ResponseInfo[grep('^164.*?',ResponseInfo$UID),'UID']='16444949915001999360'
-#ResponseInfo[grep('^210.*?',ResponseInfo$UID),'UID']='21013264668376829952'
-#ResponseInfo[grep('^163.*?',ResponseInfo$UID),'UID']='163224301412212998144'
-#ResponseInfo[grep('^522.*?',ResponseInfo$UID),'UID']='522341843044642979840'
-#ResponseInfo[grep('^991.*?',ResponseInfo$UID),'UID']='990634514616467980328'
-#ResponseInfo[grep('^524.*?',ResponseInfo$UID),'UID']='5250818050747459961862'
-#ResponseInfo[grep('^742.*?',ResponseInfo$UID),'UID']='74173607466410396616486'
-#ResponseInfo[grep('^312.*?',ResponseInfo$UID),'UID']='313491917404832989706088'
-#ResponseInfo[grep('^449.*?',ResponseInfo$UID),'UID']='450193146741598021566280808'
+ResponseInfo[grep('^172.*?',ResponseInfo$UID),'UID']='171984519050561'
+ResponseInfo[grep('^228.*?',ResponseInfo$UID),'UID']='228284433826712128'
+ResponseInfo[grep('^535.*?',ResponseInfo$UID),'UID']='535384124962793152'
+ResponseInfo[grep('^746.*?',ResponseInfo$UID),'UID']='745880431965292672'
+ResponseInfo[grep('^164.*?',ResponseInfo$UID),'UID']='16444949915001999360'
+ResponseInfo[grep('^210.*?',ResponseInfo$UID),'UID']='21013264668376829952'
+ResponseInfo[grep('^163.*?',ResponseInfo$UID),'UID']='163224301412212998144'
+ResponseInfo[grep('^522.*?',ResponseInfo$UID),'UID']='522341843044642979840'
+ResponseInfo[grep('^991.*?',ResponseInfo$UID),'UID']='990634514616467980328'
+ResponseInfo[grep('^524.*?',ResponseInfo$UID),'UID']='5250818050747459961862'
+ResponseInfo[grep('^742.*?',ResponseInfo$UID),'UID']='74173607466410396616486'
+ResponseInfo[grep('^312.*?',ResponseInfo$UID),'UID']='313491917404832989706088'
+ResponseInfo[grep('^449.*?',ResponseInfo$UID),'UID']='450193146741598021566280808'
 
 
 
@@ -128,15 +128,15 @@ SiteInfo=merge(siteeval,ResponseInfo,by=intersect(colnames(siteeval),colnames(Re
 # responseVAR=c('OE')
 # stressorsVAR=c('PCT_SAFN','LSUB_DMM')#UTBLM final list: stressorsVAR=c('InvasivesYN','EC','TP','TN','AugST','LBFXWRat','C1WM100','XCDENMID','Stab2','PCT_SAFN')#must be Access names with a matching 'rtg' variable: to view, str(ResponseInfo)
 #########NorCal examples###########
-# selectVARauto='N'; selectVARchoice=ifelse(selectVARauto=='Y','AllVar','CustomVar')#automatically select all variables
-# extentVAR=c('TNT','EvalStatus','VALXSITE')#Extent Estimate added here since weights the same (rather than running cat.analysis twice)
-# responseVAR=c('NV_MMI')# Input here should be bug model
-# stressorsVAR=c("NV_Invasives","OE_Conduct","OE_TN","OE_TP","PH_CHECK","BnkStability_BLM_CHECK","PCT_SAFN_CHECK","XCMG_CHECK","XFC_NAT_CHECK","LINCIS_H_CHECK","xcdenmid_CHECK")#,"XEMBED_CHECK")#NOT stressorsVAR=c('MMI')   ####'PCT_SAFN','LSUB_DMM')#UTBLM final list: stressorsVAR=c('InvasivesYN','EC','TP','TN','AugST','LBFXWRat','C1WM100','XCDENMID','Stab2','PCT_SAFN')#must be Access names with a matching 'rtg' variable: to view, str(ResponseInfo)
-##########SRM ###################
 selectVARauto='N'; selectVARchoice=ifelse(selectVARauto=='Y','AllVar','CustomVar')#automatically select all variables
-extentVAR=c('TNT')#NOT extentVAR=c('MMI','trial','EvalStatus','VALXSITE')#Extent Estimate added here since weights the same (rather than running cat.analysis twice)
-responseVAR=c('XCMG_CHECK') #Input here should be Bug model e.g., MMI or OE
-stressorsVAR=c("PH_CHECK","XCMG_CHECK","XFC_NAT_CHECK","LINCIS_H_CHECK","XEMBED_CHECK")#NOT stressorsVAR=c('MMI')   ####'PCT_SAFN','LSUB_DMM')#UTBLM final list: stressorsVAR=c('InvasivesYN','EC','TP','TN','AugST','LBFXWRat','C1WM100','XCDENMID','Stab2','PCT_SAFN')#must be Access names with a matching 'rtg' variable: to view, str(ResponseInfo)
+extentVAR=c('TNT','EvalStatus','VALXSITE')#Extent Estimate added here since weights the same (rather than running cat.analysis twice)
+responseVAR=c('NV_MMI')# Input here should be bug model
+stressorsVAR=c("NV_Invasives","OE_Conduct","OE_TN","OE_TP","PH_CHECK","BnkStability_BLM_CHECK","PCT_SAFN_CHECK","XCMG_CHECK","XFC_NAT_CHECK","LINCIS_H_CHECK","xcdenmid_CHECK")#,"XEMBED_CHECK")#NOT stressorsVAR=c('MMI')   ####'PCT_SAFN','LSUB_DMM')#UTBLM final list: stressorsVAR=c('InvasivesYN','EC','TP','TN','AugST','LBFXWRat','C1WM100','XCDENMID','Stab2','PCT_SAFN')#must be Access names with a matching 'rtg' variable: to view, str(ResponseInfo)
+##########SRM ###################
+#selectVARauto='N'; selectVARchoice=ifelse(selectVARauto=='Y','AllVar','CustomVar')#automatically select all variables
+#extentVAR=c('TNT')#NOT extentVAR=c('MMI','trial','EvalStatus','VALXSITE')#Extent Estimate added here since weights the same (rather than running cat.analysis twice)
+#responseVAR=c('XCMG_CHECK') #Input here should be Bug model e.g., MMI or OE
+#stressorsVAR=c("PH_CHECK","XCMG_CHECK","XFC_NAT_CHECK","LINCIS_H_CHECK","XEMBED_CHECK")#NOT stressorsVAR=c('MMI')   ####'PCT_SAFN','LSUB_DMM')#UTBLM final list: stressorsVAR=c('InvasivesYN','EC','TP','TN','AugST','LBFXWRat','C1WM100','XCDENMID','Stab2','PCT_SAFN')#must be Access names with a matching 'rtg' variable: to view, str(ResponseInfo)
 #extentVAR=c('TNT') #SRM
 #responseVAR=c('XCMG_CHECK')# SRM 
 #stressorsVAR=c("PH_CHECK","XCMG_CHECK","XFC_NAT_CHECK","LINCIS_H_CHECK","XEMBED_CHECK")#SRM ####'PCT_SAFN','LSUB_DMM')#UTBLM final list: stressorsVAR=c('InvasivesYN','EC','TP','TN','AugST','LBFXWRat','C1WM100','XCDENMID','Stab2','PCT_SAFN')#must be Access names with a matching 'rtg' variable: to view, str(ResponseInfo)
@@ -201,7 +201,7 @@ results.cat <- cat.analysis(sites = sitesCON,
                             #sizeweight=T,#used in UTBLM to scale from segments to lengthKM
                             #? What is the difference between Local and SRS for the vartype parameter? in warnings after running the function, it is switching to SRS anyways bc of low sample sizes in Stream Order and Ecoreg! need clarification on how this treats variables differently (EMAP used Local for Extent and SRS for condition)
                             #vartype = "Local",
-                            conf = 95)
+                            conf = 90)
 
 ParameterSampleSizes=subset(results.cat,subset=Subpopulation=='All Field Offices' & Category=='Total');print(ParameterSampleSizes)#samplesize is NResp
 
