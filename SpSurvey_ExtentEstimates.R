@@ -73,13 +73,30 @@ ResponseInfo=read.csv('\\\\share1.bluezone.usu.edu\\miller\\buglab\\Research Pro
 #######SRM input file
 ResponseInfo=read.csv('Z:\\buglab\\Research Projects\\BLM_WRSA_Stream_Surveys\\Results and Reports\\SRM_2015\\ResponseInfo.csv')
 
-#This is NorCal specific BUT should NOT be commented out. 
-#Should not change the WRSA info because the UIDs will not match. 
-#In short this code should just not do anything to the dataframe if it is not NorCal data
-ResponseInfo[ResponseInfo$UID=='228284433826712000',"UID"]='228284433826712128'
-ResponseInfo[ResponseInfo$UID=='535384124962793024',"UID"]='535384124962793152'
-ResponseInfo[ResponseInfo$UID=='745880431965292032',"UID"]='745880431965292672'
-ResponseInfo[ResponseInfo$UID=='21013264668376801280',"UID"]='21013264668376829952'
+#This is NorCal specific and SHOULD be commented out. 
+#This code looks for the UIDs that start with the first three numbers in the input file and replace with the actual UID
+#However, if this code does not work or gives errors for ANY lines view the ResponseInfo and check that the first 3 values of the UID are the same as rounding CAN occur while reading the csv to R
+#NEEDS to be commented out in case the WRSA UIDs start with any of the same 3 values. 
+#ResponseInfo[grep('^172.*?',ResponseInfo$UID),'UID']='171984519050561'
+#ResponseInfo[grep('^228.*?',ResponseInfo$UID),'UID']='228284433826712128'
+#ResponseInfo[grep('^535.*?',ResponseInfo$UID),'UID']='535384124962793152'
+#ResponseInfo[grep('^746.*?',ResponseInfo$UID),'UID']='745880431965292672'
+#ResponseInfo[grep('^164.*?',ResponseInfo$UID),'UID']='16444949915001999360'
+#ResponseInfo[grep('^210.*?',ResponseInfo$UID),'UID']='21013264668376829952'
+#ResponseInfo[grep('^163.*?',ResponseInfo$UID),'UID']='163224301412212998144'
+#ResponseInfo[grep('^522.*?',ResponseInfo$UID),'UID']='522341843044642979840'
+#ResponseInfo[grep('^991.*?',ResponseInfo$UID),'UID']='990634514616467980328'
+#ResponseInfo[grep('^524.*?',ResponseInfo$UID),'UID']='5250818050747459961862'
+#ResponseInfo[grep('^742.*?',ResponseInfo$UID),'UID']='74173607466410396616486'
+#ResponseInfo[grep('^312.*?',ResponseInfo$UID),'UID']='313491917404832989706088'
+#ResponseInfo[grep('^449.*?',ResponseInfo$UID),'UID']='450193146741598021566280808'
+
+
+
+
+
+
+
 
 
 #FLAT
@@ -154,7 +171,7 @@ stressorsVAR=setdiff(stressorsVAR,omitVAR)
 #the asterisk indictates 2012 only
 #ECname='Conductivity'; TPname='Phosphorus';MWMTname='Max Temp.'; TNname='Nitrogen'; InvasivesYNname='Invasives';OEname='O/E';
 #NorCal
-NV_MMIname='Nevada MMI';NV_Invasivesname='Invasive Invertebrates';OE_TNname='Total Nitrogen';OE_TPname='Total Phosphorus';OE_Conductname='Conductivity';PH_CHECKname='pH';
+NV_MMIname='Nevada MMI';NV_Invasivesname='Benthic Invasives';OE_TNname='Total Nitrogen';OE_TPname='Total Phosphorus';OE_Conductname='Conductivity';PH_CHECKname='pH';
 BnkStability_BLM_CHECKname='Bank Stability';PCT_SAFN_CHECKname='% Fine Sediment';XCMG_CHECKname='Riparian Complexity';
 XFC_NAT_CHECKname='Instream Complexity';LINCIS_H_CHECKname='Floodplain Connectivity';xcdenmid_CHECKname='Riparian Canopy Cover'
 #;XEMBED_CHECKname='Embeddedness'#SRM
