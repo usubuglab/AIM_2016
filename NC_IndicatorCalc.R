@@ -44,6 +44,7 @@ Sed2014=tblRetrieve(Parameters=c('SIZE_NUM','LOC'),Projects='NorCal')
 #RipALL=tblRetrieve(Parameters=c("BARE","CANBTRE","CANSTRE","CANVEG","GCNWDY","GCWDY","UNDERVEG","UNDNWDY","UNDWDY"),Projects='NorCal')
 RipXCMG=tblRetrieve(Parameters=c("CANBTRE","CANSTRE","GCNWDY","GCWDY","UNDNWDY","UNDWDY"),Projects='NorCal')
 RipWW=tblRetrieve(Parameters=c("CANBTRE","CANSTRE","GCWDY","UNDWDY"),Projects='NorCal')
+RipGB=tblRetrieve(Parameters=c("BARE"),Projects='NorCal')
 
 #Getting data for aquamet check W1_HALL
 #Figure out the differences... Human influence sample type...
@@ -231,12 +232,16 @@ PCT_SAFN_ALL=rbind(pctsafn,F_Sed2014)
 #########    TROUBLESHOOTING END   ############
 ###############################################
 
-
-
 #xcmg
 RipXCMG$ResultsPer=ifelse(RipXCMG$RESULT == 1, 0.05,ifelse(RipXCMG$RESULT == 2, 0.25,ifelse(RipXCMG$RESULT == 3, 0.575,ifelse(RipXCMG$RESULT == 4, 0.875,ifelse(RipXCMG$RESULT ==0, 0, NA)))))
 XCMG_new=setNames(cast(RipXCMG,'UID+TRANSECT+POINT~ACTIVE', value='ResultsPer',fun='sum'),list('UID',  'TRANSECT',  'POINT',  'VALUE'))
 XCMG_new1=setNames(aggregate(VALUE~UID,data=XCMG_new,FUN=mean),list("UID","XCMG_CHECK"))
+
+#RipGB
+RipGB$ResultsPer=ifelse(RipGB$RESULT == 1, 0.05,ifelse(RipGB$RESULT == 2, 0.25,ifelse(RipGB$RESULT == 3, 0.575,ifelse(RipGB$RESULT == 4, 0.875,ifelse(RipGB$RESULT ==0, 0, NA)))))
+XGB_new=setNames(cast(RipGB,'UID+TRANSECT+POINT~ACTIVE', value='ResultsPer',fun='sum'),list('UID',  'TRANSECT',  'POINT',  'VALUE'))
+XGB_new1=setNames(aggregate(VALUE~UID,data=XGB_new,FUN=mean),list("UID","XGB_CHECK"))
+
 
 #xcmgw
 #xcmgw=XC+XMW+XGW: However, this is not how aquamet is calculating it, the order of operation would give different results if XC was caluclated and then added to XMW and XMG
@@ -338,7 +343,7 @@ QR1$QR1_CHECK=(QR1$QRveg1*QR1$QRVeg2*QR1$QRDIST1)^0.333
 
 
 #To get all calculated values together... Although some tables still have the metrics included.
-IndicatorCheckJoin=join_all(list(BnkCvr,BnkStb,PHfinal,fishpvt2,DensPvt,XCMGW_new1,XCMG_new1,IncBnk,PCT_SAFN_ALL,XEMBED,BnkDensPvt,W1_HALL,QR1),by="UID")
+IndicatorCheckJoin=join_all(list(BnkCvr,BnkStb,PHfinal,fishpvt2,DensPvt,XCMGW_new1,XCMG_new1,XGB_new1,IncBnk,PCT_SAFN_ALL,XEMBED,BnkDensPvt,W1_HALL,QR1),by="UID")
 #To remove all of the metrics and only get the indicators subset by UID and all those columns ending in "CHECK". Hmm..not really sure what the $ is doing here, the code works without it, but all the examples I've looked at keep the $ so I kept it too... 
 IndicatorCheck=IndicatorCheckJoin[,c("UID",grep("CHECK$", colnames(IndicatorCheckJoin),value=TRUE))]
 #write.csv(IndicatorCheck,"C:\\Users\\Nicole\\Desktop\\IndicatorCheck2.csv")
