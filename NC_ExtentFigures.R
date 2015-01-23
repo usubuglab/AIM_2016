@@ -127,6 +127,94 @@ for (s in 1:length(SubpopTypes)){#Temporary! only all and district - length(Subp
     }}}
 
 
+######-------------------------RELATIVE RISK + Figures-----------------------------#####
+samplesUSEDprep=catdata 
+sitesUSEDprep=designCON
+##check probeReachID match order between two sets
+#loop over subpop too? not as straightforward as cat.analysis, but would just require a join
+##especially add districts!!
+districts=c('All','MN','MP','MS','OT','XE','XN','XS')
+variableORDER=subset(variableORDER,subset=Indicator %in% sprintf('%srtg',responseVAR) ==FALSE)##############need to run part of the extent figure code above to get variableORDER!
+#Lump Fair into Good (not recommended by EPA, makes more sense for regulatory inclu comparing to DEQ)
+lumpFAIR='Y'#options 'Y' or 'N' (caps, representing yes/no)
+for (r in 1:length(responseVAR)){
+  for (d in 1:length(districts)) { #make more dyanmic for all subpop, but this is immediate need
+    if (districts[[d]]=='All'){sitesUSED=sitesUSEDprep; samplesUSED=samplesUSEDprep
+    } else{sitesUSED=subset(sitesUSEDprep,subset=stratum==districts[[d]])
+           samplesUSED=subset(samplesUSEDprep,subset=siteID %in% as.character(sitesUSED$siteID))}
+    for (v in 1:length(stressorsVAR)){
+      samplesUSEDv=samplesUSED;sitesUSEDv=sitesUSED
+      samplesUSEDv$X=as.character(unclass(subset(samplesUSEDv,select=sprintf('%srtg',responseVAR[[r]])))[[1]])
+      samplesUSEDv$Y=as.character(unclass(subset(samplesUSEDv,select=sprintf('%srtg',stressorsVAR[[v]])))[[1]])
+      if (lumpFAIR=='N') {
+        samplesUSEDv=subset(samplesUSEDv, subset=(X!="Fair"  & Y!="Fair"))
+        sitesUSEDv=subset(sitesUSED,subset=siteID %in% samplesUSEDv$siteID)
+        fairname=''
+      } else{
+        samplesUSEDv$X=ifelse(samplesUSEDv$X=="Poor","Poor","Good")
+        samplesUSEDv$Y=ifelse(samplesUSEDv$Y=="Poor","Poor","Good")
+        fairname='incluFAIR'
+      } 
+      RelRiskSuffix=sprintf('%s_%s',districts[[d]],fairname)
+      if (nrow(samplesUSED)>1){
+        results.relrisk=relrisk.est(response=samplesUSEDv$X, 
+                                    #relrisk function only suggests two categories (Good and Poor); hence the ifelse lumping fair into good
+                                    stressor=samplesUSEDv$Y,
+                                    response.levels=c("Poor","Good"),  stressor.levels=c("Poor",  "Good"), 
+                                    wgt=sitesUSEDv$wgt,
+                                    xcoord=sitesUSEDv$xcoord, ycoord=sitesUSEDv$ycoord,
+                                    conf=90
+        )
+        #ToDo! finish append results (odd format, some tables, some single values)
+        ResponseV=responseVAR[[r]]; StressorV=stressorsVAR[[v]];DistrictV=districts[[d]]
+        RelRisk=results.relrisk$RelRisk;LConf=results.relrisk$ConfLimits[[1]];UConf=ifelse(is.na(results.relrisk$ConfLimits),NA,results.relrisk$ConfLimits[[2]])
+        if(r==1 & v==1 & d==1) {  options(stringsAsFactors = FALSE)
+                                  RelRiskOUT=data.frame(ResponseV,StressorV,DistrictV,
+                                                        RelRisk,LConf,UConf)    
+        } else {RelRiskOUT=rbind(RelRiskOUT,c(ResponseV,StressorV,DistrictV,RelRisk,LConf,UConf))}
+        #would like table call to be more dynamic (not indexed)
+        GoodMATCH=results.relrisk$CellProportions[[2,2]]#Agreement: Not Impaired
+        PoorMATCH=results.relrisk$CellProportions[[1,1]] #Agreement: Impaired
+        PoorRESPONSEonly=results.relrisk$CellProportions[[1,2]]
+        PoorSTRESSORonly=results.relrisk$CellProportions[[2,1]]
+        percentVALUES=c(GoodMATCH,PoorMATCH, PoorRESPONSEonly,PoorSTRESSORonly)
+        colorVALUES=c('green','red','yellow','orange') #setup like FGD (control BW vs. color globally)
+        png(sprintf('%s_%s_%s.png',responseVAR[[r]],stressorsVAR[[v]],RelRiskSuffix),width=800,height=600)
+        par(mar = c(1.5, 1,3 ,1 ),cex=axissize)
+        #modelled after: RelRisk Pie: http://www.epa.gov/nheerl/arm/orpages/strmorchembiol.htm
+        pie(percentVALUES,
+            labels=sprintf('%s%s', round(100*percentVALUES,2),'%')
+            , main=sprintf('%s : %s\n%s\nRelRisk: %s',responseVAR[[r]],stressorsVAR[[v]],districts[[d]],round(RelRisk,2))
+            ,clockwise=T
+            ,col=colorVALUES 
+        )
+        legend(x="bottomright",cex=.5,legend=c('Agreement: Not Impaired','Agreement: Impaired','Response Impaired','Stressor Impaired'),fill=colorVALUES)
+        #legend placement is fickle! x=-.5 also works for bottom right and is unrelated to png width
+        graphics.off()
+      }
+      options(stringsAsFactors = TRUE)
+      RelRiskOUT$RelRisk=as.numeric(RelRiskOUT$RelRisk);RelRiskOUT$UConf=as.numeric(RelRiskOUT$UConf);RelRiskOUT$LConf=as.numeric(RelRiskOUT$LConf)
+      #! figure out how to handle NA (one variable has only Good or only Poor) so the var included in chart - the rarer scenario is perfect concordance (denominator=0) which only happens at the district level
+      RelRiskCHART=subset(RelRiskOUT,subset=is.na(RelRisk)==F & DistrictV==districts[[d]])#Temporary! get rid of NA (bc won't plot) -- too correct, see handling of NA in Extent Bar
+      #RelRiskCHART=RelRiskCHART[with(RelRiskCHART,order(RelRisk)),] #OLD #sort by RelRisk
+      RelRiskCHART=merge(variableORDER,RelRiskCHART, by="StressorV",all.x=T)
+      RelRiskCHART=RelRiskCHART[with(RelRiskCHART,order(NumericOrder)),]
+      RelRiskCHART=unique(RelRiskCHART)#! very random issue with TotalHA appearing twice for All
+      RelRiskCHART$LConf=ifelse(is.na(RelRiskCHART$LConf),0,RelRiskCHART$LConf);RelRiskCHART$UConf=ifelse(is.na(RelRiskCHART$UConf),0,RelRiskCHART$UConf)#got one random 0 relrisk; causes problems with xlim, can likely remove once xlim solidified
+      if(nrow(RelRiskCHART)>0){
+        png(sprintf('RelRisk_%s-%s.png',RelRiskSuffix,selectVARchoice),width=800,height=700, bg='transparent') 
+        par(mar = c(2, 5.5,2 ,2 )  ,oma = c(2,7,1,1),cex=axissize)#mar=c(1.5, 1,2 ,1 )
+        #modeled after Fig 23 - http://www.epa.gov/owow/streamsurvey/pdf/WSA_Assessment_May2007.pdf
+        BarRR=barplot( RelRiskCHART$RelRisk,xlim=c(0,max(RelRiskCHART$UConf)+1),#?should scale be the same between all graphs?
+                       names.arg=RelRiskCHART$names,horiz=T,main=sprintf('Relative Risk: %s\n%s',responseVAR[[r]],districts[[d]])
+                       ,col=as.character(RelRiskCHART$color),las=1) #Temporary! make color global and assign specfically to variables
+        mtext('Relative Risk',side=1,line=2,cex=axissize)#not sure why xlab is not working in barplot
+        arrows(x0=RelRiskCHART$LConf,x1=RelRiskCHART$UConf,length=.1,y0=BarRR,angle=90,code=3)#use Conf or StErr? why are upper limits so much higher?
+        abline(v=1,lty=2)
+        #text(y=BarRR,x=RelRiskCHART$UConf, labels=round(RelRiskCHART$RelRisk,2),pos=4,srt=360)#Replace labels with % stream  (from Cell Proportion) 
+        graphics.off()
+      }
+    }}}
 
 ###-------------------Final Panelled figures (maps + extent + groups)-----------------------###
 #implemented for UTBLM, not adapted for WRSA yet
