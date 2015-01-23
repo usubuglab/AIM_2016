@@ -132,7 +132,7 @@ SiteInfo=merge(siteeval,ResponseInfo,by=intersect(colnames(siteeval),colnames(Re
 selectVARauto='N'; selectVARchoice=ifelse(selectVARauto=='Y','AllVar','CustomVar')#automatically select all variables
 extentVAR=c('TNT','EvalStatus','VALXSITE')#Extent Estimate added here since weights the same (rather than running cat.analysis twice)
 responseVAR=c('NV_MMI')# Input here should be bug model
-stressorsVAR=c("NV_Invasives","OE_Conduct","OE_TN","OE_TP","PH_CHECK","BnkStability_BLM_CHECK","PCT_SAFN_CHECK","XCMG_CHECK","XFC_NAT_CHECK","LINCIS_H_CHECK","xcdenmid_CHECK")#,"XEMBED_CHECK")#NOT stressorsVAR=c('MMI')   ####'PCT_SAFN','LSUB_DMM')#UTBLM final list: stressorsVAR=c('InvasivesYN','EC','TP','TN','AugST','LBFXWRat','C1WM100','XCDENMID','Stab2','PCT_SAFN')#must be Access names with a matching 'rtg' variable: to view, str(ResponseInfo)
+stressorsVAR=c("NV_Invasives","OE_Conduct","OE_TN","OE_TP","PH_CHECK","BnkStability_BLM_CHECK","PCT_SAFN_CHECK","XCMG_CHECK","XGB_CHECK","XFC_NAT_CHECK","LINCIS_H_CHECK","xcdenmid_CHECK")#,"XEMBED_CHECK")#NOT stressorsVAR=c('MMI')   ####'PCT_SAFN','LSUB_DMM')#UTBLM final list: stressorsVAR=c('InvasivesYN','EC','TP','TN','AugST','LBFXWRat','C1WM100','XCDENMID','Stab2','PCT_SAFN')#must be Access names with a matching 'rtg' variable: to view, str(ResponseInfo)
 ##########SRM ###################
 # selectVARauto='N'; selectVARchoice=ifelse(selectVARauto=='Y','AllVar','CustomVar')#automatically select all variables
 # extentVAR=c('TNT')#NOT extentVAR=c('MMI','trial','EvalStatus','VALXSITE')#Extent Estimate added here since weights the same (rather than running cat.analysis twice)
@@ -174,7 +174,7 @@ stressorsVAR=setdiff(stressorsVAR,omitVAR)
 #NorCal
 NV_MMIname='Nevada MMI';NV_Invasivesname='Benthic Invasives';OE_TNname='Total Nitrogen';OE_TPname='Total Phosphorus';OE_Conductname='Conductivity';PH_CHECKname='pH';
 BnkStability_BLM_CHECKname='Bank Stability';PCT_SAFN_CHECKname='% Fine Sediment';XCMG_CHECKname='Riparian Complexity';
-XFC_NAT_CHECKname='Instream Complexity';LINCIS_H_CHECKname='Floodplain Connectivity';xcdenmid_CHECKname='Riparian Canopy Cover'
+XFC_NAT_CHECKname='Instream Complexity';LINCIS_H_CHECKname='Floodplain Connectivity';xcdenmid_CHECKname='Riparian Canopy Cover';XGB_CHECKname='Bare Ground'
 #;XEMBED_CHECKname='Embeddedness';OEname='Biological Condition'#SRM
 
 TotalHAname='Habitat'; RIPARIANname='Riparian Alt.'; AugSTname= 'Stream Temp.'; SummerSTname= 'Stream Temp (Sum)';
