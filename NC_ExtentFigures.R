@@ -209,6 +209,7 @@ for (r in 1:length(responseVAR)){
                        names.arg=RelRiskCHART$names,horiz=T,main=sprintf('Relative Risk: %s\n%s',responseVAR[[r]],districts[[d]])
                        ,col=as.character(RelRiskCHART$color),las=1) #Temporary! make color global and assign specfically to variables
         mtext('Relative Risk',side=1,line=2,cex=axissize)#not sure why xlab is not working in barplot
+        text(y=BarRR,x=RelRiskCHART$UConf, cex=.5,labels=round(RelRiskCHART$RelRisk,1),pos=4,srt=360,xpd=NA)
         arrows(x0=RelRiskCHART$LConf,x1=RelRiskCHART$UConf,length=.1,y0=BarRR,angle=90,code=3)#use Conf or StErr? why are upper limits so much higher?
         abline(v=1,lty=2)
         #text(y=BarRR,x=RelRiskCHART$UConf, labels=round(RelRiskCHART$RelRisk,2),pos=4,srt=360)#Replace labels with % stream  (from Cell Proportion) 
