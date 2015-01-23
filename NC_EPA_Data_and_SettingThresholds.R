@@ -92,13 +92,14 @@ pvt15=aggregate(DPCT_SF~ECO_LVL_3NAME,data=SED_RS_final,FUN=length)
 pvt16=aggregate(XFC_NAT~ECO_LVL_3NAME,data=SED_RS_final,FUN=length)
 pvt17=aggregate(LINCIS_H~ECO_LVL_3NAME,data=SED_RS_final,FUN=length)
 pvt18=aggregate(XEMBED~ECO_LVL_3NAME,data=SED_RS_final,FUN=length)
-ECOIII_SampSizes=join_all(list(pvt11,pvt12,pvt13,pvt14,pvt15, pvt16, pvt17, pvt18),by="ECO_LVL_3NAME")
+pvt19=aggregate(XGB~ECO_LVL_3NAME,data=RIP_RS_final,FUN=length)
+ECOIII_SampSizes=join_all(list(pvt11,pvt12,pvt13,pvt14,pvt15, pvt16, pvt17, pvt18, pvt19),by="ECO_LVL_3NAME")
 
 #NorCal specific hybrid ecoregions
 ECOIII_SampSizes_NC = subset(ECOIII_SampSizes, ECO_LVL_3NAME == "Central Basin and Range"|ECO_LVL_3NAME == "Eastern Cascades Slopes and Foothills"|ECO_LVL_3NAME == "Northern Basin and Range"|ECO_LVL_3NAME == "Sierra Nevada")
 
 #Remove all working objects, leave files that will be used later in code, and open the final sample sizes. 
-rm(pvt11,pvt12,pvt13,pvt14,pvt15, pvt16, pvt17, pvt18)
+rm(pvt11,pvt12,pvt13,pvt14,pvt15, pvt16, pvt17, pvt18, pvt19)
 #If you do not plan to run hybrid ecoregions (ECO10) run this line, If you do plan to use ECO10 DO NOT RUN THIS LINE
 rm(RIP_RS_combined,RIP_RS_reorder,RIP_RS_minusDup,SED_RS_combined,SED_RS_reorder,SED_RS_minusDup)
 ###############################################################################################
@@ -123,6 +124,11 @@ T16=join_all(list(T11,T12), by="ECO_LVL_3NAME")
 T11=setNames(aggregate(RIP_RS_final$XCMGW, by = list(RIP_RS_final$ECO_LVL_3NAME), FUN = quantile,probs=0.10,na.rm=TRUE), c("ECO_LVL_3NAME","XCMGW_0.10"))
 T12=setNames(aggregate(RIP_RS_final$XCMGW, by = list(RIP_RS_final$ECO_LVL_3NAME), FUN = quantile,probs=0.30,na.rm=TRUE), c("ECO_LVL_3NAME","XCMGW_0.30"))
 T17=join_all(list(T11,T12), by="ECO_LVL_3NAME")
+#XGB Bare ground indictor TRIAL!
+T11=setNames(aggregate(RIP_RS_final$XGB, by = list(RIP_RS_final$ECO_LVL_3NAME), FUN = quantile,probs=0.90,na.rm=TRUE), c("ECO_LVL_3NAME","XGB_0.90"))
+T12=setNames(aggregate(RIP_RS_final$XGB, by = list(RIP_RS_final$ECO_LVL_3NAME), FUN = quantile,probs=0.70,na.rm=TRUE), c("ECO_LVL_3NAME","XGB_0.70"))
+T19=join_all(list(T11,T12), by="ECO_LVL_3NAME")
+
 
 #PH
 #PH thresholds were determine to be too strict so we are using the national standards of <6.5 and >9.0 as Poor, >7 and <8.5 as Good.
@@ -140,7 +146,7 @@ T17=join_all(list(T11,T12), by="ECO_LVL_3NAME")
 
 
 ##Combine all
-RIP_THRESHOLDS_lvlIII=join_all(list(T15,T16,T17),by="ECO_LVL_3NAME")
+RIP_THRESHOLDS_lvlIII=join_all(list(T15,T16,T17,T19),by="ECO_LVL_3NAME")
 
 
 ###################################################################################
