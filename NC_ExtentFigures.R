@@ -130,10 +130,22 @@ for (s in 1:length(SubpopTypes)){#Temporary! only all and district - length(Subp
 ######-------------------------RELATIVE RISK + Figures-----------------------------#####
 samplesUSEDprep=catdata 
 sitesUSEDprep=designCON
+
+###NorCal troubleshooting and solutions
+samplesUSEDprep$siteID=samplesUSEDprep$SITE_ID
+samplesUSEDprep=samplesUSEDprep[,-c(1:3)]
+samplesUSEDprep=samplesUSEDprep[,c(15,1:14)]
+
+sitesUSEDprep$stratum='All Field'
+
+
 ##check probeReachID match order between two sets
 #loop over subpop too? not as straightforward as cat.analysis, but would just require a join
 ##especially add districts!!
-districts=c('All','MN','MP','MS','OT','XE','XN','XS')
+#districts=c('All','MN','MP','MS','OT','XE','XN','XS')
+#districts=c('All','AR','EL','SU','HC','TP')
+#districts=c('All Field')
+
 variableORDER=subset(variableORDER,subset=Indicator %in% sprintf('%srtg',responseVAR) ==FALSE)##############need to run part of the extent figure code above to get variableORDER!
 #Lump Fair into Good (not recommended by EPA, makes more sense for regulatory inclu comparing to DEQ)
 lumpFAIR='Y'#options 'Y' or 'N' (caps, representing yes/no)
