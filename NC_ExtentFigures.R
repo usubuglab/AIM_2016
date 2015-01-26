@@ -131,20 +131,36 @@ for (s in 1:length(SubpopTypes)){#Temporary! only all and district - length(Subp
 samplesUSEDprep=catdata 
 sitesUSEDprep=designCON
 
-###NorCal troubleshooting and solutions
-samplesUSEDprep$siteID=samplesUSEDprep$SITE_ID
-samplesUSEDprep=samplesUSEDprep[,-c(1:3)]
-samplesUSEDprep=samplesUSEDprep[,c(15,1:14)]
 
-sitesUSEDprep$stratum='All Field'
+###NorCal troubleshooting and solutions
+#Changing column name from SITE_ID to siteID
+colnames(samplesUSEDprep)[which(names(samplesUSEDprep) == "SITE_ID")] = "siteID"                          
+#Remove any weights that are not positive, otherwise an error will tell you "weights must be positive"
+sitesUSEDprep=sitesUSEDprep[sitesUSEDprep$wgt>0,]
+
+###These need to be run individually. EX: Run code for allotment strata then run the RR figures code. THEN run the next code for all field offices, and then the RR figures. 
+###Cannot be run all at once because it uses the same column "stratum" 
+#Run for allotment strata
+sitesUSEDprep$stratum='Trash'
+sitesUSEDprep[grep('^TP.*?',sitesUSEDprep$siteID),'stratum']='Twin Peaks'
+sitesUSEDprep[grep('^HC.*?',sitesUSEDprep$siteID),'stratum']='Home Camp'
+districts=c('Home Camp','Twin Peaks','Trash')
+#Run for all NorCal field office
+sitesUSEDprep$stratum='All Field Offices'
+districts='All Field Offices'
+#Run for FIELD OFFICE level strata
+sitesUSEDprep[grep('^AR.*?',sitesUSEDprep$siteID),'stratum']='AFO'
+sitesUSEDprep[grep('^EL.*?',sitesUSEDprep$siteID),'stratum']='ELFO'
+sitesUSEDprep[grep('^TP.*?',sitesUSEDprep$siteID),'stratum']='ELFO'
+sitesUSEDprep[grep('^SU.*?',sitesUSEDprep$siteID),'stratum']='SFO'
+sitesUSEDprep[grep('^HC.*?',sitesUSEDprep$siteID),'stratum']='SFO'
+districts=c('AFO','ELFO','SFO')
 
 
 ##check probeReachID match order between two sets
 #loop over subpop too? not as straightforward as cat.analysis, but would just require a join
 ##especially add districts!!
 #districts=c('All','MN','MP','MS','OT','XE','XN','XS')
-#districts=c('All','AR','EL','SU','HC','TP')
-#districts=c('All Field')
 
 variableORDER=subset(variableORDER,subset=Indicator %in% sprintf('%srtg',responseVAR) ==FALSE)##############need to run part of the extent figure code above to get variableORDER!
 #Lump Fair into Good (not recommended by EPA, makes more sense for regulatory inclu comparing to DEQ)
