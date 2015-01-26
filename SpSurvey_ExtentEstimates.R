@@ -169,15 +169,10 @@ stressorsVAR=setdiff(stressorsVAR,omitVAR)
 #the asterisk indictates 2012 only
 #ECname='Conductivity'; TPname='Phosphorus';MWMTname='Max Temp.'; TNname='Nitrogen'; InvasivesYNname='Invasives';OEname='O/E';
 #NorCal
-NV_MMIname='Nevada MMI';NV_Invasivesname='Benthic Invasives';OE_TNname='Total Nitrogen';OE_TPname='Total Phosphorus';OE_Conductname='Conductivity';PH_CHECKname='pH';
-BnkStability_BLM_CHECKname='Bank Stability';PCT_SAFN_CHECKname='% Fine Sediment';XCMG_CHECKname='Riparian Complexity';
-<<<<<<< HEAD
+NV_MMIname='Nevada MMI';NV_Invasivesname='Benthic Invasives'; OE_TNname='Total Nitrogen';OE_TPname='Total Phosphorus';OE_Conductname='Conductivity';PH_CHECKname='pH';
+BnkStability_BLM_CHECKname='Bank Stability';PCT_SAFN_CHECKname='% Fine Sediment';XCMG_CHECKname='Riparian Complexity';xcdenmid_CHECKname='Riparian Canopy Cover';XGB_CHECKname='Bare Ground;
 XFC_NAT_CHECKname='Instream Complexity';LINCIS_H_CHECKname='Floodplain Connectivity';xcdenmid_CHECKname='Riparian Canopy Cover'
-#;XEMBED_CHECKname='Embeddedness';OEname='Biological Condition'; Invasivesname='Benthic Invasives'#SRMxcdenmid_CHECK
-=======
-XFC_NAT_CHECKname='Instream Complexity';LINCIS_H_CHECKname='Floodplain Connectivity';xcdenmid_CHECKname='Riparian Canopy Cover';XGB_CHECKname='Bare Ground'
-#;XEMBED_CHECKname='Embeddedness';OEname='Biological Condition'#SRM
->>>>>>> 8654befd78663087d26d73e5d30022eb8df67339
+#XEMBED_CHECKname='Embeddedness';OEname='Biological Condition'; Invasivesname='Benthic Invasives;#SRM
 
 TotalHAname='Habitat'; RIPARIANname='Riparian Alt.'; AugSTname= 'Stream Temp.'; SummerSTname= 'Stream Temp (Sum)';
 C1WM100name='LWD*';XCDENMIDname = 'Canopy*' ; PCT_SAFNname = 'Fines'; LBFXWRatname='Flood Inundation*' ; Stab2name='Bank Stability'; MMIname='MMI';trialname='trial'
