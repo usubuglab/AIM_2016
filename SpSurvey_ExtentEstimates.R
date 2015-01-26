@@ -170,8 +170,9 @@ stressorsVAR=setdiff(stressorsVAR,omitVAR)
 #ECname='Conductivity'; TPname='Phosphorus';MWMTname='Max Temp.'; TNname='Nitrogen'; InvasivesYNname='Invasives';OEname='O/E';
 #NorCal
 NV_MMIname='Nevada MMI';NV_Invasivesname='Benthic Invasives'; OE_TNname='Total Nitrogen';OE_TPname='Total Phosphorus';OE_Conductname='Conductivity';PH_CHECKname='pH';
-BnkStability_BLM_CHECKname='Bank Stability';PCT_SAFN_CHECKname='% Fine Sediment';XCMG_CHECKname='Riparian Complexity';xcdenmid_CHECKname='Riparian Canopy Cover';XGB_CHECKname='Bare Ground;
+BnkStability_BLM_CHECKname='Bank Stability';PCT_SAFN_CHECKname='% Fine Sediment';XCMG_CHECKname='Riparian Complexity';xcdenmid_CHECKname='Riparian Canopy Cover';XGB_CHECKname='Bare Ground';
 XFC_NAT_CHECKname='Instream Complexity';LINCIS_H_CHECKname='Floodplain Connectivity';xcdenmid_CHECKname='Riparian Canopy Cover'
+
 #XEMBED_CHECKname='Embeddedness';OEname='Biological Condition'; Invasivesname='Benthic Invasives;#SRM
 
 TotalHAname='Habitat'; RIPARIANname='Riparian Alt.'; AugSTname= 'Stream Temp.'; SummerSTname= 'Stream Temp (Sum)';
