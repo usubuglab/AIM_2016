@@ -293,6 +293,12 @@ NV.BLM.indic=randomForest(NV_MMI~CONDUCTIVITY+NTL+PTL+XCMG,
                     data=RFdata, importance=TRUE, proximity=TRUE, bias.corr=TRUE)
 NV.BLM.indic
 varImpPlot(NV.BLM.indic)
+
+# OE TRIAL RUN
+NV.BLM.indic=randomForest(NV_MMI~OE_Conduct+OE_TN+OE_TP+PH+XCMG, 
+                          data=RFdata, importance=TRUE, proximity=TRUE, bias.corr=TRUE)
+NV.BLM.indic
+varImpPlot(NV.BLM.indic)
 ####################################################################################################
 
 par(mfrow=c(2,3))
