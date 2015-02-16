@@ -90,7 +90,7 @@ View(subset(INDnonexist,IND=='' | IND=='TBD'))
 
 INDexist=rbind(subset(UpdatesTBL,IND!='' & IND!='TBD'),subset(INDnonexist,IND!='' & IND!='TBD'))
 for (i in 1:nrow(INDexist)){
-  sqlQuery(wrsa1314,sprintf("UPDATE %s set DEPRECATION='%s', ACTIVE='FALSE',OPERATION='OD',REASON=%s, where IND=%s",INDexist$TABLE[i],Sys.Date(),INDexist$REASON[i],INDexist$IND[i]))#set DEPRECATION to today #set ACTIVE to FALSE #set OPERATION to "OD" (original deprecated)
+  sqlQuery(wrsa1314,sprintf("UPDATE %s set DEPRECATION='%s', ACTIVE='FALSE',OPERATION='OD',REASON='%s' where IND=%s",INDexist$TABLE[i],Sys.Date(),paste(INDexist$INITIAL[i],INDexist$REASON[i],sep=': '),INDexist$IND[i]))#set DEPRECATION to today #set ACTIVE to FALSE #set OPERATION to "OD" (original deprecated)
   #! add old reason too if present!! need to decide if reason given to deprecated or updated row
   #sqlUpdate(wrsa1314,dat=,tablename=,REASON=, index=IND)
 }
@@ -99,18 +99,18 @@ for (i in 1:nrow(INDexist)){
 #! flag if value not different from original
 ##insert UPDATED rows
 #Omit rows that are only for deletion
-UPDATE=subset(UpdatesTBL,subset=Inactive=='0'|Inactive=='FALSE')#Inactive is 0 in csv import, but might be FALSE if copy/paste or direct from Access via ODBC
+UPDATE=subset(UpdatesTBL,subset=INACTIVATE=='0'|INACTIVATE=='FALSE')#Inactive is 0 in csv import, but might be FALSE if copy/paste or direct from Access via ODBC
 #match existing Access fields to SQL server fields
-UPDATE$REASON=paste(UPDATE$INITIALS,UPDATE$REASON,sep=': ')#! add old reason too if present!! #set REASON to REASON + initials
+UPDATE$REASON=paste(UPDATE$INITIAL,UPDATE$REASON,sep=': ')#! add old reason too if present!! #set REASON to REASON + initials
 UPDATE$ACTIVE='TRUE'#set ACTIVE to TRUE
 UPDATE$INSERTION=Sys.Date()#set INSERTION=today
 UPDATE$DEPRECATION='9999-12-31 00:00:00.000'#set DEPRECATION='9999-12-31 00:00:00.000' (default)
 UPDATE$OPERATION=ifelse(UPDATE$IND=='','I','U')#set OPERATION to "U" if update or "I" if new insertion (based on presence of IND)
 UPDATE=UPDATE[,!(names(UPDATE) %in% c('IND'))];UPDATE=ColCheck(UPDATE,c('IND',names(UPDATE)))#remove old IND and set IND to next available IndMax via ColCheck
 #loop over tables to append
-UPDATEtables=unique(UPDATE$TBL)
+UPDATEtables=unique(UPDATE$TABLE)
 for (t in 1:nrow(UPDATEtables)){
-  TBL=subset(UPDATE,TBL==UPDATEtables[t])
+  TBL=subset(UPDATE,TABLE==UPDATEtables[t])
   sqlSave(wrsa1314,dat=TBL,tablename=UPDATEtables[t],rownames=F,append=T)
 }
 
