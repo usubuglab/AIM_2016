@@ -12,7 +12,7 @@ DBserver=''#ditto as with DBpassword
 
 #--------------------------------------------------------SETUP--------------------------------------------------------#
 #LOAD required packages#
-requiredPACKAGES=c('reshape', 'RODBC','ggplot2','grid','gridExtra','xlsx','sqldf','jpeg','spsurvey')
+requiredPACKAGES=c('reshape', 'RODBC','ggplot2','grid','gridExtra','xlsx','sqldf','jpeg','spsurvey','tcltk')
 for (r in 1:length(requiredPACKAGES)){
   if ((requiredPACKAGES[r] %in% installed.packages()[,1])==FALSE){install.packages(requiredPACKAGES[r])}#auto-install if not present
   library(requiredPACKAGES[r],character.only = TRUE)

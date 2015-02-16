@@ -67,26 +67,39 @@ UpdatesTBL=addKEYS(UpdatesTBL,Columns=c('SITE_ID','DATE_COL'))
 
 ##DEPRECATE and INACTIVATE matching rows
 #!if no IND match (or TBD), provide potential matches (find matches in SQL SERVER based on UID, SAMPLE_TYPE, PARAMETER, TRANSECT, POINT)
-INDnonexist=subset(UpdatesTBL,IND=='' | IND=='TBD'|IND=='0')
+INDnonexist=subset(UpdatesTBL,(IND=='' | IND=='TBD'|IND=='0') & TABLE!='TBLCOMMENTS')
+matchTally=0
 for (i in 1:nrow(INDnonexist)){
-  match=sqlQuery(wrsa1314,sprintf("SELECT * from  %s where left(cast(UID as nvarchar),10)='%s'  %s  %s  and SAMPLE_TYPE='%s' and PARAMETER='%s'  ",INDnonexist$TABLE[i],substr(INDnonexist$UID[i],1,10),ifelse(INDnonexist$TRANSECT[i]=='','',sprintf("and TRANSECT='%s'",INDnonexist$TRANSECT[i])),ifelse(INDnonexist$POINT[i]=='','',sprintf("and POINT='%s'",INDnonexist$POINT[i])),INDnonexist$SAMPLE_TYPE[i],INDnonexist$PARAMETER[i]))
-  if(nrow(match)>0){print('Possible match based on point and parameter information: ');print(match)
-                    print(sprintf('Proposed change is to: %s',INDnonexist$RESULT[i]))
-                    print('Do you accept this match?')#!need to pause code here, in the meantime, exists loop
-                    if(match$UID!=INDnonexist$UID[i]){
-                      match=addKEYS(match,Columns=c('SITE_ID','DATE_COL'))
-                      print(sprintf('UID match based on 1st 10 characters, not full UID (Original: %s:%s:%s vs. Match: %s:%s:%s)',INDnonexist$UID[i],INDnonexist$SITE_ID[i],INDnonexist$DATE_COL[i],match$UID,match$SITE_ID,match$DATE_COL))
-                    }
-                    if(exists('accept')){
-                      if(accept=='Y'){
-                        INDnonexist$IND[i]=match$IND#set IND if match found so UPDATE can set OPERATION correctly
-                      }
-                      rm(accept)
-                    } else {print("Set accept='Y' or accept='N'")}
+  match=sqlQuery(wrsa1314,sprintf("SELECT * %s %s, IND as existingIND, RESULT as existingRESULT  from  %s where left(cast(UID as nvarchar),10)='%s'  %s  %s  and SAMPLE_TYPE='%s' and PARAMETER='%s'  ",ifelse(INDnonexist$TRANSECT[i]=='',",'' as TRANSECT",''),ifelse(INDnonexist$POINT[i]=='',",'' as POINT",''),INDnonexist$TABLE[i],substr(INDnonexist$UID[i],1,10),ifelse(INDnonexist$TRANSECT[i]=='','',sprintf("and TRANSECT='%s'",INDnonexist$TRANSECT[i])),ifelse(INDnonexist$POINT[i]=='','',sprintf("and POINT='%s'",INDnonexist$POINT[i])),INDnonexist$SAMPLE_TYPE[i],INDnonexist$PARAMETER[i]))
+  if(nrow(match)>0){
+    if(matchTally==0){
+      matches=match[0,]
+    }
+    matchTally=matchTally+1
+    #export and review method
+    matches=rbind(matches,match)
+# possible interactive method
+#                     print('Possible match based on point and parameter information: ');print(match)
+#                     print(sprintf('Proposed change is to: %s',INDnonexist$RESULT[i]))
+#                     print('Do you accept this match?')#!need to pause code here, in the meantime, exists loop# proceed=invisible(readline(prompt="Enter Y to accept and N to decline. Then press [enter] to continue.  "))
+#                    if(match$UID!=INDnonexist$UID[i]){
+#                       match=addKEYS(match,Columns=c('SITE_ID','DATE_COL'))
+#                       print(sprintf('UID match based on 1st 10 characters, not full UID (Original: %s:%s:%s vs. Match: %s:%s:%s)',INDnonexist$UID[i],INDnonexist$SITE_ID[i],INDnonexist$DATE_COL[i],match$UID,match$SITE_ID,match$DATE_COL))
+#                     }
+#                     if(exists('accept')){
+#                       if(accept=='Y'){
+#                         INDnonexist$IND[i]=match$IND#set IND if match found so UPDATE can set OPERATION correctly
+#                       }
+#                       rm(accept)
+#                     } else {print("Set accept='Y' or accept='N'")}
   } 
 }
-sprintf('%s matches were made. The following rows did not find a potential match. If a match is suspected, find and update IND before proceeding. If old rows are not properly linked and invalidated, duplicate data and persistence of the error will result.', nrow(subset(INDnonexist,IND!='' & IND!='TBD')))
-View(subset(INDnonexist,IND=='' | IND=='TBD'))
+####RESUME HERE TO merge MATCHES back to INDnonexist, then need to append to INDexist if existing IND found
+matches=ColCheck(matches,c('UID','TRANSECT','POINT','SAMPLE_TYPE','PARAMETER','existingIND','existingRESULT'))
+sprintf('%s matches were made. To confirm the match, update IND in the original file before proceeding. If old rows are not properly linked and invalidated, duplicate data and persistence of the error will result.',nrow(matches))#, nrow(subset(INDnonexist,IND!='' & IND!='TBD')))
+INDnonexist$TRANSECT=ifelse(INDnonexist$TRANSECT=='',NA,INDnonexist$TRANSECT);INDnonexist$POINT=ifelse(INDnonexist$POINT=='',NA,INDnonexist$POINT)
+INDnonexist=merge(INDnonexist,matches,all.x=T)#INDnonexist2=merge(matches,INDnonexist2,all.x=T) #to backcheck matches
+View(subset(INDnonexist,IND!='' & IND!='TBD'))
 
 INDexist=rbind(subset(UpdatesTBL,IND!='' & IND!='TBD'),subset(INDnonexist,IND!='' & IND!='TBD'))
 for (i in 1:nrow(INDexist)){
@@ -110,8 +123,9 @@ UPDATE=UPDATE[,!(names(UPDATE) %in% c('IND'))];UPDATE=ColCheck(UPDATE,c('IND',na
 #loop over tables to append
 UPDATEtables=unique(UPDATE$TABLE)
 for (t in 1:nrow(UPDATEtables)){
-  TBL=subset(UPDATE,TABLE==UPDATEtables[t])
-  sqlSave(wrsa1314,dat=TBL,tablename=UPDATEtables[t],rownames=F,append=T)
+  TBL=subset(UPDATE,TABLE==UPDATEtables[t])#testing: TBL=TBL[4:6,]
+  colnamesTBL=sqlQuery(wrsa1314,sprintf("select top 1 * from %s",UPDATEtables[t]));TBL=ColCheck(TBL,names(colnamesTBL))#column names must match exactly
+  sqlSave(wrsa1314,dat=TBL,tablename=UPDATEtables[t],rownames=FALSE,append=TRUE)#SWJ 2/16/15: crashing on sqlSave in R (no SQL error returned) for unknown reasons
 }
 
 
