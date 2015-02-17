@@ -1,4 +1,5 @@
 #temporary update method
+#updates R table, not underlying database
 
 #export from Access using SavedExport Export-Office_Updates3
 UpdatesTBL=read.csv('Office_Updates.csv')
@@ -54,7 +55,7 @@ if(sessionInfo()$R.version$major==2){
 
 #test scenarios
 #ID3 ; 667-670= match with IND
-#change location (uid/transect/point) NOT result
+#change location (uid/transect/point) NOT result --> handle manually bc usually an odd situation where crew or import goofed up due to a misunderstanding
 #ID0 = Comment (example of a comment manually inserted + flag update: IND 2390646 in tblReach and tblCommment insertion: IND=4804552)
 #ID399-435=TBD IND (need match) # i=359; i=373, i=368 (368 is nonexact UID match)
 #ID4 - 12 (and many more) = new insertions, no IND match anticipated
@@ -65,16 +66,18 @@ if(sessionInfo()$R.version$major==2){
 UpdatesTBL=Xwalk(Source='R',Table="UpdatesTBL",XwalkName='WRSA',XwalkDirection='',COL=c('INACTIVATE','INITIAL'))
 UpdatesTBL=addKEYS(UpdatesTBL,Columns=c('SITE_ID','DATE_COL'))
 
-##DEPRECATE and INACTIVATE matching rows
+#look for possible matches if IND missing
 #!if no IND match (or TBD), provide potential matches (find matches in SQL SERVER based on UID, SAMPLE_TYPE, PARAMETER, TRANSECT, POINT)
 INDnonexist=subset(UpdatesTBL,(IND=='' | IND=='TBD'|IND=='0') & TABLE!='TBLCOMMENTS')
 matchTally=0
 for (i in 1:nrow(INDnonexist)){
   match=sqlQuery(wrsa1314,sprintf("SELECT * %s %s, IND as existingIND, RESULT as existingRESULT  from  %s where left(cast(UID as nvarchar),10)='%s'  %s  %s  and SAMPLE_TYPE='%s' and PARAMETER='%s'  ",ifelse(INDnonexist$TRANSECT[i]=='',",'' as TRANSECT",''),ifelse(INDnonexist$POINT[i]=='',",'' as POINT",''),INDnonexist$TABLE[i],substr(INDnonexist$UID[i],1,10),ifelse(INDnonexist$TRANSECT[i]=='','',sprintf("and TRANSECT='%s'",INDnonexist$TRANSECT[i])),ifelse(INDnonexist$POINT[i]=='','',sprintf("and POINT='%s'",INDnonexist$POINT[i])),INDnonexist$SAMPLE_TYPE[i],INDnonexist$PARAMETER[i]))
-  if(nrow(match)>0){
+  matchCNT=nrow(match)
+    if(matchCNT>0){
     if(matchTally==0){
       matches=match[0,]
     }
+    match$MatchCount=matchCNT
     matchTally=matchTally+1
     #export and review method
     matches=rbind(matches,match)
@@ -95,24 +98,33 @@ for (i in 1:nrow(INDnonexist)){
   } 
 }
 ####RESUME HERE TO merge MATCHES back to INDnonexist, then need to append to INDexist if existing IND found
-matches=ColCheck(matches,c('UID','TRANSECT','POINT','SAMPLE_TYPE','PARAMETER','existingIND','existingRESULT'))
-sprintf('%s matches were made. To confirm the match, update IND in the original file before proceeding. If old rows are not properly linked and invalidated, duplicate data and persistence of the error will result.',nrow(matches))#, nrow(subset(INDnonexist,IND!='' & IND!='TBD')))
+matches=ColCheck(matches,c('UID','TRANSECT','POINT','SAMPLE_TYPE','PARAMETER','existingIND','existingRESULT','MatchCount'))
+sprintf('%s potential index matches were made. To confirm the match, update IND and omit duplicates (MatchCount) in the original file before proceeding and reimport UpdatesTBL. Indicate that this is done by changing proceedNONexist to Y. If old rows are not properly linked and invalidated, duplicate data and persistence of the error will result.',nrow(matches))#, nrow(subset(INDnonexist,IND!='' & IND!='TBD')))
 INDnonexist$TRANSECT=ifelse(INDnonexist$TRANSECT=='',NA,INDnonexist$TRANSECT);INDnonexist$POINT=ifelse(INDnonexist$POINT=='',NA,INDnonexist$POINT)
-INDnonexist=merge(INDnonexist,matches,all.x=T)#INDnonexist2=merge(matches,INDnonexist2,all.x=T) #to backcheck matches
-View(subset(INDnonexist,IND!='' & IND!='TBD'))
+INDnonexistCHECK=merge(INDnonexist,matches,all.x=T)#INDnonexist2=merge(matches,INDnonexist2,all.x=T) #to backcheck matches
+View(INDnonexistCHECK)
 
-INDexist=rbind(subset(UpdatesTBL,IND!='' & IND!='TBD'),subset(INDnonexist,IND!='' & IND!='TBD'))
+
+proceedNONexist='N'#proceedNONexist='Y'
+
+if (proceedNONexist=='Y'){
+##DEPRECATE and INACTIVATE matching rows
+INDexist=subset(UpdatesTBL,IND!='' & IND!='TBD')
 for (i in 1:nrow(INDexist)){
   sqlQuery(wrsa1314,sprintf("UPDATE %s set DEPRECATION='%s', ACTIVE='FALSE',OPERATION='OD',REASON='%s' where IND=%s",INDexist$TABLE[i],Sys.Date(),paste(INDexist$INITIAL[i],INDexist$REASON[i],sep=': '),INDexist$IND[i]))#set DEPRECATION to today #set ACTIVE to FALSE #set OPERATION to "OD" (original deprecated)
   #! add old reason too if present!! need to decide if reason given to deprecated or updated row
   #sqlUpdate(wrsa1314,dat=,tablename=,REASON=, index=IND)
 }
 
-#!resume testing here
+FLAGexist=subset(UpdatesTBL,RESULT == 'FLAG')#flag added to unchanged result
+for (i in 1:nrow(FLAGexist)){
+  sqlQuery(wrsa1314,sprintf("UPDATE %s set FLAG='%s' where IND=%s",INDexist$TABLE[i],INDexist$FLAG[i],INDexist$IND[i]))#set DEPRECATION to today #set ACTIVE to FALSE #set OPERATION to "OD" (original deprecated)
+}
+
 #! flag if value not different from original
 ##insert UPDATED rows
 #Omit rows that are only for deletion
-UPDATE=subset(UpdatesTBL,subset=INACTIVATE=='0'|INACTIVATE=='FALSE')#Inactive is 0 in csv import, but might be FALSE if copy/paste or direct from Access via ODBC
+UPDATE=subset(UpdatesTBL,(subset=INACTIVATE=='0'|INACTIVATE=='FALSE') & RESULT != 'FLAG')#Inactive is 0 in csv import, but might be FALSE if copy/paste or direct from Access via ODBC
 #match existing Access fields to SQL server fields
 UPDATE$REASON=paste(UPDATE$INITIAL,UPDATE$REASON,sep=': ')#! add old reason too if present!! #set REASON to REASON + initials
 UPDATE$ACTIVE='TRUE'#set ACTIVE to TRUE
@@ -130,4 +142,4 @@ for (t in 1:nrow(UPDATEtables)){
 
 
 print('Set UPDATE field in ProbSurveyDB (Access) Office_UPDATE to today to indicate that the update was performed.')
-}
+}} else {print('If IND was updated to consider potential matches, change proceedNONexist to Y. Otherwise run the INDnonexist block of code and resolve potential matches.')}
