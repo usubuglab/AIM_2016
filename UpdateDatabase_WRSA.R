@@ -1,3 +1,5 @@
+#############################################Temporary update (R)######################################################################################
+
 #temporary update method
 #updates R table, not underlying database
 
@@ -35,8 +37,14 @@ TBLout$RESULT=ifelse(is.na(TBLout$RESULT.y  ) ,TBLout$RESULT.x,TBLout$RESULT.y) 
 TBLout.sub=subset(TBLout, is.na(INACTIVATE)|INACTIVATE=='0')
 Incision=TBLout.sub
 
-###############################
+#save the revised table for use in other scripts
 assign(TBL,TBLout)
+
+
+
+
+#############################################Permanent update (SQL)######################################################################################
+#use with caution, this edits the underlying database
 
 DEVELOPMENT='N'#update query still in development
 
@@ -47,13 +55,14 @@ if(sessionInfo()$R.version$major==2){
   probsurv14=odbcConnect("ProbSurveyDB")#have to run on remote desktop (gisUser3) or machine which has 64bit R and 64bit Access
   UpdatesTBL=sqlQuery(probsurv14,'select * from Office_Updates where Update is null'
                       #!set Update field to today())
-} else {setwd('C:\\Users\\Sarah\\Desktop\\NAMCdevelopmentLocal\\WRSA')#setwd('M:\\buglab\\Research Projects\\BLM_WRSA_Stream_Surveys\\Field Work\\Post Sample\\iPad backup\\AccessImport');
-        UpdatesTBL=read.csv('Office_Updates.csv')#export from SavedExport Export-Office_Updates3
+} else {setwd('\\\\share1.bluezone.usu.edu\\miller\\buglab\\Research Projects\\BLM_WRSA_Stream_Surveys\\Field Work\\Post Sample\\iPad backup\\AccessImport')#setwd('C:\\Users\\Sarah\\Desktop\\NAMCdevelopmentLocal\\WRSA')
+        UpdatesTBL=read.csv('Office_Updates.csv')#export from ExternalData, SavedExport, Export-Office_Updates3
         UpdatesTBL=subset(UpdatesTBL,UPDATE=='')
         print('Set UPDATE field in ProbSurveyDB (Access) Office_UPDATE to today to indicate that the update was performed.')
 }
 
 #test scenarios
+#UpdatesTBL=UpdatesTBL[1682:1687,]
 #ID3 ; 667-670= match with IND
 #change location (uid/transect/point) NOT result --> handle manually bc usually an odd situation where crew or import goofed up due to a misunderstanding
 #ID0 = Comment (example of a comment manually inserted + flag update: IND 2390646 in tblReach and tblCommment insertion: IND=4804552)
@@ -99,7 +108,7 @@ for (i in 1:nrow(INDnonexist)){
 }
 ####RESUME HERE TO merge MATCHES back to INDnonexist, then need to append to INDexist if existing IND found
 matches=ColCheck(matches,c('UID','TRANSECT','POINT','SAMPLE_TYPE','PARAMETER','existingIND','existingRESULT','MatchCount'))
-sprintf('%s potential index matches were made. To confirm the match, update IND and omit duplicates (MatchCount) in the original file before proceeding and reimport UpdatesTBL. Indicate that this is done by changing proceedNONexist to Y. If old rows are not properly linked and invalidated, duplicate data and persistence of the error will result.',nrow(matches))#, nrow(subset(INDnonexist,IND!='' & IND!='TBD')))
+sprintf('%s potential index matches were made. To confirm the match, update IND and omit duplicates (MatchCount) in the original file (Access Office_Updates) before proceeding and reimport UpdatesTBL after reexporting from Access  Export-Office_Updates3. Indicate that this is done by changing proceedNONexist to Y. If old rows are not properly linked and invalidated, duplicate data and persistence of the error will result.',nrow(matches))#, nrow(subset(INDnonexist,IND!='' & IND!='TBD')))
 INDnonexist$TRANSECT=ifelse(INDnonexist$TRANSECT=='',NA,INDnonexist$TRANSECT);INDnonexist$POINT=ifelse(INDnonexist$POINT=='',NA,INDnonexist$POINT)
 INDnonexistCHECK=merge(INDnonexist,matches,all.x=T)#INDnonexist2=merge(matches,INDnonexist2,all.x=T) #to backcheck matches
 View(INDnonexistCHECK)
