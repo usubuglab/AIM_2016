@@ -28,6 +28,7 @@ for (r in 1:length(requiredPACKAGES)){
 #the db was created in SQL Server Manager on 11/19/2013 by Sarah Judson#
 wrsaConnectSTR=sprintf("Driver={SQL Server Native Client 10.0};Server=%s;Database=WRSAdb;Uid=%s; Pwd=%s;",DBserver,DBuser, DBpassword)
 wrsa1314=odbcDriverConnect(connection = wrsaConnectSTR)
+#test that connection is open # sqlQuery(wrsa1314,"select top 10 * from tblVerification")
 #SWJ to do: throw this into a function that also prompts for server and password if missing (='')
 #SWJ to do: throw the function into a separate referenced script because multiple files are using this
 
