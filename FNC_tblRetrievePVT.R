@@ -149,6 +149,17 @@ addKEYS=function(Table,Columns){
   return(Table)
 }
 
+#removeDUP
+#remove duplicate QA sites
+removeDUP=function(Table,QAdup='N'){
+  if(QAdup=='N'){
+  DUP=sqlQuery(wrsa1314,'select * from tblQAmatch')
+  UIDremove=DUP$UID_QAdup
+  Table=subset(Table,subset=((UID %in% (UIDremove))==FALSE))
+  }
+  return(Table)
+}
+
 #UNIONTBL/tblRetrieve
 tblRetrieve=function(Table='',ALL='N',Comments='N',Filter='',UIDS='BLANK',SiteCodes='',Dates='',Years='',Projects='',Protocols='',Parameters='',ALLp='N'){
   UIDselected=UIDselect(ALL=ALL,Filter=Filter,UIDS=UIDS,SiteCodes=SiteCodes,Dates=Dates,Years=Years,Projects=Projects,Protocols=Protocols)

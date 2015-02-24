@@ -55,6 +55,7 @@ hitchs=c('')#NOT WORKING YET, hitch and crew level generally maintained by Acces
 crews=c('R1')#NOT WORKING YET, hitch and crew level generally maintained by Access not SQL#see crewKC in customrequests for possible method
 filter=''#custom filter (need working knowledge of Parameter:Result pairs and SQL structure; example: "(Parameter='ANGLE' and Result>50) OR (Parameter='WETWID' and Result<=0.75))"
 UIDs='BLANK'#custom filter (need working knowledge of primary keys)
+QAdup='N'#set QAdup='N' to eliminate site QA duplicates
 #NorCal settings: #years=c('2013','2014');projects='NorCal';protocols=c('WRSA14','NRSA13')
 #WRSA QC settings: #years=c('2014'); projects='WRSA';protocols=c('WRSA14')
 
@@ -70,6 +71,8 @@ bankP=c('ANGLE','UNDERCUT','EROSION','COVER','STABLE')
 #Most data requests use the following basic workflow and structure. Save any custom requests created to CustomRequest_WRSAdb.R for documentation.
 #CALL data in using tblRetrieve() #at least ONE filter required, Parameters NOT required, Comments optional (default is no). For possible filters, see "WRSA data managment.docx" OR use getAnywhere(tblRetrieve) and examine available varaiables in the function() inputs section.
 EXAMPLEcond=tblRetrieve(Parameters=c('CONDUCTIVITY','CORRECTED'), Comments='N',Projects='NorCal',Years=c('2013','2014'))
+#remove QA duplicates
+EXAMPLEcond=removeDUP(EXAMPLEcond,QA='N')
 #PIVOT data using cast() function for easier viewing. IND will be lost if need for tracking. Alternative: aggregate() function OR PVTconstruct() assists in building SQL string for custom PIVOTS in SQL Server.
 EXAMPLEcondPVT=cast(EXAMPLEcond,'UID~PARAMETER',value='RESULT') 
 #KEYS added for data interpretability. Any parameters stored in tblVERIFICATION are available to add. Suggested minimum additions are Site_ID + Date_COL. In this example, coordinates for mapping.

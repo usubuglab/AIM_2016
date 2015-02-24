@@ -6,6 +6,9 @@ siteeval=tblRetrieve(Table='',Parameters=c('VALXSITE','STRATUM','MDCATY','WGT'),
 # Below code is NorCal specific
 #siteeval=tblRetrieve(Table='',Parameters=c('VALXSITE','STRATUM','MDCATY','WGT'),Projects='NorCal',Protocols='')
 
+#remove QA duplicates
+siteeval=removeDUP(siteeval,QA='N')
+
 #translate to EvalStatus
 siteeval=bintranslate(Table='siteeval',ST='VERIF',PM='VALXSITE') 
 Eval=sqlQuery(wrsa1314,"select * from tblmetadatabin where Parameter='VALXSITE'")
