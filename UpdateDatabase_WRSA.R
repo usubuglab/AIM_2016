@@ -62,6 +62,7 @@ if(sessionInfo()$R.version$major==2){
         importUPcnt=nrow(UpdatesTBL)
         sprintf('A total of %s records will be updated or inserted. Verify this with the Office_Updates table in Access ProbSurvey_DB', importUPcnt)
         print('Set UPDATE field in ProbSurveyDB (Access) Office_UPDATE using query Office_Updates_DONE to today to indicate that the update was performed.')
+        
 }
 
 
