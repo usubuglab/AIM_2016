@@ -12,7 +12,7 @@ NVNorCalEnv=read.csv("\\\\share1.bluezone.usu.edu\\miller\\buglab\\Research Proj
 #NorCalEnv=subset(NVNorCalEnv, Project=="NorCal")
 
 boxplot(SQ_KM~Project, data=NVNorCalEnv,ylab="SQ_KM",main='NV',col=c("steelblue","grey"))
-boxplot(log(SQ_KM)~Project, data=NVNorCalEnv,ylab="log(SQ_KM)",main='NV',col=c("steelblue","grey"))
+boxplot(log10(SQ_KM)~Project, data=NVNorCalEnv,ylab="log10(SQ_KM)",main='NV',col=c("steelblue","grey"))
 boxplot(ELVmax_WS~Project, data=NVNorCalEnv,ylab="ELVmax_WS",main='NV',col=c("steelblue","grey"))
 boxplot(ELVmin_WS~Project, data=NVNorCalEnv,ylab="ELVmin_WS",main='NV',col=c("steelblue","grey"))
 boxplot(ELVmean_WS~Project, data=NVNorCalEnv,ylab="ELVmean_WS",main='NV',col=c("steelblue","grey"))
@@ -27,6 +27,144 @@ boxplot(Pmax_PT~Project, data=NVNorCalEnv,ylab="Pmax_PT",main='NV',col=c("steelb
 boxplot(Tmax_PT~Project, data=NVNorCalEnv,ylab="Tmax_PT",main='NV',col=c("steelblue","grey"))
 boxplot(PrdCond~Project, data=NVNorCalEnv,ylab="PrdCond",main='NV',col=c("steelblue","grey"))
 boxplot(Slope_WS~Project, data=NVNorCalEnv,ylab="Slope_WS",main='NV',col=c("steelblue","grey"))
+
+
+
+######## Correlations of Elevation and watershed area for NorCal test and NV MMI reference ####
+NVNorCalEnv$Log_SQ_KM=log10(NVNorCalEnv$SQ_KM)
+NorCal=NVNorCalEnv[NVNorCalEnv$Project=='NorCal',]
+NorCal=NorCal[-c(19,35,50),]
+NV=NVNorCalEnv[NVNorCalEnv$Project=='NVmodel',]
+#################################### Elevation ####################################################
+par(mfrow=c(1,3))
+##Elv min
+lmNorCal=lm(NorCal$Log_SQ_KM~NorCal$ELVmin_WS)
+plot(NorCal$ELVmin_WS,NorCal$Log_SQ_KM, xlim=c(1000,3000), ylim=c(-1,5),xlab='', ylab='', col='red');abline(lmNorCal,col='red')
+par(new=TRUE)
+lmNV=lm(NV$Log_SQ_KM~NV$ELVmin_WS)
+plot(NV$ELVmin_WS,NV$Log_SQ_KM, xlim=c(1000,3000), ylim=c(-1,5),xlab='ELVmin_WS', ylab='Log_SQ_KM', col='blue');abline(lmNV,col='blue')
+
+#ELVmax_WS  ELVmean_WS
+par(new=FALSE)
+lmNorCal=lm(NorCal$Log_SQ_KM~NorCal$ELVmax_WS)
+plot(NorCal$ELVmax_WS,NorCal$Log_SQ_KM, xlim=c(1500,4250), ylim=c(-1,5),xlab='', ylab='', col='red');abline(lmNorCal,col='red')
+par(new=TRUE)
+lmNV=lm(NV$Log_SQ_KM~NV$ELVmax_WS)
+plot(NV$ELVmax_WS,NV$Log_SQ_KM, xlim=c(1500,4250), ylim=c(-1,5),xlab='ELVmax_WS', ylab='Log_SQ_KM', col='blue');abline(lmNV,col='blue')
+
+#ELVmean_WS
+par(new=FALSE)
+lmNorCal=lm(NorCal$Log_SQ_KM~NorCal$ELVmean_WS)
+plot(NorCal$ELVmean_WS,NorCal$Log_SQ_KM, xlim=c(1500,3500), ylim=c(-1,5),xlab='', ylab='', col='red');abline(lmNorCal,col='red')
+par(new=TRUE)
+lmNV=lm(NV$Log_SQ_KM~NV$ELVmean_WS)
+plot(NV$ELVmean_WS,NV$Log_SQ_KM, xlim=c(1500,3500), ylim=c(-1,5),xlab='ELVmean_WS', ylab='Log_SQ_KM', col='blue');abline(lmNV,col='blue')
+
+
+
+#Remove sites AR-SS-8017, SU-SS-8322, EL-SS-8124
+NorCal1=NorCal[-c(12,44,54),]
+par(mfrow=c(1,3))
+##Elv min
+lmNorCal1=lm(NorCal1$Log_SQ_KM~NorCal1$ELVmin_WS)
+plot(NorCal1$ELVmin_WS,NorCal1$Log_SQ_KM, xlim=c(1000,3000), ylim=c(-1,5),xlab='', ylab='', col='red');abline(lmNorCal1,col='red')
+par(new=TRUE)
+lmNV=lm(NV$Log_SQ_KM~NV$ELVmin_WS)
+plot(NV$ELVmin_WS,NV$Log_SQ_KM, xlim=c(1000,3000), ylim=c(-1,5),xlab='ELVmin_WS', ylab='Log_SQ_KM', col='blue');abline(lmNV,col='blue')
+
+#ELVmax_WS  ELVmean_WS
+par(new=FALSE)
+lmNorCal1=lm(NorCal1$Log_SQ_KM~NorCal1$ELVmax_WS)
+plot(NorCal1$ELVmax_WS,NorCal1$Log_SQ_KM, xlim=c(1500,4250), ylim=c(-1,5),xlab='', ylab='', col='red');abline(lmNorCal1,col='red')
+par(new=TRUE)
+lmNV=lm(NV$Log_SQ_KM~NV$ELVmax_WS)
+plot(NV$ELVmax_WS,NV$Log_SQ_KM, xlim=c(1500,4250), ylim=c(-1,5),xlab='ELVmax_WS', ylab='Log_SQ_KM', col='blue');abline(lmNV,col='blue')
+
+#ELVmean_WS
+par(new=FALSE)
+lmNorCal1=lm(NorCal1$Log_SQ_KM~NorCal1$ELVmean_WS)
+plot(NorCal1$ELVmean_WS,NorCal1$Log_SQ_KM, xlim=c(1500,3500), ylim=c(-1,5),xlab='', ylab='', col='red');abline(lmNorCal1,col='red')
+par(new=TRUE)
+lmNV=lm(NV$Log_SQ_KM~NV$ELVmean_WS)
+plot(NV$ELVmean_WS,NV$Log_SQ_KM, xlim=c(1500,3500), ylim=c(-1,5),xlab='ELVmean_WS', ylab='Log_SQ_KM', col='blue');abline(lmNV,col='blue')
+
+
+
+ELVcv_PT
+#################################### Precip ####################################################
+par(mfrow=c(1,2))
+##Pmax_WS
+lmNorCal=lm(NorCal$Log_SQ_KM~NorCal$Pmax_WS)
+plot(NorCal$Pmax_WS,NorCal$Log_SQ_KM, xlim=c(0,300), ylim=c(-1,4),xlab='', ylab='', col='red');abline(lmNorCal,col='red')
+par(new=TRUE)
+lmNV=lm(NV$Log_SQ_KM~NV$Pmax_WS)
+plot(NV$Pmax_WS,NV$Log_SQ_KM, xlim=c(0,300), ylim=c(-1,4),xlab='Pmax_WS', ylab='Log_SQ_KM', col='blue');abline(lmNV,col='blue')
+
+#Pmax_WS
+par(new=FALSE)
+lmNorCal=lm(NorCal$ELVmax_WS~NorCal$Pmax_WS)
+plot(NorCal$Pmax_WS,NorCal$ELVmax_WS, xlim=c(0,300),ylim=c(1500,4500),xlab='', ylab='', col='red');abline(lmNorCal,col='red')
+par(new=TRUE)
+lmNV=lm(NV$ELVmax_WS~NV$Pmax_WS)
+plot(NV$Pmax_WS,NV$ELVmax_WS,xlim=c(0,300),ylim=c(1500,4500),xlab='Pmax_WS', ylab='ELVmax_WS', col='blue');abline(lmNV,col='blue')
+
+
+#################################### Temp ####################################################
+par(mfrow=c(1,3))
+##Tmax_WS
+lmNorCal=lm(NorCal$Log_SQ_KM~NorCal$Tmax_WS)
+plot(NorCal$Tmax_WS,NorCal$Log_SQ_KM, xlim=c(15,35), ylim=c(-.5,4),xlab='', ylab='', col='red');abline(lmNorCal,col='red')
+par(new=TRUE)
+lmNV=lm(NV$Log_SQ_KM~NV$Tmax_WS)
+plot(NV$Tmax_WS,NV$Log_SQ_KM, xlim=c(15,35), ylim=c(-.5,4),xlab='Tmax_WS', ylab='Log_SQ_KM', col='blue');abline(lmNV,col='blue')
+
+#Tmax_WS
+par(new=FALSE)
+lmNorCal=lm(NorCal$ELVmax_WS~NorCal$Tmax_WS)
+plot(NorCal$Tmax_WS,NorCal$ELVmax_WS, xlim=c(15,35),ylim=c(1500,4500),xlab='', ylab='', col='red');abline(lmNorCal,col='red')
+par(new=TRUE)
+lmNV=lm(NV$ELVmax_WS~NV$Tmax_WS)
+plot(NV$Tmax_WS,NV$ELVmax_WS,xlim=c(15,35),ylim=c(1500,4500),xlab='Tmax_WS', ylab='ELVmax_WS', col='blue');abline(lmNV,col='blue')
+
+#Tmax_WS
+par(new=FALSE)
+lmNorCal=lm(NorCal$Pmax_WS~NorCal$Tmax_WS)
+plot(NorCal$Tmax_WS,NorCal$Pmax_WS, xlim=c(15,35),ylim=c(0,300),xlab='', ylab='', col='red');abline(lmNorCal,col='red')
+par(new=TRUE)
+lmNV=lm(NV$Pmax_WS~NV$Tmax_WS)
+plot(NV$Tmax_WS,NV$Pmax_WS,xlim=c(15,35),ylim=c(0,300),xlab='Tmax_WS', ylab='Pmax_WS', col='blue');abline(lmNV,col='blue')
+
+#####################
+
+panel.cor <- function(x, y, digits=2, prefix="", cex.cor, ...)
+{
+  usr <- par("usr"); on.exit(par(usr))
+  par(usr = c(0, 1, 0, 1))
+  r <- abs(cor(x, y))
+  txt <- format(c(r, 0.123456789), digits=digits)[1]
+  txt <- paste(prefix, txt, sep="")
+  if(missing(cex.cor)) cex.cor <- 0.8/strwidth(txt)
+  text(0.5, 0.5, txt, cex = cex.cor * r)
+}
+
+
+
+####
+NVNorCalEnv=NVNorCalEnv[-c(184,200,215),]
+
+cor=NVNorCalEnv[,c(25,5:7,9:19)]
+pairs(cor,col=ifelse(as.numeric(rownames(cor))>165,"red","blue"))
+
+cor=NVNorCalEnv[,c(25,5:7,9)]
+pairs(cor,col=ifelse(as.numeric(rownames(cor))>165,"red","blue"))
+
+cor=NVNorCalEnv[,c(25,10:14)]
+pairs(cor,col=ifelse(as.numeric(rownames(cor))>165,"red","blue"))
+
+cor=NVNorCalEnv[,c(25,15:19)]
+pairs(cor,col=ifelse(as.numeric(rownames(cor))>165,"red","blue"))
+
+
 
 
 ############################################################################################
@@ -135,6 +273,27 @@ plot(ord_m4)
 plot(ord_m4, type="n")
 points(ord_m4, display = 'sites', col= UID_1_Ref[,6])
 ordihull(ord_m4, UID_1_Ref$Project, col = "green", lty = 1, lwd=1)
+
+
+#### Try Only a few Data has only been standardized by mean
+nvF=nv1[,c(2,4,7,9)]
+nvF$Log_SQ_KM=log10(nvF$SQ_KM)
+nvF=nvF[,-2]
+nvF=nvF[,-4]
+ord_m=metaMDS(nvF)
+plot(ord_m)
+#Species=columns Sites=rows
+#plot(ord_m, type="t", display='species')
+plot(ord_m, type="n")
+points(ord_m, display = 'sites', col= UID_1_Ref[,6])
+ordihull(ord_m, UID_1_Ref$Project, col = "green", lty = 1, lwd=1)
+
+#To identify just a couple points on the graph.. 
+# Run Fig and identify species or sites one at a time
+# Click on points you want to ID, then ESCAPE and the points will be labeled on the graph
+fig=ordiplot(ord_m)
+identify(fig,'spec')
+identify(fig,'sites')
 
 ###### stop NMDS  ######
 ########################
