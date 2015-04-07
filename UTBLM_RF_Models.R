@@ -625,15 +625,21 @@ for (x in xname){
 var.perform[order(var.perform$rsq, decreasing=T),]
 
 
+
 # partialplot
-par(mai=c(2,2,2,2)) 
+par(mai=c(2,2,2,2), cra=1/400) 
 sapply(unique(AREMP_OEcat3max_nat$Oerat3max),function(grp){
 partialPlot(AREMP_OEcat3max_nat.rf,pred.data=AREMP_OEcat3max_nat, x.var= Organic.matter, which.class="Good",main=paste("",""),xlab="Organic matter (%)",ylab="(logit Probability of good rating)/2", lwd=3, mai=c(0.5,5,0.5,0.5), cex.lab=2, cex.axis=1.5)});
 
-
-
-partialPlot(ECdiffdisturb.rf5,pred.data=ECdiffdisturb, x.var= AG_WS,main=paste("",""),xlab="AG_WS (%)",ylab="Observed EC-Expected EC", lwd=3, mai=c(0.5,5,0.5,0.5), cex.lab=2, cex.axis=1.5)
-partialPlot(ECdiffdisturb.rf5,pred.data=ECdiffdisturb, x.var= OilGasCoun,main=paste("",""),ylab="Observed EC-Expected EC", lwd=3, mai=c(0.5,5,0.5,0.5), cex.lab=2, cex.axis=1.5)
+par("mai")
+par("oma")
+par()
+png(file="ECplot.png",width=1200,height=800,res=400,pointsize=4)
+png(file="OilGasplot2.png",width=1200,height=800,res=400,pointsize=4)
+partialPlot(ECdiffdisturb.rf5,pred.data=ECdiffdisturb, x.var= AG_WS,main=paste("",""),xlab="AG_WS (%)",ylab="Observed EC-Expected EC") 
+dev.off()
+partialPlot(ECdiffdisturb.rf5,pred.data=ECdiffdisturb, x.var= AG_WS,main=paste("",""),xlab="AG WS (%)",ylab="Observed EC-Expected EC", lwd=1, cex.lab=1.5, cex.axis=1.5)#high res
+partialPlot(ECdiffdisturb.rf5,pred.data=ECdiffdisturb, x.var= OilGasCoun,main=paste("",""),ylab="Observed EC-Expected EC", lwd=1, cex.lab=1.5, cex.axis=1.5)
 partialPlot(ECdiffdisturb.rf5,pred.data=ECdiffdisturb, x.var= HydrAlt_km,main=paste("",""),,ylab="Observed EC-Expected EC", lwd=3, mai=c(0.5,5,0.5,0.5), cex.lab=2, cex.axis=1.5)
 partialPlot(ECdiffdisturb.rf5,pred.data=ECdiffdisturb, x.var= AllotPct,main=paste("",""),,ylab="Observed EC-Expected EC", lwd=3, mai=c(0.5,5,0.5,0.5), cex.lab=2, cex.axis=1.5)
 partialPlot(ECdiffdisturb.rf5,pred.data=ECdiffdisturb, x.var= OilFld_Pct,main=paste("",""),,ylab="Observed EC-Expected EC", lwd=3, mai=c(0.5,5,0.5,0.5), cex.lab=2, cex.axis=1.5)
