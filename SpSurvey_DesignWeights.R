@@ -27,6 +27,10 @@ siteeval=subset(siteeval,is.na(VISIT_NO) | (VISIT_NO==2)==FALSE)#omit repeat QA 
 #This is a temporary TRIAL and must be permanently updated in Access if it is decided to keep this change. 
 #Data file to alter[row number, "column name"]="value you want there instead of what is there"
 #siteeval[siteeval$UID=='13712',"EvalStatus"]='NT'
+siteeval[siteeval$UID=='11777',"EvalStatus"]='IA'
+siteeval[siteeval$UID=='12476',"EvalStatus"]='IA'
+siteeval[siteeval$UID=='12453',"EvalStatus"]='IA'
+
 
 ###Final Designation reconcilation###
 #reconcilation was done manually for norcal 2013-4 (took approx 1 hour), the following needs to be implemented for a more streamlined process:
