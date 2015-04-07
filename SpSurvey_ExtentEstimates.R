@@ -68,7 +68,7 @@ designCON=data.frame(siteID=siteeval$SITE_ID,
 #ResponseInfo=read.csv('\\\\share2.bluezone.usu.edu\\miller\\buglab\\Research Projects\\BLM_WRSA_Stream_Surveys\\Results and Reports\\NorCal_2013\\AquametTEST\\metsSubstrateCharacterization.csv')
 ######NorCal examples#########
 #PIVOT
-ResponseInfo=read.csv('\\\\share1.bluezone.usu.edu\\miller\\buglab\\Research Projects\\BLM_WRSA_Stream_Surveys\\Results and Reports\\NorCal_2013\\Analysis\\ExtentEstimates\\NorCal_ExtEst_Input.csv')
+ResponseInfo=read.csv('\\\\share1.bluezone.usu.edu\\miller\\buglab\\Research Projects\\BLM_WRSA_Stream_Surveys\\Results and Reports\\NorCal_2013\\Analysis\\ExtentEstimates\\NorCal_ExtEst_Input_ReduceAllIndicators.csv')
 
 #######SRM input file
 ResponseInfo=read.csv('Z:\\buglab\\Research Projects\\BLM_WRSA_Stream_Surveys\\Results and Reports\\SRM_2015\\ResponseInfo.csv')
@@ -77,20 +77,26 @@ ResponseInfo=read.csv('Z:\\buglab\\Research Projects\\BLM_WRSA_Stream_Surveys\\R
 #This code looks for the UIDs that start with the first three numbers in the input file and replace with the actual UID
 #However, if this code does not work or gives errors for ANY lines view the ResponseInfo and check that the first 3 values of the UID are the same as rounding CAN occur while reading the csv to R
 #NEEDS to be commented out in case the WRSA UIDs start with any of the same 3 values. 
-ResponseInfo[grep('^172.*?',ResponseInfo$UID),'UID']='171984519050561'
-ResponseInfo[grep('^228.*?',ResponseInfo$UID),'UID']='228284433826712128'
-ResponseInfo[grep('^535.*?',ResponseInfo$UID),'UID']='535384124962793152'
-ResponseInfo[grep('^746.*?',ResponseInfo$UID),'UID']='745880431965292672'
-ResponseInfo[grep('^745.*?',ResponseInfo$UID),'UID']='745880431965292672'
-ResponseInfo[grep('^164.*?',ResponseInfo$UID),'UID']='16444949915001999360'
-ResponseInfo[grep('^210.*?',ResponseInfo$UID),'UID']='21013264668376829952'
-ResponseInfo[grep('^163.*?',ResponseInfo$UID),'UID']='163224301412212998144'
-ResponseInfo[grep('^522.*?',ResponseInfo$UID),'UID']='522341843044642979840'
-ResponseInfo[grep('^991.*?',ResponseInfo$UID),'UID']='990634514616467980328'
-ResponseInfo[grep('^524.*?',ResponseInfo$UID),'UID']='5250818050747459961862'
-ResponseInfo[grep('^742.*?',ResponseInfo$UID),'UID']='74173607466410396616486'
-ResponseInfo[grep('^312.*?',ResponseInfo$UID),'UID']='313491917404832989706088'
-ResponseInfo[grep('^449.*?',ResponseInfo$UID),'UID']='450193146741598021566280808'
+ResponseInfo[grep('^172.*?',ResponseInfo$UID),'UID']='1719845190'
+ResponseInfo[grep('^171.*?',ResponseInfo$UID),'UID']='1719845190'
+ResponseInfo[grep('^228.*?',ResponseInfo$UID),'UID']='2282844338'
+ResponseInfo[grep('^535.*?',ResponseInfo$UID),'UID']='5353841249'
+ResponseInfo[grep('^746.*?',ResponseInfo$UID),'UID']='7458804319'
+ResponseInfo[grep('^745.*?',ResponseInfo$UID),'UID']='7458804319'
+ResponseInfo[grep('^164.*?',ResponseInfo$UID),'UID']='1644494991'
+ResponseInfo[grep('^210.*?',ResponseInfo$UID),'UID']='2101326466'
+ResponseInfo[grep('^163.*?',ResponseInfo$UID),'UID']='1632243014'
+ResponseInfo[grep('^522.*?',ResponseInfo$UID),'UID']='5223418430'
+ResponseInfo[grep('^991.*?',ResponseInfo$UID),'UID']='9906345146'
+ResponseInfo[grep('^990.*?',ResponseInfo$UID),'UID']='9906345146'
+ResponseInfo[grep('^524.*?',ResponseInfo$UID),'UID']='5250818050'
+ResponseInfo[grep('^525.*?',ResponseInfo$UID),'UID']='5250818050'
+ResponseInfo[grep('^742.*?',ResponseInfo$UID),'UID']='7417360746'
+ResponseInfo[grep('^741.*?',ResponseInfo$UID),'UID']='7417360746'
+ResponseInfo[grep('^313.*?',ResponseInfo$UID),'UID']='3134919174'
+ResponseInfo[grep('^312.*?',ResponseInfo$UID),'UID']='3134919174'
+ResponseInfo[grep('^449.*?',ResponseInfo$UID),'UID']='4501931467'
+ResponseInfo[grep('^450.*?',ResponseInfo$UID),'UID']='4501931467'
 
 
 
@@ -131,8 +137,9 @@ SiteInfo=merge(siteeval,ResponseInfo,by=intersect(colnames(siteeval),colnames(Re
 #########NorCal examples###########
 selectVARauto='N'; selectVARchoice=ifelse(selectVARauto=='Y','AllVar','CustomVar')#automatically select all variables
 extentVAR=c('TNT','EvalStatus','VALXSITE')#Extent Estimate added here since weights the same (rather than running cat.analysis twice)
-responseVAR=c('NV_MMI')# Input here should be bug model
-stressorsVAR=c("NV_Invasives","OE_Conduct","OE_TN","OE_TP","PH_CHECK","BnkStability_BLM_CHECK","PCT_SAFN_CHECK","XCMG_CHECK","XGB_CHECK","XFC_NAT_CHECK","LINCIS_H_CHECK","xcdenmid_CHECK")#,"XEMBED_CHECK")#NOT stressorsVAR=c('MMI')   ####'PCT_SAFN','LSUB_DMM')#UTBLM final list: stressorsVAR=c('InvasivesYN','EC','TP','TN','AugST','LBFXWRat','C1WM100','XCDENMID','Stab2','PCT_SAFN')#must be Access names with a matching 'rtg' variable: to view, str(ResponseInfo)
+responseVAR=c("NV_MMI")# Input here should be bug model
+stressorsVAR=c("NV_Invasives","OE_TN","OE_TP","OE_Conduct","PH_CHECK","BnkStability_BLM_CHECK","PCT_SAFN_CHECK","XCMG_CHECK","XFC_NAT_CHECK","LINCIS_H_CHECK","xcdenmid_CHECK")#,"XEMBED_CHECK")#NOT stressorsVAR=c('MMI')   ####'PCT_SAFN','LSUB_DMM')#UTBLM final list: stressorsVAR=c('InvasivesYN','EC','TP','TN','AugST','LBFXWRat','C1WM100','XCDENMID','Stab2','PCT_SAFN')#must be Access names with a matching 'rtg' variable: to view, str(ResponseInfo)
+#"XGB_CHECK",
 ##########SRM ###################
 selectVARauto='N'; selectVARchoice=ifelse(selectVARauto=='Y','AllVar','CustomVar')#automatically select all variables
 extentVAR=c('TNT')#NOT extentVAR=c('MMI','trial','EvalStatus','VALXSITE')#Extent Estimate added here since weights the same (rather than running cat.analysis twice)
@@ -169,9 +176,11 @@ stressorsVAR=setdiff(stressorsVAR,omitVAR)
 #the asterisk indictates 2012 only
 #ECname='Conductivity'; TPname='Phosphorus';MWMTname='Max Temp.'; TNname='Nitrogen'; InvasivesYNname='Invasives';OEname='O/E';
 #NorCal
-NV_MMIname='Nevada MMI';NV_Invasivesname='Benthic Invasives'; OE_TNname='Total Nitrogen';OE_TPname='Total Phosphorus';OE_Conductname='Conductivity';PH_CHECKname='pH';
-BnkStability_BLM_CHECKname='Bank Stability';PCT_SAFN_CHECKname='% Fine Sediment';XCMG_CHECKname='Riparian Complexity';xcdenmid_CHECKname='Riparian Canopy Cover';XGB_CHECKname='Bare Ground';
-XFC_NAT_CHECKname='Instream Complexity';LINCIS_H_CHECKname='Floodplain Connectivity';xcdenmid_CHECKname='Riparian Canopy Cover'
+NV_MMIname='Nevada MMI';
+NV_Invasivesname='Benthic Invasives'; OE_TNname='Total Nitrogen';OE_TPname='Total Phosphorus';OE_Conductname='Conductivity';PH_CHECKname='pH';
+BnkStability_BLM_CHECKname='Bank Stability';PCT_SAFN_CHECKname='% Fine Sediment';XCMG_CHECKname='Riparian Complexity';xcdenmid_CHECKname='Riparian Canopy Cover';
+#XGB_CHECKname='Bare Ground';
+XFC_NAT_CHECKname='Instream Complexity';LINCIS_H_CHECKname='Floodplain Connectivity'
 
 #XEMBED_CHECKname='Embeddedness';OEname='Biological Condition'; Invasivesname='Benthic Invasives;#SRM
 

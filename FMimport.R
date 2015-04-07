@@ -2,7 +2,7 @@
 #Filemaker import consumption
 
   datetest <- function(x) c(ifelse(is.numeric(x),FALSE,ifelse(is.character(x),FALSE,TRUE)))
-  setwd('N:\\buglab\\Research Projects\\BLM_WRSA_Stream_Surveys\\Field Work\\Post Sample\\iPad backup')#setwd('C:\\Users\\Sarah\\Documents')#default export location for desktop version of FM
+  setwd('M:\\buglab\\Research Projects\\BLM_WRSA_Stream_Surveys\\Field Work\\Post Sample\\iPad backup')#setwd('C:\\Users\\Sarah\\Documents')#default export location for desktop version of FM
   tables=list.files(getwd(),pattern='*.xlsx')#tables=read.csv('RelationalTest.csv')#tables=c('FMout_tbl_yr2014doy156Sarah-PC_Hitch.xlsx')#test table
   importcols=c(VAR,'TRANSECT','POINT','PARAMETER','RESULT');#importcols=setdiff(importcols,c('REASON'))
   importmaster=data.frame(t(rep(NA,length(importcols))))
