@@ -23,6 +23,15 @@
 axissize=2#cex
 GFPcol=c('firebrick','gold','lightgreen')#c('red','yellow','green')#fix to be global (category can be fed into to only generate relevant colors), needs to be in this order for current code to color good, fair, poor correctly
 
+##################  NorCal Specific Code: Start ##################
+#NorCal Color Change
+GFPcol=c('firebrick','dimgray','steelblue4')#c('red','yellow','green')#fix to be global (category can be fed into to only generate relevant colors), needs to be in this order for current code to color good, fair, poor correctly
+#So that I could still speak to 205 stream km, but remove 3 sites from the MMI results I created a fake condition class as "N"
+#This code below removes the condition class of "N" so that the figures could be made properly
+#results.cat=results.cat[-c(150,155,160,165,170,174,183),];View(results.cat)
+##################  NorCal Specific Code: Start ##################
+
+
 #Export='PNL'#options: 'PNG' (exported png); 'PNL' (saved to workspace for later panelling) ## not working as anticipated
 ScaleTYPE='Percent'#options: Percent, Absolute (meaning Percentage (Segments or StreamKM same) or StreamKM ) # set to absolute by default if an extent variable
 SubpopTypes=unique(results.cat$Type)#SubpopTypes=c('Districts','Utah')
