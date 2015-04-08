@@ -24,8 +24,11 @@ axissize=2#cex
 GFPcol=c('firebrick','gold','lightgreen')#c('red','yellow','green')#fix to be global (category can be fed into to only generate relevant colors), needs to be in this order for current code to color good, fair, poor correctly
 
 ##################  NorCal Specific Code: Start ##################
-#NorCal Color Change
-GFPcol=c('firebrick','dimgray','steelblue4')#c('red','yellow','green')#fix to be global (category can be fed into to only generate relevant colors), needs to be in this order for current code to color good, fair, poor correctly
+#NorCal Color Change for regular G, F, P order
+#GFPcol=c('firebrick','dimgray','steelblue4')#c('red','yellow','green')#fix to be global (category can be fed into to only generate relevant colors), needs to be in this order for current code to color good, fair, poor correctly
+#Below of for NV MMMI results of Reference, Degraded, and undetermined, in order! 
+#GFPcol=c('dimgray','firebrick','steelblue4')
+#CatOrd = c('Fair','Poor','Good')
 #So that I could still speak to 205 stream km, but remove 3 sites from the MMI results I created a fake condition class as "N"
 #This code below removes the condition class of "N" so that the figures could be made properly
 #results.cat=results.cat[-c(150,155,160,165,170,174,183),];View(results.cat)
@@ -91,10 +94,15 @@ for (s in 1:length(SubpopTypes)){#Temporary! only all and district - length(Subp
             BarData=rbind(BarData,0)
             BarData$Category[[(CATcheck+f)]]=ifelse('Fair' %in% BarData$Category==F,'Fair', ifelse('Good' %in% BarData$Category==F,"Good",'Poor'))
           }}
-        BarData=BarData[with(BarData,order(Category)),]
-        BarData=BarData[with(BarData,order(Category <- c('Good','Fair','Poor'),decreasing=T)),] #sort (very fickle, hence below warning)
-        WARNsort=ifelse(BarData$Indicator %in% extentVAR | (BarData$Category[[1]]=='Poor' & BarData$Category[[3]]=='Good'),'',print(sprintf('SORT incorrect-%s-%s-%s',varNAME,SubpopTypes[[s]],SubpopStrata[[t]])))#I think this is corrected with the double sort, but left in just to be safe
-             }
+#NorCal# Create graphs with Good, Poor, and then Fair, for NV MMI. technically reference, degraded, and undetermined. 
+#NorCal# Uncomment out next two lines of code, comment out next 3 lines of original code. Make sure to run the correct CatOrg and GFP colors at the very top/beginning of this code!  
+#NorCal# BarData=BarData[order(match(BarData$Category,CatOrd)),]# NorCal Specific, This line should be commented out, Line above, and two lines below, should be run as original code.
+#NorCal# WARNsort=ifelse(BarData$Indicator %in% extentVAR | (BarData$Category[[1]]=='Fair' & BarData$Category[[3]]=='Good'),'',print(sprintSf('ORT incorrect-%s-%s-%s',varNAME,SubpopTypes[[s]],SubpopStrata[[t]])))#I think this is corrected with the double sort, but left in just to be safe
+       BarData=BarData[with(BarData,order(Category)),]
+       BarData=BarData[with(BarData,order(Category <- c('Good','Fair','Poor'),decreasing=T)),] #sort (very fickle, hence below warning)
+       WARNsort=ifelse(BarData$Indicator %in% extentVAR | (BarData$Category[[1]]=='Poor' & BarData$Category[[3]]=='Good'),'',print(sprintf('SORT incorrect-%s-%s-%s',varNAME,SubpopTypes[[s]],SubpopStrata[[t]])))#I think this is corrected with the double sort, but left in just to be safe      
+         }
+      
       if (ScaleTYPE2=='Percent'){BarData$X=BarData$Estimate.P;
                                 BarData$UConf=BarData$UCB90Pct.P;BarData$LConf=BarData$LCB90Pct.P;
                                 Xmax=100
