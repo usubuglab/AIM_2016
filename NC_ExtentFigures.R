@@ -27,11 +27,12 @@ GFPcol=c('firebrick','gold','lightgreen')#c('red','yellow','green')#fix to be gl
 #NorCal Color Change for regular G, F, P order
 #GFPcol=c('firebrick','dimgray','steelblue4')#c('red','yellow','green')#fix to be global (category can be fed into to only generate relevant colors), needs to be in this order for current code to color good, fair, poor correctly
 #Below of for NV MMMI results of Reference, Degraded, and undetermined, in order! 
-#GFPcol=c('dimgray','firebrick','steelblue4')
-#CatOrd = c('Fair','Poor','Good')
+GFPcol=c('dimgray','firebrick','steelblue4')
+CatOrd = c('Fair','Poor','Good')
+axissize=2#cex
 #So that I could still speak to 205 stream km, but remove 3 sites from the MMI results I created a fake condition class as "N"
 #This code below removes the condition class of "N" so that the figures could be made properly
-#results.cat=results.cat[-c(150,155,160,165,170,174,183),];View(results.cat)
+results.cat=results.cat[!results.cat$Category=='N',];View(results.cat)
 ##################  NorCal Specific Code: Start ##################
 
 
@@ -79,6 +80,7 @@ for (s in 1:length(SubpopTypes)){#Temporary! only all and district - length(Subp
     mtext(ifelse(ScaleTYPE=='Percent','% of Stream KM','Stream KM'),side=1,line=2,cex=axissize)#not sure why xlab is not working in barplot
     BarDataPoor$UConf=ifelse(is.na(BarDataPoor$UConf),0,BarDataPoor$UConf) ; BarDataPoor$X=ifelse(is.na(BarDataPoor$X),0,round(BarDataPoor$X,1))     
     arrows(x0=BarDataPoor$LConf,x1=BarDataPoor$UConf,y0=BarEXTp,length=.1,angle=90,code=3)#use Conf or StErr? why are upper limits so much higher?
+#NorCal#text(y=BarEXTp,x=BarDataPoor$UConf-1, cex=.75,labels=sprintf('%s%s',BarDataPoor$X,ifelse(ScaleTYPE=='Percent','%','')),pos=4,srt=360, xpd=NA)#Replace labels with % stream  (from Cell Proportion) 
     text(y=BarEXTp,x=BarDataPoor$UConf-1, cex=.5,labels=sprintf('%s%s',BarDataPoor$X,ifelse(ScaleTYPE=='Percent','%','')),pos=4,srt=360, xpd=NA)#Replace labels with % stream  (from Cell Proportion) 
     graphics.off()
     variablesUSE=c(variablesrtg,extentVAR)#variablesUSE=c(extentVAR,variablesrtg[[1]])#
@@ -123,6 +125,7 @@ for (s in 1:length(SubpopTypes)){#Temporary! only all and district - length(Subp
       # title(sprintf('Extent: %s\n%s: %s',varNAME,SubpopTypes[[s]],SubpopStrata[[t]])    ,cex=.5, line=1) 
       mtext(ifelse(ScaleTYPE2=='Percent','% of Stream KM','Stream KM'),side=1,line=2,cex=axissize)#not sure why xlab is not working in barplot
       arrows(x0=BarData$LConf,x1=BarData$UConf,y0=BarEXT,length=.1,angle=90,code=3)#use Conf or StErr? why are upper limits so much higher?
+#NorCal#text(y=BarEXT,x=BarData$UConf, cex=.75,labels=sprintf('%s%s',round(BarData$X,1),ifelse(ScaleTYPE2=='Percent','%','')),pos=4,srt=360,xpd=NA)#Replace labels with % stream  (from Cell Proportion) 
       text(y=BarEXT,x=BarData$UConf, cex=.5,labels=sprintf('%s%s',round(BarData$X,1),ifelse(ScaleTYPE2=='Percent','%','')),pos=4,srt=360,xpd=NA)#Replace labels with % stream  (from Cell Proportion) 
       text(y=0,x=0,WARNsort,cex=5,col='purple')
       # if(Export=='PNL') { assign(sprintf('Extent%s%s%s',varNAME,SubpopTypes[[s]],SubpopStrata[[t]]),recordPlot())  }#temporarily wrapped in if, but recordplot alternative did not work
