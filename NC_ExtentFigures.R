@@ -28,6 +28,9 @@ GFPcol=c('firebrick','gold','lightgreen')#c('red','yellow','green')#fix to be gl
 #GFPcol=c('firebrick','dimgray','steelblue4')#c('red','yellow','green')#fix to be global (category can be fed into to only generate relevant colors), needs to be in this order for current code to color good, fair, poor correctly
 #Below of for NV MMMI results of Reference, Degraded, and undetermined, in order! 
 GFPcol=c('dimgray','firebrick','steelblue4')
+#GFPcol=c('snow3','firebrick1','steelblue3')
+#Grayscale colors
+GFPcol=c('gray86','gray33','gray66')
 CatOrd = c('Fair','Poor','Good')
 axissize=2#cex
 #So that I could still speak to 205 stream km, but remove 3 sites from the MMI results I created a fake condition class as "N"
@@ -39,7 +42,7 @@ results.cat=results.cat[!results.cat$Category=='N',];View(results.cat)
 #Export='PNL'#options: 'PNG' (exported png); 'PNL' (saved to workspace for later panelling) ## not working as anticipated
 ScaleTYPE='Percent'#options: Percent, Absolute (meaning Percentage (Segments or StreamKM same) or StreamKM ) # set to absolute by default if an extent variable
 SubpopTypes=unique(results.cat$Type)#SubpopTypes=c('Districts','Utah')
-SubpopSort='N'#TO DO! if SubpopSort='Y', will sort each subpopulation based on its own order (may need additional improvement for matching RelExtentPoor to RelRisk...probably saving variableORDER with a district speficic name and then calling via eval at relrisk)
+SubpopSort='Y'#TO DO! if SubpopSort='Y', will sort each subpopulation based on its own order (may need additional improvement for matching RelExtentPoor to RelRisk...probably saving variableORDER with a district speficic name and then calling via eval at relrisk)
 ResponseInclude='Y'# set to "Y" for UTBLM 2014 report in which OE is treated as an equal metric, not the main response variable
 #keep an eye on LBFXWRat, was previously sorting incorrectly in the figure generation
 for (s in 1:length(SubpopTypes)){#Temporary! only all and district - length(SubpopTypes)
@@ -74,12 +77,15 @@ for (s in 1:length(SubpopTypes)){#Temporary! only all and district - length(Subp
     BarEXTp=barplot( BarDataPoor$X,xlim=c(0,XmaxPoor),#XmaxPoor is the x axis max limit #FIX! Note 1157 total stream km seems low  (adjwgt adds to 3305, original was **)
                      xlab=ScaleTYPE,
                      names.arg= BarDataPoor$names,horiz=T,
-                     col=BarDataPoor$color,las=1) #Temporary! make color global and assign specfically to variables
+#To use gray instead of a rainbow color just comment out the next line
+                     col=BarDataPoor$color,
+                     las=1) #Temporary! make color global and assign specfically to variables
     #title(sprintf('Extent Poor\n%s: %s',SubpopTypes[[s]],SubpopStrata[[t]])
           #,cex=.1) # can comment this out to make it disappear from poor extent figures
     mtext(ifelse(ScaleTYPE=='Percent','% of Stream KM','Stream KM'),side=1,line=2,cex=axissize)#not sure why xlab is not working in barplot
     BarDataPoor$UConf=ifelse(is.na(BarDataPoor$UConf),0,BarDataPoor$UConf) ; BarDataPoor$X=ifelse(is.na(BarDataPoor$X),0,round(BarDataPoor$X,1))     
     arrows(x0=BarDataPoor$LConf,x1=BarDataPoor$UConf,y0=BarEXTp,length=.1,angle=90,code=3)#use Conf or StErr? why are upper limits so much higher?
+#TO change the size of the % listed at the end of the poor graph bars
 #NorCal#text(y=BarEXTp,x=BarDataPoor$UConf-1, cex=.75,labels=sprintf('%s%s',BarDataPoor$X,ifelse(ScaleTYPE=='Percent','%','')),pos=4,srt=360, xpd=NA)#Replace labels with % stream  (from Cell Proportion) 
     text(y=BarEXTp,x=BarDataPoor$UConf-1, cex=.5,labels=sprintf('%s%s',BarDataPoor$X,ifelse(ScaleTYPE=='Percent','%','')),pos=4,srt=360, xpd=NA)#Replace labels with % stream  (from Cell Proportion) 
     graphics.off()
@@ -125,6 +131,7 @@ for (s in 1:length(SubpopTypes)){#Temporary! only all and district - length(Subp
       # title(sprintf('Extent: %s\n%s: %s',varNAME,SubpopTypes[[s]],SubpopStrata[[t]])    ,cex=.5, line=1) 
       mtext(ifelse(ScaleTYPE2=='Percent','% of Stream KM','Stream KM'),side=1,line=2,cex=axissize)#not sure why xlab is not working in barplot
       arrows(x0=BarData$LConf,x1=BarData$UConf,y0=BarEXT,length=.1,angle=90,code=3)#use Conf or StErr? why are upper limits so much higher?
+#TO change the size of the %listed at the end of the GFP graph bars
 #NorCal#text(y=BarEXT,x=BarData$UConf, cex=.75,labels=sprintf('%s%s',round(BarData$X,1),ifelse(ScaleTYPE2=='Percent','%','')),pos=4,srt=360,xpd=NA)#Replace labels with % stream  (from Cell Proportion) 
       text(y=BarEXT,x=BarData$UConf, cex=.5,labels=sprintf('%s%s',round(BarData$X,1),ifelse(ScaleTYPE2=='Percent','%','')),pos=4,srt=360,xpd=NA)#Replace labels with % stream  (from Cell Proportion) 
       text(y=0,x=0,WARNsort,cex=5,col='purple')
