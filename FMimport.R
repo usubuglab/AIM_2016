@@ -1,9 +1,10 @@
 
-#Filemaker import consumption
+#Filemaker import consumption # need 32-bit version of R
 
   datetest <- function(x) c(ifelse(is.numeric(x),FALSE,ifelse(is.character(x),FALSE,TRUE)))
-  setwd('M:\\buglab\\Research Projects\\BLM_WRSA_Stream_Surveys\\Field Work\\Post Sample\\iPad backup')#setwd('C:\\Users\\Sarah\\Documents')#default export location for desktop version of FM
+  setwd('\\\\share1.bluezone.usu.edu\\miller\\buglab\\Research Projects\\BLM_WRSA_Stream_Surveys\\Field Work\\Post Sample\\iPad backup')#setwd('C:\\Users\\Sarah\\Documents')#default export location for desktop version of FM
   tables=list.files(getwd(),pattern='*.xlsx')#tables=read.csv('RelationalTest.csv')#tables=c('FMout_tbl_yr2014doy156Sarah-PC_Hitch.xlsx')#test table
+  #tables=c('FMout_tbl_yr2015doy135NAMCipad5_Hitch.xlsx')
   importcols=c(VAR,'TRANSECT','POINT','PARAMETER','RESULT');#importcols=setdiff(importcols,c('REASON'))
   importmaster=data.frame(t(rep(NA,length(importcols))))
   names(importmaster)=importcols;importmaster=subset(importmaster,subset=is.na(UID)==FALSE)
@@ -64,7 +65,7 @@
   }
   
   
-  importmasterTEMP=importmaster;save.image(sprintf("C:/Users/Sarah/Downloads/%simport.RData",Sys.Date()))#temporary copy saved after import for easy reversion without restarting xlsx import
+  importmasterTEMP=importmaster;save.image(sprintf("\\\\share1.bluezone.usu.edu\\miller\\buglab\\Research Projects\\BLM_WRSA_Stream_Surveys\\Field Work\\Post Sample\\iPad backup\\%simport.RData",Sys.Date()))#temporary copy saved after import for easy reversion without restarting xlsx import
   #importmaster2=importmaster #save copy of first import test that successfully went through the  loop
   #importmasterTEMPboat=importmaster;importmasterTEMPboat2=importmaster
   #importmaster14Jul14=importmasterTEMP;importloopr14Jul14=list(t,tables,g,tblgroups); names(importloopr14Jul14)=c('t','tables','g','tblgroups');# running into problems on photo  table with more recent exports
@@ -74,7 +75,7 @@
   
 
   
-  PROCEED=1
+  PROCEED=1 #####checking for duplicates
 
   UIDSremove=unique(subset(importmaster,select=UID,subset= (PARAMETER=='DB' & RESULT =='WRSA_AIM')|(PARAMETER=='DEVICE' & RESULT =='ProAdvanced 13.0v3/C:/Users/Sarah/Documents/')))#exclude UIDs used by Sarah in testing and ones already imported, as well as monitored duplicates
   UIDSexist=sqlQuery(wrsa1314, "select distinct UID from tblVerification where parameter='SITE_ID'  ")
@@ -111,6 +112,8 @@
 importmaster=subset(importmaster,is.na(UID)==FALSE)#there were a lot of null UIDs...need to see what these are!! --> most appear to be null states/streams, so corrected GRTS_SITEINFO to have UID
 
 #####################################STOP###########CHECK#DUPLICATES###############################################################################################
+#type PROCEED=2 into console once checks are performed 
+  
 #! force script stop at key scripts, if none of these work, implement if statements that require the user to change a variable
 #browser(); print("STOP. Enter Q to resume.")#Sys.sleep(10)#Pause=-readline(prompt="Pause? ")#break#stop("Check possible duplicates before proceeding.")#none of these are preventing subsequent lines of code from running
 #print('did i stop?')  
@@ -299,12 +302,14 @@ uuhabcom=subset(importmaster,UID %in% uuhab$UID & PARAMETER %in% c('LENGTH','MAX
   importmaster=ColCheck(importmaster,importcols)                                                                                              
                                                                                                 
   
-importmasterxwalk2=importmaster;commentsxwalk2=tblCOMMENTSin;save.image(sprintf("C:/Users/Sarah/Downloads/%simport.RData",Sys.Date()))
+importmasterxwalk2=importmaster;commentsxwalk2=tblCOMMENTSin;save.image(sprintf("C:/Users/Jennifer Courtwright/Downloads/%simport.RData",Sys.Date()))
  }#end Else Proceed=2
 
   
 #####################################STOP###########BREATHE...Then#Proceed#With#Imports###############################################################################################
-if(PROCEED<3) {print("Data ready for import. Perform any desired checkes and set PROCEED=3 (in console) to continue.")
+#type in PROCEED=3 once checks are run
+  
+  if(PROCEED<3) {print("Data ready for import. Perform any desired checkes and set PROCEED=3 (in console) to continue.")
                }  else{
   tblCOMMENTSin$TRANSECT=ifelse(is.na(tblCOMMENTSin$TRANSECT),"ALL",tblCOMMENTSin$TRANSECT);tblCOMMENTSin$PAGE=ifelse(is.na(tblCOMMENTSin$PAGE),"1",tblCOMMENTSin$PAGE);tblCOMMENTSin=tblCOMMENTSin[with(tblCOMMENTSin,order(IND)),]
   tblPOINTin=subset(importmaster,subset=is.na(POINT)==FALSE & toupper(SAMPLE_TYPE)!='TRACKING' );tblPOINTin$TRANSECT=ifelse(is.na(tblPOINTin$TRANSECT) |toupper(tblPOINTin$TRANSECT)=="NA","0",tblPOINTin$TRANSECT);tblPOINTin=tblPOINTin[with(tblPOINTin,order(IND)),]
@@ -346,13 +351,17 @@ if(PROCEED<3) {print("Data ready for import. Perform any desired checkes and set
   
 }#end Else Proceed=3
   
+######################################################################################################################################
+#type PROCEED=4 once checks are complete
+
   ##!QA checks moved to DataQA_WRSA  
   if(PROCEED<4) { 
     if(exists("MissingTotals4")){
       tblQAin=merge(tblQAin,MissingTotals4,all=T)#rbind(tblQAin,MissingTotals4)#add percent missing
-  } else {print ("Missing Totals need to be run in DataQA_WRSA.R if want to review missing percentages in Access. Otherwise set PROCEED=4 (in console) to continue without Missing Totals.")}
+    } else {print ("Missing Totals need to be run in DataQA_WRSA.R if want to review missing percentages in Access. Otherwise set PROCEED=4 (in console) to continue without Missing Totals.")
+    }
   
-  #import to ProbSurveydb (Access)
+ #import to ProbSurveydb (Access)
  #repivot tables going to Access
  #since has to be done on remote desktop, easier to run here, export tables, re-consume and import on remote (remote can't talkt so SQL and Sarah local can't talk to Access)
  tblFAILUREcomments=subset(tblCOMMENTSin,FLAG=='FAIL');tblFAILUREcomments$SAMPLE_TYPE='Failure';tblFAILUREcomments=unique(tblFAILUREcomments);tblFAILUREcomments$PARAMETER='COMMENTS';tblFAILUREcomments$RESULT=tblFAILUREcomments$COMMENT;tblFAILUREcomments=ColCheck(tblFAILUREcomments,colnames(tblFAILUREin))
@@ -375,7 +384,7 @@ if(PROCEED<3) {print("Data ready for import. Perform any desired checkes and set
    #!this needs to account for two main projects: norcal vs. WRSA+intensifications
    maxSamp=sqlQuery(probsurv14,'select max(SampleNumber) from SampleTracking where Year(SampleDate)=Year(Now())')
  } else {print('Run on Remote Desktop and set maxSamp here');maxSamp=NA}
- maxSamp=as.numeric(ifelse(exists("maxSamp")==F,1,1+maxSamp))
+ maxSamp=as.numeric(ifelse(exists("maxSamp")==F,1,1+maxSamp))#######maunally enter this from sample tracking since no connection to Access-JC?
 #!having to manually renumber because of intensfications, consider just setting maxSamp to zero which triggers all samplenubmers to be zero, then if maxsampl>0, run the sequence code
  sampletmp=subset(importmaster,PARAMETER=='SAMPLE_ID' & SAMPLE_TYPE=='BERW')
  sampletmp$PARAMETER='SampleNumber'
@@ -403,8 +412,10 @@ if(PROCEED<3) {print("Data ready for import. Perform any desired checkes and set
  print('Tables exported. Import into ProbSurveyDB (Access) via the saved imports prefixed with Tracking or associated button under admin tasks (both methods pending setup). Export as csv and right insert loop script (like Python recipes) if want a more automated process.')
 
   }#end Else Proceed=4
-  
-  
+
+############################################################################################################################################################### 
+#type in SYNC='Y' to update the metadata and sync between FM and SQL
+    
 if (SYNC=='Y'){
   ##!sync metadata between FM and SQL
   tblMetadataRange=read.xlsx("C:\\Users\\Sarah\\Desktop\\NAMCdevelopmentLocal\\tblMetadataRange_20Aug14.xlsx",1)
