@@ -24,18 +24,25 @@ axissize=2#cex
 GFPcol=c('firebrick','gold','lightgreen')#c('red','yellow','green')#fix to be global (category can be fed into to only generate relevant colors), needs to be in this order for current code to color good, fair, poor correctly
 
 ##################  NorCal Specific Code: Start ##################
-#NorCal Color Change
-GFPcol=c('firebrick','dimgray','steelblue4')#c('red','yellow','green')#fix to be global (category can be fed into to only generate relevant colors), needs to be in this order for current code to color good, fair, poor correctly
+#NorCal Color Change for regular G, F, P order
+#GFPcol=c('firebrick','dimgray','steelblue4')#c('red','yellow','green')#fix to be global (category can be fed into to only generate relevant colors), needs to be in this order for current code to color good, fair, poor correctly
+#Below of for NV MMMI results of Reference, Degraded, and undetermined, in order! 
+GFPcol=c('dimgray','firebrick','steelblue4')
+#GFPcol=c('snow3','firebrick1','steelblue3')
+#Grayscale colors
+GFPcol=c('gray86','gray33','gray66')
+CatOrd = c('Fair','Poor','Good')
+axissize=2#cex
 #So that I could still speak to 205 stream km, but remove 3 sites from the MMI results I created a fake condition class as "N"
 #This code below removes the condition class of "N" so that the figures could be made properly
-#results.cat=results.cat[-c(150,155,160,165,170,174,183),];View(results.cat)
+results.cat=results.cat[!results.cat$Category=='N',];View(results.cat)
 ##################  NorCal Specific Code: Start ##################
 
 
 #Export='PNL'#options: 'PNG' (exported png); 'PNL' (saved to workspace for later panelling) ## not working as anticipated
 ScaleTYPE='Percent'#options: Percent, Absolute (meaning Percentage (Segments or StreamKM same) or StreamKM ) # set to absolute by default if an extent variable
 SubpopTypes=unique(results.cat$Type)#SubpopTypes=c('Districts','Utah')
-SubpopSort='N'#TO DO! if SubpopSort='Y', will sort each subpopulation based on its own order (may need additional improvement for matching RelExtentPoor to RelRisk...probably saving variableORDER with a district speficic name and then calling via eval at relrisk)
+SubpopSort='Y'#TO DO! if SubpopSort='Y', will sort each subpopulation based on its own order (may need additional improvement for matching RelExtentPoor to RelRisk...probably saving variableORDER with a district speficic name and then calling via eval at relrisk)
 ResponseInclude='Y'# set to "Y" for UTBLM 2014 report in which OE is treated as an equal metric, not the main response variable
 #keep an eye on LBFXWRat, was previously sorting incorrectly in the figure generation
 for (s in 1:length(SubpopTypes)){#Temporary! only all and district - length(SubpopTypes)
@@ -70,12 +77,16 @@ for (s in 1:length(SubpopTypes)){#Temporary! only all and district - length(Subp
     BarEXTp=barplot( BarDataPoor$X,xlim=c(0,XmaxPoor),#XmaxPoor is the x axis max limit #FIX! Note 1157 total stream km seems low  (adjwgt adds to 3305, original was **)
                      xlab=ScaleTYPE,
                      names.arg= BarDataPoor$names,horiz=T,
-                     col=BarDataPoor$color,las=1) #Temporary! make color global and assign specfically to variables
+#To use gray instead of a rainbow color just comment out the next line
+                     col=BarDataPoor$color,
+                     las=1) #Temporary! make color global and assign specfically to variables
     #title(sprintf('Extent Poor\n%s: %s',SubpopTypes[[s]],SubpopStrata[[t]])
           #,cex=.1) # can comment this out to make it disappear from poor extent figures
     mtext(ifelse(ScaleTYPE=='Percent','% of Stream KM','Stream KM'),side=1,line=2,cex=axissize)#not sure why xlab is not working in barplot
     BarDataPoor$UConf=ifelse(is.na(BarDataPoor$UConf),0,BarDataPoor$UConf) ; BarDataPoor$X=ifelse(is.na(BarDataPoor$X),0,round(BarDataPoor$X,1))     
     arrows(x0=BarDataPoor$LConf,x1=BarDataPoor$UConf,y0=BarEXTp,length=.1,angle=90,code=3)#use Conf or StErr? why are upper limits so much higher?
+#TO change the size of the % listed at the end of the poor graph bars
+#NorCal#text(y=BarEXTp,x=BarDataPoor$UConf-1, cex=.75,labels=sprintf('%s%s',BarDataPoor$X,ifelse(ScaleTYPE=='Percent','%','')),pos=4,srt=360, xpd=NA)#Replace labels with % stream  (from Cell Proportion) 
     text(y=BarEXTp,x=BarDataPoor$UConf-1, cex=.5,labels=sprintf('%s%s',BarDataPoor$X,ifelse(ScaleTYPE=='Percent','%','')),pos=4,srt=360, xpd=NA)#Replace labels with % stream  (from Cell Proportion) 
     graphics.off()
     variablesUSE=c(variablesrtg,extentVAR)#variablesUSE=c(extentVAR,variablesrtg[[1]])#
@@ -91,10 +102,15 @@ for (s in 1:length(SubpopTypes)){#Temporary! only all and district - length(Subp
             BarData=rbind(BarData,0)
             BarData$Category[[(CATcheck+f)]]=ifelse('Fair' %in% BarData$Category==F,'Fair', ifelse('Good' %in% BarData$Category==F,"Good",'Poor'))
           }}
-        BarData=BarData[with(BarData,order(Category)),]
-        BarData=BarData[with(BarData,order(Category <- c('Good','Fair','Poor'),decreasing=T)),] #sort (very fickle, hence below warning)
-        WARNsort=ifelse(BarData$Indicator %in% extentVAR | (BarData$Category[[1]]=='Poor' & BarData$Category[[3]]=='Good'),'',print(sprintf('SORT incorrect-%s-%s-%s',varNAME,SubpopTypes[[s]],SubpopStrata[[t]])))#I think this is corrected with the double sort, but left in just to be safe
-             }
+#NorCal# Create graphs with Good, Poor, and then Fair, for NV MMI. technically reference, degraded, and undetermined. 
+#NorCal# Uncomment out next two lines of code, comment out next 3 lines of original code. Make sure to run the correct CatOrg and GFP colors at the very top/beginning of this code!  
+#NorCal# BarData=BarData[order(match(BarData$Category,CatOrd)),]# NorCal Specific, This line should be commented out, Line above, and two lines below, should be run as original code.
+#NorCal# WARNsort=ifelse(BarData$Indicator %in% extentVAR | (BarData$Category[[1]]=='Fair' & BarData$Category[[3]]=='Good'),'',print(sprintSf('ORT incorrect-%s-%s-%s',varNAME,SubpopTypes[[s]],SubpopStrata[[t]])))#I think this is corrected with the double sort, but left in just to be safe
+       BarData=BarData[with(BarData,order(Category)),]
+       BarData=BarData[with(BarData,order(Category <- c('Good','Fair','Poor'),decreasing=T)),] #sort (very fickle, hence below warning)
+       WARNsort=ifelse(BarData$Indicator %in% extentVAR | (BarData$Category[[1]]=='Poor' & BarData$Category[[3]]=='Good'),'',print(sprintf('SORT incorrect-%s-%s-%s',varNAME,SubpopTypes[[s]],SubpopStrata[[t]])))#I think this is corrected with the double sort, but left in just to be safe      
+         }
+      
       if (ScaleTYPE2=='Percent'){BarData$X=BarData$Estimate.P;
                                 BarData$UConf=BarData$UCB90Pct.P;BarData$LConf=BarData$LCB90Pct.P;
                                 Xmax=100
@@ -115,6 +131,8 @@ for (s in 1:length(SubpopTypes)){#Temporary! only all and district - length(Subp
       # title(sprintf('Extent: %s\n%s: %s',varNAME,SubpopTypes[[s]],SubpopStrata[[t]])    ,cex=.5, line=1) 
       mtext(ifelse(ScaleTYPE2=='Percent','% of Stream KM','Stream KM'),side=1,line=2,cex=axissize)#not sure why xlab is not working in barplot
       arrows(x0=BarData$LConf,x1=BarData$UConf,y0=BarEXT,length=.1,angle=90,code=3)#use Conf or StErr? why are upper limits so much higher?
+#TO change the size of the %listed at the end of the GFP graph bars
+#NorCal#text(y=BarEXT,x=BarData$UConf, cex=.75,labels=sprintf('%s%s',round(BarData$X,1),ifelse(ScaleTYPE2=='Percent','%','')),pos=4,srt=360,xpd=NA)#Replace labels with % stream  (from Cell Proportion) 
       text(y=BarEXT,x=BarData$UConf, cex=.5,labels=sprintf('%s%s',round(BarData$X,1),ifelse(ScaleTYPE2=='Percent','%','')),pos=4,srt=360,xpd=NA)#Replace labels with % stream  (from Cell Proportion) 
       text(y=0,x=0,WARNsort,cex=5,col='purple')
       # if(Export=='PNL') { assign(sprintf('Extent%s%s%s',varNAME,SubpopTypes[[s]],SubpopStrata[[t]]),recordPlot())  }#temporarily wrapped in if, but recordplot alternative did not work

@@ -27,9 +27,12 @@ siteeval=subset(siteeval,is.na(VISIT_NO) | (VISIT_NO==2)==FALSE)#omit repeat QA 
 #This is a temporary TRIAL and must be permanently updated in Access if it is decided to keep this change. 
 #Data file to alter[row number, "column name"]="value you want there instead of what is there"
 #siteeval[siteeval$UID=='13712',"EvalStatus"]='NT'
-siteeval[siteeval$UID=='11777',"EvalStatus"]='IA'
-siteeval[siteeval$UID=='12476',"EvalStatus"]='IA'
-siteeval[siteeval$UID=='12453',"EvalStatus"]='IA'
+
+#To "remove" the below three sites from the extent estimates. These Sites were found to be outliers in the NV MMI model
+# As of 9April2015 We are NOT using the three lines of code below. We are inlcuding these sites for all indicators EXCEPT the MMI
+#siteeval[siteeval$UID=='11777',"EvalStatus"]='IA'
+#siteeval[siteeval$UID=='12476',"EvalStatus"]='IA'
+#siteeval[siteeval$UID=='12453',"EvalStatus"]='IA'
 
 
 ###Final Designation reconcilation###
