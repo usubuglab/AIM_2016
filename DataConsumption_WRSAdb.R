@@ -9,7 +9,6 @@ DBuser=''#ditto as with DBpassword
 DBserver=''#ditto as with DBpassword
 #this is a change
 
-
 #--------------------------------------------------------SETUP--------------------------------------------------------#
 #LOAD required packages#
 requiredPACKAGES=c('reshape', 'RODBC','ggplot2','grid','gridExtra','xlsx','sqldf','jpeg','spsurvey','tcltk')
@@ -26,7 +25,8 @@ for (r in 1:length(requiredPACKAGES)){
 
 ##Establish an ODBC connection##
 #the db was created in SQL Server Manager on 11/19/2013 by Sarah Judson#
-wrsaConnectSTR=sprintf("Driver={SQL Server Native Client 10.0};Server=%s;Database=WRSAdb;Uid=%s; Pwd=%s;",DBserver,DBuser, DBpassword)
+wrsaConnectSTR=sprintf("Driver={SQL Server Native Client 10.0};Server=%s;Database=%s;Uid=%s; Pwd=%s;",DBserver,DBname,DBuser, DBpassword)#specify backupdatabase or orignial database
+#wrsaConnectSTR=sprintf("Driver={SQL Server Native Client 10.0};Server=%s;Database=WRSAdb;Uid=%s; Pwd=%s;",DBserver,DBuser, DBpassword)
 wrsa1314=odbcDriverConnect(connection = wrsaConnectSTR)
 #test that connection is open # sqlQuery(wrsa1314,"select top 10 * from tblVerification")
 #SWJ to do: throw this into a function that also prompts for server and password if missing (='')
