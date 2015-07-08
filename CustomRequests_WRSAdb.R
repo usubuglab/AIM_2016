@@ -11,6 +11,9 @@ write.csv(AKminesASSESS,'AKmine.csv')
 AKstability=addKEYS(tblRetrieve(Parameters=c('STABLE','EROSION','COVER'),SiteCodes=c('AA-STR-0001','AA-STR-0005'),Comments='Y'),c('SITE_ID'))
 pvtAKstability=addKEYS(cast(AKstability,'UID+TRANSECT+POINT~PARAMETER',value='RESULT'),c('SITE_ID'))
 
+AKstability=addKEYS(tblRetrieve(Parameters=c('STABLE','EROSION','COVER'),Projects='AKEFO',Comments='Y'),c('SITE_ID'))
+pvtAKstability=addKEYS(cast(AKstability,'UID+TRANSECT+POINT~PARAMETER',value='RESULT'),c('SITE_ID'))
+
 AKbank=addKEYS(tblRetrieve(Parameters=c('INCISED','BANKHT'),SiteCodes=c('AA-STR-0001','AA-STR-0005'),Comments='Y'),c('SITE_ID'))
 pvtAKbank=addKEYS(cast(AKbank,'UID+TRANSECT~PARAMETER',value='RESULT'), c('SITE_ID'))
 
@@ -102,7 +105,8 @@ T2=setNames(aggregate(EPAdataWQ$PHSTVL, by = list(EPAdataWQ$ECO10), FUN = quanti
 T3=setNames(aggregate(EPAdataWQ$PHSTVL, by = list(EPAdataWQ$ECO10), FUN = quantile,probs=0.75,na.rm=TRUE), c("ECO10","PHSTVL_0.75"))
 T4=setNames(aggregate(EPAdataWQ$PHSTVL, by = list(EPAdataWQ$ECO10), FUN = quantile,probs=0.95,na.rm=TRUE), c("ECO10","PHSTVL_0.95"))
 T6=join_all(list(T1,T2,T3,T4), by="ECO10")
-
+############################################################################################################################
+#####Additional QC Checks
 #bank cross-validation WRSA checks
 widhgt=tblRetrieve(Parameters=c('BANKHT','INCISED','WETWID','BANKWID','BARWID'), Projects='WRSA',Years=c('2013','2014'))
 widhgt2=tblRetrieve(Parameters=c('BANKHT','INCISED','WETWID','WETWIDTH','BANKWID','BARWID','BARWIDTH'), Projects='WRSA',Years=c('2013','2014'))
@@ -243,3 +247,6 @@ if(i==1){THALout=THAL} else{THALout=rbind(THALout,THAL)}
 # order by gr.ind, tbl
 
 
+
+#getting all pool data for a specfic set of sites
+pools<-addKEYS(tblRetrieve(Parameters=c('HABTYPE','FORMATION','PTAILDEP','MAXDEPTH','LENGTH'),SiteCodes=c('NY-RO-9221'),Comments='Y'),c('SITE_ID'))

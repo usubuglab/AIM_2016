@@ -85,9 +85,10 @@
   UIDSmatch10=setdiff(UIDSnew10$UID,UIDSexist10$UID)
   UIDSmismatch10=subset(importmaster,subset=PARAMETER %in% c('SITE_ID','DATE_COL') & UID %in% UIDSmatch10); UIDSmismatch10= UIDSmismatch10[with(UIDSmismatch10,order(UID)),]
   if(length(UIDSmatch10)>0){print(sprintf('Verify %s non-exact matches for UID (1st 10 characters match). These will be automatically omitted unless otherwise indicated.',length(UIDSmatch10)));View(UIDSmismatch10); print(sprintf("select * from tblverification where parameter='site_id' and left(cast(UID as nvarchar),10) in (%s)",inLOOP(substr(UIDSmatch10,1,10))))}
-  UIDSmanualOMIT=c('8.58443864583729e+22','4171385314118944686080','4948737546099460407266','15631373425099638047420','585759337742704256','324224919440318080','452002440992807387126','56939717898642521064404','1.00590424753275e+20','3.12445349814274e+20','30317561401913393152','85565470919978896','9.79114249176033e+20','2.42573446594801e+21','7.467934950944e+19','7.1001238480827e+19','7.42868294554285e+24','10445148556604496','6.22708454798246e+20','2.25618143476838e+23','8.77503374780117e+20','4.49266934743765e+21','5.64896083614649e+21',
+  UIDSmanualOMIT=c('76374884476355400000',#test removing site-JC June 11 2015
+                   '8.58443864583729e+22','4171385314118944686080','4948737546099460407266','15631373425099638047420','585759337742704256','324224919440318080','452002440992807387126','56939717898642521064404','1.00590424753275e+20','3.12445349814274e+20','30317561401913393152','85565470919978896','9.79114249176033e+20','2.42573446594801e+21','7.467934950944e+19','7.1001238480827e+19','7.42868294554285e+24','10445148556604496','6.22708454798246e+20','2.25618143476838e+23','8.77503374780117e+20','4.49266934743765e+21','5.64896083614649e+21',
                    '15371499864863700', '68773868470210160','6289849184966886400','6778495559','4.86796721145911e+21','40929284494044758016','3.46298187240046e+24','4795923406292041','238904821513005888','1.56313734250996e+22','36066246794627100','36066246794627104','3281462015442028544','15371499864863704','7.08938994416638e+23','4.57921803104368e+25','18934588289520738304','9.72630743819978e+21','850630406814675200','850630406814675000','18934588289520700000','4.86796721145911E+21','6289849184966880000','324224919440318000','6.34916723436864e+21','7.03114033341499E+21','7.03114033341499e+21','4.57921803104368E+25', '3281462015442020000', '88015264382921100000','88015264382921129984','6.34916723436864E+21', '9.72630743819978E+21','7.08938994416638E+23'#beta testing
-                   )#! auto remove sites with less than 10 lines of data (app defaults)?; record reason in Access Office_Comments
+                   ,'92447747091121963018','94383454545993315394624','5698665344147233043226202', '1356324738629546240','3741022994007502880848')#! auto remove sites with less than 10 lines of data (app defaults)?; record reason in Access Office_Comments
   UIDSremoveLIST=c(UIDSremove$UID,UIDSexist$UID, UIDSmanualOMIT, UIDSmatch10)#could query intentionally removed duplicates from Office_Comments in AccessDB#'1044' = duplicate site that crew entered in both app versions, confirmed with crew and Jennifer Courtwright; 6227 and 2256 = duplicates with only default data populated
   importmaster=subset(importmaster,subset= (UID %in% UIDSremoveLIST)== FALSE)
   #check for duplicate siteIDS
@@ -112,7 +113,8 @@
 importmaster=subset(importmaster,is.na(UID)==FALSE)#there were a lot of null UIDs...need to see what these are!! --> most appear to be null states/streams, so corrected GRTS_SITEINFO to have UID
 
 #####################################STOP###########CHECK#DUPLICATES###############################################################################################
-#type PROCEED=2 into console once checks are performed 
+#type PROCEED=2 into console once checks are performed #data clean up section
+#add UID trunctation to this section
   
 #! force script stop at key scripts, if none of these work, implement if statements that require the user to change a variable
 #browser(); print("STOP. Enter Q to resume.")#Sys.sleep(10)#Pause=-readline(prompt="Pause? ")#break#stop("Check possible duplicates before proceeding.")#none of these are preventing subsequent lines of code from running
@@ -307,7 +309,7 @@ importmasterxwalk2=importmaster;commentsxwalk2=tblCOMMENTSin;save.image(sprintf(
 
   
 #####################################STOP###########BREATHE...Then#Proceed#With#Imports###############################################################################################
-#type in PROCEED=3 once checks are run
+#type in PROCEED=3 once checks are run to actually import data to SQL
   
   if(PROCEED<3) {print("Data ready for import. Perform any desired checkes and set PROCEED=3 (in console) to continue.")
                }  else{
@@ -329,8 +331,14 @@ importmasterxwalk2=importmaster;commentsxwalk2=tblCOMMENTSin;save.image(sprintf(
   #View(subset(tblTRANSECTin,SAMPLE_TYPE %in% c('SLOPEW', 'CROSSSECW', 'BANKW', 'PHOTOS')))  
   #aggcnt=aggregate(RESULT~UID + TRANSECT + POINT + SAMPLE_TYPE + PARAMETER,data=tblPOINTin,FUN=length);aggcnt=subset(aggcnt,RESULT>1);View(aggcnt)
 
-  
-
+#####JC troubleshooting  
+#tblCOMMENTStest<-tblCOMMENTSin
+#tblCOMMENTStest[grep('^pma.*?',tblCOMMENTStest$UID),'UID']='16330134670946883584'
+#View(tblCOMMENTStest)
+#tblCOMMENTSin<-tblCOMMENTStest
+#tblREACHtest<-tblREACHin
+#tblREACHtest[grep('^pma.*?',tblREACHtest$UID),'UID']='16330134670946883584'
+#tblREACHin<-tblREACHtest
    
   
   ##if pass (missing, accounted, outlier), migrate to WRSAdb and access db
@@ -352,12 +360,12 @@ importmasterxwalk2=importmaster;commentsxwalk2=tblCOMMENTSin;save.image(sprintf(
 }#end Else Proceed=3
   
 ######################################################################################################################################
-#type PROCEED=4 once checks are complete
+#type PROCEED=4 once checks are complete# import to Access database
 
   ##!QA checks moved to DataQA_WRSA  
   if(PROCEED<4) { 
     if(exists("MissingTotals4")){
-      tblQAin=merge(tblQAin,MissingTotals4,all=T)#rbind(tblQAin,MissingTotals4)#add percent missing
+      tblQAin=merge(tblQAin,MissingTotals4,all=T);#rbind(tblQAin,MissingTotals4)#add percent missing
     } else {print ("Missing Totals need to be run in DataQA_WRSA.R if want to review missing percentages in Access. Otherwise set PROCEED=4 (in console) to continue without Missing Totals.")
     }
   
@@ -418,7 +426,7 @@ importmasterxwalk2=importmaster;commentsxwalk2=tblCOMMENTSin;save.image(sprintf(
     
 if (SYNC=='Y'){
   ##!sync metadata between FM and SQL
-  tblMetadataRange=read.xlsx("C:\\Users\\Sarah\\Desktop\\NAMCdevelopmentLocal\\tblMetadataRange_20Aug14.xlsx",1)
+  tblMetadataRange=read.xlsx("\\\\share1.bluezone.usu.edu\\miller\\buglab\\Research Projects\\BLM_WRSA_Stream_Surveys\\Technology\\App_Development\\FMbackup\\2015\\tblMetadataRange_(6-20-2015).xlsx",1)
   tblMetadataRange$SAMPLE_TYPE=tblMetadataRange$tblMetadata..Tbl
   tblMetadataRange$ACTIVE=ifelse(tblMetadataRange$USE=='Y','TRUE','FALSE')
   tblMetadataRange=subset(tblMetadataRange,USE=='Y')

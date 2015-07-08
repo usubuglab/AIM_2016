@@ -1,9 +1,19 @@
 
 ##missing data parameters
-UnionTBL=tblRetrieve(Table='',Parameters='',
+UnionTBL=tblRetrieve(Table='',Parameters='', Years='2015', Projects=c('WRSA','NV','GSENM','COPLT'))
                      #ALLp=AllParam,UIDS=UIDs,ALL=AllData,Filter=filter,SiteCodes=sitecodes,Dates=dates,
-                     Years='2014',Projects='WRSA'
-                     ,Protocols='WRSA14')#!? should Protocols='' to bring in all protocols? so as not to neglect failed sites? this was done for weights
+                     #Years='2015')#,Projects='WRSA'
+                     #,Protocols='WRSA14')#!? should Protocols='' to bring in all protocols? so as not to neglect failed sites? this was done for weights
+UIDS=c(76374884476355444736,
+73950247746187892360428,
+8600554176507,
+855484010253916416,
+12658404780762277888,
+43493545308978249728,
+9822980447890095210446,
+51799020664989845292668)
+UnionTBL=tblRetrieve(Parameters=c('BANKHT'),UIDS=c(589309241482436739082))
+
 CheckAll='Y'#options: 'Y' = Check All Parameters for the protocol; 'N' = Check only Parameters in UnionTBL (i.e. if subsetting UnionTBL to single Table and don't want clutter from parameters not interested in)....this is not done automatically because missing data checks are meant to look for parameters that have ZERO readings for a particular dataset, only use in testing and known scenarios (usually where AllParams='Y')
 CommentsCount='N'#'Y' = a comment (as represented by a flag) allows the missing data warning to be ignored; 'N' = missing data is reported regardless and contributes to subsequent percentages. 
 MissingXwalk='MissingBackend'; MetricType='Y'#if MetricType=='Y' then groupings will be done by the bin (Type_Xwalk) and the metric type (Indicator, Covariate, QC)
@@ -210,6 +220,7 @@ for (p in 1:length(LowHigh)){
                     where Result<LowResult or Result>HighResult")
   if(p==1){LowHighFailOUT=LowHighFail} else{LowHighFailOUT=rbind(LowHighFailOUT,LowHighFail)}
 }
+LowHighFailOUT=addKEYS(LowHighFailOUT,c('SITE_ID','DATE_COL'))#JC added to aid in QC process. However, it has duplicate siteid and date columns at the momment, so not very pretty at the moment
 write.csv(LowHighFailOUT,'LegalChecks.csv')
   
 
@@ -445,6 +456,7 @@ tblNAME='UnionTBLnum'
           assign(sprintf('%s_pvtSUMMARYn_%s',tblNAME,AggLevel),tblPVTnSUM)
       }
     }
+
 #export results
 QUANTtbls=c(grep('pvtQUANTmean',ls(),value=T),setdiff(grep('pvtSUMMARYn',ls(),value=T),"pvtSUMMARYn"))
 for (t in 1:length(QUANTtbls)){
@@ -548,3 +560,68 @@ if(nrow(Slope2pass)>0){print(sprintf('CONGRATULATIONS! Pass 1 met 10%% match req
 #keep Tran1, Point k (not a)  #subset(SlopeSlope,UID %in% c('37519940409184604912244', '47271381432878896252680') & (TRANSECT!=1|POINT=='a'))
 #keep Tran1, Point a (not k)  #subset(SlopeSlope,UID %in% c('8692216624269710244040620') & (TRANSECT!=1|POINT=='k'))
 #makes no sense and no comments to clarify 87601876754740660818804248 #View(cast(subset(SlopeSlope,UID=='87601876754740660818804248'),'UID+TRANSECT+POINT~PARAMETER',value='RESULT'))
+
+############################################################################################################################
+#####Additional QC Checks
+#bank cross-validation WRSA checks
+widhgt=tblRetrieve(Parameters=c('BANKHT','INCISED','WETWID','BANKWID','BARWID'), Projects=c('WRSA','NV','GSENM','COPLT'),Years=c('2015'))
+widhgt2=tblRetrieve(Parameters=c('BANKHT','INCISED','WETWID','WETWIDTH','BANKWID','BARWID','BARWIDTH'), Projects=c('WRSA','NV','GSENM','COPLT'),Years=c('2015'))
+widhgt=subset(widhgt,nchar(TRANSECT)==1 | substr(TRANSECT,1,1)=='X')
+
+whPVT=cast(widhgt,'UID+TRANSECT~PARAMETER',value='RESULT')
+wnPVTIND=cast(widhgt,'UID+TRANSECT~PARAMETER',value='IND')     
+tranPVT=addKEYS(merge(whPVT,bnkPVT,by=c('UID','TRANSECT'),all=T) ,c('SITE_ID','DATE_COL'))
+rawwhPVT=addKEYS(merge(whPVT,wnPVTIND,by=c('UID','TRANSECT'),all=T) ,c('SITE_ID','DATE_COL'))
+colnames(rawwhPVT)<-c('UID','TRANSECT','BANKHT','BANKWID','BARWID','INCISED','WETWID','BANKHT_IND','BANKWID_IND','BARWID_ID','INCISED_IND','WETWID_ID','DATE_COL','SITE_ID')
+
+bankhtcheck=subset(rawwhPVT,BANKHT>INCISED|BANKHT>1.5)#!possible crossvalidation rule to scan for#no bank heights showed up in the legal value or outlier check so wanted to check units
+wetwidthchecks=subset(rawwhPVT,WETWID>BANKWID)
+write.csv(bankhtcheck,'bankhtincisedcheck_25June2015.csv')
+write.csv(wetwidthchecks,'wetwidthchecks_25June2015.csv')
+write.csv(rbind(widhgt2,banks),'WidthHeightRaw_25June2015.csv')#need raw output to get IND values
+
+#getting raw bank data for a few problem sites
+widhgt=tblRetrieve(Parameters=c('BANKHT','INCISED','WETWID','BANKWID','BARWID'), Projects='WRSA',Years=c('2013','2014'),SiteCodes=c('MN-SS-1133','MP-SS-2091','MS-SS-3126','XE-RO-5081','XE-SS-5105','XS-SS-6135', 'OT-LS-7001',  'OT-LS-7012',	'MP-SS-2080',	'XE-SS-5150',	'MS-LS-3026',	'OT-LS-7019',	'OT-SS-7133'))
+widhgt2=tblRetrieve(Parameters=c('BANKHT','INCISED','WETWID','WETWIDTH','BANKWID','BARWID','BARWIDTH'), Projects='WRSA',Years=c('2013','2014'),SiteCodes=c('MN-SS-1133','MP-SS-2091','MS-SS-3126','XE-RO-5081','XE-SS-5105','XS-SS-6135', 'OT-LS-7001',  'OT-LS-7012',	'MP-SS-2080',	'XE-SS-5150',	'MS-LS-3026',	'OT-LS-7019',	'OT-SS-7133'))
+widhgt=subset(widhgt,nchar(TRANSECT)==1 | substr(TRANSECT,1,1)=='X')
+
+whPVT=cast(widhgt,'UID+TRANSECT~PARAMETER',value='RESULT')
+wnPVTIND=cast(widhgt,'UID+TRANSECT~PARAMETER',value='IND')     
+rawwhPVT=addKEYS(merge(whPVT,wnPVTIND,by=c('UID','TRANSECT'),all=T) ,c('SITE_ID','DATE_COL'))
+colnames(rawwhPVT)<-c('UID','TRANSECT','BANKHT','BANKWID','BARWID','INCISED','WETWID','BANKHT_IND','BANKWID_IND','BARWID_ID','INCISED_IND','WETWID_ID','DATE_COL','SITE_ID')
+write.csv(rawwhPVT,'problem_sites_cross_valid_bank.csv')
+
+#third bank parameter check on select UIDs based off of summary
+widhgt=addKEYS(tblRetrieve(Parameters=c('BANKHT'), Projects='WRSA',Years=c('2013','2014'),UIDS=c(10376,10381,13517,11833,12717,11847,12648,11836)),c('SITE_ID','DATE_COL'))
+widhgt.sub=addKEYS(TBLout,c('SITE_ID','DATE_COL'))
+
+tblRetrieve(Parameters='ANGLE180', SiteCodes='XN-RO-4085')
+
+#Increment cross-validation WRSA checks
+incrementcheck=tblRetrieve(Parameters=c('TRCHLEN','INCREMENT','RCHWIDTH'),Projects='WRSA',Years=c('2013','2014'),Protocols=c('NRSA13','WRSA14'))
+incrsub=subset(incrementcheck,UID!=10383)#UID:10383  IND 4849393 needs to be deactivated for this to work
+incrementPVT=cast(incrsub,'UID~PARAMETER',value='RESULT')
+incrementsub=subset(incrementPVT,TRCHLEN/0.01!=INCREMENT)#couldn't get this to work so checked this manually in excel and also checked to make sure that RCHWIDTH*40=TRCHLEN and for RCHWIDTH<2.5 INCREMENT=1 and for RCHWIDTH>2.5<4 INCREMENT=1.5
+write.csv(incrementPVT,'incrementPVT.csv')
+weridinc=tblRetrieve(Parameters=c('INCREMENT'),UIDS='11852')
+
+#check 0 substrate flagged in legal values
+substratecheck=addKEYS(tblRetrieve(Parameters=c('SIZE_NUM'),Projects='WRSA',Years=c('2013','2014'),Protocols=c('NRSA13','WRSA14'), Comments='Y'), c('SITE_ID','DATE_COL'))
+zerosubstrate=subset(substratecheck, RESULT==0)
+write.csv(zerosubstrate,'zerosubstrate.csv')
+
+#second round cross validation checks
+#checked bht and bankwidth 1st round checks again and did not find any values that still needed to be changed
+incisedhtcheck=subset(rawwhPVT,INCISED>1.5)#many came up but no unit errors obvious
+barwidthchecks=subset(rawwhPVT,BARWID>WETWID)#none found
+
+banks=tblRetrieve(Parameters=c('ANGLE','UNDERCUT'), Projects='WRSA',Years=c('2013','2014'))
+banksnum=subset(banks,is.na(as.numeric(RESULT))==F);banksnum$RESULT=as.numeric(banksnum$RESULT)
+bnkPVT=cast(banks,'UID+TRANSECT~PARAMETER+POINT',value='RESULT')   
+bnkPVTIND=cast(banks,'UID+TRANSECT~PARAMETER+POINT',value='IND')  
+rawwhPVT=addKEYS(merge(bnkPVT,bnkPVTIND,by=c('UID','TRANSECT'),all=T) ,c('SITE_ID','DATE_COL'))
+undercut_checks=subset(rawwhPVT,UNDERCUT_LF.x>1|UNDERCUT_RT.x>1)
+write.csv(undercut_checks,'undercut_checks.csv')#many units issues
+
+
+
