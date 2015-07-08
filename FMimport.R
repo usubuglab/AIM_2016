@@ -63,7 +63,7 @@
       }
     }
   }
-  
+  importmaster$UID = substr(importmaster$UID,0,10)####DF added to truncate UIDs
   
   importmasterTEMP=importmaster;save.image(sprintf("\\\\share1.bluezone.usu.edu\\miller\\buglab\\Research Projects\\BLM_WRSA_Stream_Surveys\\Field Work\\Post Sample\\iPad backup\\%simport.RData",Sys.Date()))#temporary copy saved after import for easy reversion without restarting xlsx import
   #importmaster2=importmaster #save copy of first import test that successfully went through the  loop
