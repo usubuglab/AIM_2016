@@ -7,6 +7,13 @@ AKminesASSESS=addKEYS(tblRetrieve(Comments='Y',Parameters=c('IND_MINES','MINE'),
 
 write.csv(AKminesASSESS,'AKmine.csv')
 
+##AK 2015 data request
+AK_Thalweg=addKEYS(tblRetrieve(Parameters=c('DEPTH'),Projects='AKEFO',Comments='Y'),c('SITE_ID'))
+AK_Increment=addKEYS(tblRetrieve(Parameters=c('INCREMENT','TRCHLEN'),Projects='AKEFO',Comments='Y'),c('SITE_ID'))
+AK_Substrate=addKEYS(tblRetrieve(Parameters=c('SIZE_NUM','LOC'),Projects='AKEFO',Comments='Y'),c('SITE_ID'))
+pvtAKSubstrate=addKEYS(cast(AK_Substrate,'UID+TRANSECT+POINT~PARAMETER',value='RESULT'),c('SITE_ID'))
+pvtAKIncrement=addKEYS(cast(AK_Increment,'UID+TRANSECT+POINT~PARAMETER',value='RESULT'),c('SITE_ID'))
+
 ##Alaska data for Franklin Creek
 AKstability=addKEYS(tblRetrieve(Parameters=c('STABLE','EROSION','COVER'),SiteCodes=c('AA-STR-0001','AA-STR-0005'),Comments='Y'),c('SITE_ID'))
 pvtAKstability=addKEYS(cast(AKstability,'UID+TRANSECT+POINT~PARAMETER',value='RESULT'),c('SITE_ID'))
@@ -204,6 +211,19 @@ tbl3=cast(tbl.2,'UID~PARAMETER',value='RESULT',mean)
 tbl.PVT=addKEYS(cast(tbl,'UID~PARAMETER',value='RESULT'),c('SITE_ID'))
 thalweg.missing=merge(tbl.PVT,tbl3, by='UID')
 
+######2015 QC data checks
+widhgt=tblRetrieve(Parameters=c('BANKHT','INCISED','WETWID','BANKWID','BARWID'),  Projects=c('WRSA','NV','GSENM','COPLT'),Years=c('2015'),UIDS=9999344466,Comments='Y')
+widhgt2=tblRetrieve(Parameters=c('BANKHT','INCISED','WETWID','WETWIDTH','BANKWID','BARWID','BARWIDTH'), Projects=c('WRSA','NV','GSENM','COPLT'),Years=c('2015'),UIDS=9999344466)
+widhgt=subset(widhgt,nchar(TRANSECT)==1 | substr(TRANSECT,1,1)=='X')
+
+whPVT=cast(widhgt,'UID+TRANSECT~PARAMETER',value='RESULT')
+wnPVTIND=cast(widhgt,'UID+TRANSECT~PARAMETER',value='IND')     
+rawwhPVT=addKEYS(merge(whPVT,wnPVTIND,by=c('UID','TRANSECT'),all=T) ,c('SITE_ID','DATE_COL'))
+colnames(rawwhPVT)<-c('UID','TRANSECT','BANKHT','BANKWID','BARWID','INCISED','WETWID','BANKHT_IND','BANKWID_IND','BARWID_ID','INCISED_IND','WETWID_ID','DATE_COL','SITE_ID')
+write.csv(rawwhPVT,'problem_sites_cross_valid_bank5.csv')
+
+
+###############################################################################################################################
 #!TN and TP updates, BMI sampleID updates
 
 #!updating "N" for SIDCHN, etc #aquamet made apparent that thalweg Yes/no variables should be populated with "No" too (not just if "yes") despite EPA not providing it (ironically, used in reachlen calc)

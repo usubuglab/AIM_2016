@@ -331,15 +331,23 @@ importmasterxwalk2=importmaster;commentsxwalk2=tblCOMMENTSin;save.image(sprintf(
   #View(subset(tblTRANSECTin,SAMPLE_TYPE %in% c('SLOPEW', 'CROSSSECW', 'BANKW', 'PHOTOS')))  
   #aggcnt=aggregate(RESULT~UID + TRANSECT + POINT + SAMPLE_TYPE + PARAMETER,data=tblPOINTin,FUN=length);aggcnt=subset(aggcnt,RESULT>1);View(aggcnt)
 
-#####JC troubleshooting  
-#tblCOMMENTStest<-tblCOMMENTSin
-#tblCOMMENTStest[grep('^pma.*?',tblCOMMENTStest$UID),'UID']='16330134670946883584'
-#View(tblCOMMENTStest)
-#tblCOMMENTSin<-tblCOMMENTStest
-#tblREACHtest<-tblREACHin
-#tblREACHtest[grep('^pma.*?',tblREACHtest$UID),'UID']='16330134670946883584'
-#tblREACHin<-tblREACHtest
+#####JC troubleshooting for first 2015 import batch with weird UID issue  
+# tblCOMMENTStest<-tblCOMMENTSin
+# tblCOMMENTStest[grep('^pma.*?',tblCOMMENTStest$UID),'UID']='1633013467'
+# View(tblCOMMENTStest)
+# tblCOMMENTSin<-tblCOMMENTStest
+# tblREACHtest<-tblREACHin
+# tblREACHtest[grep('^pma.*?',tblREACHtest$UID),'UID']='1633013467'
+# tblREACHin<-tblREACHtest
    
+####JC troubleshooting for july 23 import 
+# tblCOMMENTStest<-tblCOMMENTSin
+# tblCOMMENTStest[grep('^AIM.*?',tblCOMMENTStest$UID),'UID']='6303856417'
+# tblCOMMENTSin<-tblCOMMENTStest
+# tblREACHtest<-tblREACHin
+# tblREACHtest[grep('^AIM.*?',tblREACHtest$UID),'UID']='6303856417'
+# tblREACHin<-tblREACHtest 
+
   
   ##if pass (missing, accounted, outlier), migrate to WRSAdb and access db
   

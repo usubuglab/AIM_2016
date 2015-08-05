@@ -222,12 +222,22 @@ for (p in 1:length(LowHigh)){
 }
 LowHighFailOUT=addKEYS(LowHighFailOUT,c('SITE_ID','DATE_COL'))#JC added to aid in QC process. However, it has duplicate siteid and date columns at the momment, so not very pretty at the moment
 write.csv(LowHighFailOUT,'LegalChecks.csv')
-  
 
+###WQ checks
+WQ2=tblRetrieve(Parameters=c('CONDUCTIVITY','PH','CAL_INST_ID'), Comments='Y', Years='2015', Projects=c('WRSA','NV','GSENM','COPLT'))
+WQ1=addKEYS(cast(WQ2,'UID~PARAMETER',value='RESULT')  ,c('SITE_ID','DATE_COL','CREW_LEADER'))
+
+WQ2=tblRetrieve(Parameters=c('CONDUCTIVITY','CORRECTED','TEMPERATURE'), Comments='Y', Years='2015', Projects=c('WRSA','NV','GSENM','COPLT'))
+WQ1=cast(WQ2,'UID~PARAMETER',value='RESULT')
+WQind=cast(WQ2,'UID~PARAMETER',value='IND')
+WQ3=addKEYS(merge(WQ1,WQind,by=c('UID'),all=T) ,c('SITE_ID','DATE_COL','CREW_LEADER'))
+WQ3.sub=subset(WQ3,CORRECTED.x!='Y')
+write.csv(WQ3.sub,'not_temp_corrected_conduct.csv')
 
 
 ##outlier check
 ##Need to have binMETADATAtemp.csv in your working directory for this script to work. You can get this table from SQL. It is called "tblMETADATAbin".
+##################################need to add IND to output!!!!!!!!!!!###########################################################
 
 #incoming vs. comparison dataset
 UnionTBLsites=unique(UnionTBL$UID)
@@ -576,9 +586,9 @@ colnames(rawwhPVT)<-c('UID','TRANSECT','BANKHT','BANKWID','BARWID','INCISED','WE
 
 bankhtcheck=subset(rawwhPVT,BANKHT>INCISED|BANKHT>1.5)#!possible crossvalidation rule to scan for#no bank heights showed up in the legal value or outlier check so wanted to check units
 wetwidthchecks=subset(rawwhPVT,WETWID>BANKWID)
-write.csv(bankhtcheck,'bankhtincisedcheck_25June2015.csv')
-write.csv(wetwidthchecks,'wetwidthchecks_25June2015.csv')
-write.csv(rbind(widhgt2,banks),'WidthHeightRaw_25June2015.csv')#need raw output to get IND values
+write.csv(bankhtcheck,'bankhtincisedcheck_31July2015.csv')
+write.csv(wetwidthchecks,'wetwidthchecks_31July2015.csv')
+write.csv(rbind(widhgt2,banks),'WidthHeightRaw_31July2015.csv')#need raw output to get IND values
 
 #getting raw bank data for a few problem sites
 widhgt=tblRetrieve(Parameters=c('BANKHT','INCISED','WETWID','BANKWID','BARWID'), Projects='WRSA',Years=c('2013','2014'),SiteCodes=c('MN-SS-1133','MP-SS-2091','MS-SS-3126','XE-RO-5081','XE-SS-5105','XS-SS-6135', 'OT-LS-7001',  'OT-LS-7012',	'MP-SS-2080',	'XE-SS-5150',	'MS-LS-3026',	'OT-LS-7019',	'OT-SS-7133'))
@@ -598,7 +608,7 @@ widhgt.sub=addKEYS(TBLout,c('SITE_ID','DATE_COL'))
 tblRetrieve(Parameters='ANGLE180', SiteCodes='XN-RO-4085')
 
 #Increment cross-validation WRSA checks
-incrementcheck=tblRetrieve(Parameters=c('TRCHLEN','INCREMENT','RCHWIDTH'),Projects='WRSA',Years=c('2013','2014'),Protocols=c('NRSA13','WRSA14'))
+incrementcheck=tblRetrieve(Parameters=c('TRCHLEN','INCREMENT','RCHWIDTH'), Projects=c('WRSA','NV','GSENM','COPLT'),Years=c('2015'))
 incrsub=subset(incrementcheck,UID!=10383)#UID:10383  IND 4849393 needs to be deactivated for this to work
 incrementPVT=cast(incrsub,'UID~PARAMETER',value='RESULT')
 incrementsub=subset(incrementPVT,TRCHLEN/0.01!=INCREMENT)#couldn't get this to work so checked this manually in excel and also checked to make sure that RCHWIDTH*40=TRCHLEN and for RCHWIDTH<2.5 INCREMENT=1 and for RCHWIDTH>2.5<4 INCREMENT=1.5
