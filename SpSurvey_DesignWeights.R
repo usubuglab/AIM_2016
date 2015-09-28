@@ -6,7 +6,7 @@ siteeval=tblRetrieve(Table='',Parameters=c('VALXSITE','STRATUM','MDCATY','WGT'),
 # Below code is NorCal specific
 #siteeval=tblRetrieve(Table='',Parameters=c('VALXSITE','STRATUM','MDCATY','WGT'),Projects='NorCal',Protocols='')
 
-#remove QA duplicates
+#remove QA duplicates #this comment is likely wrong, NC and JC think that this remove the duplicate eval status that Sarah put in for finial designations
 siteeval=removeDUP(siteeval,QA='N')
 
 #translate to EvalStatus

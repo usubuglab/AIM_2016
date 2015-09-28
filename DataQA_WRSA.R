@@ -1,6 +1,6 @@
 
 ##missing data parameters
-UnionTBL=tblRetrieve(Table='',Parameters='', Years='2015', Projects=c('WRSA','NV','GSENM','COPLT'))
+UnionTBL=tblRetrieve(Table='',Parameters='', Years='2015', Projects=c('WRSA','NV','GSENM','COPLT','2015ProtocolOverlap'))
                      #ALLp=AllParam,UIDS=UIDs,ALL=AllData,Filter=filter,SiteCodes=sitecodes,Dates=dates,
                      #Years='2015')#,Projects='WRSA'
                      #,Protocols='WRSA14')#!? should Protocols='' to bring in all protocols? so as not to neglect failed sites? this was done for weights
@@ -574,8 +574,10 @@ if(nrow(Slope2pass)>0){print(sprintf('CONGRATULATIONS! Pass 1 met 10%% match req
 ############################################################################################################################
 #####Additional QC Checks
 #bank cross-validation WRSA checks
-widhgt=tblRetrieve(Parameters=c('BANKHT','INCISED','WETWID','BANKWID','BARWID'), Projects=c('WRSA','NV','GSENM','COPLT'),Years=c('2015'))
-widhgt2=tblRetrieve(Parameters=c('BANKHT','INCISED','WETWID','WETWIDTH','BANKWID','BARWID','BARWIDTH'), Projects=c('WRSA','NV','GSENM','COPLT'),Years=c('2015'))
+widhgt=tblRetrieve(Parameters=c('BANKHT','INCISED','WETWID','BANKWID','BARWID'), Projects=c('WRSA','NV','GSENM','COPLT','2015ProtocolOverlap'),Years=c('2015'))
+widhgt2=tblRetrieve(Parameters=c('BANKHT','INCISED','WETWID','WETWIDTH','BANKWID','BARWID','BARWIDTH'),Projects=c('WRSA','NV','GSENM','COPLT','2015ProtocolOverlap'),Years=c('2015'))
+#widhgt=tblRetrieve(Parameters=c('BANKHT','INCISED','WETWID','BANKWID','BARWID'), Projects=c('WRSA','NV','GSENM','COPLT'),Years=c('2015'))
+#widhgt2=tblRetrieve(Parameters=c('BANKHT','INCISED','WETWID','WETWIDTH','BANKWID','BARWID','BARWIDTH'), Projects=c('WRSA','NV','GSENM','COPLT'),Years=c('2015'))
 widhgt=subset(widhgt,nchar(TRANSECT)==1 | substr(TRANSECT,1,1)=='X')
 
 whPVT=cast(widhgt,'UID+TRANSECT~PARAMETER',value='RESULT')
@@ -586,13 +588,15 @@ colnames(rawwhPVT)<-c('UID','TRANSECT','BANKHT','BANKWID','BARWID','INCISED','WE
 
 bankhtcheck=subset(rawwhPVT,BANKHT>INCISED|BANKHT>1.5)#!possible crossvalidation rule to scan for#no bank heights showed up in the legal value or outlier check so wanted to check units
 wetwidthchecks=subset(rawwhPVT,WETWID>BANKWID)
-write.csv(bankhtcheck,'bankhtincisedcheck_31July2015.csv')
-write.csv(wetwidthchecks,'wetwidthchecks_31July2015.csv')
-write.csv(rbind(widhgt2,banks),'WidthHeightRaw_31July2015.csv')#need raw output to get IND values
+write.csv(bankhtcheck,'bankhtincisedcheck_31Aug2015.csv')
+write.csv(wetwidthchecks,'wetwidthchecks_31Aug2015.csv')
+write.csv(rbind(widhgt2,banks),'WidthHeightRaw_31Aug2015.csv')#need raw output to get IND values
 
 #getting raw bank data for a few problem sites
-widhgt=tblRetrieve(Parameters=c('BANKHT','INCISED','WETWID','BANKWID','BARWID'), Projects='WRSA',Years=c('2013','2014'),SiteCodes=c('MN-SS-1133','MP-SS-2091','MS-SS-3126','XE-RO-5081','XE-SS-5105','XS-SS-6135', 'OT-LS-7001',  'OT-LS-7012',	'MP-SS-2080',	'XE-SS-5150',	'MS-LS-3026',	'OT-LS-7019',	'OT-SS-7133'))
-widhgt2=tblRetrieve(Parameters=c('BANKHT','INCISED','WETWID','WETWIDTH','BANKWID','BARWID','BARWIDTH'), Projects='WRSA',Years=c('2013','2014'),SiteCodes=c('MN-SS-1133','MP-SS-2091','MS-SS-3126','XE-RO-5081','XE-SS-5105','XS-SS-6135', 'OT-LS-7001',  'OT-LS-7012',	'MP-SS-2080',	'XE-SS-5150',	'MS-LS-3026',	'OT-LS-7019',	'OT-SS-7133'))
+widhgt=tblRetrieve(Parameters=c('BANKHT','INCISED','WETWID','BANKWID','BARWID'), Projects='AKEFO',Years=c('2015'),SiteCodes=c('AF-LS3-9172','AF-SS1-9146','AA-STR-0013'))
+widhgt2=tblRetrieve(Parameters=c('BANKHT','INCISED','WETWID','WETWIDTH','BANKWID','BARWID','BARWIDTH'), Projects='AKEFO',Years=c('2015'),SiteCodes=c('AF-LS3-9172','AF-SS1-9146','AA-STR-0013'))
+#widhgt=tblRetrieve(Parameters=c('BANKHT','INCISED','WETWID','BANKWID','BARWID'), Projects='WRSA',Years=c('2013','2014'),SiteCodes=c('MN-SS-1133','MP-SS-2091','MS-SS-3126','XE-RO-5081','XE-SS-5105','XS-SS-6135', 'OT-LS-7001',  'OT-LS-7012',	'MP-SS-2080',	'XE-SS-5150',	'MS-LS-3026',	'OT-LS-7019',	'OT-SS-7133'))
+#widhgt2=tblRetrieve(Parameters=c('BANKHT','INCISED','WETWID','WETWIDTH','BANKWID','BARWID','BARWIDTH'), Projects='WRSA',Years=c('2013','2014'),SiteCodes=c('MN-SS-1133','MP-SS-2091','MS-SS-3126','XE-RO-5081','XE-SS-5105','XS-SS-6135', 'OT-LS-7001',  'OT-LS-7012',	'MP-SS-2080',	'XE-SS-5150',	'MS-LS-3026',	'OT-LS-7019',	'OT-SS-7133'))
 widhgt=subset(widhgt,nchar(TRANSECT)==1 | substr(TRANSECT,1,1)=='X')
 
 whPVT=cast(widhgt,'UID+TRANSECT~PARAMETER',value='RESULT')

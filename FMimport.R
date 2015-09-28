@@ -347,7 +347,10 @@ importmasterxwalk2=importmaster;commentsxwalk2=tblCOMMENTSin;save.image(sprintf(
 # tblREACHtest<-tblREACHin
 # tblREACHtest[grep('^AIM.*?',tblREACHtest$UID),'UID']='6303856417'
 # tblREACHin<-tblREACHtest 
-
+#tblREACHtest<-tblREACHin
+#tblREACHin<-tblREACHtest[-c(755,756),]
+ 
+  
   
   ##if pass (missing, accounted, outlier), migrate to WRSAdb and access db
   

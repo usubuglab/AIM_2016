@@ -10,7 +10,7 @@ cat("NRSA 2008-2009 Physical Habitat Metrics\n")
 
 #options(stringsAsFactors=T)#revert this option to default; aquamet handles factor conversions to character
 readEXTERNAL='N'#set to 'Y' to read in EPA or other provided files (i.e. when using remote desktop), otherwise set to 'N' and it will query directly from WRSAdb.SQL based on defaults specified in "DataConsumption_WRSAdb.R"
-writeEXTERNAL='N'#set to 'Y' to produce csv files of inputs, metrics, and 2nd tier calcs; useful if have to run in other version of R on remote desktop
+writeEXTERNAL='Y'#set to 'Y' to produce csv files of inputs, metrics, and 2nd tier calcs; useful if have to run in other version of R on remote desktop
 #wd="\\\\share2.bluezone.usu.edu\\miller\\buglab\\Research Projects\\BLM_WRSA_Stream_Surveys\\Results and Reports\\NorCal_2013\\AquametTEST\\Test2";setwd(wd)
 
 files <- c("tblBANKGEOMETRY2", "tblCHANCOV2", "tblCHANDEPTH2",##SWJ: none of these tables are in the 2013 output, can cross walk if given corresponding tables
@@ -24,7 +24,8 @@ tables <- c("bankgeometry", "channelcover", "chandepth", "channelchar",
 if(readEXTERNAL=='N'){
 #WRSA data conversion
 #assumes DB connection remains open
-XwalkUnion=tblRetrieve(Table='',Parameters='',ALLp=AllParam,UIDS=UIDs,ALL=AllData,Filter=filter,SiteCodes=sitecodes,Dates=dates,Years=years,Projects=projects,Protocols=protocols)
+#XwalkUnion=tblRetrieve(Table='',Parameters='',ALLp=AllParam,UIDS=UIDs,ALL=AllData,Filter=filter,SiteCodes=sitecodes,Dates=dates,Years=years,Projects=projects,Protocols=protocols)
+XwalkUnion=tblRetrieve(Table='',Parameters='',Projects='AKEFO',Years='2015')
 #XwalkUnion=tblRetrieve(Table='',Parameters='',Projects='WRSA', Protocols=c('NRSA13','WRSA14')) #ALLp=AllParam,UIDS=UIDs,ALL=AllData,Filter=filter,SiteCodes=sitecodes,Dates=dates,Years=years,Projects=projects,Protocols=protocols)#XwalkUniontmp=XwalkUnion
 #protocol and parameter conversions #! these conversions also need to be done when relaying back to EPA
 XwalkUnion=bintranslate(Table='XwalkUnion',ST='CROSSSECW',PM='SIZE_NUM')
