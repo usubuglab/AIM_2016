@@ -49,8 +49,8 @@ AllData='N'#set to 'Y' (meaning 'yes') if you want to query all sites (note this
 sitecodes=c('OT-SS-7112')#c('EL-LS-8134','EL-SS-8127','MN-LS-1004','MN-SS-1104','MS-SS-3103','XE-RO-5086','XN-LS-4016','XN-SS-4128','XS-LS-6029' )#QAduplicateSites#c('AR-LS-8003','AR-LS-8007', 'TP-LS-8240')#sites for NorCalTesting
 years=c('2014','2015')#as character, not number
 dates=''##example:c('05/05/2005')
-projects=c('WRSA','NV','GSENM','COPLT','2015ProtocolOverlap')# most useful for separating NorCal and WRSA, note that abbreviations differ between Access and SQL/FM
-protocols=c('WRSA14')#for separating differences in overall protocol, may not be relevant for some parameters
+projects=c('WRSA','NV','GSENM','COPLT','2015ProtocolOverlap','AKEFO','NORCAL')# most useful for separating NorCal and WRSA, note that abbreviations differ between Access and SQL/FM
+protocols=c('NRSA13','WRSA14','BOAT14')#for separating differences in overall protocol, may not be relevant for some parameters
 hitchs=c('')#NOT WORKING YET, hitch and crew level generally maintained by Access not SQL
 crews=c('R1')#NOT WORKING YET, hitch and crew level generally maintained by Access not SQL#see crewKC in customrequests for possible method
 filter=''#custom filter (need working knowledge of Parameter:Result pairs and SQL structure; example: "(Parameter='ANGLE' and Result>50) OR (Parameter='WETWID' and Result<=0.75))"

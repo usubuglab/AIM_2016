@@ -1,9 +1,13 @@
 
 ##missing data parameters
-UnionTBL=tblRetrieve(Table='',Parameters='', Years='2015', Projects=c('WRSA','NV','GSENM','COPLT','2015ProtocolOverlap'))
+UnionTBL=tblRetrieve(Table='',Parameters='', Years=c('2013','2014','2015'), Projects=c('NV','GSENM','COPLT','WRSA','NORCAL','2015ProtocolOverlap','AKEFO'),Protocols=c('NRSA13','WRSA14','BOAT14','AK14'))
                      #ALLp=AllParam,UIDS=UIDs,ALL=AllData,Filter=filter,SiteCodes=sitecodes,Dates=dates,
                      #Years='2015')#,Projects='WRSA'
                      #,Protocols='WRSA14')#!? should Protocols='' to bring in all protocols? so as not to neglect failed sites? this was done for weights
+#UnionTBL=tblRetrieve(Table='',Parameters='', Projects=projects,Protocols=protocols)
+#ALLp=AllParam,UIDS=UIDs,ALL=AllData,Filter=filter,SiteCodes=sitecodes,Dates=dates,
+#Years='2015')#,Projects='WRSA'
+
 UIDS=c(76374884476355444736,
 73950247746187892360428,
 8600554176507,
@@ -574,8 +578,8 @@ if(nrow(Slope2pass)>0){print(sprintf('CONGRATULATIONS! Pass 1 met 10%% match req
 ############################################################################################################################
 #####Additional QC Checks
 #bank cross-validation WRSA checks
-widhgt=tblRetrieve(Parameters=c('BANKHT','INCISED','WETWID','BANKWID','BARWID'), Projects=c('WRSA','NV','GSENM','COPLT','2015ProtocolOverlap'),Years=c('2015'))
-widhgt2=tblRetrieve(Parameters=c('BANKHT','INCISED','WETWID','WETWIDTH','BANKWID','BARWID','BARWIDTH'),Projects=c('WRSA','NV','GSENM','COPLT','2015ProtocolOverlap'),Years=c('2015'))
+widhgt=tblRetrieve(Parameters=c('BANKHT','INCISED','WETWID','BANKWID','BARWID'), Projects=c('NORCAL','2015ProtocolOverlap','AKEFO'),Years=c('2013','2014','2015'))
+widhgt2=tblRetrieve(Parameters=c('BANKHT','INCISED','WETWID','WETWIDTH','BANKWID','BARWID','BARWIDTH'),Projects=c('NORCAL','2015ProtocolOverlap','AKEFO'),Years=c('2013','2014','2015'))
 #widhgt=tblRetrieve(Parameters=c('BANKHT','INCISED','WETWID','BANKWID','BARWID'), Projects=c('WRSA','NV','GSENM','COPLT'),Years=c('2015'))
 #widhgt2=tblRetrieve(Parameters=c('BANKHT','INCISED','WETWID','WETWIDTH','BANKWID','BARWID','BARWIDTH'), Projects=c('WRSA','NV','GSENM','COPLT'),Years=c('2015'))
 widhgt=subset(widhgt,nchar(TRANSECT)==1 | substr(TRANSECT,1,1)=='X')
