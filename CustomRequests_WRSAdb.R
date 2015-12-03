@@ -121,8 +121,11 @@ riparian5=tblRetrieve(Parameters=c('UNDERVEG','UNDNWDY','UNDWDY'),Years=c('2013'
 riparian5PVT=cast(riparian5,'UID+TRANSECT+POINT~PARAMETER',value='RESULT')
 riparian5pvtsub=subset(riparian5PVT,UNDERVEG=='N' & UNDNWDY>0 & UNDWDY>0)
 
-
-
+##fish cover check #flags sites with undercuts present but no undercut listed for fish cover
+under=tblRetrieve(Parameters=c('UNDCUT','UNDERCUT','BKUNDCT'),Years=c('2013','2014','2015'))
+underpvt=cast(under,'UID+TRANSECT~PARAMETER',value='RESULT',fun=max)
+underpvt.sub=subset(underpvt,UNDCUT==0 & (UNDERCUT>0 | BKUNDCT=='>=5'|BKUNDCT=='<5'))
+       
 ######2015 Width-height checks
 widhgt=tblRetrieve(Parameters=c('BANKHT','INCISED','WETWID','BANKWID','BARWID'),  Projects=c('WRSA','NV','GSENM','COPLT'),Years=c('2015'),SiteCodes=c('CO-LS-9448','GS-LS-9009','GS-LS-9010','GS-SS-9006','MN-SS-1137','MP-LS-2005','NB-LS-9119','NB-SS-9108','NY-LS-9230','OT-SS-7109','OT-SS-7122','XE-LS-5026','XS-LS-6007'),Comments='Y')
 widhgt2=tblRetrieve(Parameters=c('BANKHT','INCISED','WETWID','WETWIDTH','BANKWID','BARWID','BARWIDTH'), Projects=c('WRSA','NV','GSENM','COPLT'),Years=c('2015'),SiteCodes=c('CO-LS-9448','GS-LS-9009','GS-LS-9010','GS-SS-9006','MN-SS-1137','MP-LS-2005','NB-LS-9119','NB-SS-9108','NY-LS-9230','OT-SS-7109','OT-SS-7122','XE-LS-5026','XS-LS-6007'))
@@ -148,12 +151,30 @@ rawwhPVT=addKEYS(merge(pvtSed,PVTIND,by=c('UID','TRANSECT'),all=T) ,c('SITE_ID',
 widhgt=tblRetrieve(Parameters=c('WETWID','BARWID'),  Projects=c('WRSA','NV','GSENM','COPLT'),Years=c('2015'),SiteCodes=sitecodes,Comments='Y')
 widhgt2=tblRetrieve(Parameters=c('WETWID','WETWIDTH','BANKWID','BARWID','BARWIDTH'), Projects=c('WRSA','NV','GSENM','COPLT'),Years=c('2015'),SiteCodes=sitecodes,Comments='Y')
 
-#thalweg checks
+#thalweg checks####couldn't get this to work so did cell referencing in excel to interpolate between values with 1 missing value inbetween
 thalweg<-tblRetrieve(Parameters='DEPTH',Projects=c('AKEFO','NORCAL','WRSA','GSENM','COPLT','NV'),Protocols=c('AK14','NRSA13','WRSA14','BOAT14'))
 thalweg_depth<-subset(thalweg,SAMPLE_TYPE!='CROSSSECW')
 thalweg_depth_pvt<-cast(thalweg_depth,'UID+TRANSECT~POINT', value='RESULT')
 thalweg_depth_pvt_order<-thalweg_depth_pvt[with(thalweg_depth_pvt, order(1,29))]
 thaleg_depth_NA<-thalweg_depth_pvt [is.na(thalweg_depth_pvt$'1')==TRUE,c(1:2,4)]
+
+#thalweg depth
+#wading sites
+depthcheck=tblRetrieve(Parameters=c('DEPTH'), Years=c('2013','2014','2015'),Protocols=c('WRSA14','NRSA13','AK14'))
+depthcheck.sub=subset(depthcheck,SAMPLE_TYPE!='CROSSSECW')
+pvtdepthcheck=cast(depthcheck.sub,'UID+TRANSECT+POINT~PARAMETER',value='RESULT')
+pvtdepthcheck.sub=subset(pvtdepthcheck,POINT=='0')
+width=tblRetrieve(Parameters=c('WETWID'),Years=c('2013','2014','2015'),Protocols=c('WRSA14','NRSA13','AK14'))
+check=merge(pvtdepthcheck.sub,width,by=c('UID','TRANSECT'),all=T)
+odd_ratio=subset(check,RESULT/(DEPTH/100)>50|RESULT/(DEPTH/100)<1)
+#boating sites
+depthcheck=tblRetrieve(Parameters=c('DEPTH'), Years=c('2013','2014','2015'),Protocols=c('BOAT14'))
+depthcheck.sub=subset(depthcheck,SAMPLE_TYPE!='CROSSSECW')
+pvtdepthcheck=cast(depthcheck.sub,'UID+TRANSECT+POINT~PARAMETER',value='RESULT')
+pvtdepthcheck.sub=subset(pvtdepthcheck,POINT=='0')
+width=tblRetrieve(Parameters=c('WETWID'),Years=c('2013','2014','2015'),Protocols=c('BOAT14'))
+check=merge(pvtdepthcheck.sub,width,by=c('UID','TRANSECT'),all=T)
+odd_ratio=subset(check,RESULT/(DEPTH)>50|RESULT/(DEPTH)<1)
 
 #getting all pool data for a specfic set of sites
 pools<-addKEYS(tblRetrieve(Parameters=c('HABTYPE','FORMATION','PTAILDEP','MAXDEPTH','LENGTH'),Projects=projects,Comments='Y'),c('SITE_ID'))
