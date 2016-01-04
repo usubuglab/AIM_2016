@@ -4,6 +4,7 @@
 #Redo-31March2015
 ####Most recent redo is to remove three sites that were identified as outliers for the NV MMI, as such these sites do not have 
 ####MMI scores and must be removed from the RF model.
+#Redo-4May2015: Need to relativize certain metrics
 ##############################################################################################################################################################################################
 
 
@@ -20,9 +21,16 @@ library (randomForest)
 ##loading data
 ####################
 ##load file with bugs, indicators, and naturals
-RFdata=read.csv("\\\\share1.bluezone.usu.edu\\miller\\buglab\\Research Projects\\BLM_WRSA_Stream_Surveys\\Results and Reports\\NorCal_2013\\Analysis\\RandomForest\\Run2_IDstressors_23Feb2014\\BugsIndicatorsNaturals_30March2015.csv")
+RFdata=read.csv("\\\\share1.bluezone.usu.edu\\miller\\buglab\\Research Projects\\BLM_WRSA_Stream_Surveys\\Results and Reports\\NorCal_2013\\Analysis\\RandomForest\\Run2_IDstressors_23Feb2014\\Relitivized_New_4May2015\\FinalData_4May2015.csv")
 ##load NV refernce scores
 refcompare=read.csv('\\\\share1.bluezone.usu.edu\\miller\\buglab\\Research Projects\\BLM_WRSA_Stream_Surveys\\Results and Reports\\NorCal_2013\\Analysis\\BugModels\\EnvirOutliers\\NV_MMI_RreferenceScore.csv')
+
+#Relitivize Numbers to density- divide numbers by area
+#RFdata$SprgDen_WS=RFdata$SprgNum_WS/RFdata$AREA_SQKM
+#RFdata$SpDen300m=RFdata$SpNum300m/RFdata$AREA_SQKM
+#RFdata$SpDen800m=RFdata$SpNum800m/RFdata$AREA_SQKM
+#RFdata=RFdata[,-c(34:36)]
+#write.csv(RFdata, "\\\\share1.bluezone.usu.edu\\miller\\buglab\\Research Projects\\BLM_WRSA_Stream_Surveys\\Results and Reports\\NorCal_2013\\Analysis\\RandomForest\\Run2_IDstressors_23Feb2014\\Relitivized_New_4May2015\\FinalData_4May2015.csv")
 
 ####################
 ##determine total var
@@ -128,17 +136,23 @@ bivarpartialPlot.randomForest <-
 # Indicators and Natural
 RF_CorSubset=RFdata[,6:52]
 RFdataCor=cor(RF_CorSubset)
-#write.csv(RFdataCor,'\\\\share1.bluezone.usu.edu\\miller\\buglab\\Research Projects\\BLM_WRSA_Stream_Surveys\\Results and Reports\\NorCal_2013\\Analysis\\RandomForest\\Run2_IDstressors_23Feb2014\\RFdataCorrelations.csv')
+#
+write.csv(RFdataCor,'\\\\share1.bluezone.usu.edu\\miller\\buglab\\Research Projects\\BLM_WRSA_Stream_Surveys\\Results and Reports\\NorCal_2013\\Analysis\\RandomForest\\Run2_IDstressors_23Feb2014\\Relitivized_New_4May2015\\RFdataCorrelations.csv')
 
 
 ###################################################################
 # Transform data variables
+
+boxplotdata=RFtrans[,c(6:53)]
+par(mfrow=c(2,6))
+for (i in 1:length(boxplotdata)) {
+  boxplot(boxplotdata[,i], main=names(boxplotdata[i]))
+}
 RFtrans=RFdata
 RFtrans$Log_AREA_SQKM=log10(RFtrans$AREA_SQKM)
 RFtrans$Log_OE_TN=log10(ifelse(RFtrans$OE_TN<0,0,RFtrans$OE_TN)+1)
 RFtrans$Log_OE_TP=log10(ifelse(RFtrans$OE_TP<0,0,RFtrans$OE_TP)+1)
 RFtrans$Log_alru_dom=log10(RFtrans$alru_dom+1)
-RFtrans$Log_SprgNum_WS=log10(RFtrans$SprgNum_WS+1)
 RFtrans$Log_PerDensC=log10(RFtrans$PerDensC+1)
 RFtrans$Log_Slope_WS=log10(RFtrans$Slope_WS)
 RFtrans$Log_HYDR_WS=log10(RFtrans$HYDR_WS)
@@ -159,6 +173,102 @@ Log_SprgNum_WS+SpNum300m+SpNum800m+StreamDens+Log_PerDensC+IntDensC+Log_HYDR_WS+
 Log_Slope_WS+AREA_SQKM+SITE_ELEV+ELEV_RANGE+KFCT_AVE+PRMH_AVE+Log_alru_dom+TMAX_WS+TMIN_WS+UCS_Mean+SumAve_P+MEANP_WS
 
 ###################################################################
+########################################
+#Random Forest Models 4 May 2015 
+##########################################################################
+#Transformed
+###################################################################
+#1) #
+TransBLM=randomForest(NV_MMI~NV_Invasives+OE_Conduct+Log_OE_TN+Log_OE_TP+PH+Sqrt_BnkStability_BLM+XFC_NAT+xcdenmid+LINCIS_H+PCT_SAFN+XCMG+
+                        SprgDen_WS+SpDen300m+SpDen800m+StreamDens+Log_PerDensC+IntDensC+Log_HYDR_WS+
+                        Log_Slope_WS+Log_AREA_SQKM+SITE_ELEV+ELEV_RANGE+KFCT_AVE+PRMH_AVE+Log_alru_dom+TMAX_WS+TMIN_WS+UCS_Mean+SumAve_P+MEANP_WS,
+                      data=RFtrans, importance=TRUE, proximity=TRUE, bias.corr=TRUE)
+TransBLM
+varImpPlot(TransBLM)
+
+
+#2) #
+TransBLM=randomForest(NV_MMI~OE_Conduct+Log_OE_TN+Log_OE_TP+PH+Sqrt_BnkStability_BLM+PCT_SAFN+XCMG+SprgDen_WS+SpDen300m+SpDen800m+IntDensC+
+                        Log_Slope_WS+Log_AREA_SQKM+SITE_ELEV+ELEV_RANGE+KFCT_AVE+PRMH_AVE+Log_alru_dom+TMIN_WS+SumAve_P+MEANP_WS,
+                      data=RFtrans, importance=TRUE, proximity=TRUE, bias.corr=TRUE)
+TransBLM
+varImpPlot(TransBLM)
+
+#3) #
+TransBLM=randomForest(NV_MMI~Log_OE_TN+Log_OE_TP+XCMG+IntDensC+Log_AREA_SQKM+ELEV_RANGE+PRMH_AVE+Log_alru_dom+SumAve_P,
+                      data=RFtrans, importance=TRUE, proximity=TRUE, bias.corr=TRUE)
+TransBLM
+varImpPlot(TransBLM)
+
+#4) #
+TransBLM=randomForest(NV_MMI~Log_OE_TN+Log_OE_TP+XCMG+IntDensC+Log_AREA_SQKM+PRMH_AVE+SumAve_P,
+                      data=RFtrans, importance=TRUE, proximity=TRUE, bias.corr=TRUE)
+TransBLM
+varImpPlot(TransBLM)
+
+#5) #
+TransBLM=randomForest(NV_MMI~Log_OE_TN+Log_OE_TP+XCMG+IntDensC+Log_AREA_SQKM+SumAve_P,
+                      data=RFtrans, importance=TRUE, proximity=TRUE, bias.corr=TRUE)
+TransBLM
+varImpPlot(TransBLM)
+
+#6) #
+TransBLM=randomForest(NV_MMI~Log_OE_TN+Log_OE_TP+XCMG+IntDensC+Log_AREA_SQKM,
+                      data=RFtrans, importance=TRUE, proximity=TRUE, bias.corr=TRUE)
+TransBLM
+varImpPlot(TransBLM)
+
+
+par(mfrow=c(2,3))
+partialPlot(TransBLM, RFtrans,Log_AREA_SQKM, cex.main=1)
+partialPlot(TransBLM, RFtrans,Log_OE_TN, cex.main=1)
+partialPlot(TransBLM, RFtrans,Log_OE_TP, cex.main=1)
+partialPlot(TransBLM, RFtrans,XCMG, cex.main=1)
+partialPlot(TransBLM, RFtrans,IntDensC, cex.main=1)
+
+# nump= Changes the number of "data points" used to make the graph
+par(mfrow=c(2,3))
+nump = 15
+bpp.out = bivarpartialPlot.randomForest(TransBLM, RFtrans, IntDensC, Log_AREA_SQKM, ylab="rating", n1.pt=nump, n2.pt=nump, theta=30) #change theta on this one, can't use factors
+bpp.out = bivarpartialPlot.randomForest(TransBLM, RFtrans, Log_OE_TN, Log_AREA_SQKM, ylab="rating", n1.pt=nump, n2.pt=nump, theta=40) #change theta on this one, can't use factors
+bpp.out = bivarpartialPlot.randomForest(TransBLM, RFtrans, Log_OE_TP, Log_AREA_SQKM, ylab="rating", n1.pt=nump, n2.pt=nump, theta=40) #change theta on this one, can't use factors
+bpp.out = bivarpartialPlot.randomForest(TransBLM, RFtrans, Log_AREA_SQKM, XCMG, ylab="rating", n1.pt=nump, n2.pt=nump, theta=320) #change theta on this one, can't use factors
+bpp.out = bivarpartialPlot.randomForest(TransBLM, RFtrans, Log_OE_TN, IntDensC, ylab="rating", n1.pt=nump, n2.pt=nump, theta=120) #change theta on this one, can't use factors
+bpp.out = bivarpartialPlot.randomForest(TransBLM, RFtrans, IntDensC, Log_OE_TP, ylab="rating", n1.pt=nump, n2.pt=nump, theta=150) #change theta on this one, can't use factors
+bpp.out = bivarpartialPlot.randomForest(TransBLM, RFtrans, IntDensC, XCMG,ylab="rating", n1.pt=nump, n2.pt=nump, theta=40) #change theta on this one, can't use factors
+bpp.out = bivarpartialPlot.randomForest(TransBLM, RFtrans, Log_OE_TN, XCMG,ylab="rating", n1.pt=nump, n2.pt=nump, theta=40) #change theta on this one, can't use factors
+bpp.out = bivarpartialPlot.randomForest(TransBLM, RFtrans, Log_OE_TP, XCMG,ylab="rating", n1.pt=nump, n2.pt=nump, theta=40) #change theta on this one, can't use factors
+bpp.out = bivarpartialPlot.randomForest(TransBLM, RFtrans, Log_OE_TN, Log_OE_TP, ylab="rating", n1.pt=nump, n2.pt=nump, theta=120) #change theta on this one, can't use factors
+
+
+#7) #
+TransBLM=randomForest(NV_MMI~Log_OE_TN+XCMG+IntDensC+Log_AREA_SQKM,
+                      data=RFtrans, importance=TRUE, proximity=TRUE, bias.corr=TRUE)
+TransBLM
+varImpPlot(TransBLM)
+
+#8) #
+TransBLM=randomForest(NV_MMI~Log_OE_TN+XCMG+Log_AREA_SQKM,
+                      data=RFtrans, importance=TRUE, proximity=TRUE, bias.corr=TRUE)
+TransBLM
+varImpPlot(TransBLM)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 ########################################

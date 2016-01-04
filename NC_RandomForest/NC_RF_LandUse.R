@@ -15,7 +15,7 @@ library (randomForest)
 ##loading data
 ####################
 ##load file with bugs, indicators, and naturals
-RFLU=read.csv("\\\\share1.bluezone.usu.edu\\miller\\buglab\\Research Projects\\BLM_WRSA_Stream_Surveys\\Results and Reports\\NorCal_2013\\Analysis\\RandomForest\\Run3_IDlanduse\\LU_Nat_Anthro_data_3April2015.csv")
+A.RFLU=read.csv("\\\\share1.bluezone.usu.edu\\miller\\buglab\\Research Projects\\BLM_WRSA_Stream_Surveys\\Results and Reports\\NorCal_2013\\Analysis\\RandomForest\\Run3_IDlanduse\\LU_Nat_Anthro_data_3April2015.csv")
 
 #Variable Names:
 #SiteCode++OE_TN+OE_TP+xcdenmid+XCMG+P_AUM_YrSp+P_AUM_4YrPrSp+P_AUM_YrPr+P_AUM_3YrPrPr+P_Prop_YrSp+P_Prop_4YrsPrSp+P_Prop_YrPr+P_Prop_3YrPrPr+AUM_YrSp+AUM_4YrPrSp+AUM_YrPr+AUM_3YrPrPr+Prop_YrSp+Prop_4YrsPrSp+Prop_YrPr+Prop_3YrPrPr+NumRdCross+RdDensC+Percent_HBonly+Percent_Honly+Percent_HMA+PctXclsr+Percent_Allotment+MINEnum_WS+DAMnum_WS+DAMvol_WS+ArtPathDens+AG_WS+URBAN_WS+PctOtherOwn+PrivPct+BLMPct+PctFWS+PctFS+StmOrd+Slope_WS+PCT_SEDIM+Volcanic_7+SprgNum_WS+SpNum300m+SpNum800m+StreamDens+PerDensC+IntDensC+HYDR_WS+Slope_WS+AREA_SQKM+SITE_ELEV+ELEV_RANGE+KFCT_AVE+PRMH_AVE+alru_dom+TMAX_WS+TMIN_WS+UCS_Mean+SumAve_P+MEANP_WS
@@ -126,7 +126,7 @@ pairs(LUSub2, lower.panel=panel.smooth, upper.panel=panel.cor)
 
 ########################################################################################################
 #What data needs/should be transformed
-
+######
 boxplotdata=RFLU[,c(6:68)]
 par(mfrow=c(2,6))
 for (i in 1:length(boxplotdata)) {
@@ -149,6 +149,7 @@ RFLU$Log_OE_TP=log10(ifelse(RFLU$OE_TP<0,0,RFLU$OE_TP)+1)
 
 ########################################################################################################
 #What data needs/should be transformed
+############
 
 boxplotdata=RFLU[,c(3:63)]
 par(mfrow=c(2,6))
@@ -334,6 +335,22 @@ TN=randomForest(OE_TN~Prop_3YrPrPr+SITE_ELEV,
 TN
 varImpPlot(TN)
 
+par(mfrow=c(2,2))
+partialPlot(TN, RFLU,Prop_3YrPrPr, cex.main=1)
+partialPlot(TN, RFLU,SITE_ELEV, cex.main=1)
+
+
+#8) Run RF for TN response and all grazing, anthropogenic, and natural predictor variables
+RFLU$Log_Prop_3YrPrPr=log10(RFLU$Prop_3YrPrPr+1)
+TN=randomForest(OE_TN~Log_Prop_3YrPrPr+SITE_ELEV,
+                data=RFLU, importance=TRUE, proximity=TRUE, bias.corr=TRUE)
+TN
+varImpPlot(TN)
+
+par(mfrow=c(2,2))
+partialPlot(TN, RFLU,Log_Prop_3YrPrPr, cex.main=1)
+partialPlot(TN, RFLU,SITE_ELEV, cex.main=1)
+
 ###################################################################
 # Use transformed TN response variables: LTN
 ###################################################################
@@ -435,6 +452,28 @@ LTNL=randomForest(Log_OE_TN~P_AUM_YrSp+P_AUM_YrPr+AUM_3YrPrPr+Log_AREA_SQKM,
                   data=RFLU, importance=TRUE, proximity=TRUE, bias.corr=TRUE)
 LTNL
 varImpPlot(LTNL)
+
+
+par(mfrow=c(2,2))
+partialPlot(LTNL, RFLU,P_AUM_YrSp, cex.main=1)
+partialPlot(LTNL, RFLU,P_AUM_YrPr, cex.main=1)
+partialPlot(LTNL, RFLU,AUM_3YrPrPr, cex.main=1)
+partialPlot(LTNL, RFLU,Log_AREA_SQKM, cex.main=1)
+
+
+#5.5
+LTNL=randomForest(Log_OE_TN~Log_P_AUM_YrSp+Log_P_AUM_YrPr+AUM_3YrPrPr+Log_AREA_SQKM,
+                  data=RFLU, importance=TRUE, proximity=TRUE, bias.corr=TRUE)
+LTNL
+varImpPlot(LTNL)
+
+RFLU$Log_P_AUM_YrSp=log10(RFLU$P_AUM_YrSp+1)
+RFLU$Log_P_AUM_YrPr=log10(RFLU$P_AUM_YrPr+1)
+par(mfrow=c(2,2))
+partialPlot(LTNL, RFLU,Log_P_AUM_YrSp, cex.main=1)
+partialPlot(LTNL, RFLU,Log_P_AUM_YrPr, cex.main=1)
+partialPlot(LTNL, RFLU,AUM_3YrPrPr, cex.main=1)
+partialPlot(LTNL, RFLU,Log_AREA_SQKM, cex.main=1)
 
 #6
 LTNL=randomForest(Log_OE_TN~AUM_3YrPrPr+Log_AREA_SQKM,
@@ -571,8 +610,13 @@ TP=randomForest(OE_TP~P_Prop_3YrPrPr+NumRdCross+AREA_SQKM+PRMH_AVE,
                 data=RFLU, importance=TRUE, proximity=TRUE, bias.corr=TRUE)
 TP
 varImpPlot(TP)
-
-
+LTPL
+varImpPlot(LTPL)
+par(mfrow=c(2,2))
+partialPlot(TP, RFLU,P_Prop_3YrPrPr, cex.main=1)
+partialPlot(TP, RFLU,NumRdCross, cex.main=1)
+partialPlot(TP, RFLU,AREA_SQKM, cex.main=1)
+partialPlot(TP, RFLU,PRMH_AVE, cex.main=1)
 
 
 ###################################################################
@@ -743,11 +787,21 @@ LTPL=randomForest(Log_OE_TP~AUM_4YrPrSp+Log_NumRdCross+StmOrd+StreamDens,
 LTPL
 varImpPlot(LTPL)
 
+par(mfrow=c(2,2))
+partialPlot(LTPL, RFLU,AUM_4YrPrSp, cex.main=1)
+partialPlot(LTPL, RFLU,Log_NumRdCross, cex.main=1)
+partialPlot(LTPL, RFLU,StmOrd, cex.main=1)
+partialPlot(LTPL, RFLU,StreamDens, cex.main=1)
+
 #8
 LTPL=randomForest(Log_OE_TP~AUM_4YrPrSp+StmOrd+StreamDens,
                   data=RFLU, importance=TRUE, proximity=TRUE, bias.corr=TRUE)
 LTPL
 varImpPlot(LTPL)
+par(mfrow=c(2,2))
+partialPlot(LTPL, RFLU,AUM_4YrPrSp, cex.main=1)
+partialPlot(LTPL, RFLU,StmOrd, cex.main=1)
+partialPlot(LTPL, RFLU,StreamDens, cex.main=1)
 
 #9
 LTPL=randomForest(Log_OE_TP~AUM_4YrPrSp+StreamDens,
@@ -926,6 +980,13 @@ XCMG=randomForest(XCMG~P_Prop_YrSp+NumRdCross+Percent_HMA+ELEV_RANGE+KFCT_AVE,
 XCMG
 varImpPlot(XCMG)
 
+par(mfrow=c(2,2))
+partialPlot(XCMG, RFLU,P_Prop_YrSp, cex.main=1)
+partialPlot(XCMG, RFLU,NumRdCross, cex.main=1)
+partialPlot(XCMG, RFLU,Percent_HMA, cex.main=1)
+partialPlot(XCMG, RFLU,ELEV_RANGE, cex.main=1)
+partialPlot(XCMG, RFLU,KFCT_AVE, cex.main=1)
+
 #9) Run RF for XCMG response and all grazing, anthropogenic, and natural predictor variables
 XCMG=randomForest(XCMG~NumRdCross+Percent_HMA+ELEV_RANGE+KFCT_AVE,
                   data=RFLU, importance=TRUE, proximity=TRUE, bias.corr=TRUE)
@@ -1010,6 +1071,29 @@ XCMGL=randomForest(XCMG~Log_NumRdCross+Percent_HMA+StmOrd+ELEV_RANGE+PRMH_AVE+Lo
 XCMGL
 varImpPlot(XCMGL)
 
+par(mfrow=c(2,2))
+partialPlot(XCMGL, RFLU,ELEV_RANGE, cex.main=1)
+partialPlot(XCMGL, RFLU,StmOrd, cex.main=1)
+partialPlot(XCMGL, RFLU,Log_NumRdCross, cex.main=1)
+partialPlot(XCMGL, RFLU,Percent_HMA, cex.main=1)
+partialPlot(XCMGL, RFLU,PRMH_AVE, cex.main=1)
+partialPlot(XCMGL, RFLU,Log_alru_dom, cex.main=1)
+
+#5.5) Run RF for XCMG response and all grazing, anthropogenic, and natural predictor variables
+RFLU$Log_PRMH_AVE=log10(RFLU$PRMH_AVE+1)
+
+XCMGL=randomForest(XCMG~Log_NumRdCross+Percent_HMA+StmOrd+ELEV_RANGE+Log_PRMH_AVE+Log_alru_dom,
+                   data=RFLU, importance=TRUE, proximity=TRUE, bias.corr=TRUE)
+XCMGL
+varImpPlot(XCMGL)
+
+par(mfrow=c(2,2))
+partialPlot(XCMGL, RFLU,ELEV_RANGE, cex.main=1)
+partialPlot(XCMGL, RFLU,StmOrd, cex.main=1)
+partialPlot(XCMGL, RFLU,Log_NumRdCross, cex.main=1)
+partialPlot(XCMGL, RFLU,Percent_HMA, cex.main=1)
+partialPlot(XCMGL, RFLU,Log_PRMH_AVE, cex.main=1)
+partialPlot(XCMGL, RFLU,Log_alru_dom, cex.main=1)
 
 
 #6) Run RF for XCMG response and all grazing, anthropogenic, and natural predictor variables
@@ -1018,6 +1102,12 @@ XCMGL=randomForest(XCMG~Log_NumRdCross+Percent_HMA+StmOrd+ELEV_RANGE+PRMH_AVE,
 XCMGL
 varImpPlot(XCMGL)
 
+par(mfrow=c(2,2))
+partialPlot(XCMGL, RFLU,ELEV_RANGE, cex.main=1)
+partialPlot(XCMGL, RFLU,StmOrd, cex.main=1)
+partialPlot(XCMGL, RFLU,Log_NumRdCross, cex.main=1)
+partialPlot(XCMGL, RFLU,Percent_HMA, cex.main=1)
+partialPlot(XCMGL, RFLU,PRMH_AVE, cex.main=1)
 
 #7) Run RF for XCMG response and all grazing, anthropogenic, and natural predictor variables
 XCMGL=randomForest(XCMG~Log_NumRdCross+ELEV_RANGE+PRMH_AVE,
@@ -1155,6 +1245,12 @@ den=randomForest(xcdenmid~IntDensC+TMIN_WS,
 den
 varImpPlot(den)
 
+den
+varImpPlot(den)
+par(mfrow=c(2,2))
+partialPlot(den, RFLU,IntDensC, cex.main=1)
+partialPlot(den, RFLU,TMIN_WS, cex.main=1)
+
 #11) Run RF for TN response and all grazing, anthropogenic, and natural predictor variables
 den=randomForest(xcdenmid~IntDensC,
                  data=RFLU, importance=TRUE, proximity=TRUE, bias.corr=TRUE)
@@ -1212,11 +1308,35 @@ denL=randomForest(xcdenmid~P_AUM_3YrPrPr+Log_PctXclsr+IntDensC+TMIN_WS+KFCT_AVE,
                   data=RFLU, importance=TRUE, proximity=TRUE, bias.corr=TRUE)
 denL
 varImpPlot(denL)
+
 #6) Run RF for TN response and all grazing, anthropogenic, and natural predictor variables
 denL=randomForest(xcdenmid~P_AUM_3YrPrPr+IntDensC+TMIN_WS+KFCT_AVE,
                   data=RFLU, importance=TRUE, proximity=TRUE, bias.corr=TRUE)
 denL
 varImpPlot(denL)
+
+
+par(mfrow=c(2,2))
+partialPlot(denL, RFLU,P_AUM_3YrPrPr, cex.main=1)
+partialPlot(denL, RFLU,IntDensC, cex.main=1)
+partialPlot(denL, RFLU,TMIN_WS, cex.main=1)
+partialPlot(denL, RFLU,KFCT_AVE, cex.main=1)
+
+#6.5) Run RF for TN response and all grazing, anthropogenic, and natural predictor variables
+RFLU$Log_P_AUM_3YrPrPr=log10(RFLU$P_AUM_3YrPrPr+1)
+
+denL=randomForest(xcdenmid~Log_P_AUM_3YrPrPr+IntDensC+TMIN_WS+KFCT_AVE,
+                  data=RFLU, importance=TRUE, proximity=TRUE, bias.corr=TRUE)
+denL
+varImpPlot(denL)
+
+
+par(mfrow=c(2,2))
+partialPlot(denL, RFLU,Log_P_AUM_3YrPrPr, cex.main=1)
+partialPlot(denL, RFLU,IntDensC, cex.main=1)
+partialPlot(denL, RFLU,TMIN_WS, cex.main=1)
+partialPlot(denL, RFLU,KFCT_AVE, cex.main=1)
+
 
 #7) Run RF for TN response and all grazing, anthropogenic, and natural predictor variables
 denL=randomForest(xcdenmid~P_AUM_3YrPrPr+IntDensC+TMIN_WS,

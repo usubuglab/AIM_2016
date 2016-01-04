@@ -24,6 +24,9 @@ axissize=2#cex
 GFPcol=c('firebrick','gold','lightgreen')#c('red','yellow','green')#fix to be global (category can be fed into to only generate relevant colors), needs to be in this order for current code to color good, fair, poor correctly
 
 ##################  NorCal Specific Code: Start ##################
+# Redo on 20 Oct 2015
+#Read in the ext est CSV
+results.cat=read.csv('\\\\share1.bluezone.usu.edu\\miller\\buglab\\Research Projects\\BLM_WRSA_Stream_Surveys\\Results and Reports\\NorCal_2013\\Analysis\\ExtentEstimates\\Run12_5Oct2015\\ExtentEstimates_5Oct2015.csv')
 #NorCal Color Change for regular G, F, P order
 #GFPcol=c('firebrick','dimgray','steelblue4')#c('red','yellow','green')#fix to be global (category can be fed into to only generate relevant colors), needs to be in this order for current code to color good, fair, poor correctly
 #Below of for NV MMMI results of Reference, Degraded, and undetermined, in order! 
@@ -33,7 +36,7 @@ GFPcol=c('dimgray','firebrick','steelblue4')
 GFPcol=c('gray86','gray33','gray66')
 CatOrd = c('Fair','Poor','Good')
 axissize=2#cex
-#So that I could still speak to 205 stream km, but remove 3 sites from the MMI results I created a fake condition class as "N"
+#So that I could still speak to total # of sampled stream km, but remove 3 sites from the MMI results I created a fake condition class as "N"
 #This code below removes the condition class of "N" so that the figures could be made properly
 results.cat=results.cat[!results.cat$Category=='N',];View(results.cat)
 ##################  NorCal Specific Code: Start ##################
@@ -42,8 +45,8 @@ results.cat=results.cat[!results.cat$Category=='N',];View(results.cat)
 #Export='PNL'#options: 'PNG' (exported png); 'PNL' (saved to workspace for later panelling) ## not working as anticipated
 ScaleTYPE='Percent'#options: Percent, Absolute (meaning Percentage (Segments or StreamKM same) or StreamKM ) # set to absolute by default if an extent variable
 SubpopTypes=unique(results.cat$Type)#SubpopTypes=c('Districts','Utah')
-SubpopSort='Y'#TO DO! if SubpopSort='Y', will sort each subpopulation based on its own order (may need additional improvement for matching RelExtentPoor to RelRisk...probably saving variableORDER with a district speficic name and then calling via eval at relrisk)
-ResponseInclude='Y'# set to "Y" for UTBLM 2014 report in which OE is treated as an equal metric, not the main response variable
+SubpopSort='N'#TO DO! if SubpopSort='Y', will sort each subpopulation based on its own order (may need additional improvement for matching RelExtentPoor to RelRisk...probably saving variableORDER with a district speficic name and then calling via eval at relrisk)
+ResponseInclude='N'# set to "Y" for UTBLM 2014 report in which OE is treated as an equal metric, not the main response variable
 #keep an eye on LBFXWRat, was previously sorting incorrectly in the figure generation
 for (s in 1:length(SubpopTypes)){#Temporary! only all and district - length(SubpopTypes)
   SubpopStrata=as.character(unclass(unique(subset(results.cat,select=Subpopulation, subset=Type==SubpopTypes[[s]])))[[1]])
