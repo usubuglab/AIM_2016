@@ -7,6 +7,7 @@
 DBpassword=''#Always leave blank when saving for security and because changes annually. Contact Sarah Judson for current password.
 DBuser=''#ditto as with DBpassword
 DBserver=''#ditto as with DBpassword
+DBname=''#ditto as with DBpassword
 #this is a change
 
 #--------------------------------------------------------SETUP--------------------------------------------------------#
