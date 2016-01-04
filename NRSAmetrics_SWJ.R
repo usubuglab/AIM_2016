@@ -25,7 +25,7 @@ if(readEXTERNAL=='N'){
 #WRSA data conversion
 #assumes DB connection remains open
 #XwalkUnion=tblRetrieve(Table='',Parameters='',ALLp=AllParam,UIDS=UIDs,ALL=AllData,Filter=filter,SiteCodes=sitecodes,Dates=dates,Years=years,Projects=projects,Protocols=protocols)
-XwalkUnion=tblRetrieve(Table='',Parameters='',Projects='AKEFO',Years='2015')
+XwalkUnion=tblRetrieve(Table='',Parameters='',Projects=projects,Years=years,Protocols=protocols)
 #XwalkUnion=tblRetrieve(Table='',Parameters='',Projects='WRSA', Protocols=c('NRSA13','WRSA14')) #ALLp=AllParam,UIDS=UIDs,ALL=AllData,Filter=filter,SiteCodes=sitecodes,Dates=dates,Years=years,Projects=projects,Protocols=protocols)#XwalkUniontmp=XwalkUnion
 #protocol and parameter conversions #! these conversions also need to be done when relaying back to EPA
 XwalkUnion=bintranslate(Table='XwalkUnion',ST='CROSSSECW',PM='SIZE_NUM')

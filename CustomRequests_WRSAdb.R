@@ -1,4 +1,4 @@
-
+ak_bankwidth=tblRetrieve(Parameters='BANKWID',Protocols='AK14',Projects='AKEFO',UIDS=())
 
 
 #Get all sites sampled 
