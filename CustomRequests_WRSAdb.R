@@ -1,67 +1,46 @@
-##Alaska Site Inventory
-AKdesignation=addKEYS(tblRetrieve(Comments='Y',Parameters=c('SITE_ID'),Projects='AKEFO'),c('DATE_COL','LOC_NAME','LAT_DD','LON_DD','VALXSITE'))
-#!need "add comments" ability via flag in tblRetrieve; AKdesignation needs whatever comment contains the site information, may need to change the parameter (manually need to add flags)
-
-AKminesASSESS=addKEYS(tblRetrieve(Comments='Y',Parameters=c('IND_MINES','MINE'),Projects='AKEFO'),c('SITE_ID','DATE_COL','LOC_NAME'))
-#? pipes, construction, liming, 'MAN_DREDGING','MAN_TREATMENT','HYDR'
-
-write.csv(AKminesASSESS,'AKmine.csv')
-
-##Alaska data for Franklin Creek
-AKstability=addKEYS(tblRetrieve(Parameters=c('STABLE','EROSION','COVER'),SiteCodes=c('AA-STR-0001','AA-STR-0005'),Comments='Y'),c('SITE_ID'))
-pvtAKstability=addKEYS(cast(AKstability,'UID+TRANSECT+POINT~PARAMETER',value='RESULT'),c('SITE_ID'))
-
-AKbank=addKEYS(tblRetrieve(Parameters=c('INCISED','BANKHT'),SiteCodes=c('AA-STR-0001','AA-STR-0005'),Comments='Y'),c('SITE_ID'))
-pvtAKbank=addKEYS(cast(AKbank,'UID+TRANSECT~PARAMETER',value='RESULT'), c('SITE_ID'))
+ak_bankwidth=tblRetrieve(Parameters='BANKWID',Protocols='AK14',Projects='AKEFO',UIDS=())
 
 
-##NorCal QC followup
-#PilotDB - verify areas
-BERW=setdiff(unclass(sqlQuery(wrsa1314,"select PARAMETER from tblMetadata where Sample_TYPE='BERWx'"))$PARAMETER,c("SHIPPING_METHOD","CHANNEL","NOT_COLLECTED","SAMPLE_ID","ACTUAL_DATE","SUBSTRATE"))
-ncSAMP=tblRetrieve(Parameters=BERW,Projects='NorCal',Years=c('2013','2014'))
-ncSAMPpvt=addKEYS(cast(ncSAMP,'UID~SAMPLE_TYPE+PARAMETER',value='RESULT')  ,c('SITE_ID','DATE_COL'))
-#Nicole - All conductivity values to troubleshoot a low (6) value. 
-ncond=tblRetrieve(Parameters=c('CONDUCTIVITY','CORRECTED'), Comments='Y',Projects='NorCal',Years=c('2013','2014'))
-ncondPVT=addKEYS(cast(ncond,'UID+FLAG+COMMENT~PARAMETER',value='RESULT') #!comment/flag makes a separate pivot row...consider fixing if this functionaility is frequently desired (moving Comments addition to addKEYS?)
-                 ,c('SITE_ID','DATE_COL','LOC_NAME','LAT_DD','LON_DD'))#Include lat long for site proximity/mapping
-write.csv(ncond,'NorCalConductivity_17Sept2014.csv')
-write.csv(ncondPVT,'NorCalConductivityCorrected_17Sept2014.csv')#pivoted does not contain IND
+#Get all sites sampled 
 
-#Scott - width and height checks: suspected fieldsheet flip flop and units issues
-widhgt=tblRetrieve(Parameters=c('BANKHT','INCISED','WETWID','BANKWID','BARWID'), Projects='NorCal',Years=c('2013','2014'))
-widhgt2=tblRetrieve(Parameters=c('BANKHT','INCISED','WETWID','WETWIDTH','BANKWID','BARWID','BARWIDTH'), Projects='NorCal',Years=c('2013','2014'))
-banks=tblRetrieve(Parameters=c('ANGLE','UNDERCUT'), Projects='NorCal',Years=c('2013','2014'))
-banksnum=subset(banks,is.na(as.numeric(RESULT))==F);banksnum$RESULT=as.numeric(banksnum$RESULT)
-widhgt=subset(widhgt,nchar(TRANSECT)==1 | substr(TRANSECT,1,1)=='X')
-
-whPVT=cast(widhgt,'UID+TRANSECT~PARAMETER',value='RESULT')
-bnkPVT=cast(banks,'UID+TRANSECT~PARAMETER+POINT',value='RESULT')      
-tranPVT=addKEYS(merge(whPVT,bnkPVT,by=c('UID','TRANSECT'),all=T) ,c('SITE_ID','DATE_COL'))
-wh2PVTavg=addKEYS(cast(rbind(banksnum,widhgt2),'UID~PARAMETER',value='RESULT',fun='mean')
-                 ,c('SITE_ID','DATE_COL'))
-View(subset(wh2PVTavg,BANKHT>INCISED))#!possible crossvalidation rule to scan for
-
-write.csv(rbind(widhgt2,banks),'WidthHeightRaw_17Sept2014.csv')
-write.csv(tranPVT,'WidthHeightPivot_17Sept2014.csv')
-write.csv(wh2PVTavg,'WidthHeightAvg_17Sept2014.csv')
+Allsites=addKEYS(tblRetrieve(Comments='Y',Parameters=c('SITE_ID'),Projects=c('AKEFO','NORCAL','WRSA','GSENM','COPLT','NV'),Protocols=c('AK14','NRSA13','WRSA14','BOAT14')),c('DATE_COL','LOC_NAME','LAT_DD','LON_DD','VALXSITE'))
+Allsites2=removeDUP(Allsites,QA='N')
 
 
+listsites<-tblRetrieve(Parameters=c('LAT_DD_BR','LON_DD_BR','LAT_DD_TR','LON_DD_TR'),Projects=projects,Protocols=protocols)
+listsites1<-tblRetrieve(Parameters=c('TRCHLEN','SITE_ID','DATE_COL','LOC_NAME','LAT_DD','LON_DD','VALXSITE'),Projects=projects,Protocols=protocols,UIDS=c(1344381913,
+                                                                                                                                                          2008266646,
+                                                                                                                                                          2027464674,
+                                                                                                                                                          2053561144,
+                                                                                                                                                          2327564080,
+                                                                                                                                                          2633963614,
+                                                                                                                                                          2818247146,
+                                                                                                                                                          3321286437,
+                                                                                                                                                          3606952496,
+                                                                                                                                                          3686446179,
+                                                                                                                                                          4471000038,
+                                                                                                                                                          4587443859,
+                                                                                                                                                          4635599427,
+                                                                                                                                                          4852415254,
+                                                                                                                                                          5417874919,
+                                                                                                                                                          5762005347,
+                                                                                                                                                          6525800459,
+                                                                                                                                                          7065148925,
+                                                                                                                                                          7605781429,
+                                                                                                                                                          7737403744,
+                                                                                                                                                          7765571483,
+                                                                                                                                                          7842614202,
+                                                                                                                                                          8119667904,
+                                                                                                                                                          8518774431,
+                                                                                                                                                          8889087946,
+                                                                                                                                                          9154292041,
+                                                                                                                                                          9309721985,
+                                                                                                                                                        9962772452))
+listsites2<-tblRetrieve(Parameters=c('ELEVATION','ELEVATION_UNITS'),Projects=projects,Protocols=protocols)
 
-#Jennifer - missing data checks
-
-#Jennifer - Slope checks
-SLOPEp=unclass(sqlQuery(wrsa1314,"select SAMPLE_TYPE,PARAMETER from tblMetadata where Sample_TYPE like 'SLOPE%'"))$PARAMETER
-crewKC=tblRetrieve(Parameters=c('CREW_LEADER','NAME1'),Filter="RESULT in ('172','184')")
-crewKC=addKEYS(cast(crewKC,'UID~PARAMETER',value='RESULT')  ,c('SITE_ID','DATE_COL'))
-crewKC$SumKC=crewKC$CREW_LEADER + crewKC$NAME1;crewKC=subset(crewKC,SumKC==356)
-SlopeKC=tblRetrieve(Parameters=SLOPEp,UIDS=crewKC$UID);SlopeKC$SlopeFLAG='KathleenClayton'
-nonTransit=sqlQuery(wrsa1314,"select * from tblpoint where SAMPLE_TYPE like '%SLOPE%' and PARAMETER='METHOD' and RESULT <> 'TR'")
-SlopeTR=tblRetrieve(Parameters=SLOPEp,UIDS=nonTransit$UID);SlopeTR$SlopeFLAG='OddMethod'
-SlopeBoat=tblRetrieve(Parameters=SLOPEp,Protocols='BOAT14');SlopeBoat$SlopeFLAG='Boatable'
-SlopeAK=tblRetrieve(Parameters=SLOPEp,Projects='AKEFO');SlopeAK$SlopeFLAG='AK'
-if(exists('SlopeConnectFail')){SlopeUNC=tblRetrieve(Parameters=SLOPEp,UIDS=c(SlopeConnectFail$UID,SlopeConnectPassEndFail$UID,87601876754740660818804248));SlopeUNC$SlopeFLAG='PartialReach'} else{SlopeUNC=SlopeBoat[0,]}
-SlopeIssues=rbind(SlopeKC,SlopeBoat,SlopeTR,SlopeAK,SlopeUNC);
-SlopeIssues=addKEYS(cast(SlopeIssues,'UID+TRANSECT+POINT+SlopeFLAG~PARAMETER',value='RESULT')  ,c('SITE_ID','DATE_COL','PROJECT'))
+pvtlistsites<-cast(listsites1,'UID~PARAMETER',value='RESULT')
+pvtlistsites2<-cast(listsites2,'UID+SAMPLE_TYPE~PARAMETER',value='RESULT')
+pvtlistsites1<-cast(listsites1,'UID~PARAMETER',value='RESULT')
 
 #Jennifer - WQ WRSA checks
 WQ2=tblRetrieve(Parameters=c('CONDUCTIVITY','PH','CAL_INST_ID'), Comments='Y',Projects='WRSA',Years=c('2013','2014'))
@@ -103,6 +82,140 @@ T3=setNames(aggregate(EPAdataWQ$PHSTVL, by = list(EPAdataWQ$ECO10), FUN = quanti
 T4=setNames(aggregate(EPAdataWQ$PHSTVL, by = list(EPAdataWQ$ECO10), FUN = quantile,probs=0.95,na.rm=TRUE), c("ECO10","PHSTVL_0.95"))
 T6=join_all(list(T1,T2,T3,T4), by="ECO10")
 
+
+###2015 Riparian checks
+#overstory >100% check
+riparian1=tblRetrieve(Parameters=c('CANBTRE','CANSTRE'),Years=c('2013','2014','2015'), Projects=c('NV','GSENM','COPLT','WRSA','NORCAL','2015ProtocolOverlap','AKEFO'))
+riparian1PVT=cast(riparian1,'UID+TRANSECT+POINT~PARAMETER',value='RESULT')
+riparian1PVT_IND=cast(riparian1,'UID+TRANSECT+POINT~PARAMETER',value='IND')
+riparian1pvt=merge(riparian1PVT,riparian1PVT_IND,by=c('UID','TRANSECT','POINT'),all=T)
+riparian1PVTsub=subset(riparian1pvt,(CANBTRE.x==4 & CANSTRE.x>2) | (CANSTRE.x==4 & CANBTRE.x>2))
+
+#middlestory >100% check
+riparian2=tblRetrieve(Parameters=c('UNDNWDY','UNDWDY'),Years=c('2013','2014','2015'), Projects=c('NV','GSENM','COPLT','WRSA','NORCAL','2015ProtocolOverlap','AKEFO'))
+riparian2PVT=cast(riparian2,'UID+TRANSECT+POINT~PARAMETER',value='RESULT')
+riparian2PVT_IND=cast(riparian2,'UID+TRANSECT+POINT~PARAMETER',value='IND')
+riparian2pvt=merge(riparian2PVT,riparian2PVT_IND,by=c('UID','TRANSECT','POINT'),all=T)
+riparian2PVTsub=subset(riparian2pvt,(UNDNWDY.x==4 & UNDWDY.x>2) | (UNDWDY.x==4 & UNDNWDY.x>2))
+
+#understory >100% check
+riparian3=tblRetrieve(Parameters=c('GCNWDY','GCWDY','BARE'),Years=c('2013','2014','2015'), Projects=c('NV','GSENM','COPLT','WRSA','NORCAL','2015ProtocolOverlap','AKEFO'))
+riparian3PVT=cast(riparian3,'UID+TRANSECT+POINT~PARAMETER',value='RESULT')
+riparian3PVT_IND=cast(riparian3,'UID+TRANSECT+POINT~PARAMETER',value='IND')
+riparian3pvt=merge(riparian3PVT,riparian3PVT_IND,by=c('UID','TRANSECT','POINT'),all=T)
+riparian3PVTsub=subset(riparian3pvt,(GCNWDY.x==4 & GCWDY.x>2) | (GCWDY.x==4 & GCNWDY.x>2) | (GCNWDY.x==4 & BARE.x>2) | (BARE.x==4 & GCNWDY.x>2) | (BARE.x==4 & GCWDY.x>2) | (GCWDY.x==4 & BARE.x>2))
+
+#veg type check
+#canopy
+riparian4=tblRetrieve(Parameters=c('CANVEG','CANBTRE','CANSTRE'),Years=c('2013','2014','2015'), Projects=c('NV','GSENM','COPLT','WRSA','NORCAL','2015ProtocolOverlap','AKEFO'))
+riparian4PVT=cast(riparian4,'UID+TRANSECT+POINT~PARAMETER',value='RESULT')
+riparian4pvtsub=subset(riparian4PVT,CANVEG=='N' & CANBTRE>0 & CANSTRE>0)
+
+riparian4PVT_IND=cast(riparian4,'UID+TRANSECT+POINT~PARAMETER',value='IND')
+riparian4pvt=merge(riparian4PVT,riparian4PVT_IND,by=c('UID','TRANSECT','POINT'),all=T)
+riparian4pvtsub2=subset(riparian4pvt,CANVEG.x!='N' & CANBTRE.x==0 & CANSTRE.x==0)
+
+
+#middle
+riparian5=tblRetrieve(Parameters=c('UNDERVEG','UNDNWDY','UNDWDY'),Years=c('2013','2014','2015'), Projects=c('NV','GSENM','COPLT','WRSA','NORCAL','2015ProtocolOverlap','AKEFO'))
+riparian5PVT=cast(riparian5,'UID+TRANSECT+POINT~PARAMETER',value='RESULT')
+riparian5pvtsub=subset(riparian5PVT,UNDERVEG=='N' & UNDNWDY>0 & UNDWDY>0)
+
+##fish cover check #flags sites with undercuts present but no undercut listed for fish cover
+under=tblRetrieve(Parameters=c('UNDCUT','UNDERCUT','BKUNDCT'),Years=c('2013','2014','2015'))
+underpvt=cast(under,'UID+TRANSECT~PARAMETER',value='RESULT',fun=max)
+underpvt.sub=subset(underpvt,UNDCUT==0 & (UNDERCUT>0 | BKUNDCT=='>=5'|BKUNDCT=='<5'))
+       
+######2015 Width-height checks
+widhgt=tblRetrieve(Parameters=c('BANKHT','INCISED','WETWID','BANKWID','BARWID'),  Projects=c('WRSA','NV','GSENM','COPLT'),Years=c('2015'),SiteCodes=c('CO-LS-9448','GS-LS-9009','GS-LS-9010','GS-SS-9006','MN-SS-1137','MP-LS-2005','NB-LS-9119','NB-SS-9108','NY-LS-9230','OT-SS-7109','OT-SS-7122','XE-LS-5026','XS-LS-6007'),Comments='Y')
+widhgt2=tblRetrieve(Parameters=c('BANKHT','INCISED','WETWID','WETWIDTH','BANKWID','BARWID','BARWIDTH'), Projects=c('WRSA','NV','GSENM','COPLT'),Years=c('2015'),SiteCodes=c('CO-LS-9448','GS-LS-9009','GS-LS-9010','GS-SS-9006','MN-SS-1137','MP-LS-2005','NB-LS-9119','NB-SS-9108','NY-LS-9230','OT-SS-7109','OT-SS-7122','XE-LS-5026','XS-LS-6007'))
+widhgt=subset(widhgt,nchar(TRANSECT)==1 | substr(TRANSECT,1,1)=='X')
+
+whPVT=cast(widhgt,'UID+TRANSECT~PARAMETER',value='RESULT')
+wnPVTIND=cast(widhgt,'UID+TRANSECT~PARAMETER',value='IND')     
+rawwhPVT=addKEYS(merge(whPVT,wnPVTIND,by=c('UID','TRANSECT'),all=T) ,c('SITE_ID','DATE_COL'))
+colnames(rawwhPVT)<-c('UID','TRANSECT','BANKHT','BANKWID','BARWID','INCISED','WETWID','BANKHT_IND','BANKWID_IND','BARWID_ID','INCISED_IND','WETWID_ID','DATE_COL','SITE_ID')
+write.csv(rawwhPVT,'problem_sites_cross_valid_bank.csv')
+
+widhgt=tblRetrieve(Parameters=c('BANKHT','INCISED','WETWID','BANKWID','BARWID'),  Projects=c('NORCAL'),Years=c('2013'),UIDS=2772740176,Comments='Y')
+widhgt2=tblRetrieve(Parameters=c('BANKHT','INCISED','WETWID','WETWIDTH','BANKWID','BARWID','BARWIDTH'), Projects=c('NORCAL'),Years=c('2013'),UIDS=2772740176)
+
+widhgt=addKEYS(tblRetrieve(Parameters=c('INCISED'), Projects='NV',Years=c('2015'),SiteCodes=c('NB-SS-9108'),Comments='Y'),c('SITE_ID','DATE_COL'))
+
+#sediment data
+Sed2014=tblRetrieve(Parameters=c('SIZE_NUM','LOC','EMBED'),Projects='WRSA',SiteCodes=c('OT-SS-7150'))
+pvtSed<-cast(Sed2014,'UID+TRANSECT+POINT~PARAMETER',value='RESULT')
+PVTIND=cast(Sed2014,'UID+TRANSECT+POINT~PARAMETER',value='IND')     
+rawwhPVT=addKEYS(merge(pvtSed,PVTIND,by=c('UID','TRANSECT'),all=T) ,c('SITE_ID','DATE_COL'))
+
+widhgt=tblRetrieve(Parameters=c('WETWID','BARWID'),  Projects=c('WRSA','NV','GSENM','COPLT'),Years=c('2015'),SiteCodes=sitecodes,Comments='Y')
+widhgt2=tblRetrieve(Parameters=c('WETWID','WETWIDTH','BANKWID','BARWID','BARWIDTH'), Projects=c('WRSA','NV','GSENM','COPLT'),Years=c('2015'),SiteCodes=sitecodes,Comments='Y')
+
+#thalweg checks####couldn't get this to work so did cell referencing in excel to interpolate between values with 1 missing value inbetween
+thalweg<-tblRetrieve(Parameters='DEPTH',Projects=c('AKEFO','NORCAL','WRSA','GSENM','COPLT','NV'),Protocols=c('AK14','NRSA13','WRSA14','BOAT14'))
+thalweg_depth<-subset(thalweg,SAMPLE_TYPE!='CROSSSECW')
+thalweg_depth_pvt<-cast(thalweg_depth,'UID+TRANSECT~POINT', value='RESULT')
+thalweg_depth_pvt_order<-thalweg_depth_pvt[with(thalweg_depth_pvt, order(1,29))]
+thaleg_depth_NA<-thalweg_depth_pvt [is.na(thalweg_depth_pvt$'1')==TRUE,c(1:2,4)]
+
+#thalweg depth
+#wading sites
+depthcheck=tblRetrieve(Parameters=c('DEPTH'), Years=c('2013','2014','2015'),Protocols=c('WRSA14','NRSA13','AK14'))
+depthcheck.sub=subset(depthcheck,SAMPLE_TYPE!='CROSSSECW')
+pvtdepthcheck=cast(depthcheck.sub,'UID+TRANSECT+POINT~PARAMETER',value='RESULT')
+pvtdepthcheck.sub=subset(pvtdepthcheck,POINT=='0')
+width=tblRetrieve(Parameters=c('WETWID'),Years=c('2013','2014','2015'),Protocols=c('WRSA14','NRSA13','AK14'))
+check=merge(pvtdepthcheck.sub,width,by=c('UID','TRANSECT'),all=T)
+odd_ratio=subset(check,RESULT/(DEPTH/100)>50|RESULT/(DEPTH/100)<1)
+#boating sites
+depthcheck=tblRetrieve(Parameters=c('DEPTH'), Years=c('2013','2014','2015'),Protocols=c('BOAT14'))
+depthcheck.sub=subset(depthcheck,SAMPLE_TYPE!='CROSSSECW')
+pvtdepthcheck=cast(depthcheck.sub,'UID+TRANSECT+POINT~PARAMETER',value='RESULT')
+pvtdepthcheck.sub=subset(pvtdepthcheck,POINT=='0')
+width=tblRetrieve(Parameters=c('WETWID'),Years=c('2013','2014','2015'),Protocols=c('BOAT14'))
+check=merge(pvtdepthcheck.sub,width,by=c('UID','TRANSECT'),all=T)
+odd_ratio=subset(check,RESULT/(DEPTH)>50|RESULT/(DEPTH)<1)
+
+#getting all pool data for a specfic set of sites
+pools<-addKEYS(tblRetrieve(Parameters=c('HABTYPE','FORMATION','PTAILDEP','MAXDEPTH','LENGTH'),Projects=projects,Comments='Y'),c('SITE_ID'))
+pvtpools=cast(pools,'UID+POINT~PARAMETER',value='RESULT',fun=sum)  
+pool_length<-tblRetrieve(Parameters=c('LENGTH'),Projects=projects,Comments='Y')
+pvtpools1=cast(pool_length,'UID~PARAMETER',value='RESULT',fun=sum) 
+reach_length=tblRetrieve(Parameters=c('TRCHLEN'),Projects=projects)
+pvtpools2=cast(reach_length,'UID~PARAMETER',value='RESULT') 
+poolsmerge<-merge(pvtpools1,pvtpools2,by=c('UID'),all=T)
+pool_great_100<-subset(poolsmerge,LENGTH>TRCHLEN)#no issues found
+
+#####get photo data
+Photo=tblRetrieve(Parameters=c('PHOTO_ID','PHOTO_DESCRIP','PHOTO_TYPE','ROD','DIRECTION','COMMENT'),Projects='WRSA',Years=c('2014'),SiteCodes=c('MN-SS-1138'))
+
+#Jennifer - Slope checks
+SLOPEp=unclass(sqlQuery(wrsa1314,"select SAMPLE_TYPE,PARAMETER from tblMetadata where Sample_TYPE like 'SLOPE%'"))$PARAMETER
+crewKC=tblRetrieve(Parameters=c('CREW_LEADER','NAME1'),Filter="RESULT in ('172','184')")
+crewKC=addKEYS(cast(crewKC,'UID~PARAMETER',value='RESULT')  ,c('SITE_ID','DATE_COL'))
+crewKC$SumKC=crewKC$CREW_LEADER + crewKC$NAME1;crewKC=subset(crewKC,SumKC==356)
+SlopeKC=tblRetrieve(Parameters=SLOPEp,UIDS=crewKC$UID);SlopeKC$SlopeFLAG='KathleenClayton'
+nonTransit=sqlQuery(wrsa1314,"select * from tblpoint where SAMPLE_TYPE like '%SLOPE%' and PARAMETER='METHOD' and RESULT <> 'TR'")
+SlopeTR=tblRetrieve(Parameters=SLOPEp,UIDS=nonTransit$UID);SlopeTR$SlopeFLAG='OddMethod'
+SlopeBoat=tblRetrieve(Parameters=SLOPEp,Protocols='BOAT14');SlopeBoat$SlopeFLAG='Boatable'
+SlopeAK=tblRetrieve(Parameters=SLOPEp,Projects='AKEFO',Years=c('2015'));SlopeAK$SlopeFLAG='AK'
+if(exists('SlopeConnectFail')){SlopeUNC=tblRetrieve(Parameters=SLOPEp,UIDS=c(SlopeConnectFail$UID,SlopeConnectPassEndFail$UID,87601876754740660818804248));SlopeUNC$SlopeFLAG='PartialReach'} else{SlopeUNC=SlopeBoat[0,]}
+SlopeIssues=rbind(SlopeKC,SlopeBoat,SlopeTR,SlopeAK,SlopeUNC);
+SlopeIssues=addKEYS(cast(SlopeWRSA,'UID+TRANSECT+POINT+SlopeFLAG~PARAMETER',value='RESULT')  ,c('SITE_ID','DATE_COL','PROJECT'))
+
+SlopeAK=addKEYS(cast(SlopeAK,'UID+TRANSECT+POINT~PARAMETER',min,value='RESULT')  ,c('SITE_ID','DATE_COL','PROJECT'))
+ReachLength=addKEYS(tblRetrieve(Parameters='TRCHLEN',Projects='AKEFO'),c('SITE_ID'))
+AllSlope=tblRetrieve(Parameters=SLOPEp,Projects=projects,Protocols=protocols,Years=c(years))
+ReachLength=addKEYS(tblRetrieve(Parameters=c('TRCHLEN','SLPRCHLEN'),Projects=projects),c('SITE_ID'))
+pvtReachLength=addKEYS(cast(AllSlope,'UID+TRANSECT+POINT~PARAMETER',value='RESULT')  ,c('SITE_ID','DATE_COL','PROJECT'))
+
+AllSlope=tblRetrieve(Parameters=c('STARTHEIGHT','ENDHEIGHT','SLOPE'),Projects=projects,Protocols=protocols,Years=c(years),SiteCodes=sitecodes)
+
+
+############################################################################################################################
+#######Project specific requests########
+#########################################WRSA###############################################################################
+#####Additional QC Checks 2014
 #bank cross-validation WRSA checks
 widhgt=tblRetrieve(Parameters=c('BANKHT','INCISED','WETWID','BANKWID','BARWID'), Projects='WRSA',Years=c('2013','2014'))
 widhgt2=tblRetrieve(Parameters=c('BANKHT','INCISED','WETWID','WETWIDTH','BANKWID','BARWID','BARWIDTH'), Projects='WRSA',Years=c('2013','2014'))
@@ -114,7 +227,8 @@ tranPVT=addKEYS(merge(whPVT,bnkPVT,by=c('UID','TRANSECT'),all=T) ,c('SITE_ID','D
 rawwhPVT=addKEYS(merge(whPVT,wnPVTIND,by=c('UID','TRANSECT'),all=T) ,c('SITE_ID','DATE_COL'))
 colnames(rawwhPVT)<-c('UID','TRANSECT','BANKHT','BANKWID','BARWID','INCISED','WETWID','BANKHT_IND','BANKWID_IND','BARWID_ID','INCISED_IND','WETWID_ID','DATE_COL','SITE_ID')
 
-bankhtcheck=subset(rawwhPVT,BANKHT>INCISED|BANKHT>1.5)#!possible crossvalidation rule to scan for#no bank heights showed up in the legal value or outlier check so wanted to check units
+bankhtcheck=subset(rawwhPVT,INCISED>1.5)#!possible crossvalidation rule to scan for#no bank heights showed up in the legal value or outlier check so wanted to check units
+#bankhtcheck=subset(rawwhPVT,BANKHT>INCISED|BANKHT>1.5)#!possible crossvalidation rule to scan for#no bank heights showed up in the legal value or outlier check so wanted to check units
 wetwidthchecks=subset(rawwhPVT,WETWID>BANKWID)
 write.csv(bankhtcheck,'bankhtincisedcheck_23Oct2014.csv')
 write.csv(wetwidthchecks,'wetwidthchecks_23Oct2014.csv')
@@ -183,7 +297,6 @@ issue<-addKEYS(tblRetrieve(Parameters='INCISED',SiteCodes=c('MP-LS-2003','XN-RO-
 #checking all sites have correct project
 listsites=tblRetrieve(Parameters='SITE_ID',Projects='WRSA',Protocols=c('WRSA14'))
  
-
 #missing data additional checks
 tbl=tblRetrieve(Parameters=c('BANKHT','INCISED','WETWID','WETWIDTH','BANKWID','BANKWIDTH'),Projects='WRSA', Years='2014')
 tbl.PVT=addKEYS(cast(tbl,'UID~PARAMETER',value='RESULT'),c('SITE_ID'))
@@ -200,6 +313,78 @@ tbl3=cast(tbl.2,'UID~PARAMETER',value='RESULT',mean)
 tbl.PVT=addKEYS(cast(tbl,'UID~PARAMETER',value='RESULT'),c('SITE_ID'))
 thalweg.missing=merge(tbl.PVT,tbl3, by='UID')
 
+######################################################################AK############################################################
+
+##Alaska Site Inventory
+AKdesignation=addKEYS(tblRetrieve(Comments='Y',Parameters=c('SITE_ID'),Projects='AKEFO'),c('DATE_COL','LOC_NAME','LAT_DD','LON_DD','VALXSITE'))
+#!need "add comments" ability via flag in tblRetrieve; AKdesignation needs whatever comment contains the site information, may need to change the parameter (manually need to add flags)
+
+AKminesASSESS=addKEYS(tblRetrieve(Comments='Y',Parameters=c('IND_MINES','MINE'),Projects='AKEFO'),c('SITE_ID','DATE_COL','LOC_NAME'))
+#? pipes, construction, liming, 'MAN_DREDGING','MAN_TREATMENT','HYDR'
+
+write.csv(AKminesASSESS,'AKmine.csv')
+
+##AK 2015 data request
+AK_Thalweg=addKEYS(tblRetrieve(Parameters=c('DEPTH'),Projects='AKEFO',Comments='Y'),c('SITE_ID'))
+AK_Increment=addKEYS(tblRetrieve(Parameters=c('INCREMENT','TRCHLEN'),Projects='AKEFO',Comments='Y'),c('SITE_ID'))
+AK_Substrate=addKEYS(tblRetrieve(Parameters=c('SIZE_NUM','LOC'),Projects='AKEFO',Comments='Y'),c('SITE_ID'))
+pvtAKSubstrate=addKEYS(cast(AK_Substrate,'UID+TRANSECT+POINT~PARAMETER',value='RESULT'),c('SITE_ID'))
+pvtAKIncrement=addKEYS(cast(AK_Increment,'UID+TRANSECT+POINT~PARAMETER',value='RESULT'),c('SITE_ID'))
+AK_fish=addKEYS(tblRetrieve(Parameters=c('BOULDR','BRUSH','LVTREE','OVRHNG','UNDCUT','WOODY'),Projects='AKEFO',Comments='Y'),c('SITE_ID'))
+pvtAKfish=addKEYS(cast(AK_fish,'UID+TRANSECT+POINT~PARAMETER',value='RESULT'),c('SITE_ID'))
+
+Surveyp=unclass(sqlQuery(wrsa1314,"select SAMPLE_TYPE,PARAMETER from tblMetadata where Sample_TYPE like 'SURVEY%'"))$PARAMETER
+Surveydata=tblRetrieve(Parameters=Surveyp, Projects='AKEFO',Years='2015')
+pvtSurvey=addKEYS(cast(Surveydata,'UID+TRANSECT+POINT~PARAMETER',value='RESULT')  ,c('SITE_ID','DATE_COL','PROJECT'))
+
+##Alaska data for Franklin Creek
+AKstability=addKEYS(tblRetrieve(Parameters=c('STABLE','EROSION','COVER'),SiteCodes=c('AA-STR-0001','AA-STR-0005'),Comments='Y'),c('SITE_ID'))
+pvtAKstability=addKEYS(cast(AKstability,'UID+TRANSECT+POINT~PARAMETER',value='RESULT'),c('SITE_ID'))
+
+AKstability=addKEYS(tblRetrieve(Parameters=c('STABLE','EROSION','COVER'),Projects='AKEFO',Comments='Y'),c('SITE_ID'))
+pvtAKstability=addKEYS(cast(AKstability,'UID+TRANSECT+POINT~PARAMETER',value='RESULT'),c('SITE_ID'))
+
+AKbank=addKEYS(tblRetrieve(Parameters=c('INCISED','BANKHT'),SiteCodes=c('AA-STR-0001','AA-STR-0005'),Comments='Y'),c('SITE_ID'))
+pvtAKbank=addKEYS(cast(AKbank,'UID+TRANSECT~PARAMETER',value='RESULT'), c('SITE_ID'))
+
+##############################################################NorCal#################################################################
+
+##NorCal QC followup
+#PilotDB - verify areas
+BERW=setdiff(unclass(sqlQuery(wrsa1314,"select PARAMETER from tblMetadata where Sample_TYPE='BERWx'"))$PARAMETER,c("SHIPPING_METHOD","CHANNEL","NOT_COLLECTED","SAMPLE_ID","ACTUAL_DATE","SUBSTRATE"))
+ncSAMP=tblRetrieve(Parameters=BERW,Projects='NorCal',Years=c('2013','2014'))
+ncSAMPpvt=addKEYS(cast(ncSAMP,'UID~SAMPLE_TYPE+PARAMETER',value='RESULT')  ,c('SITE_ID','DATE_COL'))
+#Nicole - All conductivity values to troubleshoot a low (6) value. 
+ncond=tblRetrieve(Parameters=c('CONDUCTIVITY','CORRECTED'), Comments='Y',Projects='NorCal',Years=c('2013','2014'))
+ncondPVT=addKEYS(cast(ncond,'UID+FLAG+COMMENT~PARAMETER',value='RESULT') #!comment/flag makes a separate pivot row...consider fixing if this functionaility is frequently desired (moving Comments addition to addKEYS?)
+                 ,c('SITE_ID','DATE_COL','LOC_NAME','LAT_DD','LON_DD'))#Include lat long for site proximity/mapping
+write.csv(ncond,'NorCalConductivity_17Sept2014.csv')
+write.csv(ncondPVT,'NorCalConductivityCorrected_17Sept2014.csv')#pivoted does not contain IND
+
+
+###############################################################Other################################################################
+
+######Sarah's originial width height checks that I have modified
+#Scott - width and height checks: suspected fieldsheet flip flop and units issues
+widhgt=tblRetrieve(Parameters=c('BANKHT','INCISED','WETWID','BANKWID','BARWID'), Projects='NorCal',Years=c('2013','2014'))
+widhgt2=tblRetrieve(Parameters=c('BANKHT','INCISED','WETWID','WETWIDTH','BANKWID','BARWID','BARWIDTH'), Projects='NorCal',Years=c('2013','2014'))
+banks=tblRetrieve(Parameters=c('ANGLE','UNDERCUT'), Projects='NorCal',Years=c('2013','2014'))
+banksnum=subset(banks,is.na(as.numeric(RESULT))==F);banksnum$RESULT=as.numeric(banksnum$RESULT)
+widhgt=subset(widhgt,nchar(TRANSECT)==1 | substr(TRANSECT,1,1)=='X')
+
+whPVT=cast(widhgt,'UID+TRANSECT~PARAMETER',value='RESULT')
+bnkPVT=cast(banks,'UID+TRANSECT~PARAMETER+POINT',value='RESULT')      
+tranPVT=addKEYS(merge(whPVT,bnkPVT,by=c('UID','TRANSECT'),all=T) ,c('SITE_ID','DATE_COL'))
+wh2PVTavg=addKEYS(cast(rbind(banksnum,widhgt2),'UID~PARAMETER',value='RESULT',fun='mean')
+                  ,c('SITE_ID','DATE_COL'))
+View(subset(wh2PVTavg,BANKHT>INCISED))#!possible crossvalidation rule to scan for
+
+write.csv(rbind(widhgt2,banks),'WidthHeightRaw_17Sept2014.csv')
+write.csv(tranPVT,'WidthHeightPivot_17Sept2014.csv')
+write.csv(wh2PVTavg,'WidthHeightAvg_17Sept2014.csv')
+
+
+###############################################################################################################################
 #!TN and TP updates, BMI sampleID updates
 
 #!updating "N" for SIDCHN, etc #aquamet made apparent that thalweg Yes/no variables should be populated with "No" too (not just if "yes") despite EPA not providing it (ironically, used in reachlen calc)
@@ -241,5 +426,6 @@ if(i==1){THALout=THAL} else{THALout=rbind(THALout,THAL)}
 # on un2.ind=gr.ind
 # where cnt>1-- and ((REASON is not null and REASON <> 'NA') or (YEAR(INSERTION)=2014 and MONTH(INSERTION)>5))
 # order by gr.ind, tbl
+
 
 

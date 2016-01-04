@@ -155,11 +155,12 @@ UPDATE=UPDATE[,!(names(UPDATE) %in% c('IND'))]#remove old IND
 UPDATE=ColCheck(UPDATE,c('IND',names(UPDATE)))#set IND to next available IndMax via ColCheck
 #loop over tables to append
 UPDATEtables=unique(UPDATE$TABLE)
-for (t in 4:nrow(count(UPDATEtables))){#1:nrow(count(UPDATEtables))){
+for (t in 1:nrow(count(UPDATEtables))){#1:nrow(count(UPDATEtables))){#####JC 8-14-2015-"1" was left at "4" for some reason but this should always be set to 1 so that it reads the first table in the set and then loops over all of the tables
   TBL=subset(UPDATE,TABLE==UPDATEtables[t])#testing: TBL=TBL[4:6,]
   colnamesTBL=sqlQuery(wrsa1314,sprintf("select top 1 * from %s",UPDATEtables[t]));TBL=ColCheck(TBL,names(colnamesTBL))#column names must match exactly
   sqlSave(wrsa1314,dat=TBL,tablename=UPDATEtables[t],rownames=FALSE,append=TRUE)#SWJ 2/16/15: crashing on sqlSave in R (no SQL error returned) for unknown reasons
 }
+#save.image(sprintf("\\\\share1.bluezone.usu.edu\\miller\\buglab\\Research Projects\\BLM_WRSA_Stream_Surveys\\Field Work\\Post Sample\\iPad backup\\%sedit.RData",Sys.Date()))#temporary copy saved after import for easy reversion without restarting xlsx import
 insCHECK=sqlQuery(wrsa1314,sprintf(
   "select uid, IND, Operation, Insertion, Reason, tbl='tblVERIFICATION' from tblverification where Insertion='%s'
                   union select uid, IND, Operation, Insertion, Reason, tbl='tblCOMMENTS' from tblcomments where Insertion='%s' 

@@ -10,17 +10,16 @@
 #############################################################################
 
 #To get WQ data for 3 parameters for all NorCal sites #add turbidity and temp
-WQtbl=tblRetrieve(Parameters=c('CONDUCTIVITY','NTL','PTL'),Projects=projects,Years=years,Protocols=protocols)
+WQtbl=tblRetrieve(Parameters=c('CONDUCTIVITY','PH','NTL','PTL','TURBIDITY','TEMPERATURE'),Projects=projects,Years=years,Protocols=protocols)
 WQpvt=cast(WQtbl,'UID~PARAMETER',value='RESULT')
-WQfinal=addKEYS(WQpvt,c('SITE_ID','DATE_COL','LOC_NAME','LAT_DD','LON_DD'),Protocols=protocols)
-rm(WQtbl,WQpvt)
 
-#Get pH for NorCal
-PHtbl=tblRetrieve(Parameters=c('PH'),Projects=projects,Years=years,Protocols=protocols)
-PHpvt=cast(PHtbl,'UID~PARAMETER',value='RESULT')
-PHfinal=addKEYS(PHpvt,c('SITE_ID','DATE_COL','LOC_NAME'))
-PHfinal=PHfinal[,c(1,5,4,3,2)]
-rm(PHtbl,PHpvt)
+
+# #Get pH for NorCal
+# PHtbl=tblRetrieve(Parameters=c('PH'),Projects=projects,Years=years,Protocols=protocols)
+# PHpvt=cast(PHtbl,'UID~PARAMETER',value='RESULT')
+# PHfinal=addKEYS(PHpvt,c('SITE_ID','DATE_COL','LOC_NAME'))
+# PHfinal=PHfinal[,c(1,5,4,3,2)]
+# rm(PHtbl,PHpvt)
 
 #Get Site Code to UID, run the water quality lines above and just pull from that...This didn't work for what I initially needed, but is a good way to get UID/Sitecode
 #UID_SiteCode=WQfinal[,c('UID','SITE_ID')]
@@ -77,10 +76,16 @@ PoolDepth=tblRetrieve(Parameters=c('PTAILDEP','MAXDEPTH'), Projects=projects, Ye
 #Sinuosity
 StreamLen=tblRetrieve(Parameters=c('TRCHLEN'), Projects=projects, Years=years,Protocols=protocols)
 BRTR=tblRetrieve(Parameters=c('LAT_DD_BR','LAT_DD_TR','LON_DD_BR','LON_DD_TR'),Projects=projects, Years=years,Protocols=protocols)
+BRTR=cast(BRTR,'UID~PARAMETER',value='RESULT')
+
+#Channel Dimensions
+WetWid=tblRetrieve(Parameters=c('WETWIDTH'),Projects=projects, Years=years,Protocols=protocols)
+BankWid=tblRetrieve(Parameters=c('BANKWID'),Projects=projects, Years=years,Protocols=protocols)
 
 #METADATA
-listsites=tblRetrieve(Parameters=c('SITE_ID','DATE_COL','LOC_NAME','LAT_DD','LON_DD','PROJECT','PROTOCOL'),Projects=projects,Years=years,Protocols=protocols)
-listsites=cast(listsites,'UID~PARAMETER',value='RESULT')                                                                                                                                                          
+listsites=tblRetrieve(Parameters=c('SITE_ID','DATE_COL','LOC_NAME','LAT_DD','LON_DD','PROJECT','PROTOCOL','LAT_DD_BR','LAT_DD_TR','LON_DD_BR','LON_DD_TR'),Projects=projects,Years=years,Protocols=protocols)
+listsites=setNames(cast(listsites,'UID~PARAMETER',value='RESULT'),c("UID","LAT_DD_BR_CHECK","LAT_DD_TR_CHECK","LON_DD_BR_CHECK","LON_DD_TR","DATE_COL_CHECK","LAT_DD_CHECK","LOC_NAME_CHECK","LON_DD_CHECK","PROJECT_CHECK","PROTOCOL_CHECK","SITE_ID_CHECK"))
+listsites=listsites[,c(1,8,4,2,3,5,6,7)]
 #average # of pieces of wood?
                                                                                                                                                                     
 ### Getting Data to calculate Indicators Stops here
@@ -105,13 +110,14 @@ BnkStb=setNames(aggregate(StableValue~UID,data=Banks, FUN=mean), c('UID','BnkSta
 
 #############################################################################
 
-##############         pH Indicator calculations check        ###############
+##############         WQ Indicator calculations check        ###############
 
 #############################################################################
 
 #At the end, all columns with "Check" at the end are included in the main file
-PHfinal$PH_CHECK=PHfinal$PH
 
+WQfinal=setNames(WQpvt,c("UID","CONDUCTIVITY_CHECK","NTL_CHECK","PH_CHECK","PTL_CHECK","TEMPERATURE_CHECK","TURBIDITY_CHECK"))
+WQfinal=WQfinal[,c(1,4,2,3,5,6,7)]
 
 
 #############################################################################
@@ -190,7 +196,7 @@ IncBnk$LINCIS_H_CHECK=log10(IncBnk$xinc_h_CHECK-IncBnk$xbnk_h_CHECK+0.1)
 
 ####Doing sand and fines together
 Sediment$SAFN_True=ifelse(Sediment$RESULT == "SA", 1,ifelse(Sediment$RESULT == "FN", 1, 0))
-pctsafn=setNames((cast(Sediment,'UID~SAMPLE_TYPE', value='SAFN_True',fun='mean')),c("UID","PCT_SAFN_CHECK"))
+pctsafn=setNames((aggregate(Sediment$SAFN_True,by=list(UID=Sediment$UID), data=Sediment, FUN='mean')),c("UID","PCT_SAFN_CHECK"))#had to remove NorCal code that casted by Sample_Type because of boating data
 pctsafn$PCT_SAFN_CHECK=pctsafn$PCT_SAFN_CHECK*100
 
 #Now for 2014 data... 
@@ -211,6 +217,10 @@ F_Sed2014$PCT_SAFN_CHECK=F_Sed2014$PCT_SAFN_CHECK*100
 
 # Combine the two datasets for PCT_SAFN together so that I don't have multiple files for the same thing
 PCT_SAFN_ALL=rbind(pctsafn,F_Sed2014)
+
+
+##other sediment metrics
+Sed2014=bintranslate(Table='Sed2014',ST='CROSSSECW',PM='SIZE_NUM')
 
 
 #############
@@ -354,20 +364,30 @@ QR1$QRDIST1=1/(1+QR1$W1_HALL)
 #Final QR1 calculation
 QR1$QR1_CHECK=(QR1$QRveg1*QR1$QRVeg2*QR1$QRDIST1)^0.333
 
+###########################################
+
 #######JC ADDED Metrics/Indicators#########
+
+###########################################
 #Angle
-MeanAngle=cast(Angle,'UID~PARAMETER',value='RESULT',fun=mean)                                               
+MeanAngle=setNames(cast(Angle,'UID~PARAMETER',value='RESULT',fun=mean),c("UID","ANGLE180_CHECK")  )                                             
 
 #Slope
 Slope_height=cast(Slope_height, 'UID~PARAMETER',value='RESULT',fun=sum)
 SlpReachLen=cast(SlpReachLen,'UID~PARAMETER',value='RESULT')
 Slope_Per=merge(Slope_height,SlpReachLen, by=c('UID'), all=T)
-Slope_Per$Slope_Percent=round(((Slope_Per$SLOPE/100)/(Slope_Per$SLPRCHLEN))*100,digits=2)
+Slope_Per$SlopePct=round(((Slope_Per$SLOPE/100)/(Slope_Per$SLPRCHLEN))*100,digits=2)
+Slope_Per=setNames(Slope_Per,c("UID","SLOPE_CHECK","SLPRCHLEN_CHECK","SlopePct_CHECK"))
 
 #Thalweg                                                                                                                                                                    
 ThalwegMean=round(cast(thalweg,'UID~PARAMETER',value='RESULT',fun=mean),digits=1)
+ThalwegMean=setNames(ThalwegMean, c("UID","XDEPTH_CHECK"))
 ThalwegSD=cast(thalweg,'UID~PARAMETER',value='RESULT',fun=sd)
-                                                                                                                                                                    
+ThalwegSD=setNames(ThalwegSD,c("UID","SDDEPTH_CHECK"))
+Thalweg=merge(ThalwegMean,ThalwegSD,by=c('UID'), all=T)
+Thalweg$CVDEPTH_CHECK=Thalweg$SDDEPTH/Thalweg$XDEPTH
+
+                   
 #Pools
 #Percent pools
 pvtpools1=cast(pool_length,'UID~PARAMETER',value='RESULT',fun=sum) 
@@ -382,10 +402,22 @@ RPD=setNames(round(aggregate(PoolDepth$RPD,list(UID=PoolDepth$UID),mean),digits=
 count=setNames(count(PoolDepth,"UID"),c("UID","NumPools"))
 poolmerge2=join_all(list(poolsmerge,count,RPD), by="UID")
 poolmerge2$PoolFrq=round((poolmerge2$NumPools/poolmerge2$TRCHLEN)*10000,digits=0)###need to consider what reach length to use here #may need shorted lengths for parial reaches
-Pools=subset(poolmerge2,select=c(UID,PoolPct,RPD,PoolFrq,NumPools))
+Pools=setNames(subset(poolmerge2,select=c(UID,PoolPct,RPD,PoolFrq,NumPools)),c("UID","PoolPct_CHECK","RPD_CHECK","PoolFrq_CHECK","NumPools_CHECK"))
 
+#Channel dimensions
+WetWid=subset(WetWid,POINT!=0)
+WetWid2=tblRetrieve(Parameters=c('WETWID'),Projects=projects, Years=years,Protocols=protocols)
+WetWid=rbind(WetWid,WetWid2)
+WetWid=setNames(aggregate(RESULT~UID,data=WetWid,FUN=mean),list("UID","XWIDTH_CHECK"))
+
+BankWid$TRANSECT=mapvalues(BankWid$TRANSECT, c("XA", "XB","XC","XD","XE","XF","XG","XH","XI","XJ","XK" ),c("A", "B","C","D","E","F","G","H","I","J","K"))#change all side channels to normal transects
+BankWid=cast(BankWid,'UID+TRANSECT~PARAMETER', value='RESULT', fun=sum)#sum across side channels and main transects
+BankWid=setNames(aggregate(BankWid$BANKWID,list(UID=BankWid$UID),mean),c("UID","XBKF_W_CHECK"))#average all transects
+BankWid=setNames(aggregate(RESULT~UID,data=BankWid,FUN=mean),list("UID","XBKF_W_CHECK"))
+
+####################################################################################################################################                     
 #To get all calculated values together... Although some tables still have the metrics included.
-IndicatorCheckJoin=join_all(list(listsites,BnkCvr,BnkStb,PHfinal,fishpvt2,DensPvt,XCMGW_new1,XCMG_new1,XGB_new1,IncBnk,PCT_SAFN_ALL,XEMBED,BnkDensPvt,W1_HALL,QR1,MeanAngle,Slope_Per,ThalwegMean,ThalwegSD,Pools),by="UID")
+IndicatorCheckJoin=join_all(list(listsites,WQfinal,BnkCvr,BnkStb,fishpvt2,DensPvt,XCMGW_new1,XCMG_new1,XGB_new1,IncBnk,BankWid,WetWid,XEMBED,PCT_SAFN_ALL,BnkDensPvt,W1_HALL,QR1,MeanAngle,Slope_Per,Thalweg,Pools),by="UID")
 #To remove all of the metrics and only get the indicators subset by UID and all those columns ending in "CHECK". Hmm..not really sure what the $ is doing here, the code works without it, but all the examples I've looked at keep the $ so I kept it too... 
 IndicatorCheck=IndicatorCheckJoin[,c("UID",grep("CHECK$", colnames(IndicatorCheckJoin),value=TRUE))]
 #write.csv(IndicatorCheck,"C:\\Users\\Nicole\\Desktop\\IndicatorCheck2.csv")

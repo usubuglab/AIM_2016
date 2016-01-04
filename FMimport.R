@@ -1,9 +1,10 @@
 
-#Filemaker import consumption
+#Filemaker import consumption # need 32-bit version of R
 
   datetest <- function(x) c(ifelse(is.numeric(x),FALSE,ifelse(is.character(x),FALSE,TRUE)))
-  setwd('M:\\buglab\\Research Projects\\BLM_WRSA_Stream_Surveys\\Field Work\\Post Sample\\iPad backup')#setwd('C:\\Users\\Sarah\\Documents')#default export location for desktop version of FM
+  setwd('\\\\share1.bluezone.usu.edu\\miller\\buglab\\Research Projects\\BLM_WRSA_Stream_Surveys\\Field Work\\Post Sample\\iPad backup')#setwd('C:\\Users\\Sarah\\Documents')#default export location for desktop version of FM
   tables=list.files(getwd(),pattern='*.xlsx')#tables=read.csv('RelationalTest.csv')#tables=c('FMout_tbl_yr2014doy156Sarah-PC_Hitch.xlsx')#test table
+  #tables=c('FMout_tbl_yr2015doy135NAMCipad5_Hitch.xlsx')
   importcols=c(VAR,'TRANSECT','POINT','PARAMETER','RESULT');#importcols=setdiff(importcols,c('REASON'))
   importmaster=data.frame(t(rep(NA,length(importcols))))
   names(importmaster)=importcols;importmaster=subset(importmaster,subset=is.na(UID)==FALSE)
@@ -62,9 +63,9 @@
       }
     }
   }
+  importmaster$UID = substr(importmaster$UID,0,10)####DF added to truncate UIDs
   
-  
-  importmasterTEMP=importmaster;save.image(sprintf("C:/Users/Sarah/Downloads/%simport.RData",Sys.Date()))#temporary copy saved after import for easy reversion without restarting xlsx import
+  importmasterTEMP=importmaster;save.image(sprintf("\\\\share1.bluezone.usu.edu\\miller\\buglab\\Research Projects\\BLM_WRSA_Stream_Surveys\\Field Work\\Post Sample\\iPad backup\\%simport.RData",Sys.Date()))#temporary copy saved after import for easy reversion without restarting xlsx import
   #importmaster2=importmaster #save copy of first import test that successfully went through the  loop
   #importmasterTEMPboat=importmaster;importmasterTEMPboat2=importmaster
   #importmaster14Jul14=importmasterTEMP;importloopr14Jul14=list(t,tables,g,tblgroups); names(importloopr14Jul14)=c('t','tables','g','tblgroups');# running into problems on photo  table with more recent exports
@@ -74,7 +75,7 @@
   
 
   
-  PROCEED=1
+  PROCEED=1 #####checking for duplicates
 
   UIDSremove=unique(subset(importmaster,select=UID,subset= (PARAMETER=='DB' & RESULT =='WRSA_AIM')|(PARAMETER=='DEVICE' & RESULT =='ProAdvanced 13.0v3/C:/Users/Sarah/Documents/')))#exclude UIDs used by Sarah in testing and ones already imported, as well as monitored duplicates
   UIDSexist=sqlQuery(wrsa1314, "select distinct UID from tblVerification where parameter='SITE_ID'  ")
@@ -84,9 +85,10 @@
   UIDSmatch10=setdiff(UIDSnew10$UID,UIDSexist10$UID)
   UIDSmismatch10=subset(importmaster,subset=PARAMETER %in% c('SITE_ID','DATE_COL') & UID %in% UIDSmatch10); UIDSmismatch10= UIDSmismatch10[with(UIDSmismatch10,order(UID)),]
   if(length(UIDSmatch10)>0){print(sprintf('Verify %s non-exact matches for UID (1st 10 characters match). These will be automatically omitted unless otherwise indicated.',length(UIDSmatch10)));View(UIDSmismatch10); print(sprintf("select * from tblverification where parameter='site_id' and left(cast(UID as nvarchar),10) in (%s)",inLOOP(substr(UIDSmatch10,1,10))))}
-  UIDSmanualOMIT=c('8.58443864583729e+22','4171385314118944686080','4948737546099460407266','15631373425099638047420','585759337742704256','324224919440318080','452002440992807387126','56939717898642521064404','1.00590424753275e+20','3.12445349814274e+20','30317561401913393152','85565470919978896','9.79114249176033e+20','2.42573446594801e+21','7.467934950944e+19','7.1001238480827e+19','7.42868294554285e+24','10445148556604496','6.22708454798246e+20','2.25618143476838e+23','8.77503374780117e+20','4.49266934743765e+21','5.64896083614649e+21',
+  UIDSmanualOMIT=c('76374884476355400000',#test removing site-JC June 11 2015
+                   '8.58443864583729e+22','4171385314118944686080','4948737546099460407266','15631373425099638047420','585759337742704256','324224919440318080','452002440992807387126','56939717898642521064404','1.00590424753275e+20','3.12445349814274e+20','30317561401913393152','85565470919978896','9.79114249176033e+20','2.42573446594801e+21','7.467934950944e+19','7.1001238480827e+19','7.42868294554285e+24','10445148556604496','6.22708454798246e+20','2.25618143476838e+23','8.77503374780117e+20','4.49266934743765e+21','5.64896083614649e+21',
                    '15371499864863700', '68773868470210160','6289849184966886400','6778495559','4.86796721145911e+21','40929284494044758016','3.46298187240046e+24','4795923406292041','238904821513005888','1.56313734250996e+22','36066246794627100','36066246794627104','3281462015442028544','15371499864863704','7.08938994416638e+23','4.57921803104368e+25','18934588289520738304','9.72630743819978e+21','850630406814675200','850630406814675000','18934588289520700000','4.86796721145911E+21','6289849184966880000','324224919440318000','6.34916723436864e+21','7.03114033341499E+21','7.03114033341499e+21','4.57921803104368E+25', '3281462015442020000', '88015264382921100000','88015264382921129984','6.34916723436864E+21', '9.72630743819978E+21','7.08938994416638E+23'#beta testing
-                   )#! auto remove sites with less than 10 lines of data (app defaults)?; record reason in Access Office_Comments
+                   ,'92447747091121963018','94383454545993315394624','5698665344147233043226202', '1356324738629546240','3741022994007502880848')#! auto remove sites with less than 10 lines of data (app defaults)?; record reason in Access Office_Comments
   UIDSremoveLIST=c(UIDSremove$UID,UIDSexist$UID, UIDSmanualOMIT, UIDSmatch10)#could query intentionally removed duplicates from Office_Comments in AccessDB#'1044' = duplicate site that crew entered in both app versions, confirmed with crew and Jennifer Courtwright; 6227 and 2256 = duplicates with only default data populated
   importmaster=subset(importmaster,subset= (UID %in% UIDSremoveLIST)== FALSE)
   #check for duplicate siteIDS
@@ -111,6 +113,9 @@
 importmaster=subset(importmaster,is.na(UID)==FALSE)#there were a lot of null UIDs...need to see what these are!! --> most appear to be null states/streams, so corrected GRTS_SITEINFO to have UID
 
 #####################################STOP###########CHECK#DUPLICATES###############################################################################################
+#type PROCEED=2 into console once checks are performed #data clean up section
+#add UID trunctation to this section
+  
 #! force script stop at key scripts, if none of these work, implement if statements that require the user to change a variable
 #browser(); print("STOP. Enter Q to resume.")#Sys.sleep(10)#Pause=-readline(prompt="Pause? ")#break#stop("Check possible duplicates before proceeding.")#none of these are preventing subsequent lines of code from running
 #print('did i stop?')  
@@ -299,12 +304,14 @@ uuhabcom=subset(importmaster,UID %in% uuhab$UID & PARAMETER %in% c('LENGTH','MAX
   importmaster=ColCheck(importmaster,importcols)                                                                                              
                                                                                                 
   
-importmasterxwalk2=importmaster;commentsxwalk2=tblCOMMENTSin;save.image(sprintf("C:/Users/Sarah/Downloads/%simport.RData",Sys.Date()))
+importmasterxwalk2=importmaster;commentsxwalk2=tblCOMMENTSin;save.image(sprintf("C:/Users/Jennifer Courtwright/Downloads/%simport.RData",Sys.Date()))
  }#end Else Proceed=2
 
   
 #####################################STOP###########BREATHE...Then#Proceed#With#Imports###############################################################################################
-if(PROCEED<3) {print("Data ready for import. Perform any desired checkes and set PROCEED=3 (in console) to continue.")
+#type in PROCEED=3 once checks are run to actually import data to SQL
+  
+  if(PROCEED<3) {print("Data ready for import. Perform any desired checkes and set PROCEED=3 (in console) to continue.")
                }  else{
   tblCOMMENTSin$TRANSECT=ifelse(is.na(tblCOMMENTSin$TRANSECT),"ALL",tblCOMMENTSin$TRANSECT);tblCOMMENTSin$PAGE=ifelse(is.na(tblCOMMENTSin$PAGE),"1",tblCOMMENTSin$PAGE);tblCOMMENTSin=tblCOMMENTSin[with(tblCOMMENTSin,order(IND)),]
   tblPOINTin=subset(importmaster,subset=is.na(POINT)==FALSE & toupper(SAMPLE_TYPE)!='TRACKING' );tblPOINTin$TRANSECT=ifelse(is.na(tblPOINTin$TRANSECT) |toupper(tblPOINTin$TRANSECT)=="NA","0",tblPOINTin$TRANSECT);tblPOINTin=tblPOINTin[with(tblPOINTin,order(IND)),]
@@ -324,9 +331,26 @@ if(PROCEED<3) {print("Data ready for import. Perform any desired checkes and set
   #View(subset(tblTRANSECTin,SAMPLE_TYPE %in% c('SLOPEW', 'CROSSSECW', 'BANKW', 'PHOTOS')))  
   #aggcnt=aggregate(RESULT~UID + TRANSECT + POINT + SAMPLE_TYPE + PARAMETER,data=tblPOINTin,FUN=length);aggcnt=subset(aggcnt,RESULT>1);View(aggcnt)
 
-  
-
+#####JC troubleshooting for first 2015 import batch with weird UID issue  
+# tblCOMMENTStest<-tblCOMMENTSin
+# tblCOMMENTStest[grep('^pma.*?',tblCOMMENTStest$UID),'UID']='1633013467'
+# View(tblCOMMENTStest)
+# tblCOMMENTSin<-tblCOMMENTStest
+# tblREACHtest<-tblREACHin
+# tblREACHtest[grep('^pma.*?',tblREACHtest$UID),'UID']='1633013467'
+# tblREACHin<-tblREACHtest
    
+####JC troubleshooting for july 23 import 
+# tblCOMMENTStest<-tblCOMMENTSin
+# tblCOMMENTStest[grep('^AIM.*?',tblCOMMENTStest$UID),'UID']='6303856417'
+# tblCOMMENTSin<-tblCOMMENTStest
+# tblREACHtest<-tblREACHin
+# tblREACHtest[grep('^AIM.*?',tblREACHtest$UID),'UID']='6303856417'
+# tblREACHin<-tblREACHtest 
+#tblREACHtest<-tblREACHin
+#tblREACHin<-tblREACHtest[-c(755,756),]
+ 
+  
   
   ##if pass (missing, accounted, outlier), migrate to WRSAdb and access db
   
@@ -346,13 +370,17 @@ if(PROCEED<3) {print("Data ready for import. Perform any desired checkes and set
   
 }#end Else Proceed=3
   
+######################################################################################################################################
+#type PROCEED=4 once checks are complete# import to Access database
+
   ##!QA checks moved to DataQA_WRSA  
   if(PROCEED<4) { 
     if(exists("MissingTotals4")){
-      tblQAin=merge(tblQAin,MissingTotals4,all=T)#rbind(tblQAin,MissingTotals4)#add percent missing
-  } else {print ("Missing Totals need to be run in DataQA_WRSA.R if want to review missing percentages in Access. Otherwise set PROCEED=4 (in console) to continue without Missing Totals.")}
+      tblQAin=merge(tblQAin,MissingTotals4,all=T);#rbind(tblQAin,MissingTotals4)#add percent missing
+    } else {print ("Missing Totals need to be run in DataQA_WRSA.R if want to review missing percentages in Access. Otherwise set PROCEED=4 (in console) to continue without Missing Totals.")
+    }
   
-  #import to ProbSurveydb (Access)
+ #import to ProbSurveydb (Access)
  #repivot tables going to Access
  #since has to be done on remote desktop, easier to run here, export tables, re-consume and import on remote (remote can't talkt so SQL and Sarah local can't talk to Access)
  tblFAILUREcomments=subset(tblCOMMENTSin,FLAG=='FAIL');tblFAILUREcomments$SAMPLE_TYPE='Failure';tblFAILUREcomments=unique(tblFAILUREcomments);tblFAILUREcomments$PARAMETER='COMMENTS';tblFAILUREcomments$RESULT=tblFAILUREcomments$COMMENT;tblFAILUREcomments=ColCheck(tblFAILUREcomments,colnames(tblFAILUREin))
@@ -375,7 +403,7 @@ if(PROCEED<3) {print("Data ready for import. Perform any desired checkes and set
    #!this needs to account for two main projects: norcal vs. WRSA+intensifications
    maxSamp=sqlQuery(probsurv14,'select max(SampleNumber) from SampleTracking where Year(SampleDate)=Year(Now())')
  } else {print('Run on Remote Desktop and set maxSamp here');maxSamp=NA}
- maxSamp=as.numeric(ifelse(exists("maxSamp")==F,1,1+maxSamp))
+ maxSamp=as.numeric(ifelse(exists("maxSamp")==F,1,1+maxSamp))#######maunally enter this from sample tracking since no connection to Access-JC?
 #!having to manually renumber because of intensfications, consider just setting maxSamp to zero which triggers all samplenubmers to be zero, then if maxsampl>0, run the sequence code
  sampletmp=subset(importmaster,PARAMETER=='SAMPLE_ID' & SAMPLE_TYPE=='BERW')
  sampletmp$PARAMETER='SampleNumber'
@@ -403,11 +431,13 @@ if(PROCEED<3) {print("Data ready for import. Perform any desired checkes and set
  print('Tables exported. Import into ProbSurveyDB (Access) via the saved imports prefixed with Tracking or associated button under admin tasks (both methods pending setup). Export as csv and right insert loop script (like Python recipes) if want a more automated process.')
 
   }#end Else Proceed=4
-  
-  
+
+############################################################################################################################################################### 
+#type in SYNC='Y' to update the metadata and sync between FM and SQL
+    
 if (SYNC=='Y'){
   ##!sync metadata between FM and SQL
-  tblMetadataRange=read.xlsx("C:\\Users\\Sarah\\Desktop\\NAMCdevelopmentLocal\\tblMetadataRange_20Aug14.xlsx",1)
+  tblMetadataRange=read.xlsx("\\\\share1.bluezone.usu.edu\\miller\\buglab\\Research Projects\\BLM_WRSA_Stream_Surveys\\Technology\\App_Development\\FMbackup\\2015\\tblMetadataRange_(6-20-2015).xlsx",1)
   tblMetadataRange$SAMPLE_TYPE=tblMetadataRange$tblMetadata..Tbl
   tblMetadataRange$ACTIVE=ifelse(tblMetadataRange$USE=='Y','TRUE','FALSE')
   tblMetadataRange=subset(tblMetadataRange,USE=='Y')
