@@ -1,3 +1,4 @@
+#change
 #To get the metadata table you must use the SQL code. 
 #tblMETADATA= sqlQuery(wrsa1314, "select * from tblMETADATA")
 
