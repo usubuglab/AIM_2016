@@ -1,8 +1,14 @@
 #only indicators with "_CHECK" added on the name are in the end output. Once this output is compared to Aquamet change "_CHECK" to  "_FINAL"
 #To get the metadata table you must use the SQL code. 
 #tblMETADATA= sqlQuery(wrsa1314, "select * from tblMETADATA")
-
+#############################################################################
 # FIRST Run the settup section of DataConsumption_WRSAdb.R
+# SECOND Run filters for appropriate project, years, and protocols.
+####projects=c('WRSA','NV','GSENM','COPLT','2015ProtocolOverlap','AKEFO','NORCAL')# most useful for separating NorCal and WRSA, note that abbreviations differ between Access and SQL/FM
+####years=c('2013','2014','2015')#as character, not number
+####protocols=c('NRSA13','WRSA14','BOAT14','AK14')#for separating differences in overall protocol, may not be relevant for some parameters
+########Sitecode filter will likely be use to check data at one site or troubleshoot code during processing. Must add to code as needed as it is not built in to code below.
+########sitecodes=c('OT-SS-7112')#c('EL-LS-8134','EL-SS-8127','MN-LS-1004','MN-SS-1104','MS-SS-3103','XE-RO-5086','XN-LS-4016','XN-SS-4128','XS-LS-6029' )#QAduplicateSites#c('AR-LS-8003','AR-LS-8007', 'TP-LS-8240')#sites for NorCalTesting
 
 #############################################################################
 
@@ -28,7 +34,7 @@ WQpvt=cast(WQtbl,'UID~PARAMETER',value='RESULT')
 #Getting Data for aquamet check of XFC_NAT
 fish=tblRetrieve(Parameters=c('BOULDR','BRUSH','LVTREE','OVRHNG','UNDCUT','WOODY'),Projects=projects,Years=years,Protocols=protocols)
 
-#Getting data for aquamet check of xcdenmid
+#Getting data for aquamet check of xcdenmid and xcdenbk
 densiom=tblRetrieve(Parameters='DENSIOM',Projects=projects,Years=years,Protocols=protocols)
 
 #Getting data for aquamet check of LINCIS_H, I need bankfull height and incision height for this metric
@@ -109,6 +115,8 @@ BnkCvr=setNames(aggregate(CoverValue~UID,data=Banks, FUN=mean), c('UID','BnkCove
 Banks$StableValue=as.numeric(ifelse(Banks$STABLE=='SP'|Banks$STABLE=='ER'|Banks$STABLE=='LH'|Banks$STABLE=='FC',"0",ifelse(Banks$STABLE=='AB',"1","NA")))
 BnkStb=setNames(aggregate(StableValue~UID,data=Banks, FUN=mean), c('UID','BnkStability_BLM_CHECK'))
 
+
+
 #############################################################################
 
 ##############         WQ Indicator calculations check        ###############
@@ -143,6 +151,11 @@ DensPvt=cast(MidDensiom,'UID~PARAMETER',value='RESULT',fun=mean)
 DensPvt$xcdenmid_CHECK=(DensPvt$DENSIOM/17)*100
 #Trying to figure out what is going on with UID 11802.
 #Dens_Pvt3=cast(MidDens3,'UID+TRANSECT~PARAMETER',value='RESULT',fun=mean)
+
+#xcdenbk
+BnkDensiom = subset(densiom, POINT == "LF"|POINT =="RT")
+BnkDensPvt=cast(BnkDensiom,'UID~PARAMETER',value='RESULT',fun=mean)
+BnkDensPvt$xcdenbk_CHECK=(BnkDensPvt$DENSIOM/17)*100
 
 #LINCIS_H
 ###First the max value of either the side channel or main channel needs to be chosen. To do this I changed all side channels (X-letter) to just the main letter (Sidechannel at A (XA) would be changed to just A).
@@ -343,9 +356,6 @@ W1_HALL$NRSA_W1_HALL_CHECK=rowSums(W1_HALL_NRSA[,c(2:12)])
 
 
 ###xcdenbk: needed for QR1
-BnkDensiom = subset(densiom, POINT == "LF"|POINT =="RT")
-BnkDensPvt=cast(BnkDensiom,'UID~PARAMETER',value='RESULT',fun=mean)
-BnkDensPvt$xcdenbk_CHECK=(BnkDensPvt$DENSIOM/17)*100
 
 #QR1
 #QR1= {(QRVeg1) (QRVeg2) (QRDIST1)} ^ 0.333; 
@@ -418,7 +428,7 @@ BankWid=setNames(aggregate(RESULT~UID,data=BankWid,FUN=mean),list("UID","XBKF_W_
 
 ####################################################################################################################################                     
 #To get all calculated values together... Although some tables still have the metrics included.
-IndicatorCheckJoin=join_all(list(listsites,WQfinal,BnkCvr,BnkStb,fishpvt2,DensPvt,XCMGW_new1,XCMG_new1,XGB_new1,IncBnk,BankWid,WetWid,XEMBED,PCT_SAFN_ALL,BnkDensPvt,W1_HALL,QR1,MeanAngle,Slope_Per,Thalweg,Pools),by="UID")
+IndicatorCheckJoin=join_all(list(listsites,WQfinal,BnkCvr,BnkStb,fishpvt2,DensPvt,BnkDensPvt,XCMGW_new1,XCMG_new1,XGB_new1,IncBnk,BankWid,WetWid,XEMBED,PCT_SAFN_ALL,W1_HALL,QR1,MeanAngle,Slope_Per,Thalweg,Pools),by="UID")
 #To remove all of the metrics and only get the indicators subset by UID and all those columns ending in "CHECK". Hmm..not really sure what the $ is doing here, the code works without it, but all the examples I've looked at keep the $ so I kept it too... 
 IndicatorCheck=IndicatorCheckJoin[,c("UID",grep("CHECK$", colnames(IndicatorCheckJoin),value=TRUE))]
 #write.csv(IndicatorCheck,"C:\\Users\\Nicole\\Desktop\\IndicatorCheck2.csv")
