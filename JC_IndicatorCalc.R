@@ -91,8 +91,10 @@ BankWid=tblRetrieve(Parameters=c('BANKWID'),Projects=projects, Years=years,Proto
 
 #METADATA
 listsites=tblRetrieve(Parameters=c('SITE_ID','DATE_COL','LOC_NAME','LAT_DD','LON_DD','PROJECT','PROTOCOL','LAT_DD_BR','LAT_DD_TR','LON_DD_BR','LON_DD_TR'),Projects=projects,Years=years,Protocols=protocols)
-listsites=setNames(cast(listsites,'UID~PARAMETER',value='RESULT'),c("UID","LAT_DD_BR_CHECK","LAT_DD_TR_CHECK","LON_DD_BR_CHECK","LON_DD_TR","DATE_COL_CHECK","LAT_DD_CHECK","LOC_NAME_CHECK","LON_DD_CHECK","PROJECT_CHECK","PROTOCOL_CHECK","SITE_ID_CHECK"))
-listsites=listsites[,c(1,8,4,2,3,5,6,7)]
+listsites=setNames(cast(listsites,'UID~PARAMETER',value='RESULT'),c("UID","DATE_COL_CHECK","LAT_DD_CHECK","LAT_DD_BR_CHECK","LAT_DD_TR_CHECK","LOC_NAME_CHECK","LON_DD_CHECK","LON_DD_BR_CHECK","LON_DD_TR_CHECK","PROJECT_CHECK","PROTOCOL_CHECK","SITE_ID_CHECK"))
+listsites=listsites[,c(1,12,6,2,3,7,10,11,5,9,4,8)]
+
+
 #average # of pieces of wood?
                                                                                                                                                                     
 ### Getting Data to calculate Indicators Stops here
