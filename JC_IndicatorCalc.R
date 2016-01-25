@@ -99,6 +99,7 @@ listsites=listsites[,c(1,12,6,2,3,7,10,11,5,9,4,8)]
 ################    BankStability and Cover Indicators##      ###############
 
 #############################################################################
+#Need to decide on removing depositional banks
 #Pivot data so that Each parameter has it's own column
 Banks=cast(BankStab, 'UID+TRANSECT+POINT~PARAMETER', value='RESULT', fun=max)
 #I want to calculate the percent of banks that are Covered.  
@@ -223,7 +224,9 @@ PCT_SAFN_ALL=rbind(pctsafn,F_Sed2014)
 
 
 ##other sediment metrics
+library(psych)
 Sed2014=bintranslate(Table='Sed2014',ST='CROSSSECW',PM='SIZE_NUM')
+
 
 
 #############
