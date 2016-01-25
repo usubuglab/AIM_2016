@@ -86,3 +86,9 @@ install.packages()
 
 length(which(v<7))# counts values in v that are less than 7 and excludes NAs
 
+# make boxplots for every column in boxplotdata-LOOP
+#Par makes your graphic have 2 rows of 6 boxplots
+par(mfrow=c(2,6))
+for (i in 1:length(boxplotdata)) {
+  boxplot(boxplotdata[,i], main=names(boxplotdata[i]))
+}
