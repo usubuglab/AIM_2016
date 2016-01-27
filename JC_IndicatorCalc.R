@@ -241,6 +241,110 @@ library(psych)
 Sed2014=bintranslate(Table='Sed2014',ST='CROSSSECW',PM='SIZE_NUM')
 
 
+#build table of the min and max of each size class 
+#make sure to uncomment HP if want it to be "NA" but subsetting only measurable classes for D50 at least anyway
+tt <- textConnection(
+                  "class min     max\n                    
+                     RS 4000    8000\n                   
+                     RR 4000    8000\n                    
+                     RC 4000    8000\n                    
+                     BH 4000    8000\n                    
+                     XB 1000    4000\n                    
+                     SB  250    1000\n                    
+                     BL  250    4000\n#combined boulder class                   
+                     CB   64     250\n                    
+                     GC   16      64\n                    
+                     GF    2      16\n                   
+                     GR    2      64\n                    
+                     SA    0.06    2\n                    
+                     FN    0.001   0.06\n                   
+                     HP 4000    8000\n
+                    #HP   NA      NA\n                    
+                     WD   NA      NA\n                    
+                     OT   NA      NA\n"
+                  )
+subsInfo <- read.table(tt, header = TRUE, stringsAsFactors = FALSE)
+close(tt)
+#take the geometric mean for each size class
+#geometric mean is gmean <- function(x){exp(mean(log(x)))}
+subsInfo$diam <- NA
+for (s in 1:nrow(subsInfo)) {
+  subsInfo[s, ]$diam = gmean(c(subsInfo[s, ]$min, subsInfo[s, 
+                                                           ]$max))
+}
+#log geometric mean diameter and log of the min and max of size classes
+subsInfo$lDiam <- log10(subsInfo$diam)
+subsInfo$lmin = log10(subsInfo$min)
+subsInfo$lmax = log10(subsInfo$max)
+
+
+#list of substrate classes included in lsub_dmm
+wadeableAllOneBoulderClass <- c("RS", "RR", "RC", "BL", "CB", 
+                                "GC", "GF", "SA", "FN", "HP", "WD", "OT")
+#calculating lsub_dmm by taking the mean of the log geometric mean diameter 
+df1lb <- df1#input dataframe
+df1lb$RESULT <- ifelse(df1lb$RESULT %in% c("XB", "SB"), 
+                       "BL", df1lb$RESULT)#merging the small and large boulder classes
+ldBuglb <- merge(df1lb, subset(subsInfo, class %in% wadeableAllOneBoulderClass, 
+                               select = c(class, diam, lDiam)), by.x = "RESULT", 
+                 by.y = "class", all.x = TRUE)#subsetting just the classes included in 1sub_dmm
+ldBug11lb <- aggregate(ldBuglb$lDiam, list(UID = ldBuglb$UID), 
+                       mean, na.rm = TRUE)# calculating the mean
+ldBug12lb <- rename(ldBug11lb, "x", "RESULT")
+ldBug12lb$METRIC <- "lsub_dmm"
+
+#list of measureable classes included in D50
+wadeableMeasurableTwoBoulderClasses <- c("XB", "SB", "CB", 
+                                         "GC", "GF", "SA", "FN")
+interpdata <- subset(df1, RESULT %in% wadeableMeasurableTwoBoulderClasses)
+measurable <- rename(subset(subsInfo, class %in% wadeableMeasurableTwoBoulderClasses, 
+                            select = c(class, lmin, lmax)), c("class", "lmin", 
+                                                              "lmax"), c("CLASS", "min", "max"))
+c16 <- interpolatePercentile(interpdata, "RESULT", 16, 
+                             "lsub2d16inor", measurable)
+c50 <- interpolatePercentile(interpdata, "RESULT", 50, 
+                             "lsub2d50inor", measurable)
+c84 <- interpolatePercentile(interpdata, "RESULT", 84, 
+                             "lsub2d84inor", measurable)
+c16$d16 <- 10^(c16$lsub2d16inor)
+c50$d50 <- 10^(c50$lsub2d50inor)
+c84$d84 <- 10^(c84$lsub2d84inor)
+calcs <- merge(c16, merge(c50, c84, by = "UID", all = TRUE), 
+               by = "UID", all = TRUE)
+calcs <- reshape(calcs, idvar = c("UID"), direction = "long", 
+                 varying = names(calcs)[names(calcs) != "UID"], times = names(calcs)[names(calcs) != 
+                                                                                       "UID"], v.names = "RESULT", timevar = "METRIC")
+# A single object matching ‘interpolatePercentile’ was found
+# It was found in the following places
+# package:aquamet
+# namespace:aquamet
+# with value
+# 
+# function (df, classVar, percentile, pctlVar, classBounds) 
+# {
+#   df <- subset(df, !is.na(classVar))
+#   classCounts <- aggregate(list(classCount = df[[classVar]]), 
+#                            list(UID = df$UID, CLASS = df[[classVar]]), count)
+#   sampleSizes <- aggregate(list(totalCount = df[[classVar]]), 
+#                            list(UID = df$UID), count)
+#   classPcts <- merge(classCounts, sampleSizes, by = "UID")
+#   classPcts$pct <- 100 * classPcts$classCount/classPcts$totalCount
+#   classPcts <- merge(classPcts, classBounds, by = "CLASS", 
+#                      all.x = TRUE)
+#   classPcts <- classPcts[order(classPcts$UID, classPcts$min), 
+#                          ]
+#   classPcts$upperPct <- ave(classPcts$pct, classPcts$UID, FUN = cumsum)
+#   classPcts <- first(classPcts, "UID", "start")
+#   classPcts <- lag(classPcts, "upperPct", "lowerPct")
+#   classPcts[classPcts$start, ]$lowerPct <- 0
+#   tt <- subset(classPcts, lowerPct < percentile & percentile <= 
+#                  upperPct)
+#   tt[pctlVar] <- with(tt, min + (max - min) * (percentile - 
+#                                                  lowerPct)/(upperPct - lowerPct))
+#   tt <- tt[c("UID", pctlVar)]
+#   return(tt)
+# }
+
 
 #############
 ##TO check if bed and bank measurements were included I ran this code. This code does not distinguish between bed or bank just runs to get the mean of all 2014 particles, regardless of location. THis shows that Sarah's code is missing the BED/BANK determinations....
