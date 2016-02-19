@@ -96,7 +96,22 @@ listsites=listsites[,c(1,12,6,2,3,7,10,11,5,9,4,8)]
 
 
 #average # of pieces of wood?
-                                                                                                                                                                    
+LwdCatWet=unclass(sqlQuery(wrsa1314,"select SAMPLE_TYPE,PARAMETER from tblMetadata where Sample_TYPE like 'LWDW%' and PARAMETER like 'W%'"))$PARAMETER
+LwdCatDry=unclass(sqlQuery(wrsa1314,"select SAMPLE_TYPE,PARAMETER from tblMetadata where Sample_TYPE like 'LWDW%' and PARAMETER like 'D%'"))$PARAMETER
+LwdWet=tblRetrieve(Parameters=LwdCatWet,Projects=projects,Years=years,Protocols=protocols)
+LwdDry=tblRetrieve(Parameters=LwdCatDry,Projects=projects,Years=years,Protocols=protocols)
+TRCHLEN=tblRetrieve(Parameters=c('TRCHLEN','INCREMENT'),Projects=projects,Years=years,Protocols=protocols)
+TRCHLEN=cast(TRCHLEN,'UID~PARAMETER',value='RESULT')
+#TRCHLEN is not the same as the reachlen used in Aquamet
+#The reachlen is calc from mulitplying INCREMENT by the thalweg stations
+#We need to estimate the intended number of wadeable thalweg stations at each transect
+#which are considered sampled (even if there is no data) for the purposes of
+#calculating residual pools and channel lengths.  The number of stations at
+#a transect is calculated as the greater of either the number of stations
+#occuring in the dataframe for that transect, or the most common count of
+#stations (i.e. station mode) occuring at that site. 
+
+
 ### Getting Data to calculate Indicators Stops here
 
 
@@ -237,7 +252,6 @@ PCT_SAFN_ALL=rbind(pctsafn,F_Sed2014)
 
 
 ##other sediment metrics
-library(psych)
 Sed2014=bintranslate(Table='Sed2014',ST='CROSSSECW',PM='SIZE_NUM')
 
 
@@ -248,7 +262,7 @@ tt <- textConnection(
                      RS 4000    8000\n                   
                      RR 4000    8000\n                    
                      RC 4000    8000\n                    
-                     BH 4000    8000\n                    
+                     BH 4000    8000\n#boatable class?                    
                      XB 1000    4000\n                    
                      SB  250    1000\n                    
                      BL  250    4000\n#combined boulder class                   
@@ -266,7 +280,8 @@ tt <- textConnection(
 subsInfo <- read.table(tt, header = TRUE, stringsAsFactors = FALSE)
 close(tt)
 #take the geometric mean for each size class
-#geometric mean is gmean <- function(x){exp(mean(log(x)))}
+#create function for geometric mean
+gmean <- function(x){exp(mean(log(x)))}
 subsInfo$diam <- NA
 for (s in 1:nrow(subsInfo)) {
   subsInfo[s, ]$diam = gmean(c(subsInfo[s, ]$min, subsInfo[s, 
@@ -277,29 +292,78 @@ subsInfo$lDiam <- log10(subsInfo$diam)
 subsInfo$lmin = log10(subsInfo$min)
 subsInfo$lmax = log10(subsInfo$max)
 
-
+#lsub_dmm - this code replicates aquamet for all 2013 data but 
 #list of substrate classes included in lsub_dmm
 wadeableAllOneBoulderClass <- c("RS", "RR", "RC", "BL", "CB", 
                                 "GC", "GF", "SA", "FN", "HP", "WD", "OT")
 #calculating lsub_dmm by taking the mean of the log geometric mean diameter 
-df1lb <- df1#input dataframe
+df1lb <- Sediment#input dataframe
 df1lb$RESULT <- ifelse(df1lb$RESULT %in% c("XB", "SB"), 
                        "BL", df1lb$RESULT)#merging the small and large boulder classes
 ldBuglb <- merge(df1lb, subset(subsInfo, class %in% wadeableAllOneBoulderClass, 
                                select = c(class, diam, lDiam)), by.x = "RESULT", 
                  by.y = "class", all.x = TRUE)#subsetting just the classes included in 1sub_dmm
-ldBug11lb <- aggregate(ldBuglb$lDiam, list(UID = ldBuglb$UID), 
-                       mean, na.rm = TRUE)# calculating the mean
-ldBug12lb <- rename(ldBug11lb, "x", "RESULT")
-ldBug12lb$METRIC <- "lsub_dmm"
+ldBug11lb <- setNames(aggregate(ldBuglb$lDiam, list(UID = ldBuglb$UID), 
+                       mean, na.rm = TRUE), c("UID","lsub_dmm_CHECK"))# calculating the mean which is "lsub_dmm"
+
 
 #list of measureable classes included in D50
 wadeableMeasurableTwoBoulderClasses <- c("XB", "SB", "CB", 
                                          "GC", "GF", "SA", "FN")
-interpdata <- subset(df1, RESULT %in% wadeableMeasurableTwoBoulderClasses)
-measurable <- rename(subset(subsInfo, class %in% wadeableMeasurableTwoBoulderClasses, 
-                            select = c(class, lmin, lmax)), c("class", "lmin", 
-                                                              "lmax"), c("CLASS", "min", "max"))
+interpdata <- subset(Sediment, RESULT %in% wadeableMeasurableTwoBoulderClasses)
+measurable <- setNames(subset(subsInfo, class %in% wadeableMeasurableTwoBoulderClasses, 
+                            select = c(class, lmin, lmax)), c("CLASS", "min", "max"))#setNames is doing something different than the internal rename function that was originally in aquamet
+#####################################################################################
+# A single object matching ‘interpolatePercentile’ was found
+# It was found in the following places
+# package:aquamet
+# namespace:aquamet
+# with value
+ 
+interpolatePercentile<-function (df, classVar, percentile, pctlVar, classBounds) 
+{
+  df <- subset(df, !is.na(classVar))
+  classCounts <- aggregate(list(classCount = df[[classVar]]), 
+                           list(UID = df$UID, CLASS = df[[classVar]]), count)#counting the number of each size class category per uid
+  sampleSizes <- aggregate(list(totalCount = df[[classVar]]), 
+                           list(UID = df$UID), count)# counting total number of pebbles per UID
+  classPcts <- merge(classCounts, sampleSizes, by = "UID")
+  classPcts$pct <- 100 * classPcts$classCount/classPcts$totalCount# percent each size class makes up of all the pebbles collected at a site
+  classPcts <- merge(classPcts, classBounds, by = "CLASS", 
+                     all.x = TRUE)# add the bounds for each size class to the table
+  classPcts <- classPcts[order(classPcts$UID, classPcts$min), 
+                         ]# sort by UID and the smallest susbtrate first
+  classPcts$upperPct <- ave(classPcts$pct, classPcts$UID, FUN = cumsum)#cumulative sum of the percent of each size class per UID --example GF50+GF50+CB25+(GF50+CB25+SB25)
+  classPcts <- first(classPcts, "UID", "start")#another internal aquamet function using function "lag"
+  classPcts <- lag(classPcts, "upperPct", "lowerPct")
+  classPcts[classPcts$start, ]$lowerPct <- 0
+  tt <- subset(classPcts, lowerPct < percentile & percentile <= 
+                 upperPct) # percentile will not always fall on a size class so need to determine which two size classes it is in between and then interpolate using line below
+  tt[pctlVar] <- with(tt, min + (max - min) * (percentile - 
+                                                 lowerPct)/(upperPct - lowerPct))# linear interpolation equation 2.15 in bunte and abte 2001 pg 41
+  tt <- tt[c("UID", pctlVar)]
+  return(tt)
+}
+#################################################################################
+A single object matching ‘first’ was found
+It was found in the following places
+package:aquamet
+namespace:aquamet
+with value
+
+function (df, v, first.v) 
+{
+  df <- lag(df, v, "..vLag", offset = 1)
+  df[first.v] <- as.vector(ifelse(is.na(df[v]) | is.na(df["..vLag"]), 
+                                  is.na(df[v]) != is.na(df["..vLag"]), df[v] != df["..vLag"]))
+  df[1, first.v] <- TRUE
+  df["..vLag"] <- NULL
+  return(df)
+}
+##################################################################################
+
+
+
 c16 <- interpolatePercentile(interpdata, "RESULT", 16, 
                              "lsub2d16inor", measurable)
 c50 <- interpolatePercentile(interpdata, "RESULT", 50, 
@@ -311,40 +375,6 @@ c50$d50 <- 10^(c50$lsub2d50inor)
 c84$d84 <- 10^(c84$lsub2d84inor)
 calcs <- merge(c16, merge(c50, c84, by = "UID", all = TRUE), 
                by = "UID", all = TRUE)
-calcs <- reshape(calcs, idvar = c("UID"), direction = "long", 
-                 varying = names(calcs)[names(calcs) != "UID"], times = names(calcs)[names(calcs) != 
-                                                                                       "UID"], v.names = "RESULT", timevar = "METRIC")
-# A single object matching ‘interpolatePercentile’ was found
-# It was found in the following places
-# package:aquamet
-# namespace:aquamet
-# with value
-# 
-# function (df, classVar, percentile, pctlVar, classBounds) 
-# {
-#   df <- subset(df, !is.na(classVar))
-#   classCounts <- aggregate(list(classCount = df[[classVar]]), 
-#                            list(UID = df$UID, CLASS = df[[classVar]]), count)
-#   sampleSizes <- aggregate(list(totalCount = df[[classVar]]), 
-#                            list(UID = df$UID), count)
-#   classPcts <- merge(classCounts, sampleSizes, by = "UID")
-#   classPcts$pct <- 100 * classPcts$classCount/classPcts$totalCount
-#   classPcts <- merge(classPcts, classBounds, by = "CLASS", 
-#                      all.x = TRUE)
-#   classPcts <- classPcts[order(classPcts$UID, classPcts$min), 
-#                          ]
-#   classPcts$upperPct <- ave(classPcts$pct, classPcts$UID, FUN = cumsum)
-#   classPcts <- first(classPcts, "UID", "start")
-#   classPcts <- lag(classPcts, "upperPct", "lowerPct")
-#   classPcts[classPcts$start, ]$lowerPct <- 0
-#   tt <- subset(classPcts, lowerPct < percentile & percentile <= 
-#                  upperPct)
-#   tt[pctlVar] <- with(tt, min + (max - min) * (percentile - 
-#                                                  lowerPct)/(upperPct - lowerPct))
-#   tt <- tt[c("UID", pctlVar)]
-#   return(tt)
-# }
-
 
 #############
 ##TO check if bed and bank measurements were included I ran this code. This code does not distinguish between bed or bank just runs to get the mean of all 2014 particles, regardless of location. THis shows that Sarah's code is missing the BED/BANK determinations....
@@ -507,8 +537,16 @@ ThalwegSD=setNames(ThalwegSD,c("UID","SDDEPTH_CHECK"))
 Thalweg=merge(ThalwegMean,ThalwegSD,by=c('UID'), all=T)
 Thalweg$CVDEPTH_CHECK=Thalweg$SDDEPTH/Thalweg$XDEPTH
 
-                   
+#LWD
+#C1WM100- (Cummulative count of LWD in bankfull channel across all size classes)/(Reach Length) units are pieces/100m
+LWD=setNames(aggregate(RESULT~UID,data=LwdWet,FUN=sum),c("UID","C1W"))# count of all LWD pieces per site
+LWD=merge(LWD,TRCHLEN,by=c('UID'), all=T)
+LWD$C1WM100_CHECK=(LWD$C1W/LWD$TRCHLEN)*100
+
+
+  
 #Pools
+#PIBO METHOD
 #Percent pools
 pvtpools1=cast(pool_length,'UID~PARAMETER',value='RESULT',fun=sum) 
 pvtpools2=cast(reach_length,'UID~PARAMETER',value='RESULT') 
@@ -533,7 +571,11 @@ WetWid=setNames(aggregate(RESULT~UID,data=WetWid,FUN=mean),list("UID","XWIDTH_CH
 BankWid$TRANSECT=mapvalues(BankWid$TRANSECT, c("XA", "XB","XC","XD","XE","XF","XG","XH","XI","XJ","XK" ),c("A", "B","C","D","E","F","G","H","I","J","K"))#change all side channels to normal transects
 BankWid=cast(BankWid,'UID+TRANSECT~PARAMETER', value='RESULT', fun=sum)#sum across side channels and main transects
 BankWid=setNames(aggregate(BankWid$BANKWID,list(UID=BankWid$UID),mean),c("UID","XBKF_W_CHECK"))#average all transects
-BankWid=setNames(aggregate(RESULT~UID,data=BankWid,FUN=mean),list("UID","XBKF_W_CHECK"))
+bank=BankWid$XBKF_W_CHECK
+quantile(bank,0.15)
+wet=WetWid$XWIDTH_CHECK
+quantile(wet,0.15)
+                      
 
 ####################################################################################################################################                     
 #To get all calculated values together... Although some tables still have the metrics included.
