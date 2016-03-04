@@ -86,7 +86,8 @@ BRTR=tblRetrieve(Parameters=c('LAT_DD_BR','LAT_DD_TR','LON_DD_BR','LON_DD_TR'),P
 BRTR=cast(BRTR,'UID~PARAMETER',value='RESULT')
 
 #Channel Dimensions
-WetWid=tblRetrieve(Parameters=c('WETWIDTH'),Projects=projects, Years=years,Protocols=protocols)
+WetWid=tblRetrieve(Parameters=c('WETWIDTH'),Projects=projects, Years=years,Protocols=protocols)#Wetted widths from thalweg
+WetWid2=tblRetrieve(Parameters=c('WETWID'),Projects=projects, Years=years,Protocols=protocols)#Wetted widths from main transects
 BankWid=tblRetrieve(Parameters=c('BANKWID'),Projects=projects, Years=years,Protocols=protocols)
 
 #METADATA
@@ -537,14 +538,62 @@ ThalwegSD=setNames(ThalwegSD,c("UID","SDDEPTH_CHECK"))
 Thalweg=merge(ThalwegMean,ThalwegSD,by=c('UID'), all=T)
 Thalweg$CVDEPTH_CHECK=Thalweg$SDDEPTH/Thalweg$XDEPTH
 
+#
+cdData <- tblRetrieve(Parameter=c("ACTRANSP", "DISTANCE", "INCREMNT", "SIDCHN", "OFF_CHAN", "REACHLENGTH"), Projects=projects,Years=years,Protocols=protocols)
+metsoutGeneral <- metsGeneral(thalweg, channelgeometry)#working, but odd values coming out for reachlength still >> trouble shoot thalweg$STATION (currently set to numeric); seems to be good >> next up:  cdData data subset driving the station count which results in 0 for many NRSA sites which don't include all the "No"s for side channel, etc. >> cdData <- subset(indat, PARAMETER %in% c("ACTRANSP", "DISTANCE", "INCREMNT", "SIDCHN", "OFF_CHAN", "REACHLENGTH"))
+rlen=subset(metsoutGeneral,METRIC=='reachlen'); rlen$VALUEl=rlen$RESULT-(rlen$RESULT*.1); rlen$VALUEh=rlen$RESULT+(rlen$RESULT*.1)#10% bounds
+thalCheck=tblRetrieve(Parameters='TRCHLEN',UIDS=UIDs,ALL=AllData,Filter=filter,SiteCodes=sitecodes,Dates=dates,Years=years,Projects=projects,Protocols=protocols)
+thalCheck=merge(rlen,thalCheck,intersect(setdiff(colnames(metsoutGeneral),'RESULT'),colnames(thalCheck))),all.x=T)
+thalCheck$check=ifelse(thalCheck$RESULT>thalCheck$VALUEl & thalCheck$RESULT<thalCheck$VALUEh,'OK','X');thalCheck=subset(thalCheck,check=='X')
+if(nrow(thalCheck)>0){print("WARNING! Calculated reach length (METRIC=='reachlen') significantly different from field recorded Reach Length (PARAMETER=='TRCHLEN'). Confirm correct INCREMENT parameter.")}
+
+
 #LWD
 #C1WM100- (Cummulative count of LWD in bankfull channel across all size classes)/(Reach Length) units are pieces/100m
 LWD=setNames(aggregate(RESULT~UID,data=LwdWet,FUN=sum),c("UID","C1W"))# count of all LWD pieces per site
 LWD=merge(LWD,TRCHLEN,by=c('UID'), all=T)
 LWD$C1WM100_CHECK=(LWD$C1W/LWD$TRCHLEN)*100
+#V1WM100
+LWDtt <- textConnection(
+  "LWD_Cat  DIAMETER	LENGTH
+  WLDLL	0.6	15
+  WLDML	0.6	5
+  WLDSL	0.6	1.5
+  WMDLL	0.3	15
+  WMDML	0.3	5
+  WMDSL	0.3	1.5
+  WSDLL	0.1	15
+  WSDML	0.1	5
+  WSDSL	0.1	1.5
+  WXDLL	0.8	15
+  WXDML	0.8	5
+  WXDSL	0.8	1.5
+  WLDSML  0.6	1.5
+  WMDSML	0.3	1.5
+  WSDSML	0.1	1.5
+  WXDSML	0.8	1.5
+  WSDSSL	0.1	1.5
+  WXDSSL	0.8	1.5
+  WMDSSL	0.3	1.5
+  WLDSSL	0.6	1.5
+  #WLDSML	0.6	3
+  #WMDSML	0.3	3
+  #WSDSML	0.1	3
+  #WXDSML	0.8	3"
+  )
+LWD_sizes <- read.table(LWDtt, header = TRUE, stringsAsFactors = FALSE)
+close(LWDtt)
+LWD_sizes$VOLUME=pi*((1.33*(LWD_sizes$DIAMETER/2)^2)*(1.33*LWD_sizes$LENGTH))#pg 31 of Kauffman 1999 and he cites Robison 1998
+
+# XwalkUnion=Xwalk(XwalkName='Aquamet1',Table='XwalkUnion',Source='R',XwalkDirection='')#!need to formally omit unused parameters and track down unknowns to see how they are used in aquamet (i.e. Assessment, etc)
+# #collapse LWD
+# XwalkLWDsub=subset(XwalkUnion,PARAMETER %in% c('DXDSL','DSDSL','DMDSL','DLDSL','WXDSL','WSDSL','WMDSL','WLDSL'));XwalkLWDsub$RESULT=as.numeric(XwalkLWDsub$RESULT);
+# XwalkLWDagg=data.frame(cast(XwalkLWDsub,'UID+TRANSECT+POINT+TABLE+SAMPLE_TYPE+PARAMETER ~ .',value='RESULT',fun.aggregate=sum));XwalkLWDagg$RESULT=XwalkLWDagg$X.all.;XwalkLWDagg=ColCheck(XwalkLWDagg,colnames(XwalkUnion))#  228284433826712128 B
+# XwalkNOlwd=subset(XwalkUnion,(IND %in% XwalkLWDsub$IND)==FALSE)
+# XwalkUnion=rbind(XwalkLWDagg,XwalkNOlwd); rm(XwalkLWDsub); rm(XwalkLWDagg);rm(XwalkNOlwd)#XwalkUnionclean=XwalkUnion
 
 
-  
+
 #Pools
 #PIBO METHOD
 #Percent pools
@@ -563,10 +612,16 @@ poolmerge2$PoolFrq=round((poolmerge2$NumPools/poolmerge2$TRCHLEN)*10000,digits=0
 Pools=setNames(subset(poolmerge2,select=c(UID,PoolPct,RPD,PoolFrq,NumPools)),c("UID","PoolPct_CHECK","RPD_CHECK","PoolFrq_CHECK","NumPools_CHECK"))
 
 #Channel dimensions
-WetWid=subset(WetWid,POINT!=0)
-WetWid2=tblRetrieve(Parameters=c('WETWID'),Projects=projects, Years=years,Protocols=protocols)
-WetWid=rbind(WetWid,WetWid2)
-WetWid=setNames(aggregate(RESULT~UID,data=WetWid,FUN=mean),list("UID","XWIDTH_CHECK"))
+#note the EPA combines all side channel, main and intermediate transects and then takes the max wetted width for a total of 10 values (excluding transect K?) instead of 21. This is likely an artifact of them adding intermediate transects halway through the project
+#We are deviating from the EPA's method of calculating wetted width. We take the max value for main vs. side channels (should in theory always be main channel); then we average across all 21 values (main and intermediate)
+#Because of this deviation, in the future we should remove the variable differences of wetwid and wetwidth and make them the same variable
+WetWid2$TRANSECT=mapvalues(WetWid2$TRANSECT, c("XA", "XB","XC","XD","XE","XF","XG","XH","XI","XJ","XK" ),c("A", "B","C","D","E","F","G","H","I","J","K"))#change all side channels to normal transects
+WetWid2=cast(WetWid2,'UID+TRANSECT~PARAMETER', value='RESULT', fun=max)#take the maximum wetted width among side channels
+WetWid=subset(WetWid,POINT!=0)#remove duplicate wetted widths 
+WetWid=setNames(cast(WetWid,'UID+TRANSECT+POINT~PARAMETER', value='RESULT'), list ("UID","TRANSECT","POINT","WETWID"))
+WetWidSub=WetWid[,c(1,2,4)]# delete the point column
+WetWidAll=rbind(WetWidSub,WetWid2)#merge main transects and intermediate transects together
+WetWidFinal=setNames(aggregate(WETWID~UID,data=WetWidAll,FUN=mean),list("UID","XWIDTH_CHECK"))#average across all transects
 
 BankWid$TRANSECT=mapvalues(BankWid$TRANSECT, c("XA", "XB","XC","XD","XE","XF","XG","XH","XI","XJ","XK" ),c("A", "B","C","D","E","F","G","H","I","J","K"))#change all side channels to normal transects
 BankWid=cast(BankWid,'UID+TRANSECT~PARAMETER', value='RESULT', fun=sum)#sum across side channels and main transects
