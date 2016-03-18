@@ -17,7 +17,7 @@
 #############################################################################
 
 #To get WQ data for 3 parameters for all NorCal sites #add turbidity and temp
-WQtbl=tblRetrieve(Parameters=c('CONDUCTIVITY','PH','NTL','PTL','TURBIDITY','TEMPERATURE'),Projects=projects,Years=years,Protocols=protocols)
+WQtbl=tblRetrieve(Parameters=c('CONDUCTIVITY','PH','NTL','PTL','TURBIDITY','TEMPERATURE','EC_PRED','TN_PRED','TP_PRED'),Projects=projects,Years=years,Protocols=protocols)
 WQpvt=cast(WQtbl,'UID~PARAMETER',value='RESULT')
 
 
@@ -123,18 +123,31 @@ TRCHLEN=cast(TRCHLEN,'UID~PARAMETER',value='RESULT')
 #############################################################################
 #Need to decide on removing depositional banks
 #Pivot data so that Each parameter has it's own column
-Banks=cast(BankStab, 'UID+TRANSECT+POINT~PARAMETER', value='RESULT', fun=max)
+Banks=cast(BankStab, 'UID+TRANSECT+POINT~PARAMETER', value='RESULT', fun=max)#should not be using max
+#Banks2=cast(BankStab, 'UID+TRANSECT+POINT~PARAMETER', value='RESULT')
 #I want to calculate the percent of banks that are Covered.  
 Banks$CoverValue=as.numeric(ifelse(Banks$COVER=='UC',"0",ifelse(Banks$COVER=='CV',"1","NA")))
-BnkCvr=setNames(aggregate(CoverValue~UID,data=Banks, FUN=mean), c('UID','BnkCover_BLM_CHECK'))
-
 #I want to calculate the percent of banks that are Stable (Absent) 
 # Unstable==(Fracture, slump, slough, eroding)
-
 Banks$StableValue=as.numeric(ifelse(Banks$STABLE=='SP'|Banks$STABLE=='ER'|Banks$STABLE=='LH'|Banks$STABLE=='FC',"0",ifelse(Banks$STABLE=='AB',"1","NA")))
-BnkStb=setNames(aggregate(StableValue~UID,data=Banks, FUN=mean), c('UID','BnkStability_BLM_CHECK'))
+#combined stability and cover
+Banks$BnkCover_Stab=as.numeric(ifelse((Banks$CoverValue+Banks$StableValue)<2,0,1))
 
+#only erosional banks
+BanksErosional=subset(Banks, EROSION=='EL')
+BnkCvrErosional=setNames(aggregate(CoverValue~UID,data=BanksErosional, FUN=mean), c('UID','BnkCover_Erosional_CHECK'))
+BnkStbErosional=setNames(aggregate(StableValue~UID,data=BanksErosional, FUN=mean), c('UID','BnkStability_Erosional_CHECK'))
+BnkCover_StabErosional=setNames(aggregate(BnkCover_Stab~UID,data=BanksErosional, FUN=mean), c('UID','BnkCover_StabErosional_CHECK'))
 
+#both erosional and depositional banks
+BanksAll=Banks
+BnkCvrAll=setNames(aggregate(CoverValue~UID,data=BanksAll, FUN=mean), c('UID','BnkCover_All_CHECK'))
+BnkStbAll=setNames(aggregate(StableValue~UID,data=BanksAll, FUN=mean), c('UID','BnkStability_All_CHECK'))
+BnkCover_StabAll=setNames(aggregate(BnkCover_Stab~UID,data=BanksAll, FUN=mean), c('UID','BnkCover_StabAll_CHECK'))
+
+#merge all bank files
+BnkErosional=merge(BnkCover_StabErosional,merge(BnkCvrErosional,BnkStbErosional,by="UID", all=TRUE), by="UID",all=TRUE)
+BnkAll=merge(BnkCover_StabAll, merge(BnkCvrAll,BnkStbAll,by="UID",all=TRUE),by="UID",all=TRUE)
 
 #############################################################################
 
@@ -143,9 +156,11 @@ BnkStb=setNames(aggregate(StableValue~UID,data=Banks, FUN=mean), c('UID','BnkSta
 #############################################################################
 
 #At the end, all columns with "Check" at the end are included in the main file
-
-WQfinal=setNames(WQpvt,c("UID","CONDUCTIVITY_CHECK","NTL_CHECK","PH_CHECK","PTL_CHECK","TEMPERATURE_CHECK","TURBIDITY_CHECK"))
-WQfinal=WQfinal[,c(1,4,2,3,5,6,7)]
+WQpvt$OE_EC=WQpvt$CONDUCTIVITY-WQpvt$EC_PRED
+WQpvt$OE_TN=WQpvt$NTL-WQpvt$TN_PRED
+WQpvt$OE_TP=WQpvt$PTL-WQpvt$TP_PRED
+WQfinal=setNames(WQpvt,c("UID","CONDUCTIVITY_CHECK","EC_PRED_CHECK","NTL_CHECK","PH_CHECK","PTL_CHECK","TEMPERATURE_CHECK","TN_PRED_CHECK","TP_PRED_CHECK","TURBIDITY_CHECK","OE_TN_CHECK","OE_TP_CHECK","OE_EC_CHECK"))
+WQfinal=WQfinal[,c(1,2,3,13,6,9,12,4,8,11,5,7,10)]
 
 
 #############################################################################
@@ -252,7 +267,8 @@ F_Sed2014$PCT_SAFN_CHECK=F_Sed2014$PCT_SAFN_CHECK*100
 PCT_SAFN_ALL=rbind(pctsafn,F_Sed2014)
 
 
-##other sediment metrics
+###################################################################################################################################
+#other sediment metrics
 Sed2014=bintranslate(Table='Sed2014',ST='CROSSSECW',PM='SIZE_NUM')
 
 
@@ -538,7 +554,7 @@ ThalwegSD=setNames(ThalwegSD,c("UID","SDDEPTH_CHECK"))
 Thalweg=merge(ThalwegMean,ThalwegSD,by=c('UID'), all=T)
 Thalweg$CVDEPTH_CHECK=Thalweg$SDDEPTH/Thalweg$XDEPTH
 
-#
+###########################################
 cdData <- tblRetrieve(Parameter=c("ACTRANSP", "DISTANCE", "INCREMNT", "SIDCHN", "OFF_CHAN", "REACHLENGTH"), Projects=projects,Years=years,Protocols=protocols)
 metsoutGeneral <- metsGeneral(thalweg, channelgeometry)#working, but odd values coming out for reachlength still >> trouble shoot thalweg$STATION (currently set to numeric); seems to be good >> next up:  cdData data subset driving the station count which results in 0 for many NRSA sites which don't include all the "No"s for side channel, etc. >> cdData <- subset(indat, PARAMETER %in% c("ACTRANSP", "DISTANCE", "INCREMNT", "SIDCHN", "OFF_CHAN", "REACHLENGTH"))
 rlen=subset(metsoutGeneral,METRIC=='reachlen'); rlen$VALUEl=rlen$RESULT-(rlen$RESULT*.1); rlen$VALUEh=rlen$RESULT+(rlen$RESULT*.1)#10% bounds
@@ -626,19 +642,21 @@ WetWidFinal=setNames(aggregate(WETWID~UID,data=WetWidAll,FUN=mean),list("UID","X
 BankWid$TRANSECT=mapvalues(BankWid$TRANSECT, c("XA", "XB","XC","XD","XE","XF","XG","XH","XI","XJ","XK" ),c("A", "B","C","D","E","F","G","H","I","J","K"))#change all side channels to normal transects
 BankWid=cast(BankWid,'UID+TRANSECT~PARAMETER', value='RESULT', fun=sum)#sum across side channels and main transects
 BankWid=setNames(aggregate(BankWid$BANKWID,list(UID=BankWid$UID),mean),c("UID","XBKF_W_CHECK"))#average all transects
-bank=BankWid$XBKF_W_CHECK
-quantile(bank,0.15)
-wet=WetWid$XWIDTH_CHECK
-quantile(wet,0.15)
+#bank=BankWid$XBKF_W_CHECK
+#quantile(bank,0.15)
+#wet=WetWid$XWIDTH_CHECK
+#quantile(wet,0.15)
                       
 
 ####################################################################################################################################                     
 #To get all calculated values together... Although some tables still have the metrics included.
-IndicatorCheckJoin=join_all(list(listsites,WQfinal,BnkCvr,BnkStb,fishpvt2,DensPvt,BnkDensPvt,XCMGW_new1,XCMG_new1,XGB_new1,IncBnk,BankWid,WetWid,XEMBED,PCT_SAFN_ALL,W1_HALL,QR1,MeanAngle,Slope_Per,Thalweg,Pools),by="UID")
+#IndicatorCheckJoin=join_all(list(listsites,WQfinal,BnkErosional,BnkAll,fishpvt2,DensPvt,BnkDensPvt,XCMGW_new1,XCMG_new1,XGB_new1,IncBnk,BankWid,WetWid,XEMBED,PCT_SAFN_ALL,W1_HALL,QR1,MeanAngle,Slope_Per,Thalweg,Pools),by="UID")
+IndicatorCheckJoin=join_all(list(listsites,WQfinal,BnkErosional,BnkAll,fishpvt2,DensPvt,BnkDensPvt,XCMG_new1,IncBnk,BankWid,WetWidFinal,XEMBED,PCT_SAFN_ALL,MeanAngle,Slope_Per,Thalweg,Pools,LWD),by="UID")
+
 #To remove all of the metrics and only get the indicators subset by UID and all those columns ending in "CHECK". Hmm..not really sure what the $ is doing here, the code works without it, but all the examples I've looked at keep the $ so I kept it too... 
 IndicatorCheck=IndicatorCheckJoin[,c("UID",grep("CHECK$", colnames(IndicatorCheckJoin),value=TRUE))]
 #write.csv(IndicatorCheck,"C:\\Users\\Nicole\\Desktop\\IndicatorCheck2.csv")
 #Remove all other data files as they are no longer needed
-
+write.csv(IndicatorCheck,"IndicatorCheck_17March2016.csv")
 rm(PHfinal,XGB_new,XGB_new1,BankStab,Banks,RipGB,EMBED,Human_Influ,W1_HALL,W1_HALL_NRSA,QR1,XEMBED,BnkDensPvt,BnkDensiom,densiom,RipXCMG,XCMG_new,XCMG_new1,RipWW,XCMGW_new,XCMGW_new1,IndicatorCheckJoin,fish,fishpvt2,
    MidDensiom,DensPvt,Incision,INCISED,BANKHT,Inc,Bnk,xIncht,xBnkht,IncBnk,Sediment,pctsafn,Sed2014,A_Sed2014,C_Sed2014,E_Sed2014,F_Sed2014,PCT_SAFN_ALL)

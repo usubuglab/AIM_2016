@@ -45,7 +45,7 @@ combined=read.csv("\\\\share1.bluezone.usu.edu\\miller\\buglab\\Research Project
 
 #Use to get wadeable or boatable only, if this line isn't run both boatable and wadeable will be used. Change REALM== "" to specify 
 combined=subset(combined, REALM == "WADEABLE")
-
+#combined=subset(combined, REALM == "BOATABLE")
 #To subset for reference to use on RIPARIAN indicators.
 #First subset the data to only include sites with R or S designations
 RIP_RS_combined=subset(combined, RST_FRIP_AND_RMD_PHAB == "R"|RST_FRIP_AND_RMD_PHAB == "S")
@@ -234,7 +234,7 @@ rm(RIP_RS_combined,RIP_RS_reorder,RIP_RS_minusDup,SED_RS_combined,SED_RS_reorder
 # SETTING THRESHOLDS FOR ECO10!!!
 
 ###############################################################################################
-# Use riparian reference sites for:  XCDENMID, XCMG, XCMGW, and PH!!
+# Use riparian reference sites for:  XCDENMID, XCDENBK, XCMG, XCMGW, and PH!!
 #Use riparian reference for PH because 
 ## 1) P-hab reference were selected using a variety of filters, since we do not have specific chemical reference sites we used p-hab reference
 ## 2) There are a few more reference sites for riparian than for sediment so Riparian was used over Sediment.  
@@ -242,14 +242,18 @@ rm(RIP_RS_combined,RIP_RS_reorder,RIP_RS_minusDup,SED_RS_combined,SED_RS_reorder
 T1=setNames(aggregate(RIP_RS_final$XCDENMID, by = list(RIP_RS_final$ECO10), FUN = quantile,probs=0.10,na.rm=TRUE), c("ECO10","XCDENMID_0.10"))
 T2=setNames(aggregate(RIP_RS_final$XCDENMID, by = list(RIP_RS_final$ECO10), FUN = quantile,probs=0.30,na.rm=TRUE), c("ECO10","XCDENMID_0.30"))
 T5=join_all(list(T1,T2), by="ECO10")
+#XCDENBK
+T1=setNames(aggregate(RIP_RS_final$XCDENBK, by = list(RIP_RS_final$ECO10), FUN = quantile,probs=0.10,na.rm=TRUE), c("ECO10","XCDENBK_0.10"))
+T2=setNames(aggregate(RIP_RS_final$XCDENBK, by = list(RIP_RS_final$ECO10), FUN = quantile,probs=0.30,na.rm=TRUE), c("ECO10","XCDENBK_0.30"))
+T6=join_all(list(T1,T2), by="ECO10")
 #XCMG
 T1=setNames(aggregate(RIP_RS_final$XCMG, by = list(RIP_RS_final$ECO10), FUN = quantile,probs=0.10,na.rm=TRUE), c("ECO10","XCMG_0.10"))#changing alpha
 T2=setNames(aggregate(RIP_RS_final$XCMG, by = list(RIP_RS_final$ECO10), FUN = quantile,probs=0.30,na.rm=TRUE), c("ECO10","XCMG_0.30"))#changing alpha
-T6=join_all(list(T1,T2), by="ECO10")
+T7=join_all(list(T1,T2), by="ECO10")
 #XCMGW
 T1=setNames(aggregate(RIP_RS_final$XCMGW, by = list(RIP_RS_final$ECO10), FUN = quantile,probs=0.10,na.rm=TRUE), c("ECO10","XCMGW_0.10"))
 T2=setNames(aggregate(RIP_RS_final$XCMGW, by = list(RIP_RS_final$ECO10), FUN = quantile,probs=0.30,na.rm=TRUE), c("ECO10","XCMGW_0.30"))
-T7=join_all(list(T1,T2), by="ECO10")
+T8=join_all(list(T1,T2), by="ECO10")
 
 #PH
 #PH thresholds were determine to be too strict so we are using the national standards of <6.5 and >9.0 as Poor, >7 and <8.5 as Good.
@@ -266,7 +270,7 @@ T7=join_all(list(T1,T2), by="ECO10")
 #T18=join_all(list(T11,T12,T14,T13), by="ECO10")
 
 ##Combine all
-RIP_THRESHOLDS_ECO10=join_all(list(T5,T6,T7),by="ECO10")
+RIP_THRESHOLDS_ECO10=join_all(list(T5,T6,T7,T8),by="ECO10")
 
 ###################################################################################
 ###################################################################################
@@ -289,8 +293,12 @@ T8=join_all(list(T3,T4), by="ECO10")
 T3=setNames(aggregate(SED_RS_final$XEMBED, by = list(SED_RS_final$ECO10), FUN = quantile,probs=0.70,na.rm=TRUE), c("ECO10","XEMBED_0.70"))
 T4=setNames(aggregate(SED_RS_final$XEMBED, by = list(SED_RS_final$ECO10), FUN = quantile,probs=0.90,na.rm=TRUE), c("ECO10","XEMBED_0.90"))
 T9=join_all(list(T3,T4), by="ECO10")
+#RP100
+T1=setNames(aggregate(SED_RS_final$RP100, by = list(SED_RS_final$ECO10), FUN = quantile,probs=0.10,na.rm=TRUE), c("ECO10","RP100_0.10"))
+T2=setNames(aggregate(SED_RS_final$RP100, by = list(SED_RS_final$ECO10), FUN = quantile,probs=0.30,na.rm=TRUE), c("ECO10","RP100_0.30"))
+T10=join_all(list(T1,T2), by="ECO10")
 ##Combine all
-SED_THRESHOLDS_ECO10=join_all(list(T5,T7,T8,T9),by="ECO10")
+SED_THRESHOLDS_ECO10=join_all(list(T5,T7,T8,T9,T10),by="ECO10")
 
 ###################################################################################
 # Use set thresholds for:  L_XCMGW, W1_HALL, QR1
