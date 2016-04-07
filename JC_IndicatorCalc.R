@@ -56,6 +56,7 @@ Sed2014=tblRetrieve(Parameters=c('SIZE_NUM','LOC'),Projects=projects,Years=years
 #unique(Sedimentpvt$POINT)# check data structure
 #Sed2014pvt=cast(Sed2014,'UID+TRANSECT+POINT~PARAMETER',value='RESULT')# check data structure to make sure no duplicates
 #unique(Sed2014pvt$POINT)# check data structure
+#unique(Sed2014pvt$LOC)
 #min(Sed2014pvt$SIZE_NUM);max(Sed2014pvt$SIZE_NUM)
 #WR_Sed2014=tblRetrieve(Parameters=c('SIZE_NUM'),Projects=projects,Years=years,Protocols=protocols)
 
@@ -173,19 +174,32 @@ Banks$BnkCover_Stab=as.numeric(ifelse((Banks$CoverValue+Banks$StableValue)<2,0,1
 
 #only erosional banks
 BanksErosional=subset(Banks, EROSION=='EL')
-BnkCvrErosional=setNames(round(aggregate(CoverValue~UID,data=BanksErosional, FUN=mean)*100,digits=0), c('UID','BnkCover_Erosional_CHECK'))
-BnkStbErosional=setNames(round(aggregate(StableValue~UID,data=BanksErosional, FUN=mean)*100,digits=0), c('UID','BnkStability_Erosional_CHECK'))
-BnkCover_StabErosional=setNames(round(aggregate(BnkCover_Stab~UID,data=BanksErosional, FUN=mean)*100,digits=0), c('UID','BnkCover_StabErosional_CHECK'))
+BnkCvrErosional=setNames(aggregate(CoverValue~UID,data=BanksErosional, FUN=mean), c('UID','BnkCover_Erosional_CHECK'))
+BnkStbErosional=setNames(aggregate(StableValue~UID,data=BanksErosional, FUN=mean), c('UID','BnkStability_Erosional_CHECK'))
+BnkCover_StabErosional=setNames(aggregate(BnkCover_Stab~UID,data=BanksErosional, FUN=mean), c('UID','BnkCover_StabErosional_CHECK'))
+#samplesize
+nBnkCover_StabErosional=setNames(aggregate(BnkCover_Stab~UID,data=BanksErosional, FUN=length), c('UID','nBnkCover_StabErosional_CHECK'))
 
 #both erosional and depositional banks
 BanksAll=Banks
-BnkCvrAll=setNames(round(aggregate(CoverValue~UID,data=BanksAll, FUN=mean)*100,digits=0), c('UID','BnkCover_All_CHECK'))
-BnkStbAll=setNames(round(aggregate(StableValue~UID,data=BanksAll, FUN=mean)*100,digits=0), c('UID','BnkStability_All_CHECK'))
-BnkCover_StabAll=setNames(round(aggregate(BnkCover_Stab~UID,data=BanksAll, FUN=mean)*100,digits=0), c('UID','BnkCover_StabAll_CHECK'))
+BnkCvrAll=setNames(aggregate(CoverValue~UID,data=BanksAll, FUN=mean), c('UID','BnkCover_All_CHECK'))
+BnkStbAll=setNames(aggregate(StableValue~UID,data=BanksAll, FUN=mean), c('UID','BnkStability_All_CHECK'))
+BnkCover_StabAll=setNames(aggregate(BnkCover_Stab~UID,data=BanksAll, FUN=mean), c('UID','BnkCover_StabAll_CHECK'))
+#samplesize
+nBnkCover_StabAll=setNames(aggregate(BnkCover_Stab~UID,data=BanksAll, FUN=length), c('UID','nBnkCover_StabAll_CHECK'))# should not be less than 21
 
 #merge all bank files
-BnkErosional=merge(BnkCover_StabErosional,merge(BnkCvrErosional,BnkStbErosional,by="UID", all=TRUE), by="UID",all=TRUE)
-BnkAll=merge(BnkCover_StabAll, merge(BnkCvrAll,BnkStbAll,by="UID",all=TRUE),by="UID",all=TRUE)
+BnkErosional=join_all(list(BnkCover_StabErosional,BnkCvrErosional,BnkStbErosional,nBnkCover_StabErosional), by="UID")
+BnkAll=join_all(list(BnkCover_StabAll,BnkCvrAll,BnkStbAll,nBnkCover_StabAll,nBnkCover_StabAll), by="UID")
+
+#remove cases with less than 50% of data #15 sites excluded?
+BnkErosional$BnkCover_StabErosional_CHECK=ifelse(BnkErosional$nBnkCover_StabErosional_CHECK<21,NA,BnkErosional$BnkCover_StabErosional_CHECK) 
+BnkErosional$BnkCover_Erosional_CHECK=ifelse(BnkErosional$nBnkCover_StabErosional_CHECK<21,NA,BnkErosional$BnkCover_Erosional_CHECK)  
+BnkErosional$BnkStability_Erosional_CHECK=ifelse(BnkErosional$nBnkCover_StabErosional_CHECK<21,NA,BnkErosional$BnkStability_Erosional_CHECK) 
+
+BnkAll$BnkCover_StabAll_CHECK=ifelse(BnkAll$nBnkCover_StabAll_CHECK<21,NA,BnkAll$BnkCover_StabAll_CHECK) 
+BnkAll$BnkCover_All_CHECK=ifelse(BnkAll$nBnkCover_StabAll_CHECK<21,NA,BnkAll$BnkCover_All_CHECK)  
+BnkAll$BnkStability_All_CHECK=ifelse(BnkAll$nBnkCover_StabAll_CHECK<21,NA,BnkAll$BnkStability_All_CHECK) 
 
 #############################################################################
 
@@ -220,6 +234,11 @@ WQfinal=WQfinal[,c(1,2,3,13,6,9,12,4,8,11,5,7,10)]
 fish$ResultsPer=ifelse(fish$RESULT == 1, 0.05,ifelse(fish$RESULT == 2, 0.25,ifelse(fish$RESULT == 3, 0.575,ifelse(fish$RESULT == 4, 0.875,ifelse(fish$RESULT ==0, 0, NA)))))
 fishpvt2=cast(fish,'UID~PARAMETER', value='ResultsPer',fun='mean')
 fishpvt2$XFC_NAT_CHECK=round(rowSums(fishpvt2[,c(2,3,4,5,6,7)]),digits=2)
+#sample size
+fishpvt3=cast(fish,'UID~PARAMETER', value='ResultsPer',fun='length')
+fishpvt2$nXFC_NAT_CHECK=(fishpvt3$BOULDR+fishpvt3$BRUSH+fishpvt3$LVTREE+fishpvt3$OVRHNG+fishpvt3$UNDCUT+fishpvt3$WOODY)
+#fishpvt5=subset(fishpvt2,nXFC_NAT_CHECK<33)#only 4 sites that this applies to and 28 was the lowest so decided to use all data 
+#fishpvt2$XFC_NAT_CHECK=ifelse(fishpvt2$nXFC_NAT_CHECK<33,NA,fishpvt2$XFC_NAT_CHECK)
 
 #xcdenmid
 MidDensiom = subset(densiom, POINT == "CU"|POINT =="CD"|POINT == "CL"|POINT == "CR")
@@ -227,11 +246,15 @@ DensPvt=cast(MidDensiom,'UID~PARAMETER',value='RESULT',fun=mean)
 DensPvt$xcdenmid_CHECK=round((DensPvt$DENSIOM/17)*100,digits=2)
 #Trying to figure out what is going on with UID 11802.
 #Dens_Pvt3=cast(MidDens3,'UID+TRANSECT~PARAMETER',value='RESULT',fun=mean)
+nDensPvt=setNames(count(MidDensiom,"UID"),c("UID","nxcdenmid_CHECK"))
+DensPvt=merge(nDensPvt,DensPvt,by="UID")
 
 #xcdenbk
 BnkDensiom = subset(densiom, POINT == "LF"|POINT =="RT")
 BnkDensPvt=cast(BnkDensiom,'UID~PARAMETER',value='RESULT',fun=mean)
 BnkDensPvt$xcdenbk_CHECK=round((BnkDensPvt$DENSIOM/17)*100,digits=2)
+nBnkDensPvt=setNames(count(BnkDensiom,"UID"),c("UID","nxcdenbk_CHECK"))
+BnkDensPvt=merge(nBnkDensPvt,BnkDensPvt,by="UID")
 
 #LINCIS_H
 ###First the max value of either the side channel or main channel needs to be chosen. To do this I changed all side channels (X-letter) to just the main letter (Sidechannel at A (XA) would be changed to just A).
@@ -245,9 +268,14 @@ Inc=cast(INCISED,'UID+TRANSECT~PARAMETER', value='RESULT', fun=max)
 Bnk=cast(BANKHT,'UID+TRANSECT~PARAMETER', value='RESULT', fun=max)
 xIncht=setNames(aggregate(Inc$INCISED,list(UID=Inc$UID),mean),c("UID","xinc_h_CHECK"))
 xBnkht=setNames(aggregate(Bnk$BANKHT,list(UID=Bnk$UID),mean),c("UID","xbnk_h_CHECK"))
-IncBnk=merge(xBnkht,xIncht,all=TRUE)
-IncBnk$LINCIS_H_CHECK=round(log10(IncBnk$xinc_h_CHECK-IncBnk$xbnk_h_CHECK+0.1),digits=2)
 
+#sample sizes
+nInc=setNames(count(Inc,"UID"),c("UID","nxinc_h_CHECK"))
+nBnk=setNames(count(Bnk,"UID"),c("UID","nbnk_h_CHECK"))   
+
+IncBnk=join_all(list(xBnkht,xIncht,nInc, nBnk),by="UID")
+IncBnk$LINCIS_H_CHECK=round(log10(IncBnk$xinc_h_CHECK-IncBnk$xbnk_h_CHECK+0.1),digits=2)
+           
 
 ###############################################
 ##########   TROUBLESHOOTING START  ###########
@@ -290,7 +318,8 @@ pctsafn=setNames((aggregate(Sediment$SAFN_True,by=list(UID=Sediment$UID), data=S
 pctsafn$PCT_SAFN_CHECK=round(pctsafn$PCT_SAFN_CHECK*100,digits=1)
 Sedimentpvt=cast(Sediment,'UID~PARAMETER',value='RESULT',fun=length)# number of pebbles collected at intermediate and main transects
 Sedimentpvt$nPCT_SAFN_CHECK=(Sedimentpvt$SIZE_CLS+Sedimentpvt$XSIZE_CLS) # number of pebbles collected at all transects only 4 boating sites had less than 50
-pctsafn=cbind(pctsafn,Sedimentpvt)
+Sedimentpvtsub=subset(Sedimentpvt,select=c(UID,nPCT_SAFN_CHECK))
+pctsafn_2013=merge(pctsafn,Sedimentpvtsub,by="UID")
 
 #Now for 2014 data... 
 A_Sed2014=cast(Sed2014,'UID+TRANSECT+POINT~PARAMETER', value='RESULT')
@@ -300,6 +329,14 @@ A_Sed2014=cast(Sed2014,'UID+TRANSECT+POINT~PARAMETER', value='RESULT')
 #B_Sed2014=A_Sed2014[order(A_Sed2014$SIZE_NUM),]
 #View(B_Sed2014[2000:2588,])
 
+#All pebbles 
+E_Sed2014=C_Sed2014[complete.cases(C_Sed2014[,c("LOC","SIZE_NUM")]),]
+E_Sed2014$SAFN_True=ifelse(E_Sed2014$SIZE_NUM == "1", 1, 0)
+F_Sed2014=setNames(aggregate(E_Sed2014$SAFN_True,list(UID=E_Sed2014$UID),mean), c("UID","PCT_SAFN_CHECK"))########this still counts particles with 0s in the particle count and as not fines; is this what we want to do?
+F_Sed2014$PCT_SAFN_CHECK=round(F_Sed2014$PCT_SAFN_CHECK*100,digits=1)
+
+
+#only bed pebbles
 #Remove all sediment records that were collected on the "BANK"
 C_Sed2014=A_Sed2014[!A_Sed2014$LOC== "BANK", ]
 #Can't use na.omit because it omits all records with an NA in ANY field. I only want to remove NAs in the LOC and the SIZE_NUM (sediment result) field. 
@@ -308,19 +345,23 @@ E_Sed2014$SAFN_True=ifelse(E_Sed2014$SIZE_NUM == "1", 1, 0)
 F_Sed2014=setNames(aggregate(E_Sed2014$SAFN_True,list(UID=E_Sed2014$UID),mean), c("UID","PCT_SAFN_CHECK"))########this still counts particles with 0s in the particle count and as not fines; is this what we want to do?
 F_Sed2014$PCT_SAFN_CHECK=round(F_Sed2014$PCT_SAFN_CHECK*100,digits=1)
 
-Nall_Sed2014pvt=cast(Sed2014,'UID~PARAMETER',value='RESULT',fun=length)# missing data
-
-Nbank_Sed2014pvt=cast(Sed2014bank,'UID~PARAMETER',value='RESULT',fun=length)# missing data
-Sed2014pvtmissing=subset(Sed2014pvt,SIZE_NUM<105|LOC<105)
+#sample sizes
+Nall_Sed2014pvt=setNames(cast(Sed2014,'UID~PARAMETER',value='RESULT',fun=length),c("UID","nLOC","nallPCT_SAFN_CHECK"))#number of all collected pebbles
+Nall_Sed2014pvtsub=subset(Nall_Sed2014pvt, select=c(UID,nallPCT_SAFN_CHECK))
+Nbed_Sed2014pvt=aggregate(.~UID, data=C_Sed2014, length)#number of bed pebbles
+Nbed=setNames(subset(Nbed_Sed2014pvt, select=c(UID,SIZE_NUM)),c("UID","nPCT_SAFN_CHECK"))
 # 7 sites from AK had right around 100 which they should according the the AK protocol
 # 4 WRSA sites had right around 100 pebbles so these were included
 # 2 WRSA sites had values between 60-70 but this is still more than half of pebbles collected in 2013 so this data was included and used
 # 2 CO sites have values around 100 but OK
 # 1 NV site at 59 and 1 NV at 100
 
-# Combine the two datasets for PCT_SAFN together so that I don't have multiple files for the same thing
-PCT_SAFN_ALL=rbind(pctsafn,F_Sed2014)
+G_Sed2014=merge(F_Sed2014,Nbed, by="UID")
 
+# Combine the two datasets for PCT_SAFN together so that I don't have multiple files for the same thing
+H_Sed=rbind(pctsafn_2013,G_Sed2014)
+PCT_SAFN_ALL=join(H_Sed,Nall_Sed2014pvtsub,by="UID",type="left")
+PCT_SAFN_sub=subset(PCT_SAFN_ALL,nPCT_SAFN_CHECK<50)
 
 ###################################################################################################################################
 #other sediment metrics
@@ -484,6 +525,9 @@ calcs <- merge(c16, merge(c50, c84, by = "UID", all = TRUE),
 RipXCMG$ResultsPer=ifelse(RipXCMG$RESULT == 1, 0.05,ifelse(RipXCMG$RESULT == 2, 0.25,ifelse(RipXCMG$RESULT == 3, 0.575,ifelse(RipXCMG$RESULT == 4, 0.875,ifelse(RipXCMG$RESULT ==0, 0, NA)))))
 XCMG_new=setNames(cast(RipXCMG,'UID+TRANSECT+POINT~ACTIVE', value='ResultsPer',fun='sum'),list('UID',  'TRANSECT',  'POINT',  'VALUE'))
 XCMG_new1=setNames(aggregate(VALUE~UID,data=XCMG_new,FUN=mean),list("UID","XCMG_CHECK"))
+#sample sizes
+nXCMG_new=setNames(count(RipXCMG,"UID"),c("UID","nXCMG_CHECK"))#6 strata *2 banks*11 transects=132 so half data=66
+XCMG_new1=merge(nXCMG_new,XCMG_new1, by="UID")
 
 #RipGB
 RipGB$ResultsPer=ifelse(RipGB$RESULT == 1, 0.05,ifelse(RipGB$RESULT == 2, 0.25,ifelse(RipGB$RESULT == 3, 0.575,ifelse(RipGB$RESULT == 4, 0.875,ifelse(RipGB$RESULT ==0, 0, NA)))))
@@ -552,6 +596,8 @@ XCMGW_new1$L_XCMGW_CHECK=log10(XCMGW_new1$XCMGW_CHECK)
 
 #Xembed
 XEMBED=setNames(cast(EMBED,'UID~PARAMETER', value='RESULT', fun='mean'), list('UID','XEMBED_CHECK'))
+nXEMBED=setNames(count(EMBED,"UID"),c("UID","nXEMBED"))
+XEMBED=merge(XEMBED,nXEMBED,by="UID")
 
 #W1_HALL
 #Be careful, the documentation says to use P=0.667, but the aquamet code says 0.6667, if there ends up being a lot of P's in the data this makes a difference!!! 
@@ -593,7 +639,10 @@ QR1$QR1_CHECK=(QR1$QRveg1*QR1$QRVeg2*QR1$QRDIST1)^0.333
 ###########################################
 #Angle
 Angle$RESULT=ifelse(Angle$RESULT<45,45,Angle$RESULT)
-MeanAngle=setNames(cast(Angle,'UID~PARAMETER',value='RESULT',fun=mean),c("UID","ANGLE180_CHECK"))                                             
+MeanAngle=setNames(round(cast(Angle,'UID~PARAMETER',value='RESULT',fun=mean),digits=0),c("UID","ANGLE180_CHECK"))                                             
+#sample size
+nAngle=setNames(count(Angle,"UID"),c("UID","nAngle_CHECK"))
+MeanAngle=merge(nAngle,MeanAngle, by="UID")
 
 #Slope
 Slope_height=cast(Slope_height, 'UID~PARAMETER',value='RESULT',fun=sum)
@@ -605,6 +654,7 @@ Slope_Per=setNames(Slope_Per,c("UID","SLOPE_CHECK","SLPRCHLEN_CHECK","SlopePct_C
 #Thalweg                                                                                                                                                                    
 ThalwegMean=round(cast(thalweg,'UID~PARAMETER',value='RESULT',fun=mean),digits=1)
 ThalwegMean=setNames(ThalwegMean, c("UID","XDEPTH_CHECK"))
+ThalwegSD=cast(thalweg,'UID~PARAMETER',value='RESULT',fun=sd)
 ThalwegSD=setNames(ThalwegSD,c("UID","SDDEPTH"))
 Thalweg=merge(ThalwegMean,ThalwegSD,by=c('UID'), all=T)
 Thalweg$CVDEPTH_CHECK=Thalweg$SDDEPTH/Thalweg$XDEPTH
@@ -693,6 +743,8 @@ WetWid=setNames(cast(WetWid,'UID+TRANSECT+POINT~PARAMETER', value='RESULT'), lis
 WetWidSub=WetWid[,c(1,2,4)]# delete the point column
 WetWidAll=rbind(WetWidSub,WetWid2)#merge main transects and intermediate transects together
 WetWidFinal=setNames(round(aggregate(WETWID~UID,data=WetWidAll,FUN=mean),digits=2),list("UID","XWIDTH_CHECK"))#average across all transects
+nWetWid=setNames(count(WetWidAll,"UID"),c("UID","nXWIDTH_CHECK"))
+WetWidFinal=merge(nWetWid,WetWidFinal)
 
 ##checking for interupted flow sites
 # checkzero=rbind(WetWid,WetWid2)
@@ -702,8 +754,11 @@ WetWidFinal=setNames(round(aggregate(WETWID~UID,data=WetWidAll,FUN=mean),digits=
 # checkzerosubset=subset(checkzerosubset,POINT=!0)
 
 BankWid$TRANSECT=mapvalues(BankWid$TRANSECT, c("XA", "XB","XC","XD","XE","XF","XG","XH","XI","XJ","XK" ),c("A", "B","C","D","E","F","G","H","I","J","K"))#change all side channels to normal transects
-BankWid=cast(BankWid,'UID+TRANSECT~PARAMETER', value='RESULT', fun=sum)#sum across side channels and main transects
-BankWid=setNames(round(aggregate(BankWid$BANKWID,list(UID=BankWid$UID),mean),digits=2),c("UID","XBKF_W_CHECK"))#average all transects
+BankWidpvt=cast(BankWid,'UID+TRANSECT~PARAMETER', value='RESULT', fun=sum)#sum across side channels and main transects
+BankWidpvt=setNames(round(aggregate(BankWidpvt$BANKWID,list(UID=BankWidpvt$UID),mean),digits=2),c("UID","XBKF_W_CHECK"))#average all transects
+nBankWid=setNames(count(BankWid,"UID"),c("UID","nXBXK_W_CHECK"))
+BankWidFinal=merge(nBankWid,BankWidpvt)
+
 #bank=BankWid$XBKF_W_CHECK
 #quantile(bank,0.15)
 #wet=WetWid$XWIDTH_CHECK
@@ -713,7 +768,7 @@ BankWid=setNames(round(aggregate(BankWid$BANKWID,list(UID=BankWid$UID),mean),dig
 ####################################################################################################################################                     
 #To get all calculated values together... Although some tables still have the metrics included.
 #IndicatorCheckJoin=join_all(list(listsites,WQfinal,BnkErosional,BnkAll,fishpvt2,DensPvt,BnkDensPvt,XCMGW_new1,XCMG_new1,XGB_new1,IncBnk,BankWid,WetWid,XEMBED,PCT_SAFN_ALL,W1_HALL,QR1,MeanAngle,Slope_Per,Thalweg,Pools),by="UID")
-IndicatorCheckJoin=join_all(list(listsites,WQfinal,BnkErosional,BnkAll,fishpvt2,DensPvt,BnkDensPvt,XCMG_new1,IncBnk,BankWid,WetWidFinal,XEMBED,PCT_SAFN_ALL,MeanAngle,Slope_Per,Thalweg,Pools,LWD),by="UID")
+IndicatorCheckJoin=join_all(list(listsites,WQfinal,BnkErosional,BnkAll,fishpvt2,DensPvt,BnkDensPvt,XCMG_new1,IncBnk,BankWidFinal,WetWidFinal,XEMBED,PCT_SAFN_ALL,MeanAngle,Slope_Per,Thalweg,Pools,LWD),by="UID")
 
 #To remove all of the metrics and only get the indicators subset by UID and all those columns ending in "CHECK". Hmm..not really sure what the $ is doing here, the code works without it, but all the examples I've looked at keep the $ so I kept it too... 
 IndicatorCheck=IndicatorCheckJoin[,c("UID",grep("CHECK$", colnames(IndicatorCheckJoin),value=TRUE))]
