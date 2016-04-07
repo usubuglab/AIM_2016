@@ -43,12 +43,17 @@ rm(EMAP,NRSA,T_NRSA,T_EMAP,Merged2,final1)
 
 combined=read.csv("\\\\share1.bluezone.usu.edu\\miller\\buglab\\Research Projects\\BLM_WRSA_Stream_Surveys\\Results and Reports\\EPA_Data\\Comb_21Oct2014_Rinput_DoNotAlter.csv")
 
+#add back in a few columns from Mass_Combination_NRSA_EMAP
+#key in combined file is SITE_ID
+Final2sub=subset(Final2,select=c(SITE_ID,XSLOPE,XSLOPE_FIELD,XSLOPE_FRDATA,XSLOPE_FRREF,XSLOPE_MAP,XWD_RAT,XWIDTH,XWXD,XBKF_W,XDEPTH,V1W_MSQ,V1WM100,V2W_MSQ,V2WM100,V4W_MSQ,V4WM100,C1TM100,C1WM100,C2TM100,C2WM100,C4TM100,C4WM100,FLOWSITE))
+combined2=join(combined,Final2sub,by='SITE_ID', type="left",match="all")
+
 #Use to get wadeable or boatable only, if this line isn't run both boatable and wadeable will be used. Change REALM== "" to specify 
-combined=subset(combined, REALM == "WADEABLE")
-#combined=subset(combined, REALM == "BOATABLE")
+combined2=subset(combined2, REALM == "WADEABLE")
+combined2=subset(combined2, REALM == "BOATABLE")
 #To subset for reference to use on RIPARIAN indicators.
 #First subset the data to only include sites with R or S designations
-RIP_RS_combined=subset(combined, RST_FRIP_AND_RMD_PHAB == "R"|RST_FRIP_AND_RMD_PHAB == "S")
+RIP_RS_combined=subset(combined2, RST_FRIP_AND_RMD_PHAB == "R"|RST_FRIP_AND_RMD_PHAB == "S")
 #Now I need to remove duplicate sites, but choose the one with the most recent year. 
 ###So I order by if it was revisited, the site code, and then the year.  Check this with the view
 RIP_RS_reorder=RIP_RS_combined[order(RIP_RS_combined$REVISITED_OVERLAP,RIP_RS_combined$DUPLICATE_ID, RIP_RS_combined$YEAR, decreasing=FALSE),]
@@ -62,7 +67,7 @@ RIP_RS_final=RIP_RS_minusDup[order(RIP_RS_minusDup$REVISITED_OVERLAP, decreasing
 
 #To subset for reference to use on SEDIMENT and INSTREAM indicators.
 #First subset the data to only include sites with R or S designations
-SED_RS_combined=subset(combined, RST_FSED_AND_RMD_PHAB == "R"|RST_FSED_AND_RMD_PHAB == "S")
+SED_RS_combined=subset(combined2, RST_FSED_AND_RMD_PHAB == "R"|RST_FSED_AND_RMD_PHAB == "S")
 #Now I need to remove duplicate sites, but choose the one with the most recent year. 
 ###So I order by if it was revisited, the site code, and then the year.  Check this with the view
 SED_RS_reorder=SED_RS_combined[order(SED_RS_combined$REVISITED_OVERLAP,SED_RS_combined$DUPLICATE_ID, SED_RS_combined$YEAR, decreasing=FALSE),]
@@ -211,6 +216,7 @@ rm(T11,T12,T13,T14,T15,T16,T17,T18,T19,RIP_THRESHOLDS_lvlIII,SED_THRESHOLDS_lvlI
 ##This does not count NAs (good) and was manually checked to determine if it was counting the correct information.
 ###FOR ECO10
 pvt1=aggregate(XCDENMID~ECO10,data=RIP_RS_final,FUN=length)
+pvt1=aggregate(XCDENBK~ECO10,data=RIP_RS_final,FUN=length)
 pvt2=aggregate(XCMG~ECO10,data=RIP_RS_final,FUN=length)
 pvt3=aggregate(XCMGW~ECO10,data=RIP_RS_final,FUN=length)
 pvt4=aggregate(PCT_SAFN~ECO10,data=SED_RS_final,FUN=length)
@@ -218,7 +224,7 @@ pvt5=aggregate(DPCT_SF~ECO10,data=SED_RS_final,FUN=length)
 pvt6=aggregate(XFC_NAT~ECO10,data=SED_RS_final,FUN=length)
 pvt7=aggregate(LINCIS_H~ECO10,data=SED_RS_final,FUN=length)
 pvt8=aggregate(XEMBED~ECO10,data=SED_RS_final,FUN=length)
-ECO10_SampSizes=join_all(list(pvt1,pvt2,pvt3,pvt4,pvt5, pvt6, pvt7, pvt8),by="ECO10")
+ECO10_SampSizes=join_all(list(pvt1,pvt2,pvt3,pvt4,pvt5, pvt6, pvt7),by="ECO10")
 
 #NorCal specific hybrid ecoregions
 ECO10_SampSizes_NC = subset(ECO10_SampSizes, ECO10 == "XE-SOUTH"|ECO10 == "XE-NORTH"|ECO10 == "MT-PNW")
