@@ -283,11 +283,14 @@ IncBnk$LINCIS_H_CHECK=round(log10(IncBnk$xinc_h_CHECK-IncBnk$xbnk_h_CHECK+0.1),d
 #pctSAFN=merge(pctfn,pctsa, All=TRUE)
 #pctSAFN$PCT_SAFN_CHECK=pctSAFN$PCT_FN_CHECK+pctSAFN$PCT_SA_CHECK
 
-
+#### 2013 data and Boating data which was also stored in Size_CLS
 ####Doing sand and fines together
 Sediment$SAFN_True=ifelse(Sediment$RESULT == "SA", 1,ifelse(Sediment$RESULT == "FN", 1, 0))
 pctsafn=setNames((aggregate(Sediment$SAFN_True,by=list(UID=Sediment$UID), data=Sediment, FUN='mean')),c("UID","PCT_SAFN_CHECK"))#had to remove NorCal code that casted by Sample_Type because of boating data
 pctsafn$PCT_SAFN_CHECK=round(pctsafn$PCT_SAFN_CHECK*100,digits=1)
+Sedimentpvt=cast(Sediment,'UID~PARAMETER',value='RESULT',fun=length)# number of pebbles collected at intermediate and main transects
+Sedimentpvt$nPCT_SAFN_CHECK=(Sedimentpvt$SIZE_CLS+Sedimentpvt$XSIZE_CLS) # number of pebbles collected at all transects only 4 boating sites had less than 50
+pctsafn=cbind(pctsafn,Sedimentpvt)
 
 #Now for 2014 data... 
 A_Sed2014=cast(Sed2014,'UID+TRANSECT+POINT~PARAMETER', value='RESULT')
@@ -304,6 +307,16 @@ E_Sed2014=C_Sed2014[complete.cases(C_Sed2014[,c("LOC","SIZE_NUM")]),]
 E_Sed2014$SAFN_True=ifelse(E_Sed2014$SIZE_NUM == "1", 1, 0)
 F_Sed2014=setNames(aggregate(E_Sed2014$SAFN_True,list(UID=E_Sed2014$UID),mean), c("UID","PCT_SAFN_CHECK"))########this still counts particles with 0s in the particle count and as not fines; is this what we want to do?
 F_Sed2014$PCT_SAFN_CHECK=round(F_Sed2014$PCT_SAFN_CHECK*100,digits=1)
+
+Nall_Sed2014pvt=cast(Sed2014,'UID~PARAMETER',value='RESULT',fun=length)# missing data
+
+Nbank_Sed2014pvt=cast(Sed2014bank,'UID~PARAMETER',value='RESULT',fun=length)# missing data
+Sed2014pvtmissing=subset(Sed2014pvt,SIZE_NUM<105|LOC<105)
+# 7 sites from AK had right around 100 which they should according the the AK protocol
+# 4 WRSA sites had right around 100 pebbles so these were included
+# 2 WRSA sites had values between 60-70 but this is still more than half of pebbles collected in 2013 so this data was included and used
+# 2 CO sites have values around 100 but OK
+# 1 NV site at 59 and 1 NV at 100
 
 # Combine the two datasets for PCT_SAFN together so that I don't have multiple files for the same thing
 PCT_SAFN_ALL=rbind(pctsafn,F_Sed2014)
@@ -681,11 +694,12 @@ WetWidSub=WetWid[,c(1,2,4)]# delete the point column
 WetWidAll=rbind(WetWidSub,WetWid2)#merge main transects and intermediate transects together
 WetWidFinal=setNames(round(aggregate(WETWID~UID,data=WetWidAll,FUN=mean),digits=2),list("UID","XWIDTH_CHECK"))#average across all transects
 
-checkzero=rbind(WetWid,WetWid2)
-checkzero$PARAMETER=ifelse(checkzero$PARAMETER=='WETWIDTH','WETWID',checkzero$PARAMETER)
-checkzero_pvt=cast(checkzero,'UID+TRANSECT+POINT~PARAMETER', value='RESULT')
-checkzerosubset=subset(checkzero_pvt,WETWID==0)
-checkzerosubset=subset(checkzerosubset,POINT=!0)
+##checking for interupted flow sites
+# checkzero=rbind(WetWid,WetWid2)
+# checkzero$PARAMETER=ifelse(checkzero$PARAMETER=='WETWIDTH','WETWID',checkzero$PARAMETER)
+# checkzero_pvt=cast(checkzero,'UID+TRANSECT+POINT~PARAMETER', value='RESULT')
+# checkzerosubset=subset(checkzero_pvt,WETWID==0)
+# checkzerosubset=subset(checkzerosubset,POINT=!0)
 
 BankWid$TRANSECT=mapvalues(BankWid$TRANSECT, c("XA", "XB","XC","XD","XE","XF","XG","XH","XI","XJ","XK" ),c("A", "B","C","D","E","F","G","H","I","J","K"))#change all side channels to normal transects
 BankWid=cast(BankWid,'UID+TRANSECT~PARAMETER', value='RESULT', fun=sum)#sum across side channels and main transects
