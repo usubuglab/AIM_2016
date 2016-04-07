@@ -1,3 +1,52 @@
+####-----------------------------------AIM 2013-2015 specific code developed by Jennifer Courtwright------------------------------###
+######Final Site Designation Status
+#export GRTS_FinalDesignation_post2014_Duplicate_omit_JC query from ProbSurvey_DB_v28Aug14recover on 3-23-16
+  #This query filters the sample tracking table to record that has the latest sampled date and then joins associated design information.
+  #saved excel file as Z:\buglab\Research Projects\BLM_WRSA_Stream_Surveys\Results and Reports\AIM_2011_2015_results\Final_sample_frame_post2015_field_season
+  #the final designation or EvalStatus was filled in manually by filling in NN after the last sampled site per stratum/mdcaty group
+  #UIDs from the Access query were incorrect for QC sites so these were manually changed using vlookups and the tblQAmatch in SQL because Sarah's remove duplicate code below was thought not to be working correctly
+  #I also verified that all the sites that have been sampled according to the SQL database had a corresponding appropriate record in this table
+
+######pull in relevant SiteInfo
+siteeval=read.csv('Z:\\buglab\\Research Projects\\BLM_WRSA_Stream_Surveys\\Results and Reports\\AIM_2011_2015_results\\siteeval_Rinput.csv')
+#make sure Access site status evaluation matches SQL
+#make sure VISIT_NO=1 for all sites used 
+#read in sampled Lat and Long for input into extent estimates for computing error
+SQLsiteeval=tblRetrieve(Parameters=c('VALXSITE','VISIT_NO','LAT_DD','LON_DD'),Years=years,Projects=projects,Protocols=protocols)
+SQLsiteeval=setNames(cast(SQLsiteeval,'UID~PARAMETER',value='RESULT'),c("UID","LAT_DD","LON_DD","VALXSITE_CHECK","VISIT_NO"))
+siteeval=join(siteeval,SQLsiteeval, by="UID",type="left",match="first")
+#for one site visit 2 was used because of water quality data being screwed up on the first visit
+#all site eval discrepancies to be updated in SQL
+######subset each design
+siteeval=subset(siteeval,siteeval$PROJECT=="NRSA")
+
+#####adjusting weights
+#calc framesize for input into adjwgt
+#original design file for WRSA
+  #att="N:\\GIS\\Projects\\NRSA\\BLM_NRSA.dbf"#att = Tony (BLM_NRSA NHD)
+#revised design file for WRSA----need to figure out how it was revised were braids, canals and ditches removed and if so why did Nicole find that Sarah's clipped version of this had wrong stream order, fcodes, etc?
+  #att2="N:\\GIS\\GIS_Stats\\Streams\\NHD4GRTS7.dbf"# att2 = Lokteff NHD (updated with correct south dakota; supposed to move location ("N:\GIS\Projects\NHD_GRTS_Process\NHD_AllStreams_Classification.dbf") and get a better name soon!!), worried about StrCalc used to liberally to denote braided channels resulting in too many unconnected and arid streams being omitted
+
+
+
+siteeval$wgt_cat <- factor(paste(siteeval$STRATUM, siteeval$MDCATY, sep="_"))
+summary(siteeval$wgt_cat) # look at all categories
+
+#calc Wgt_Final
+siteeval$Wgt_Final <- adjwgt(sites=siteeval$EvalStatus != "NN", 
+                             wgt=as.numeric(siteeval$WGT), #!Main thing I still don't understand: Why Tony even bothers to assign original weights since he throws them out the window in the end. Perhaps just for bookkeeping in case the target population file is lost and to make sure all weights are within orders of magnitudes of each other? It seems these are evaluated to determine proportionality of classes, but not in a significant way that can't be recomputed on the fly using the target population kilometers.
+                             wtcat=siteeval$wgt_cat, framesize=frmszARRY)
+
+sum(siteeval$Wgt_Final)
+
+write.csv(siteeval,'AdjustedWeights.csv')
+
+####################################################################################################################################
+####################################################################################################################################
+####################################################################################################################################
+                                                #Start all NorCal, UTBLM, or Sarah Judson code#
+
+###################################################################################################################################
 ###------------------------------------------------pull in relevant SiteInfo------------------------------------------------###
 siteeval=tblRetrieve(Table='',Parameters=c('VALXSITE','STRATUM','MDCATY','WGT'),UIDS=UIDs,ALL=AllData,Filter=filter,SiteCodes=sitecodes,Dates=dates,Years=years,Projects=projects,
                     Protocols='')####comment out other filters if not needed####
