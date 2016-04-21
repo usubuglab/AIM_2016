@@ -50,7 +50,10 @@ combined2=join(combined,Final2sub,by='SITE_ID', type="left",match="all")
 
 #Use to get wadeable or boatable only, if this line isn't run both boatable and wadeable will be used. Change REALM== "" to specify 
 combined2=subset(combined2, REALM == "WADEABLE")
-combined2=subset(combined2, REALM == "BOATABLE")
+combined2$BNK_THRESH=ifelse(as.numeric(combined2$XBKF_W)>10,"LargeWade","SmallWade")
+combined2=subset(combined2,BNK_THRESH=="LargeWade")
+#combined2=subset(combined2,BNK_THRESH=="SmallWade")
+#combined2=subset(combined2, REALM == "BOATABLE")
 #To subset for reference to use on RIPARIAN indicators.
 #First subset the data to only include sites with R or S designations
 RIP_RS_combined=subset(combined2, RST_FRIP_AND_RMD_PHAB == "R"|RST_FRIP_AND_RMD_PHAB == "S")
@@ -76,7 +79,6 @@ SED_RS_reorder=SED_RS_combined[order(SED_RS_combined$REVISITED_OVERLAP,SED_RS_co
 SED_RS_minusDup= SED_RS_reorder[!duplicated(SED_RS_reorder$DUPLICATE_ID),]
 #View(SED_RS_minusDup[1000:1999,])
 SED_RS_final=SED_RS_minusDup[order(SED_RS_minusDup$REVISITED_OVERLAP, decreasing=TRUE),]
-
 
 
 
@@ -216,15 +218,17 @@ rm(T11,T12,T13,T14,T15,T16,T17,T18,T19,RIP_THRESHOLDS_lvlIII,SED_THRESHOLDS_lvlI
 ##This does not count NAs (good) and was manually checked to determine if it was counting the correct information.
 ###FOR ECO10
 pvt1=aggregate(XCDENMID~ECO10,data=RIP_RS_final,FUN=length)
-pvt1=aggregate(XCDENBK~ECO10,data=RIP_RS_final,FUN=length)
-pvt2=aggregate(XCMG~ECO10,data=RIP_RS_final,FUN=length)
-pvt3=aggregate(XCMGW~ECO10,data=RIP_RS_final,FUN=length)
-pvt4=aggregate(PCT_SAFN~ECO10,data=SED_RS_final,FUN=length)
-pvt5=aggregate(DPCT_SF~ECO10,data=SED_RS_final,FUN=length)
-pvt6=aggregate(XFC_NAT~ECO10,data=SED_RS_final,FUN=length)
-pvt7=aggregate(LINCIS_H~ECO10,data=SED_RS_final,FUN=length)
-pvt8=aggregate(XEMBED~ECO10,data=SED_RS_final,FUN=length)
-ECO10_SampSizes=join_all(list(pvt1,pvt2,pvt3,pvt4,pvt5, pvt6, pvt7),by="ECO10")
+pvt2=aggregate(XCDENBK~ECO10,data=RIP_RS_final,FUN=length)
+pvt3=aggregate(XCMG~ECO10,data=RIP_RS_final,FUN=length)
+pvt4=aggregate(XCMGW~ECO10,data=RIP_RS_final,FUN=length)
+pvt5=aggregate(PCT_SAFN~ECO10,data=SED_RS_final,FUN=length)
+pvt6=aggregate(DPCT_SF~ECO10,data=SED_RS_final,FUN=length)
+pvt7=aggregate(XFC_NAT~ECO10,data=SED_RS_final,FUN=length)
+pvt8=aggregate(LINCIS_H~ECO10,data=SED_RS_final,FUN=length)
+pvt9=aggregate(XEMBED~ECO10,data=SED_RS_final,FUN=length)
+ECO10_SampSizes=join_all(list(pvt1,pvt2,pvt3,pvt4,pvt5, pvt6, pvt7,pvt8,pvt9),by="ECO10")
+
+#boxplot(XCDENMID~ECO10+BNK_THRESH,data=RIP_RS_final)
 
 #NorCal specific hybrid ecoregions
 ECO10_SampSizes_NC = subset(ECO10_SampSizes, ECO10 == "XE-SOUTH"|ECO10 == "XE-NORTH"|ECO10 == "MT-PNW")
