@@ -1,27 +1,29 @@
 #run SpSurvey_DesignWeights.R first!
 #source('SpSurvey_DesignWeights.R')
 
-
-###-------------------------------------------Input Prep for cat.analysis()------------------------------------------###
+##-------------------------------------------Input Prep for cat.analysis()------------------------------------------###
 ###-------SUBPOPULATIONS-------------###
 #!NorCal specific!! need to make more broad and dynamic for WRSA!
 # create field office variable or other subpopulations of interest for extent estimates
-siteeval$Field_Office <- as.factor(siteeval$STRATUM)
-levels(siteeval$Field_Office) <- list(Alturas_Field_Office="Alturas Field Office",
-                                      Eagle_Lake_Field_Office=c("Eagle Lake Field Offfice", 
-                                                                "Eagle Lake Field Office Twin Peaks"),
-                                      Surprise_Field_Office=c("Surprise Field Office",
-                                                              "Surprise Field Office Home Camp")
-)
+# siteeval$Field_Office <- as.factor(siteeval$STRATUM)
+# levels(siteeval$Field_Office) <- list(Alturas_Field_Office="Alturas Field Office",
+#                                       Eagle_Lake_Field_Office=c("Eagle Lake Field Offfice", 
+#                                                                 "Eagle Lake Field Office Twin Peaks"),
+#                                       Surprise_Field_Office=c("Surprise Field Office",
+#                                                               "Surprise Field Office Home Camp")
+# )
 #subpopuations do NOT need to be in the original design. Others that were considered and investigated in preliminary analysis in UTBLM:
 # ,StreamOrder=SiteInfo$StreamOrder, #low sample sizes (see warnings in cat.analysis)
 # Ecoregion=SiteInfo$EcoregionIII_Name #low sample sizes (see warnings in cat.analysis)
 #EPAeco=SiteInfo$EPAhybridECO
 
+siteeval$CLIMATE <- as.factor(siteeval$CLIMATE)
+
+
 #set up subpopulations for use in cat.analysis
 subpopCON=data.frame(siteID=siteeval$SITE_ID,
-                        All_Offices=rep("All Field Offices", nrow(siteeval)),
-                        Field_Offices=siteeval$Field_Office,
+                        Westwide=rep("Westwide", nrow(siteeval)),
+                        Climate=siteeval$CLIMATE,
                         Strata=siteeval$STRATUM
                         )
 
@@ -29,6 +31,10 @@ subpopCON=data.frame(siteID=siteeval$SITE_ID,
 ## Need equal area coordinates for variance estimation 
 #! as of Sept 2014, coordinates have NOT been QA'd besides a quick comparison to original GRTS!!!
 #  (uses x-site coords when available, design coords otherwise) --> SWJ: I still don't understand why coordinates are important for getting variance estimates
+
+siteeval$LAT_DD=ifelse(is.na(siteeval$LAT_DD)==TRUE,siteeval$LAT_DD_DESIGN,siteeval$LAT_DD)
+siteeval$LON_DD=ifelse(is.na(siteeval$LON_DD)==TRUE,siteeval$LON_DD_DESIGN,siteeval$LON_DD)
+
 tmp <- marinus(as.numeric(siteeval$LAT_DD), as.numeric(siteeval$LON_DD))
 siteeval$xcoord <- tmp[,'x']
 siteeval$ycoord <- tmp[,'y']
@@ -75,6 +81,9 @@ ResponseInfo=read.csv('\\\\share1.bluezone.usu.edu\\miller\\buglab\\Research Pro
 
 #######SRM input file
 ResponseInfo=read.csv('Z:\\buglab\\Research Projects\\BLM_WRSA_Stream_Surveys\\Results and Reports\\SRM_2015\\ResponseInfo.csv')
+
+######WRSA file
+ResponseInfo=read.csv('Z:\\buglab\\Research Projects\\BLM_WRSA_Stream_Surveys\\Results and Reports\\AIM_2011_2015_results\\IndicatorCondECO10_18March2016.csv')
 
 #This is NorCal specific and SHOULD be commented out. 
 #This code looks for the UIDs that start with the first three numbers in the input file and replace with the actual UID
@@ -140,8 +149,10 @@ SiteInfo=merge(siteeval,ResponseInfo,by=intersect(colnames(siteeval),colnames(Re
 #########NorCal examples###########
 selectVARauto='N'; selectVARchoice=ifelse(selectVARauto=='Y','AllVar','CustomVar')#automatically select all variables
 extentVAR=c('TNT','EvalStatus','VALXSITE')#Extent Estimate added here since weights the same (rather than running cat.analysis twice)
-responseVAR=c("NV_MMI")# Input here should be bug model
-stressorsVAR=c("NV_Invasives","OE_TN","OE_TP","OE_Conduct","PH_CHECK","BnkStability_BLM_CHECK","PCT_SAFN_CHECK","XCMG_CHECK","XFC_NAT_CHECK","LINCIS_H_CHECK","xcdenmid_CHECK")#,"XEMBED_CHECK")#NOT stressorsVAR=c('MMI')   ####'PCT_SAFN','LSUB_DMM')#UTBLM final list: stressorsVAR=c('InvasivesYN','EC','TP','TN','AugST','LBFXWRat','C1WM100','XCDENMID','Stab2','PCT_SAFN')#must be Access names with a matching 'rtg' variable: to view, str(ResponseInfo)
+responseVAR=c("OE_TN")# Input here should be bug model
+stressorsVAR=c("OE_TN","OE_TP","OE_EC","PH_CHECK","BnkCover_StabErosional","PCT_SAFN","XEMBED","XFC_NAT","LINCIS_H","XCDENBK","XCMG")#NOT stressorsVAR=c('MMI')   ####'PCT_SAFN','LSUB_DMM')#UTBLM final list: stressorsVAR=c('InvasivesYN','EC','TP','TN','AugST','LBFXWRat','C1WM100','XCDENMID','Stab2','PCT_SAFN')#must be Access names with a matching 'rtg' variable: to view, str(ResponseInfo)
+#responseVAR=c("NV_MMI")# Input here should be bug model
+#stressorsVAR=c("NV_Invasives","OE_TN","OE_TP","OE_Conduct","PH_CHECK","BnkStability_BLM_CHECK","PCT_SAFN_CHECK","XCMG_CHECK","XFC_NAT_CHECK","LINCIS_H_CHECK","xcdenmid_CHECK")#,"XEMBED_CHECK")#NOT stressorsVAR=c('MMI')   ####'PCT_SAFN','LSUB_DMM')#UTBLM final list: stressorsVAR=c('InvasivesYN','EC','TP','TN','AugST','LBFXWRat','C1WM100','XCDENMID','Stab2','PCT_SAFN')#must be Access names with a matching 'rtg' variable: to view, str(ResponseInfo)
 #"XGB_CHECK",
 #To remove MMI from "Poor"/stressorgraphs Use code below
 #responseVAR=c("OE_TN")# Input here is bogus
@@ -183,13 +194,19 @@ stressorsVAR=setdiff(stressorsVAR,omitVAR)
 #the asterisk indictates 2012 only
 #ECname='Conductivity'; TPname='Phosphorus';MWMTname='Max Temp.'; TNname='Nitrogen'; InvasivesYNname='Invasives';OEname='O/E';
 #NorCal
-NV_MMIname='Nevada MMI';
-NV_Invasivesname='Benthic Invasives'; OE_TNname='Total Nitrogen';OE_TPname='Total Phosphorus';OE_Conductname='Conductivity';PH_CHECKname='pH';
-BnkStability_BLM_CHECKname='Bank Stability';PCT_SAFN_CHECKname='% Fine Sediment';XCMG_CHECKname='Riparian Complexity';xcdenmid_CHECKname='Riparian Canopy Cover';
-#XGB_CHECKname='Bare Ground';
-XFC_NAT_CHECKname='Instream Complexity';LINCIS_H_CHECKname='Floodplain Connectivity'
+# NV_MMIname='Nevada MMI';
+# NV_Invasivesname='Benthic Invasives'; OE_TNname='Total Nitrogen';OE_TPname='Total Phosphorus';OE_Conductname='Conductivity';PH_CHECKname='pH';
+# BnkStability_BLM_CHECKname='Bank Stability';PCT_SAFN_CHECKname='% Fine Sediment';XCMG_CHECKname='Riparian Complexity';xcdenmid_CHECKname='Riparian Canopy Cover';
+# #XGB_CHECKname='Bare Ground';
+# XFC_NAT_CHECKname='Instream Complexity';LINCIS_H_CHECKname='Floodplain Connectivity'
 
 #XEMBED_CHECKname='Embeddedness';OEname='Biological Condition'; Invasivesname='Benthic Invasives;#SRM
+
+#WRSA SFS
+OE_TNname='Total Nitrogen';OE_TPname='Total Phosphorus';OE_ECname='Conductivity';PH_CHECKname='pH';
+BnkCover_StabErosionalname='Bank Stability';PCT_SAFN_name='% Fine Sediment';XCMGname='Riparian Complexity';XCDENBKname='Riparian Canopy Cover';
+XFC_NATname='Instream Complexity';LINCIS_Hname='Floodplain Connectivity';PCT_SAFNname = 'Fines'
+XEMBEDname='Embeddedness';#OEname='Biological Condition'; Invasivesname='Benthic Invasives;#SRM
 
 TotalHAname='Habitat'; RIPARIANname='Riparian Alt.'; AugSTname= 'Stream Temp.'; SummerSTname= 'Stream Temp (Sum)';
 C1WM100name='LWD*';XCDENMIDname = 'Canopy*' ; PCT_SAFNname = 'Fines'; LBFXWRatname='Flood Inundation*' ; Stab2name='Bank Stability'; MMIname='MMI';trialname='trial'
@@ -218,7 +235,7 @@ results.cat <- cat.analysis(sites = sitesCON,
                             #vartype = "Local",
                             conf = 90)
 
-ParameterSampleSizes=subset(results.cat,subset=Subpopulation=='All Field Offices' & Category=='Total');print(ParameterSampleSizes)#samplesize is NResp
+ParameterSampleSizes=subset(results.cat,subset=Subpopulation=='Westwide' & Category=='Total');print(ParameterSampleSizes)#samplesize is NResp
 
 write.csv(results.cat,'ExtentEstimates.csv');View(results.cat)
 
