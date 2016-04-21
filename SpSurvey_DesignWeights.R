@@ -1,5 +1,15 @@
-####-----------------------------------AIM 2013-2015 specific code developed by Jennifer Courtwright------------------------------###
-######Final Site Designation Status
+####-----------------------------------AIM 2013-2015 adjusting weights specific code developed by Jennifer Courtwright------------------------------###
+
+##example adjwgt code from spsurvey doc
+# sites <- as.logical(rep(rep(c("TRUE","FALSE"), c(9,1)), 5))
+# wgt <- runif(50, 10, 100)
+# wtcat <- rep(c("A","B"), c(30, 20))
+# framesize <- c(1650, 1100)
+# names(framesize) <- c("A","B")
+# adjwgt(sites, wgt, wtcat, framesize)
+
+##################################Get information to populate "sites","wgt", and "wtcat" parameters in adjwgt function#####################
+##Final Site Designation Status
 #export GRTS_FinalDesignation_post2014_Duplicate_omit_JC query from ProbSurvey_DB_v28Aug14recover on 3-23-16
   #This query filters the sample tracking table to record that has the latest sampled date and then joins associated design information.
   #saved excel file as Z:\buglab\Research Projects\BLM_WRSA_Stream_Surveys\Results and Reports\AIM_2011_2015_results\Final_sample_frame_post2015_field_season
@@ -7,7 +17,8 @@
   #UIDs from the Access query were incorrect for QC sites so these were manually changed using vlookups and the tblQAmatch in SQL because Sarah's remove duplicate code below was thought not to be working correctly
   #I also verified that all the sites that have been sampled according to the SQL database had a corresponding appropriate record in this table
 
-######pull in relevant SiteInfo
+##pull in relevant SiteInfo
+#because full design file was stored in Access I had to merge the sample status from access with SQL in excel and NN has to be assigned manually in this process as well so that the NNs are after the last TS site in each stratum-mdcaty (see above)
 siteeval=read.csv('Z:\\buglab\\Research Projects\\BLM_WRSA_Stream_Surveys\\Results and Reports\\AIM_2011_2015_results\\siteeval_Rinput.csv')
 #make sure Access site status evaluation matches SQL
 #make sure VISIT_NO=1 for all sites used 
@@ -16,24 +27,67 @@ SQLsiteeval=tblRetrieve(Parameters=c('VALXSITE','VISIT_NO','LAT_DD','LON_DD'),Ye
 SQLsiteeval=setNames(cast(SQLsiteeval,'UID~PARAMETER',value='RESULT'),c("UID","LAT_DD","LON_DD","VALXSITE_CHECK","VISIT_NO"))
 siteeval=join(siteeval,SQLsiteeval, by="UID",type="left",match="first")
 #for one site visit 2 was used because of water quality data being screwed up on the first visit
-#all site eval discrepancies to be updated in SQL
-######subset each design
+#all site eval discrepancies updated in SQL
+
+##subset each design
 siteeval=subset(siteeval,siteeval$PROJECT=="NRSA")
 
-#####adjusting weights
-#calc framesize for input into adjwgt
-#original design file for WRSA
-  #att="N:\\GIS\\Projects\\NRSA\\BLM_NRSA.dbf"#att = Tony (BLM_NRSA NHD)
-#revised design file for WRSA----need to figure out how it was revised were braids, canals and ditches removed and if so why did Nicole find that Sarah's clipped version of this had wrong stream order, fcodes, etc?
-  #att2="N:\\GIS\\GIS_Stats\\Streams\\NHD4GRTS7.dbf"# att2 = Lokteff NHD (updated with correct south dakota; supposed to move location ("N:\GIS\Projects\NHD_GRTS_Process\NHD_AllStreams_Classification.dbf") and get a better name soon!!), worried about StrCalc used to liberally to denote braided channels resulting in too many unconnected and arid streams being omitted
-
-
-
+##make wgt_cat parameter
 siteeval$wgt_cat <- factor(paste(siteeval$STRATUM, siteeval$MDCATY, sep="_"))
 summary(siteeval$wgt_cat) # look at all categories
 
-#calc Wgt_Final
-siteeval$Wgt_Final <- adjwgt(sites=siteeval$EvalStatus != "NN", 
+
+##############################Get orignal sample frame for calculation of framesize for input into adjwgt####################################
+#original design shapefile from Tony
+#this file includes canals and ditches, has an inaccurate BLM ownership for the South Dakota FO(Almost no streams in South Dakota FO are still on BLM land), and multi-thread channels were not properly removed using the StreamCalcRemov column from the NHDPlus.
+#Canals and ditches, and South Dakota landownership were removed from the target population by classifying sites within the "Needed" sites as NT. 
+#using comparisions of this orignial layer and the layer used for the master sample it was determined that canals and ditches made up approximately 8000 stream km and about 130 km of stream in south dakota is no longer on BLM land
+#approximations of the number of stream km included as multi-thread channels was estimated to be 800 km and so it was decided that it was not worth correcting for this error, which would require joining tony's file to the NHD plus and to get the StreamCalcRemov column and excluding sites where this column=0
+#there was a higher probability that a multi-thread channel would be selected than a single thread channel because of this error but nothing can be done to correct for this spatially, only to correct the number of stream km in the target pop. Since 800 km is small in the grand scheme of errors in the NHD. No correction to the sample frame was made.
+att <- read.dbf("Z:\\GIS\\Projects\\NRSA\\BLM_NRSA.dbf")
+head(att)
+
+# change length to km
+att$length_km <- att$length_mdm/1000
+
+# change names for WSA variables
+names(att)[c(29:31)] <- c("NARS_9", "NARS_9_NM", "NARS_3") 
+
+# Add EMAP West aggregated regions
+att$WEST_10 <- att$US_L3CODE
+levels(att$WEST_10) <- list(MT_SWEST=c("8", "23"), MT_NROCK=c("11", "15", "16","17", "41"),
+                            MT_PNW=c("1", "2", "3", "4", "5", "9", "77", "78"),
+                            MT_SROCK=c("19", "21"), PL_NCULT=c("25"),
+                            PL_RANGE=c("26", "42", "43"), XE_NORTH=c("10", "12", "80"),
+                            XE_CALIF=c("6", "7", "85"), XE_EPLAT=c("18", "20", "22"),
+                            XE_SOUTH=c("13", "14", "24", "79", "81")
+)
+att$WEST_3 <- att$WEST_10
+levels(att$WEST_3) <- list(Mountains=c("MT_SWEST", "MT_NROCK", "MT_PNW", "MT_SROCK"),
+                           Plains=c("PL_NCULT", "PL_RANGE"),
+                           Xeric=c("XE_NORTH", "XE_CALIF", "XE_EPLAT", "XE_SOUTH"))
+
+# define strata based on WEST_10 and DES_NRSA14
+att$BLM_7 <- att$WEST_10
+levels(att$BLM_7 ) <- list(MT_NROCK="MT_NROCK", MT_PNW="MT_PNW", MT_SROCK="MT_SROCK",
+                           XE_NORTH="XE_NORTH", XE_EPLAT="XE_EPLAT", XE_SOUTH="XE_SOUTH",
+                           Other=c("MT_SWEST","PL_NCULT", "PL_RANGE", "XE_CALIF")
+)
+
+#  summarize sample frame
+tmp <- tapply(att$length_km, list(att$BLM_7 , att$DES_NRSA14), sum)
+tmp[is.na(tmp)] <- 0
+round(addmargins(tmp), 2)
+
+abc=melt(tmp)
+abc$wgt=abc$value
+abc$X2=ifelse(abc$X2=="LargeStreams","LS",ifelse(abc$X2=="RiversMajor","RM",ifelse(abc$X2=="RiversOther","RO",ifelse(abc$X2=="SmallStreams","SS",1))))
+abc$wgt_cat=paste(abc$X1,abc$X2, sep="_")
+frmszARRY=array(abc$value,dimnames=list(abc$wgt_cat))
+
+
+#######################################################calc Wgt_Final##############################################################
+siteeval$Wgt_Final <- adjwgt(sites=siteeval$EvalStatus != "NN", #how come this is not a True, False variable as suggested in the example from SpSurvey, maybe "NN" removed the ones that would be false and just the list is all that is needed?
                              wgt=as.numeric(siteeval$WGT), #!Main thing I still don't understand: Why Tony even bothers to assign original weights since he throws them out the window in the end. Perhaps just for bookkeeping in case the target population file is lost and to make sure all weights are within orders of magnitudes of each other? It seems these are evaluated to determine proportionality of classes, but not in a significant way that can't be recomputed on the fly using the target population kilometers.
                              wtcat=siteeval$wgt_cat, framesize=frmszARRY)
 
