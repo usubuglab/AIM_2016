@@ -89,6 +89,9 @@ IndicatorCheck$OE_TPrtg=ifelse(WQfinal$OE_TP <=9.9,'Good',ifelse(WQfinal$OE_TP >
 ##############     Invertebrate condition determinations      ###############
 
 #############################################################################
+#WRSA
+WRSABugs=read.csv("\\\\share1.bluezone.usu.edu\\miller\\buglab\\Research Projects\\BLM_WRSA_Stream_Surveys\\Results and Reports\\AIM_2011_2015_results\\final_bug_scores_R_input_join_to_all_other_metrics.csv")
+
 #All raw model results
 NorCalBugs=read.csv("\\\\share1.bluezone.usu.edu\\miller\\buglab\\Research Projects\\BLM_WRSA_Stream_Surveys\\Results and Reports\\NorCal_2013\\Analysis\\BugModels\\ALL_BugModel_Results.csv")
 
@@ -541,14 +544,14 @@ Freq_ECOIII=cbind(count(IndicatorCond_ECO_LVL_3NAME,var='XFC_NAT_CHECKrtg'),
 ################################################################
 
 #Indicators=read.csv('Z:\\buglab\\Research Projects\\BLM_WRSA_Stream_Surveys\\Results and Reports\\SRM_2015\\final_updated_crosschecked_metrics.csv')
-#IndicatorCheck=read.csv('C:\\Users\\Jennifer Courtwright\\Desktop\\AIM_2016\\IndicatorCheck_17March2016.csv')
+IndicatorCheck=read.csv('C:\\Users\\Jennifer Courtwright\\Desktop\\AIM_2016\\IndicatorCheck_17March2016.csv')
 SiteInfo=read.csv('Z:\\buglab\\Research Projects\\AIM\\Projects\\ProjectsPtSummary\\AIM_Aquatic_Sampled_2011_2015_Rinput_into_conditions_final_report_do_not_alter.csv')
 SiteInfoSub=subset(SiteInfo, select=c(SITE_ID_CHECK,Project,Protocol,ECO10,State,FieldOffice,District,StreamOrder,Stratum,StreamSize,Code))
 Indicators=join(IndicatorCheck, SiteInfoSub, by="SITE_ID_CHECK",type="left",match="first")
+Indicators=join(Indicators,WRSABugs, by="UID",type="left")
 #Get a list of the indicators in the file to use for Subsetting
 unique(Indicators$ECO10)
 Ind_AK=subset(Indicators,ECO10=='AK')
-
 Ind_MT_NROCK=subset(Indicators, ECO10=='MT-NROCK')
 Ind_MT_PNW=subset(Indicators, ECO10=='MT-PNW')
 Ind_MT_SROCK=subset(Indicators, ECO10=='MT-SROCK')
@@ -560,13 +563,16 @@ Ind_XE_EPLAT=subset(Indicators, ECO10=='XE-EPLAT')
 Ind_XE_SOUTH=subset(Indicators, ECO10=='XE-SOUTH')
 Ind_XE_NORTH=subset(Indicators, ECO10=='XE-NORTH')
 
+
+
 #############################################################
 ########trial iteration #doesn't work
 
 DesiredEco=c('XE-NORTH','MT-SWEST','XE-EPLAT')
 for (i in 1:length(DesiredEco)){
   #Apply pH thresholds
-  ifelse(Indicator$ECO10==DesiredEco[i],PH_CHECK)
+  ifelse(Indicators$ECO10==DesiredEco[i]& <Thresholds_ECO10$PH_0.10<)}
+
   Ind_Eco_Sub$PH_CHECKrtg=ifelse(Ind_Eco_Sub$PH_CHECK <= (Thresholds_ECO10 [Thresholds_ECO10$ECO10==DesiredEco[i], 'PH_0.10'])
                                                                      |Ind_Eco_Sub$PH_CHECK >= (Thresholds_ECO10 [Thresholds_ECO10$ECO10==DesiredEco[i], 'PH_0.90']),"Poor",
                                                                      ifelse(Ind_Eco_Sub$PH_CHECK>(Thresholds_ECO10 [Thresholds_ECO10$ECO10==DesiredEco[i],'PH_0.30']) &

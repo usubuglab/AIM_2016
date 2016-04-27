@@ -49,9 +49,29 @@ Final2sub=subset(Final2,select=c(SITE_ID,XSLOPE,XSLOPE_FIELD,XSLOPE_FRDATA,XSLOP
 combined2=join(combined,Final2sub,by='SITE_ID', type="left",match="all")
 
 #Use to get wadeable or boatable only, if this line isn't run both boatable and wadeable will be used. Change REALM== "" to specify 
-combined2=subset(combined2, REALM == "WADEABLE")
+#combined2=subset(combined2, REALM == "WADEABLE")
 combined2$BNK_THRESH=ifelse(as.numeric(combined2$XBKF_W)>10,"LargeWade","SmallWade")
-combined2=subset(combined2,BNK_THRESH=="LargeWade")
+combined2$BNK_THRESH=ifelse(combined2$REALM=="WADEABLE",combined2$BNK_THRESH,combined2$REALM)
+combined2$THRESH=paste(combined2$ECO10,combined2$BNK_THRESH, sep="_")
+
+combined2$THRESH3=as.factor(combined2$THRESH)
+levels(combined2$THRESH3) <- list( XE_SOUTH_SmallWade="XE_SOUTH_SmallWade",XE_SOUTH_LargeWade="XE_SOUTH_LargeWade", 
+                                  MT_SWEST_SmallWade="MT_SWEST_SmallWade",MT_SWEST_LargeWade="MT_SWEST_LargeWade", 
+                                  XE_EPLAT_SmallWade="XE_EPLAT_SmallWade",XE_EPLAT_LargeWade="XE_EPLAT_LargeWade", 
+                                  MT_PNW_SmallWade="MT_PNW_SmallWade", MT_PNW_LargeWade="MT_PNW_LargeWade",MT_PNW_BOATABLE="MT_PNW_BOATABLE",  
+                                  PL_NCULT_SmallWade="PL_NCULT_SmallWade", PL_NCULT_LargeWade="PL_NCULT_LargeWade",PL_NCULT_BOATABLE="PL_NCULT_BOATABLE", 
+                                  PL_RANGE_SmallWade="PL_RANGE_SmallWade",PL_RANGE_LargeWade="PL_RANGE_LargeWade", PL_RANGE_BOATABLE="PL_RANGE_BOATABLE",
+                                  MT_SROCK_SmallWade="MT_SROCK_SmallWade",MT_SROCK_LargeWade="MT_SROCK_LargeWade", 
+                                  MT_NROCK_SmallWade="MT_NROCK_SmallWade", MT_NROCK_LargeWade="MT_NROCK_LargeWade",
+                                  XE_NORTH_SmallWade="XE_NORTH_SmallWade",XE_NORTH_LargeWade="XE_NORTH_LargeWade",
+                                  Other=c("XE_CALIF_LargeWade","XE_CALIF_SmallWade","0_BOATABLE","XE_SOUTH_NA","MT_PNW_0","MT_NROCK_NA", "_SmallWade","_LargeWade","_BOATABLE"  ,"_NA", "MT_SROCK_NA" , "0_LargeWade" , "MT_SWEST_NA", "0_SmallWade", "XE_CALIF_BOATABLE","MT_SWEST_BOATABLE"),   
+                                  MT_ROCK_BOATABLE=c("MT_NROCK_BOATABLE", "MT_SROCK_BOATABLE","XE_NORTH_BOATABLE"),  
+                                  XE_SEPLAT_BOATABLE=c( "XE_EPLAT_BOATABLE" ,"XE_SOUTH_BOATABLE")
+                                    )
+combined2$THRESH2=combined2$THRESH
+combined2$THRESH2=ifelse(combined2$THRESH2=="PL_RANGE_BOATABLE"|combined2$THRESH2=="PL_NCULT_BOATABLE"|combined2$THRESH2=="MT_PNW_BOATABLE"|combined2$THRESH2=="MT_NROCK_BOATABLE"|combined2$THRESH2=="MT_SROCK_BOATABLE"|combined2$THRESH2=="XE_NORTH_BOATABLE"|combined2$THRESH2=="XE_EPLAT_BOATABLE"|combined2$THRESH2=="XE_SOUTH_BOATABLE","ALL_BOATING",combined2$THRESH2)
+
+#combined2=subset(combined2,BNK_THRESH=="LargeWade")
 #combined2=subset(combined2,BNK_THRESH=="SmallWade")
 #combined2=subset(combined2, REALM == "BOATABLE")
 #To subset for reference to use on RIPARIAN indicators.
@@ -331,3 +351,117 @@ rm(T1,T2,T3,T4,T5,T6,T7,T8,T9,RIP_THRESHOLDS_ECO10,SED_THRESHOLDS_ECO10)
 
 #Make NorCal Specific ECO10 threshold files
 Thresholds_ECO10_NC=subset(Thresholds_ECO10, ECO10 == "XE-SOUTH"|ECO10 == "XE-NORTH"|ECO10 == "MT-PNW")
+
+###############################################################################################
+
+# SETTING THRESHOLDS FOR ECO10 by stream size!!!
+
+###############################################################################################
+#May not include code for all indicators (e.g., pH) See ecoregion III for 
+#To get Sample sizes used to set thresholds
+##This does not count NAs (good) and was manually checked to determine if it was counting the correct information.
+###FOR ECO10
+pvt1=aggregate(XCDENMID~THRESH3,data=RIP_RS_final,FUN=length)
+pvt2=aggregate(XCDENBK~THRESH3,data=RIP_RS_final,FUN=length)
+pvt3=aggregate(XCMG~THRESH3,data=RIP_RS_final,FUN=length)
+pvt4=aggregate(XCMGW~THRESH3,data=RIP_RS_final,FUN=length)
+pvt5=aggregate(PCT_SAFN~THRESH3,data=SED_RS_final,FUN=length)
+pvt7=aggregate(XFC_NAT~THRESH3,data=SED_RS_final,FUN=length)
+pvt8=aggregate(LINCIS_H~THRESH3,data=SED_RS_final,FUN=length)
+pvt9=aggregate(XEMBED~THRESH3,data=SED_RS_final,FUN=length)
+ECO10_SampSizes=join_all(list(pvt1,pvt2,pvt3,pvt4,pvt5, pvt7,pvt8,pvt9),by="THRESH3")
+
+# Use riparian reference sites for:  XCDENMID, XCDENBK, XCMG, XCMGW, and PH!!
+#Use riparian reference for PH because 
+## 1) P-hab reference were selected using a variety of filters, since we do not have specific chemical reference sites we used p-hab reference
+## 2) There are a few more reference sites for riparian than for sediment so Riparian was used over Sediment.  
+#XCDENMID
+T1=setNames(aggregate(RIP_RS_final$XCDENMID, by = list(RIP_RS_final$THRESH3), FUN = quantile,probs=0.10,na.rm=TRUE), c("THRESH3","XCDENMID_0.10"))
+T2=setNames(aggregate(RIP_RS_final$XCDENMID, by = list(RIP_RS_final$THRESH3), FUN = quantile,probs=0.30,na.rm=TRUE), c("THRESH3","XCDENMID_0.30"))
+T5=join_all(list(T1,T2), by="THRESH3")
+#XCDENBK
+T1=setNames(aggregate(RIP_RS_final$XCDENBK, by = list(RIP_RS_final$THRESH3), FUN = quantile,probs=0.10,na.rm=TRUE), c("THRESH3","XCDENBK_0.10"))
+T2=setNames(aggregate(RIP_RS_final$XCDENBK, by = list(RIP_RS_final$THRESH3), FUN = quantile,probs=0.30,na.rm=TRUE), c("THRESH3","XCDENBK_0.30"))
+T6=join_all(list(T1,T2), by="THRESH3")
+#XCMG
+T1=setNames(aggregate(RIP_RS_final$XCMG, by = list(RIP_RS_final$THRESH3), FUN = quantile,probs=0.10,na.rm=TRUE), c("THRESH3","XCMG_0.10"))#changing alpha
+T2=setNames(aggregate(RIP_RS_final$XCMG, by = list(RIP_RS_final$THRESH3), FUN = quantile,probs=0.30,na.rm=TRUE), c("THRESH3","XCMG_0.30"))#changing alpha
+T7=join_all(list(T1,T2), by="THRESH3")
+#XCMGW
+T1=setNames(aggregate(RIP_RS_final$XCMGW, by = list(RIP_RS_final$THRESH3), FUN = quantile,probs=0.10,na.rm=TRUE), c("THRESH3","XCMGW_0.10"))
+T2=setNames(aggregate(RIP_RS_final$XCMGW, by = list(RIP_RS_final$THRESH3), FUN = quantile,probs=0.30,na.rm=TRUE), c("THRESH3","XCMGW_0.30"))
+T8=join_all(list(T1,T2), by="THRESH3")
+
+#PH
+#PH thresholds were determine to be too strict so we are using the national standards of <6.5 and >9.0 as Poor, >7 and <8.5 as Good.
+#if EPA reference thresholds want to be used you must uncomment the below code and add "T18" to the liste of code to join it back into the RIP_THRESHOLDS_lvlIII object
+#A few pH issues
+#PH_EPA=RIP_RS_final[,1:25]
+#Replace NAs with if statement to combine columns
+#PH_EPA$PH=ifelse(is.na(PH_EPA$PHLAB),PH_EPA$PHSTVL,PH_EPA$PHLAB)
+#thresholds
+#T11=setNames(aggregate(PH_EPA$PH, by = list(PH_EPA$ECO10), FUN = quantile,probs=0.10,na.rm=TRUE), c("ECO10","PH_0.10"))
+#T12=setNames(aggregate(PH_EPA$PH, by = list(PH_EPA$ECO10), FUN = quantile,probs=0.30,na.rm=TRUE), c("ECO10","PH_0.30"))
+#T13=setNames(aggregate(PH_EPA$PH, by = list(PH_EPA$ECO10), FUN = quantile,probs=0.90,na.rm=TRUE), c("ECO10","PH_0.90"))
+#T14=setNames(aggregate(PH_EPA$PH, by = list(PH_EPA$ECO10), FUN = quantile,probs=0.70,na.rm=TRUE), c("ECO10","PH_0.70"))
+#T18=join_all(list(T11,T12,T14,T13), by="ECO10")
+
+##Combine all
+RIP_THRESHOLDS_ECO10=join_all(list(T5,T6,T7,T8),by="THRESH3")
+
+###################################################################################
+###################################################################################
+# Use sediment reference sites for:  PCT_SAFN, DPCT_SF, XEMBED, XFC_NAT,LINCIS_H,
+#PCT_SAFN
+T3=setNames(aggregate(SED_RS_final$PCT_SAFN, by = list(SED_RS_final$THRESH3), FUN = quantile,probs=0.70,na.rm=TRUE), c("THRESH3","PCT_SAFN_0.70"))
+T4=setNames(aggregate(SED_RS_final$PCT_SAFN, by = list(SED_RS_final$THRESH3), FUN = quantile,probs=0.90,na.rm=TRUE), c("THRESH3","PCT_SAFN_0.90"))
+T5=join_all(list(T3,T4), by="THRESH3")
+#DPCT_SF
+###Modeled indicator, does not use Ecoregion percentil THRESH3olds as these others do.. 
+#XFC_NAT
+T1=setNames(aggregate(SED_RS_final$XFC_NAT, by = list(SED_RS_final$THRESH3), FUN = quantile,probs=0.10,na.rm=TRUE), c("THRESH3","XFC_NAT_0.10"))
+T2=setNames(aggregate(SED_RS_final$XFC_NAT, by = list(SED_RS_final$THRESH3), FUN = quantile,probs=0.30,na.rm=TRUE), c("THRESH3","XFC_NAT_0.30"))
+T7=join_all(list(T1,T2), by="THRESH3")
+#LINCIS_H
+T3=setNames(aggregate(SED_RS_final$LINCIS_H, by = list(SED_RS_final$THRESH3), FUN = quantile,probs=0.70,na.rm=TRUE), c("THRESH3","LINCIS_H_0.70"))
+T4=setNames(aggregate(SED_RS_final$LINCIS_H, by = list(SED_RS_final$THRESH3), FUN = quantile,probs=0.90,na.rm=TRUE), c("THRESH3","LINCIS_H_0.90"))
+T8=join_all(list(T3,T4), by="THRESH3")
+#XEMBED
+T3=setNames(aggregate(SED_RS_final$XEMBED, by = list(SED_RS_final$THRESH3), FUN = quantile,probs=0.70,na.rm=TRUE), c("THRESH3","XEMBED_0.70"))
+T4=setNames(aggregate(SED_RS_final$XEMBED, by = list(SED_RS_final$THRESH3), FUN = quantile,probs=0.90,na.rm=TRUE), c("THRESH3","XEMBED_0.90"))
+T9=join_all(list(T3,T4), by="THRESH3")
+#RP100
+T1=setNames(aggregate(SED_RS_final$RP100, by = list(SED_RS_final$THRESH3), FUN = quantile,probs=0.10,na.rm=TRUE), c("THRESH3","RP100_0.10"))
+T2=setNames(aggregate(SED_RS_final$RP100, by = list(SED_RS_final$THRESH3), FUN = quantile,probs=0.30,na.rm=TRUE), c("THRESH3","RP100_0.30"))
+T10=join_all(list(T1,T2), by="THRESH3")
+##Combine all
+SED_THRESHOLDS_ECO10=join_all(list(T5,T7,T8,T9,T10),by="THRESH3")
+
+###################################################################################
+# Use set thresholds for:  L_XCMGW, W1_HALL, QR1
+# Defined when thresholds are implemented and applied to field measured indicators.
+###################################################################################
+
+#Make one file for ECO 10 thresholds and remove unwanted working files
+Thresholds_ECO10=merge(SED_THRESHOLDS_ECO10,RIP_THRESHOLDS_ECO10, all=TRUE)
+
+####boating incision with all boating sites combined
+#LINCIS_H
+T3=setNames(aggregate(SED_RS_final$LINCIS_H, by = list(SED_RS_final$THRESH2), FUN = quantile,probs=0.70,na.rm=TRUE), c("THRESH3","LINCIS_H_0.70"))
+T4=setNames(aggregate(SED_RS_final$LINCIS_H, by = list(SED_RS_final$THRESH2), FUN = quantile,probs=0.90,na.rm=TRUE), c("THRESH3","LINCIS_H_0.90"))
+T8=join_all(list(T3,T4), by="THRESH3")
+SubT8=subset(T8,THRESH3=="ALL_BOATING")
+
+Thresholds_Final=merge(Thresholds_ECO10,SubT8, all=TRUE)
+
+# # Add pH thresholds
+# #Using National standards NOT EPA regional reference approach. See above for code to use EPA regional reference approach and notes on why this was a problem to use.
+# #Column names of 0.10, 0.30, 0.70, and 0.90 were used so the ConditionDeterminations code did not need to be updated regardless of if you were using National standards or EPA regional reference thresholds.
+# Thresholds_ECO10$PH_0.10=6.5
+# Thresholds_ECO10$PH_0.30=7
+# Thresholds_ECO10$PH_0.70=8.5
+# Thresholds_ECO10$PH_0.90=9
+
+
+rm(T1,T2,T3,T4,T5,T6,T7,T8,T9,RIP_THRESHOLDS_ECO10,SED_THRESHOLDS_ECO10)
+
