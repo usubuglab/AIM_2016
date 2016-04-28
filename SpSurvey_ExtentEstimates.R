@@ -41,7 +41,7 @@ siteeval$ycoord <- tmp[,'y']
 #! NorCal - why do sites 8487 and 8503 have the same coordinates?! they don't in the design file, but do in GRTS_SITEINFO and WRSAdb
 
 ##TNT designation
-siteeval$TNT <- siteeval$EvalStatus
+siteeval$TNT <-siteeval$EvalStatus
 levels(siteeval$TNT ) <- list(Target=c("TS", "UNK", "IA"),
                               NonTarget="NT",
                               NotNeeded=c("NN"))
@@ -77,13 +77,13 @@ designCON=data.frame(siteID=siteeval$SITE_ID,
 #Below line removes three outliers from all indicators
 #ResponseInfo=read.csv('\\\\share1.bluezone.usu.edu\\miller\\buglab\\Research Projects\\BLM_WRSA_Stream_Surveys\\Results and Reports\\NorCal_2013\\Analysis\\ExtentEstimates\\NorCal_ExtEst_Input_ReduceAllIndicators.csv')
 #Below line uses only 67 sites for MMI but 70 sites for all 
-ResponseInfo=read.csv('\\\\share1.bluezone.usu.edu\\miller\\buglab\\Research Projects\\BLM_WRSA_Stream_Surveys\\Results and Reports\\NorCal_2013\\Analysis\\ExtentEstimates\\NorCal_ExtEst_Input_ReduceMMI.csv')
+#ResponseInfo=read.csv('\\\\share1.bluezone.usu.edu\\miller\\buglab\\Research Projects\\BLM_WRSA_Stream_Surveys\\Results and Reports\\NorCal_2013\\Analysis\\ExtentEstimates\\NorCal_ExtEst_Input_ReduceMMI.csv')
 
 #######SRM input file
-ResponseInfo=read.csv('Z:\\buglab\\Research Projects\\BLM_WRSA_Stream_Surveys\\Results and Reports\\SRM_2015\\ResponseInfo.csv')
+#ResponseInfo=read.csv('Z:\\buglab\\Research Projects\\BLM_WRSA_Stream_Surveys\\Results and Reports\\SRM_2015\\ResponseInfo.csv')
 
 ######WRSA file
-ResponseInfo=read.csv('Z:\\buglab\\Research Projects\\BLM_WRSA_Stream_Surveys\\Results and Reports\\AIM_2011_2015_results\\IndicatorCondECO10_18March2016.csv')
+#ResponseInfo=read.csv('Z:\\buglab\\Research Projects\\BLM_WRSA_Stream_Surveys\\Results and Reports\\AIM_2011_2015_results\\IndicatorCondECO10_18March2016.csv')
 
 #This is NorCal specific and SHOULD be commented out. 
 #This code looks for the UIDs that start with the first three numbers in the input file and replace with the actual UID
@@ -111,23 +111,20 @@ ResponseInfo=read.csv('Z:\\buglab\\Research Projects\\BLM_WRSA_Stream_Surveys\\R
 # ResponseInfo[grep('^450.*?',ResponseInfo$UID),'UID']='4501931467'
 
 
+# #FLAT
+# #ResponseInfo=read.csv('\\\\share2.bluezone.usu.edu\\miller\\buglab\\Research Projects\\BLM_WRSA_Stream_Surveys\\Results and Reports\\NorCal_2013\\AquametTEST\\Test2\\10-08input_ToDelete\\metsAquamet_2014-10-02.csv')
+# 
+# #determine if Pivotting needed
+# aquametSTR=subset(count(colnames(ResponseInfo) %in% c('METRIC','RESULT')),x==TRUE)
+# if(nrow(aquametSTR)>0){#if in aquamet format
+#   ResponseInfo$METRIC=toupper(ResponseInfo$METRIC)
+#   ResponseInfo=cast(ResponseInfo,'UID~METRIC',value='RESULT')
+# } else if(ncol(ResponseInfo)<10) {print('There are not many columns. Pivot the data if in Flat format!')#or just very few columns
+#                                  } else {print('There are many columns. Data is assumed to be pivoted with indicator and matching condition names as columns.')}
 
-
-
-
-
-
-
-#FLAT
-#ResponseInfo=read.csv('\\\\share2.bluezone.usu.edu\\miller\\buglab\\Research Projects\\BLM_WRSA_Stream_Surveys\\Results and Reports\\NorCal_2013\\AquametTEST\\Test2\\10-08input_ToDelete\\metsAquamet_2014-10-02.csv')
-
-#determine if Pivotting needed
-aquametSTR=subset(count(colnames(ResponseInfo) %in% c('METRIC','RESULT')),x==TRUE)
-if(nrow(aquametSTR)>0){#if in aquamet format
-  ResponseInfo$METRIC=toupper(ResponseInfo$METRIC)
-  ResponseInfo=cast(ResponseInfo,'UID~METRIC',value='RESULT')
-} else if(ncol(ResponseInfo)<10) {print('There are not many columns. Pivot the data if in Flat format!')#or just very few columns
-                                  } else {print('There are many columns. Data is assumed to be pivoted with indicator and matching condition names as columns.')}
+#wrsa
+ResponseInfo=read.csv('Z:\\buglab\\Research Projects\\BLM_WRSA_Stream_Surveys\\Results and Reports\\AIM_2011_2015_results\\IndicatorsCond_27April2016.csv')
+#ResponseInfo=IndicatorsCond
 #merge site info to indicator info
 SiteInfo=merge(siteeval,ResponseInfo,by=intersect(colnames(siteeval),colnames(ResponseInfo)),all.x=T)
 #add ratings if not done externally (standard process TBD, could adapt from Stats_Thresholds method in ProbSurveyDB.accdb)
@@ -141,31 +138,33 @@ SiteInfo=merge(siteeval,ResponseInfo,by=intersect(colnames(siteeval),colnames(Re
 ##potential variables:
 #str(SiteInfo)
 ##variable selection:
+#########WRSA_SFS ################
+selectVARauto='N'; selectVARchoice=ifelse(selectVARauto=='Y','AllVar','CustomVar')#automatically select all variables
+extentVAR=c('TNT','EvalStatus','EvalStatus2','VALXSITE')#Extent Estimate added here since weights the same (rather than running cat.analysis twice)
+responseVAR=c("OE")# Input here should be bug model
+stressorsVAR=c("OE_TN","OE_TP","OE_EC","PH_CHECK","BnkCover_StabErosional","PCT_SAFN","XEMBED","XFC_NAT","LINCIS_H","XCDENBK","XCMG","INVASIVE_MACRO")#NOT stressorsVAR=c('MMI')   ####'PCT_SAFN','LSUB_DMM')#UTBLM final list: stressorsVAR=c('InvasivesYN','EC','TP','TN','AugST','LBFXWRat','C1WM100','XCDENMID','Stab2','PCT_SAFN')#must be Access names with a matching 'rtg' variable: to view, str(ResponseInfo)
+
 #########UT BLM examples###########
 # selectVARauto='N'; selectVARchoice=ifelse(selectVARauto=='Y','AllVar','CustomVar')#automatically select all variables
 # extentVAR=c('TNT','EvalStatus','VALXSITE')#Extent Estimate added here since weights the same (rather than running cat.analysis twice)
 # responseVAR=c('OE')
 # stressorsVAR=c('PCT_SAFN','LSUB_DMM')#UTBLM final list: stressorsVAR=c('InvasivesYN','EC','TP','TN','AugST','LBFXWRat','C1WM100','XCDENMID','Stab2','PCT_SAFN')#must be Access names with a matching 'rtg' variable: to view, str(ResponseInfo)
 #########NorCal examples###########
-selectVARauto='N'; selectVARchoice=ifelse(selectVARauto=='Y','AllVar','CustomVar')#automatically select all variables
-extentVAR=c('TNT','EvalStatus','VALXSITE')#Extent Estimate added here since weights the same (rather than running cat.analysis twice)
-responseVAR=c("OE_TN")# Input here should be bug model
-stressorsVAR=c("OE_TN","OE_TP","OE_EC","PH_CHECK","BnkCover_StabErosional","PCT_SAFN","XEMBED","XFC_NAT","LINCIS_H","XCDENBK","XCMG")#NOT stressorsVAR=c('MMI')   ####'PCT_SAFN','LSUB_DMM')#UTBLM final list: stressorsVAR=c('InvasivesYN','EC','TP','TN','AugST','LBFXWRat','C1WM100','XCDENMID','Stab2','PCT_SAFN')#must be Access names with a matching 'rtg' variable: to view, str(ResponseInfo)
 #responseVAR=c("NV_MMI")# Input here should be bug model
-#stressorsVAR=c("NV_Invasives","OE_TN","OE_TP","OE_Conduct","PH_CHECK","BnkStability_BLM_CHECK","PCT_SAFN_CHECK","XCMG_CHECK","XFC_NAT_CHECK","LINCIS_H_CHECK","xcdenmid_CHECK")#,"XEMBED_CHECK")#NOT stressorsVAR=c('MMI')   ####'PCT_SAFN','LSUB_DMM')#UTBLM final list: stressorsVAR=c('InvasivesYN','EC','TP','TN','AugST','LBFXWRat','C1WM100','XCDENMID','Stab2','PCT_SAFN')#must be Access names with a matching 'rtg' variable: to view, str(ResponseInfo)
+#stressorsVAR=c("NV_Invasives","OE_TN","OE_TP","OE_Conduct","PH_CHECK","BnkStability_BLM_CHECK","PCT_SAFN_CHECK","XCMG_CHECK","XFC_NAT_CHECK","LINCIS_H_CHECK","xcdenmid_CHECK","INVASIVE_MACRO)#,"XEMBED_CHECK")#NOT stressorsVAR=c('MMI')   ####'PCT_SAFN','LSUB_DMM')#UTBLM final list: stressorsVAR=c('InvasivesYN','EC','TP','TN','AugST','LBFXWRat','C1WM100','XCDENMID','Stab2','PCT_SAFN')#must be Access names with a matching 'rtg' variable: to view, str(ResponseInfo)
 #"XGB_CHECK",
 #To remove MMI from "Poor"/stressorgraphs Use code below
 #responseVAR=c("OE_TN")# Input here is bogus
 #stressorsVAR=c("NV_Invasives","OE_TP","OE_Conduct","PH_CHECK","BnkStability_BLM_CHECK","PCT_SAFN_CHECK","XCMG_CHECK","XFC_NAT_CHECK","LINCIS_H_CHECK","xcdenmid_CHECK")#,"XEMBED_CHECK")#NOT stressorsVAR=c('MMI')   ####'PCT_SAFN','LSUB_DMM')#UTBLM final list: stressorsVAR=c('InvasivesYN','EC','TP','TN','AugST','LBFXWRat','C1WM100','XCDENMID','Stab2','PCT_SAFN')#must be Access names with a matching 'rtg' variable: to view, str(ResponseInfo)
-
 ##########SRM ###################
-selectVARauto='N'; selectVARchoice=ifelse(selectVARauto=='Y','AllVar','CustomVar')#automatically select all variables
-extentVAR=c('TNT')#NOT extentVAR=c('MMI','trial','EvalStatus','VALXSITE')#Extent Estimate added here since weights the same (rather than running cat.analysis twice)
-responseVAR=c('OE') #Input here should be Bug model e.g., MMI or OE
-stressorsVAR=c("PH_CHECK","XCMG_CHECK","XFC_NAT_CHECK","LINCIS_H_CHECK","XEMBED_CHECK","OE_Conduct","OE_TN","OE_TP","Invasives","xcdenmid_CHECK")#NOT stressorsVAR=c('MMI')   ####'PCT_SAFN','LSUB_DMM')#UTBLM final list: stressorsVAR=c('InvasivesYN','EC','TP','TN','AugST','LBFXWRat','C1WM100','XCDENMID','Stab2','PCT_SAFN')#must be Access names with a matching 'rtg' variable: to view, str(ResponseInfo)
+# selectVARauto='N'; selectVARchoice=ifelse(selectVARauto=='Y','AllVar','CustomVar')#automatically select all variables
+# extentVAR=c('EvalStatus2')#TNT#NOT extentVAR=c('MMI','trial','EvalStatus','VALXSITE')#Extent Estimate added here since weights the same (rather than running cat.analysis twice)
+# responseVAR=c('OE') #Input here should be Bug model e.g., MMI or OE
+# stressorsVAR=c("PH_CHECK","XCMG_CHECK","XFC_NAT_CHECK","LINCIS_H_CHECK","XEMBED_CHECK","OE_Conduct","OE_TN","OE_TP","Invasives","xcdenmid_CHECK")#NOT stressorsVAR=c('MMI')   ####'PCT_SAFN','LSUB_DMM')#UTBLM final list: stressorsVAR=c('InvasivesYN','EC','TP','TN','AugST','LBFXWRat','C1WM100','XCDENMID','Stab2','PCT_SAFN')#must be Access names with a matching 'rtg' variable: to view, str(ResponseInfo)
 #save previous variable lists here:
 #initial run variables (default): c('TotalHA','RIPARIAN',"EC","TN","TP",'MWMT','PCT_SAFN')
 #Scott November 2012 figures: c('EC','TP','TN','RIPARIAN','MWMT','PCT_SAFN')
+
 omitVAR=c('LRBS_bw5');omitVARrtg=sprintf('%srtg',omitVAR)#These metrics need additional input from phil kaufman before they are usable. Also, they are crashing the code anyways..not sure why these variables aren't working in access/R, but LRBS_bw5 is crashing cat.analysis with "Estimates cannot be calculated since the vector of categorical variable values is empty."
 if(selectVARauto=='Y'){
   variablesrtg=names(ResponseInfo)[grep('rtg',names(ResponseInfo))]
@@ -206,8 +205,9 @@ stressorsVAR=setdiff(stressorsVAR,omitVAR)
 OE_TNname='Total Nitrogen';OE_TPname='Total Phosphorus';OE_ECname='Conductivity';PH_CHECKname='pH';
 BnkCover_StabErosionalname='Bank Stability';PCT_SAFN_name='% Fine Sediment';XCMGname='Riparian Complexity';XCDENBKname='Riparian Canopy Cover';
 XFC_NATname='Instream Complexity';LINCIS_Hname='Floodplain Connectivity';PCT_SAFNname = 'Fines'
-XEMBEDname='Embeddedness';#OEname='Biological Condition'; Invasivesname='Benthic Invasives;#SRM
+XEMBEDname='Embeddedness';OEname='Biological Condition'; INVASIVE_MACROname='Benthic Invasives'
 
+#Old
 TotalHAname='Habitat'; RIPARIANname='Riparian Alt.'; AugSTname= 'Stream Temp.'; SummerSTname= 'Stream Temp (Sum)';
 C1WM100name='LWD*';XCDENMIDname = 'Canopy*' ; PCT_SAFNname = 'Fines'; LBFXWRatname='Flood Inundation*' ; Stab2name='Bank Stability'; MMIname='MMI';trialname='trial'
 #EPA Statistical summary: LBFXWRat is an index of streamside flood inundation potential. A high value of LBFXWRat indicates that a stream or river has very unconstrained access to the valley flood plain and has flood flows sufficiently large to do so.
@@ -219,11 +219,11 @@ C1WM100name='LWD*';XCDENMIDname = 'Canopy*' ; PCT_SAFNname = 'Fines'; LBFXWRatna
 catdata=subset(SiteInfo, select=c('SITE_ID',extentVAR,variablesrtg))
 
 ###########################------SRM input for figures---------------------------###########################################
-sitesCON=read.csv('Z:\\buglab\\Research Projects\\BLM_WRSA_Stream_Surveys\\Results and Reports\\SRM_2015\\sitesCON.csv')
-subpopCON=read.csv('Z:\\buglab\\Research Projects\\BLM_WRSA_Stream_Surveys\\Results and Reports\\SRM_2015\\subpopCON.csv')
-designCON=read.csv('Z:\\buglab\\Research Projects\\BLM_WRSA_Stream_Surveys\\Results and Reports\\SRM_2015\\designCON.csv')
-catdata=read.csv('Z:\\buglab\\Research Projects\\BLM_WRSA_Stream_Surveys\\Results and Reports\\SRM_2015\\catdata.csv')
-rm(sitesCON,subpopCON,designCON,catdata)
+# sitesCON=read.csv('Z:\\buglab\\Research Projects\\BLM_WRSA_Stream_Surveys\\Results and Reports\\SRM_2015\\sitesCON.csv')
+# subpopCON=read.csv('Z:\\buglab\\Research Projects\\BLM_WRSA_Stream_Surveys\\Results and Reports\\SRM_2015\\subpopCON.csv')
+# designCON=read.csv('Z:\\buglab\\Research Projects\\BLM_WRSA_Stream_Surveys\\Results and Reports\\SRM_2015\\designCON.csv')
+# catdata=read.csv('Z:\\buglab\\Research Projects\\BLM_WRSA_Stream_Surveys\\Results and Reports\\SRM_2015\\catdata.csv')
+# rm(sitesCON,subpopCON,designCON,catdata)
 ############################################################################################################################
 
 results.cat <- cat.analysis(sites = sitesCON, 
