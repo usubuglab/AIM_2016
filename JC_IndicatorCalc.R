@@ -249,18 +249,18 @@ fishpvt2$nXFC_NAT_CHECK=(fishpvt3$BOULDR+fishpvt3$BRUSH+fishpvt3$LVTREE+fishpvt3
 #xcdenmid
 MidDensiom = subset(densiom, POINT == "CU"|POINT =="CD"|POINT == "CL"|POINT == "CR")
 DensPvt=cast(MidDensiom,'UID~PARAMETER',value='RESULT',fun=mean)
-DensPvt$xcdenmid_CHECK=round((DensPvt$DENSIOM/17)*100,digits=2)
+DensPvt$XCDENMID_CHECK=round((DensPvt$DENSIOM/17)*100,digits=2)
 #Trying to figure out what is going on with UID 11802.
 #Dens_Pvt3=cast(MidDens3,'UID+TRANSECT~PARAMETER',value='RESULT',fun=mean)
-nDensPvt=setNames(count(MidDensiom,"UID"),c("UID","nxcdenmid_CHECK"))#should be 4 locations at 11 transects=44 so half is 22
+nDensPvt=setNames(count(MidDensiom,"UID"),c("UID","nXCDENMID_CHECK"))#should be 4 locations at 11 transects=44 so half is 22
 DensPvt=merge(nDensPvt,DensPvt,by="UID")
 #DensPvt$xcdenmid_CHECK=ifelse(DensPvt$nxcdenmid_CHECK<22,NA,DensPvt$xcdenmid_CHECK)#7 have values of 20
 
 #xcdenbk
 BnkDensiom = subset(densiom, POINT == "LF"|POINT =="RT")
 BnkDensPvt=cast(BnkDensiom,'UID~PARAMETER',value='RESULT',fun=mean)
-BnkDensPvt$xcdenbk_CHECK=round((BnkDensPvt$DENSIOM/17)*100,digits=2)
-nBnkDensPvt=setNames(count(BnkDensiom,"UID"),c("UID","nxcdenbk_CHECK"))# should be 2 locations at 11 transects=22 so half is 11
+BnkDensPvt$XCDENBK_CHECK=round((BnkDensPvt$DENSIOM/17)*100,digits=2)
+nBnkDensPvt=setNames(count(BnkDensiom,"UID"),c("UID","nXCDENBK_CHECK"))# should be 2 locations at 11 transects=22 so half is 11
 BnkDensPvt=merge(nBnkDensPvt,BnkDensPvt,by="UID")
 #DensPvt$xcdenmid_CHECK=ifelse(DensPvt$nxcdenmid_CHECK<11,NA,DensPvt$xcdenmid_CHECK)#8 have n=8-10
 
@@ -792,6 +792,6 @@ IndicatorCheck=IndicatorCheckJoin[,c("UID",grep("CHECK$", colnames(IndicatorChec
 #write.csv(IndicatorCheck,"C:\\Users\\Nicole\\Desktop\\IndicatorCheck2.csv")
 #Remove all other data files as they are no longer needed
 IndicatorCheck=subset(IndicatorCheck,PROTOCOL_CHECK=="BOAT14")
-write.csv(IndicatorCheck,"IndicatorCheck_19March2016.csv")
+write.csv(IndicatorCheck,"IndicatorCheck_27April2016.csv")
 rm(PHfinal,XGB_new,XGB_new1,BankStab,Banks,RipGB,EMBED,Human_Influ,W1_HALL,W1_HALL_NRSA,QR1,XEMBED,BnkDensPvt,BnkDensiom,densiom,RipXCMG,XCMG_new,XCMG_new1,RipWW,XCMGW_new,XCMGW_new1,IndicatorCheckJoin,fish,fishpvt2,
    MidDensiom,DensPvt,Incision,INCISED,BANKHT,Inc,Bnk,xIncht,xBnkht,IncBnk,Sediment,pctsafn,Sed2014,A_Sed2014,C_Sed2014,E_Sed2014,F_Sed2014,PCT_SAFN_ALL)
