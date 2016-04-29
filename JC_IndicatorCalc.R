@@ -183,6 +183,7 @@ BnkCover_StabErosional=setNames(aggregate(BnkCover_Stab~UID,data=BanksErosional,
 #samplesize
 nBnkCover_StabErosional=setNames(aggregate(BnkCover_Stab~UID,data=BanksErosional, FUN=length), c('UID','nBnkCover_StabErosional_CHECK'))
 
+
 #both erosional and depositional banks
 BanksAll=Banks
 BnkCvrAll=setNames(aggregate(CoverValue~UID,data=BanksAll, FUN=mean), c('UID','BnkCover_All_CHECK'))
@@ -199,13 +200,13 @@ BnkAll=join_all(list(BnkCover_StabAll,BnkCvrAll,BnkStbAll,nBnkCover_StabAll,nBnk
 
 #remove cases with less than 50% of data #15 sites excluded?
 #exclude=subset(BnkErosional,nBnkCover_StabErosional_CHECK<21)#15 excluded
-# BnkErosional$BnkCover_StabErosional_CHECK=ifelse(BnkErosional$nBnkCover_StabErosional_CHECK<21,NA,BnkErosional$BnkCover_StabErosional_CHECK) 
-# BnkErosional$BnkCover_Erosional_CHECK=ifelse(BnkErosional$nBnkCover_StabErosional_CHECK<21,NA,BnkErosional$BnkCover_Erosional_CHECK)  
-# BnkErosional$BnkStability_Erosional_CHECK=ifelse(BnkErosional$nBnkCover_StabErosional_CHECK<21,NA,BnkErosional$BnkStability_Erosional_CHECK) 
-# 
-# BnkAll$BnkCover_StabAll_CHECK=ifelse(BnkAll$nBnkCover_StabAll_CHECK<21,NA,BnkAll$BnkCover_StabAll_CHECK) 
-# BnkAll$BnkCover_All_CHECK=ifelse(BnkAll$nBnkCover_StabAll_CHECK<21,NA,BnkAll$BnkCover_All_CHECK)  
-# BnkAll$BnkStability_All_CHECK=ifelse(BnkAll$nBnkCover_StabAll_CHECK<21,NA,BnkAll$BnkStability_All_CHECK) 
+BnkErosional$BnkCover_StabErosional_CHECK=ifelse(BnkErosional$nBnkCover_StabErosional_CHECK<21,NA,BnkErosional$BnkCover_StabErosional_CHECK) 
+BnkErosional$BnkCover_Erosional_CHECK=ifelse(BnkErosional$nBnkCover_StabErosional_CHECK<21,NA,BnkErosional$BnkCover_Erosional_CHECK)  
+BnkErosional$BnkStability_Erosional_CHECK=ifelse(BnkErosional$nBnkCover_StabErosional_CHECK<21,NA,BnkErosional$BnkStability_Erosional_CHECK) 
+
+BnkAll$BnkCover_StabAll_CHECK=ifelse(BnkAll$nBnkCover_StabAll_CHECK<21,NA,BnkAll$BnkCover_StabAll_CHECK) 
+BnkAll$BnkCover_All_CHECK=ifelse(BnkAll$nBnkCover_StabAll_CHECK<21,NA,BnkAll$BnkCover_All_CHECK)  
+BnkAll$BnkStability_All_CHECK=ifelse(BnkAll$nBnkCover_StabAll_CHECK<21,NA,BnkAll$BnkStability_All_CHECK) 
 
 #############################################################################
 
@@ -221,7 +222,7 @@ WQpvt$EC_PRED=round(WQpvt$EC_PRED,digits=2)
 WQpvt$OE_EC=round(WQpvt$CONDUCTIVITY-WQpvt$EC_PRED,digits=2)
 WQpvt$OE_TN=round(WQpvt$NTL-WQpvt$TN_PRED,digits=3)
 WQpvt$OE_TP=round(WQpvt$PTL-WQpvt$TP_PRED,digits=1)
-WQfinal=setNames(WQpvt,c("UID","CONDUCTIVITY_CHECK","EC_PRED_CHECK","NTL_CHECK","PH_CHECK","PTL_CHECK","TEMPERATURE_CHECK","TN_PRED_CHECK","TP_PRED_CHECK","TURBIDITY_CHECK","OE_TN_CHECK","OE_TP_CHECK","OE_EC_CHECK"))
+WQfinal=setNames(WQpvt,c("UID","CONDUCTIVITY_CHECK","EC_PRED_CHECK","NTL_CHECK","PH_CHECK","PTL_CHECK","TEMPERATURE_CHECK","TN_PRED_CHECK","TP_PRED_CHECK","TURBIDITY_CHECK","OE_EC_CHECK","OE_TN_CHECK","OE_TP_CHECK"))
 WQfinal=WQfinal[,c(1,2,3,13,6,9,12,4,8,11,5,7,10)]
 
 
@@ -244,7 +245,7 @@ fishpvt2$XFC_NAT_CHECK=round(rowSums(fishpvt2[,c(2,3,4,5,6,7)]),digits=2)
 fishpvt3=cast(fish,'UID~PARAMETER', value='ResultsPer',fun='length')
 fishpvt2$nXFC_NAT_CHECK=(fishpvt3$BOULDR+fishpvt3$BRUSH+fishpvt3$LVTREE+fishpvt3$OVRHNG+fishpvt3$UNDCUT+fishpvt3$WOODY)# 6 categories *11 transects 
 #fishpvt5=subset(fishpvt2,nXFC_NAT_CHECK<33)#only 4 sites that this applies to and 28 was the lowest so decided to use all data 
-#fishpvt2$XFC_NAT_CHECK=ifelse(fishpvt2$nXFC_NAT_CHECK<33,NA,fishpvt2$XFC_NAT_CHECK)
+fishpvt2$XFC_NAT_CHECK=ifelse(fishpvt2$nXFC_NAT_CHECK<33,NA,fishpvt2$XFC_NAT_CHECK)
 
 #xcdenmid
 MidDensiom = subset(densiom, POINT == "CU"|POINT =="CD"|POINT == "CL"|POINT == "CR")
@@ -254,7 +255,7 @@ DensPvt$XCDENMID_CHECK=round((DensPvt$DENSIOM/17)*100,digits=2)
 #Dens_Pvt3=cast(MidDens3,'UID+TRANSECT~PARAMETER',value='RESULT',fun=mean)
 nDensPvt=setNames(count(MidDensiom,"UID"),c("UID","nXCDENMID_CHECK"))#should be 4 locations at 11 transects=44 so half is 22
 DensPvt=merge(nDensPvt,DensPvt,by="UID")
-#DensPvt$xcdenmid_CHECK=ifelse(DensPvt$nxcdenmid_CHECK<22,NA,DensPvt$xcdenmid_CHECK)#7 have values of 20
+DensPvt$XCDENMID_CHECK=ifelse(DensPvt$nXCDENMID_CHECK<22,NA,DensPvt$XCDENMID_CHECK)#7 have values of 20
 
 #xcdenbk
 BnkDensiom = subset(densiom, POINT == "LF"|POINT =="RT")
@@ -262,7 +263,7 @@ BnkDensPvt=cast(BnkDensiom,'UID~PARAMETER',value='RESULT',fun=mean)
 BnkDensPvt$XCDENBK_CHECK=round((BnkDensPvt$DENSIOM/17)*100,digits=2)
 nBnkDensPvt=setNames(count(BnkDensiom,"UID"),c("UID","nXCDENBK_CHECK"))# should be 2 locations at 11 transects=22 so half is 11
 BnkDensPvt=merge(nBnkDensPvt,BnkDensPvt,by="UID")
-#DensPvt$xcdenmid_CHECK=ifelse(DensPvt$nxcdenmid_CHECK<11,NA,DensPvt$xcdenmid_CHECK)#8 have n=8-10
+BnkDensPvt$XCDENBK_CHECK=ifelse(BnkDensPvt$nXCDENBK_CHECK<11,NA,BnkDensPvt$XCDENBK_CHECK)#8 have n=8-10
 
 #LINCIS_H
 ###First the max value of either the side channel or main channel needs to be chosen. To do this I changed all side channels (X-letter) to just the main letter (Sidechannel at A (XA) would be changed to just A).
@@ -282,8 +283,8 @@ nInc=setNames(count(Inc,"UID"),c("UID","nxinc_h_CHECK"))
 nBnk=setNames(count(Bnk,"UID"),c("UID","nxbnk_h_CHECK"))   
 
 IncBnk=join_all(list(xBnkht,xIncht,nInc, nBnk),by="UID")
-#IncBnk$xinc_h_CHECK=ifelse(IncBnk$nxinc_h_CHECK<5,NA,IncBnk$xinc_h_CHECK)#5 sites less than 5, 1-4
-#IncBnk$xbnk_h_CHECK=ifelse(IncBnk$nxbnk_h_CHECK<5,NA,IncBnk$xbnk_h_CHECK)#1 site
+IncBnk$xinc_h_CHECK=ifelse(IncBnk$nxinc_h_CHECK<5,NA,IncBnk$xinc_h_CHECK)#5 sites less than 5, 1-4
+IncBnk$xbnk_h_CHECK=ifelse(IncBnk$nxbnk_h_CHECK<5,NA,IncBnk$xbnk_h_CHECK)#1 site
 IncBnk$LINCIS_H_CHECK=round(log10(IncBnk$xinc_h_CHECK-IncBnk$xbnk_h_CHECK+0.1),digits=2)
 IncBnk$xinc_h_CHECK=round(IncBnk$xinc_h_CHECK,digits=2)
 IncBnk$xbnk_h_CHECK=round(IncBnk$xbnk_h_CHECK,digits=2)
@@ -373,8 +374,8 @@ G_Sed2014=merge(F_Sed2014,Nbed, by="UID")
 # Combine the two datasets for PCT_SAFN together so that I don't have multiple files for the same thing
 H_Sed=rbind(pctsafn_2013,G_Sed2014)
 PCT_SAFN_ALL=join(H_Sed,Nall_Sed2014pvtsub,by="UID",type="left")
-#PCT_SAFN_sub=subset(PCT_SAFN_ALL,nPCT_SAFN_CHECK<50)
-#PCT_SAFN_ALL$PCT_SAFN_CHECK=ifelse(PCT_SAFN_ALL$nPCT_SAFN_CHECK<50,NA,PCT_SAFN_ALL$PCT_SAFN_CHECK)
+PCT_SAFN_sub=subset(PCT_SAFN_ALL,nPCT_SAFN_CHECK<50)
+PCT_SAFN_ALL$PCT_SAFN_CHECK=ifelse(PCT_SAFN_ALL$nPCT_SAFN_CHECK<50,NA,PCT_SAFN_ALL$PCT_SAFN_CHECK)
 
 ###################################################################################################################################
 #other sediment metrics
@@ -541,7 +542,7 @@ XCMG_new1=setNames(aggregate(VALUE~UID,data=XCMG_new,FUN=mean),list("UID","XCMG_
 #sample sizes
 nXCMG_new=setNames(count(RipXCMG,"UID"),c("UID","nXCMG_CHECK"))#6 strata *2 banks*11 transects=132 so half data=66
 XCMG_new1=merge(nXCMG_new,XCMG_new1, by="UID")
-#XCMG_new1$XCMG_CHECK=ifelse(XCMG_new1$nXCMG_CHECK<66,NA,XCMG_new1$XCMG_CHECK)#5 sites 3 WRSA 54-60
+XCMG_new1$XCMG_CHECK=ifelse(XCMG_new1$nXCMG_CHECK<66,NA,XCMG_new1$XCMG_CHECK)#5 sites 3 WRSA 54-60
 
 #RipGB
 RipGB$ResultsPer=ifelse(RipGB$RESULT == 1, 0.05,ifelse(RipGB$RESULT == 2, 0.25,ifelse(RipGB$RESULT == 3, 0.575,ifelse(RipGB$RESULT == 4, 0.875,ifelse(RipGB$RESULT ==0, 0, NA)))))
@@ -657,7 +658,7 @@ MeanAngle=setNames(round(cast(Angle,'UID~PARAMETER',value='RESULT',fun=mean),dig
 #sample size
 nAngle=setNames(count(Angle,"UID"),c("UID","nANGLE180_CHECK"))# 2 banks* 11 transects=22
 MeanAngle=merge(nAngle,MeanAngle, by="UID")
-#MeanAngle$ANGLE180_CHECK=ifelse(MeanAngle$nANGLE180_CHECK<11,NA,MeanAngle$ANGLE180_CHECK)#8 site 5 WRSA
+MeanAngle$ANGLE180_CHECK=ifelse(MeanAngle$nANGLE180_CHECK<11,NA,MeanAngle$ANGLE180_CHECK)#8 site 5 WRSA
 
 #Slope
 Slope_height=cast(Slope_height, 'UID~PARAMETER',value='RESULT',fun=sum)
@@ -760,7 +761,7 @@ WetWidAll=rbind(WetWidSub,WetWid2)#merge main transects and intermediate transec
 WetWidFinal=setNames(round(aggregate(WETWID~UID,data=WetWidAll,FUN=mean),digits=2),list("UID","XWIDTH_CHECK"))#average across all transects
 nWetWid=setNames(count(WetWidAll,"UID"),c("UID","nXWIDTH_CHECK"))#21 transects
 WetWidFinal=merge(nWetWid,WetWidFinal)
-#WetWidFinal$XWIDTH_CHECK=ifelse(WetWidFinal$XWIDTH_CHECK<10,NA,WetWidFinal$XWIDTH_CHECK)#9 ranging from 4-11 not an indicator and just for context so lean towards leaving all measurements
+WetWidFinal$XWIDTH_CHECK=ifelse(WetWidFinal$XWIDTH_CHECK<10,NA,WetWidFinal$XWIDTH_CHECK)#9 ranging from 4-11 not an indicator and just for context so lean towards leaving all measurements
 
 ##checking for interupted flow sites
 # checkzero=rbind(WetWid,WetWid2)
@@ -774,7 +775,7 @@ BankWidpvt=cast(BankWid,'UID+TRANSECT~PARAMETER', value='RESULT', fun=sum)#sum a
 BankWidpvt=setNames(round(aggregate(BankWidpvt$BANKWID,list(UID=BankWidpvt$UID),mean),digits=2),c("UID","XBKF_W_CHECK"))#average all transects
 nBankWid=setNames(count(BankWid,"UID"),c("UID","nXBKF_W_CHECK"))# should have 11 transects
 BankWidFinal=merge(nBankWid,BankWidpvt)
-#BankWidFinal$XBXK_W_CHECK=ifelse(BankWidFinal$nXBKF_W_CHECK<5,NA,BankWidFinal$XBKF_W_CHECK)# one site with 4 leave in
+BankWidFinal$XBXK_W_CHECK=ifelse(BankWidFinal$nXBKF_W_CHECK<5,NA,BankWidFinal$XBKF_W_CHECK)# one site with 4 leave in
 
 #bank=BankWid$XBKF_W_CHECK
 #quantile(bank,0.15)
@@ -792,6 +793,6 @@ IndicatorCheck=IndicatorCheckJoin[,c("UID",grep("CHECK$", colnames(IndicatorChec
 #write.csv(IndicatorCheck,"C:\\Users\\Nicole\\Desktop\\IndicatorCheck2.csv")
 #Remove all other data files as they are no longer needed
 IndicatorCheck=subset(IndicatorCheck,PROTOCOL_CHECK=="BOAT14")
-write.csv(IndicatorCheck,"IndicatorCheck_27April2016.csv")
+write.csv(IndicatorCheck,"IndicatorCheck_29April2016.csv")
 rm(PHfinal,XGB_new,XGB_new1,BankStab,Banks,RipGB,EMBED,Human_Influ,W1_HALL,W1_HALL_NRSA,QR1,XEMBED,BnkDensPvt,BnkDensiom,densiom,RipXCMG,XCMG_new,XCMG_new1,RipWW,XCMGW_new,XCMGW_new1,IndicatorCheckJoin,fish,fishpvt2,
    MidDensiom,DensPvt,Incision,INCISED,BANKHT,Inc,Bnk,xIncht,xBnkht,IncBnk,Sediment,pctsafn,Sed2014,A_Sed2014,C_Sed2014,E_Sed2014,F_Sed2014,PCT_SAFN_ALL)

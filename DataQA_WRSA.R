@@ -1,6 +1,6 @@
 
 ##missing data parameters
-UnionTBL=tblRetrieve(Table='',Parameters='', Years=c('2013','2014','2015'), Projects=c('NV','GSENM','COPLT','WRSA','NORCAL','2015ProtocolOverlap','AKEFO'),Protocols=c('NRSA13','WRSA14','BOAT14','AK14'))
+UnionTBL=tblRetrieve(Table='',Parameters=parameters, Years=c('2013','2014','2015'), Projects=c('NV','GSENM','COPLT','WRSA','NORCAL','2015ProtocolOverlap','AKEFO'),Protocols=c('NRSA13','WRSA14','BOAT14','AK14'))
                      #ALLp=AllParam,UIDS=UIDs,ALL=AllData,Filter=filter,SiteCodes=sitecodes,Dates=dates,
                      #Years='2015')#,Projects='WRSA'
                      #,Protocols='WRSA14')#!? should Protocols='' to bring in all protocols? so as not to neglect failed sites? this was done for weights
@@ -18,7 +18,7 @@ UIDS=c(76374884476355444736,
 51799020664989845292668)
 UnionTBL=tblRetrieve(Parameters=c('BANKHT'),UIDS=c(589309241482436739082))
 
-CheckAll='Y'#options: 'Y' = Check All Parameters for the protocol; 'N' = Check only Parameters in UnionTBL (i.e. if subsetting UnionTBL to single Table and don't want clutter from parameters not interested in)....this is not done automatically because missing data checks are meant to look for parameters that have ZERO readings for a particular dataset, only use in testing and known scenarios (usually where AllParams='Y')
+CheckAll='N'#options: 'Y' = Check All Parameters for the protocol; 'N' = Check only Parameters in UnionTBL (i.e. if subsetting UnionTBL to single Table and don't want clutter from parameters not interested in)....this is not done automatically because missing data checks are meant to look for parameters that have ZERO readings for a particular dataset, only use in testing and known scenarios (usually where AllParams='Y')
 CommentsCount='N'#'Y' = a comment (as represented by a flag) allows the missing data warning to be ignored; 'N' = missing data is reported regardless and contributes to subsequent percentages. 
 MissingXwalk='MissingBackend'; MetricType='Y'#if MetricType=='Y' then groupings will be done by the bin (Type_Xwalk) and the metric type (Indicator, Covariate, QC)
 
@@ -677,37 +677,12 @@ boxPARAM=function(boxdata,outlierdata,sampsize,facetSTR,titleSTR){
 }# to support similar boxplot structure for stratabox and sitebox
 subcol=c('UID','SITE_ID','PARAMETER','STRATATYPE','STRATA','PARAMRES','PARAMCAT','TRANSECT','POINT')
 #compile parameter list
-dbPARAM=sqlQuery(wrsa1314,"Select SAMPLE_TYPE, PARAMETER, LABEL,VAR_TYPE from tblMETADATA where ACTIVE='TRUE'")#parameter names (SWJ to do: iterate over Sample_Type groups to generate pivots)
+dbPARAM=list(colnames(indicators))
 params_C=subset(dbPARAM, subset=VAR_TYPE=='CHARACTER')
 allparams=unique(paste(UnionTBL$SAMPLE_TYPE,UnionTBL$PARAMETER,sep=" "))#numeric: allparams=c("BANKW INCISED", "BANKW WETWID" )#categorical: allparams=c("CROSSSECW SIZE_CLS","HUMINFLUW WALL")
-excludeparams=c("FIELDMEAS DO",'THALW BAR_PRES' ,"THALW BACKWATER",grep("CONSTRAINT",allparams,value=T),grep("VERIF",allparams,value=T),grep("CALIB",allparams,value=T),grep("BERW",allparams,value=T),grep("CHEM",allparams,value=T),grep("PHOTO",allparams,value=T),grep("PACK",allparams,value=T),grep("INVA",allparams,value=T),grep("NOT_COLLECTED",allparams,value=T),"SLOPEW METHOD","FIELDMEAS LOCATION","FIELDMEAS TIME" ,"FIELDMEAS CORRECTED","FIELDMEAS OTH_LOCATION",'CROSSSECW DIST_LB',"FIELDMEAS PROBE_ENDTIME" ,"FIELDMEAS PROBE_ID"       ,"SLOPEW ENDHEIGHT"     ,     "SLOPEW ENDTRAN"  ,   "SLOPEW STARTHEIGHT"        ,    "SLOPEW PROP",   "FIELDMEAS PROBE_STARTTIME",'SLOPEW SLOPE_UNITS','CROSSSECW SUB_5_7','THALW INCREMENT')
-combineparams=c("CANCOVERW DENSIOM",'CROSSSECW XSIZE_CLS',grep("LWD",allparams,value=T),grep("HUMINFLU",allparams,value=T),grep("VISRIP",allparams,value=T),grep("FISHCOV",allparams,value=T),grep("ASSESS",allparams,value=T),grep("TORR",allparams,value=T))#need to exclude originals from allparams list and add new names back; some of these may be useable, just want to ponder them a bit more (run a few examples through the existing framework)
 #!add Size_Num to combineparams list, use same translation for converting prior to aquamet, revise legal checks for Size_NUM
 allparams1=setdiff(allparams,c(excludeparams,combineparams))
 UnionTBL2=UnionTBLall#UnionTBL2=subset(UnionTBL,SITE_ID=='EL-LS-8126')
-#!the below be redone with Xwalk along with bin?!
-UnionTBL2$PARAMETER=ifelse(UnionTBL2$PARAMETER=='XSIZE_CLS','SIZE_CLS',UnionTBL2$PARAMETER)#for all our analysis purposes, these are the same
-UnionTBL2$PARAMETER=ifelse(UnionTBL2$SAMPLE_TYPE=='LWDW','LWDtally',UnionTBL2$PARAMETER)#xwalk:fmstr#for preliminary analysis purposes, these are the same
-UnionTBL2$PARAMETER=ifelse(UnionTBL2$SAMPLE_TYPE=='HUMINFLUW','HumanPresence',UnionTBL2$PARAMETER)#xwalk:fmstr
-UnionTBL2$PARAMETER=ifelse(substr(UnionTBL2$PARAMETER,1,3)=='AGR','AGRicultural',UnionTBL2$PARAMETER)#xwalk:fmstr
-UnionTBL2$PARAMETER=ifelse(substr(UnionTBL2$PARAMETER,1,3)=='IND','INDustrial',UnionTBL2$PARAMETER)#xwalk:fmstr
-UnionTBL2$PARAMETER=ifelse(substr(UnionTBL2$PARAMETER,1,3)=='MAN','MANagement',UnionTBL2$PARAMETER)#xwalk:fmstr
-UnionTBL2$PARAMETER=ifelse(substr(UnionTBL2$PARAMETER,1,3)=='REC','RECreation',UnionTBL2$PARAMETER)#xwalk:fmstr
-UnionTBL2$PARAMETER=ifelse(substr(UnionTBL2$PARAMETER,1,3)=='RES','RESidential',UnionTBL2$PARAMETER)#xwalk:fmstr
-UnionTBL2$PARAMETER=ifelse(UnionTBL2$SAMPLE_TYPE=='TORR' & UnionTBL2$PARAMETER!='TSD011','Torrent',UnionTBL2$PARAMETER)#xwalk:fmstr
-UnionTBL2$SAMPLE_TYPE=ifelse(UnionTBL2$PARAMETER=='VEG_TYPE','VISRIP2W',UnionTBL2$SAMPLE_TYPE)
-UnionTBL2$PARAMETER=ifelse(UnionTBL2$PARAMETER=='BARE','BARE',UnionTBL2$PARAMETER)#xwalk:fmstr
-UnionTBL2$PARAMETER=ifelse(UnionTBL2$PARAMETER=='CANBTRE'|UnionTBL2$PARAMETER=='CANSTRE','CAN_TREE',UnionTBL2$PARAMETER)#xwalk:fmstr
-UnionTBL2$PARAMETER=ifelse(UnionTBL2$PARAMETER=='CANVEG'|UnionTBL2$PARAMETER=='UNDERVEG','VEG_TYPE',UnionTBL2$PARAMETER)#xwalk:fmstr
-UnionTBL2$PARAMETER=ifelse(UnionTBL2$PARAMETER=='GCNWDY'|UnionTBL2$PARAMETER=='UNDNWDY','NONWOOD',UnionTBL2$PARAMETER)#xwalk:fmstr
-UnionTBL2$PARAMETER=ifelse(UnionTBL2$PARAMETER=='GCWDY'|UnionTBL2$PARAMETER=='UNDWDY','WOODY',UnionTBL2$PARAMETER)#xwalk:fmstr
-UnionTBL2$PARAMETER=ifelse(UnionTBL2$PARAMETER=='DENSIOM' & UnionTBL2$POINT %in% c('LF','RT'),'DENSIOMbank',ifelse(UnionTBL2$PARAMETER=='DENSIOM' & (UnionTBL2$POINT  %in% c('LF','RT')==FALSE),'DENSIOMcenter',UnionTBL2$PARAMETER))#for preliminary analysis purposes, these need to be divided (and are believed to be separated in aquamet)
-combineparamNEW=c('CHEM NTL','CHEM PTL','CANCOVERW DENSIOMbank','CANCOVERW DENSIOMcenter','CROSSSECW SIZE_CLS','LWDW LWDtally','TORR Torrent','ASSESS AGRicultural','ASSESS INDustrial','ASSESS MANagement','ASSESS RECreation','ASSESS RESidential','HUMINFLUW HumanPresence','VISRIPW BARE','VISRIPW CAN_TREE','VISRIP2W VEG_TYPE','VISRIPW NONWOOD','VISRIPW WOODY')##still need to ponder HUMINFLU, VISRIP, FISHCOV, and ASSESS and add back in here
-allparams1=union(allparams1,combineparamNEW)#allparams1=allparams1[4:length(allparams1)]
-#binned parameters
-bin='Y'#'Y' if would like to apply specified binning to results of parameters in binparams
-binparams=c("CROSSSECW SIZE_CLS",grep("LWD",allparams1,value=T),grep("CANCOVER",allparams1,value=T),'VISRIP2W VEG_TYPE','TORR Torrent','HUMINFLUW HumanPresence',grep("ASSESS",allparams1,value=T),grep("VISRIP",allparams1,value=T))#also list any parameters that should be treated as categorical that are otherwise in params_N
-binMETA=read.csv('binMETADATAtemp.csv')##!feed in from SQL once solified in FM, R, SQL; also used to order categoricals
 #set strata for later iteration
 typestrata=c('ALL','EcoReg','Size')#must match column names that are created
 numstrata=length(typestrata)
@@ -829,4 +804,20 @@ for (p in 1:length(allparams1)){#this is a standard loop for iterating, could pu
     write.csv(outlierTBLst,file=sprintf('Outliers_2SDmean_%s.csv',stratat[s]))#could export as a single table, but a bit overwhelming
   }}
 
+indicators=read.csv('IndicatorCheck_4Dec2015.csv')
+str(indicators)
+a=aggregate()
 
+for (n in 1:length(indicators))######{mean(indicators$n)}
+{paste("sub",n)=subset(indicators,ECOREGION==n)}
+
+LIST=list()
+for (n in 2:ncol(indicators))
+{
+ LIST[(n)]=mean(indicators[,n])
+}
+ecoregions=c("XN","XS","MN","MS","XE","OT","MP")
+for (n in 1:length(ecoregions))
+{subset=indicators$ECOREGION[n,]}
+boxplot(indicators$PH_CHECK)}
+boxplot()
