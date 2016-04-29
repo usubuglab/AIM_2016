@@ -50,6 +50,9 @@ head(att)
 # change length to km
 att$length_km <- att$length_mdm/1000
 
+#exclude canals and ditches and piplines but include streams and artificial paths
+#att=subset(att,FCODE==46006|FCODE==55800) #34170 and end extent estimates estimated 4138 so didn't worry about removing
+
 # change names for WSA variables
 names(att)[c(29:31)] <- c("NARS_9", "NARS_9_NM", "NARS_3") 
 
