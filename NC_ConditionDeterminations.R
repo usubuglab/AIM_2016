@@ -6,11 +6,12 @@
 ##########Get all indicators and join ecoregion and size class info to them
 #either use saved csv or run the JC_IndicatorCalc.R
 #Indicators=read.csv('Z:\\buglab\\Research Projects\\BLM_WRSA_Stream_Surveys\\Results and Reports\\SRM_2015\\final_updated_crosschecked_metrics.csv')
-IndicatorCheck=read.csv('Z:\\buglab\\Research Projects\\BLM_WRSA_Stream_Surveys\\Results and Reports\\AIM_2011_2015_results\\IndicatorCheck_27April2016.csv')
+IndicatorCheck=read.csv('Z:\\buglab\\Research Projects\\BLM_WRSA_Stream_Surveys\\Results and Reports\\AIM_2011_2015_results\\IndicatorCheck_28April2016.csv')
 IndicatorCheck$BNK_THRESH=ifelse(as.numeric(IndicatorCheck$XBKF_W_CHECK)>10,"LargeWade","SmallWade")
 SiteInfo=read.csv('Z:\\buglab\\Research Projects\\AIM\\Projects\\ProjectsPtSummary\\AIM_Aquatic_Sampled_2011_2015_Rinput_into_conditions_final_report_do_not_alter.csv')
 SiteInfoSub=subset(SiteInfo, select=c(SITE_ID_CHECK,Project,Protocol,ECO10,State,FieldOffice,District,StreamOrder,Stratum,StreamSize,Code))
 SiteInfoSub$ECO10=ifelse(SiteInfoSub$ECO10=="XE_CALIF","MT_PNW",SiteInfoSub$ECO10)
+SiteInfoSub$ECO10=ifelse(SiteInfoSub$SITE_ID_CHECK=="OT-LS-7009","XE_SOUTH",SiteInfoSub$ECO10)
 Indicators=join(IndicatorCheck, SiteInfoSub, by="SITE_ID_CHECK",type="left",match="first")
 Indicators$BNK_THRESH=ifelse(Indicators$Protocol=="BOATABLE","BOATABLE",Indicators$BNK_THRESH)
 Indicators$THRESH=paste(Indicators$ECO10,Indicators$BNK_THRESH, sep="_")
@@ -19,7 +20,7 @@ levels(Indicators$THRESH3) <- list( XE_SOUTH_SmallWade="XE_SOUTH_SmallWade",XE_S
                                     MT_SWEST_SmallWade="MT_SWEST_SmallWade",MT_SWEST_LargeWade="MT_SWEST_LargeWade", 
                                     XE_EPLAT_SmallWade="XE_EPLAT_SmallWade",XE_EPLAT_LargeWade="XE_EPLAT_LargeWade", 
                                     MT_PNW_SmallWade="MT_PNW_SmallWade", MT_PNW_LargeWade="MT_PNW_LargeWade",MT_PNW_BOATABLE="MT_PNW_BOATABLE",  
-                                    PL_NCULT_SmallWade="PL_NCULT_SmallWade", PL_NCULT_LargeWade="PL_NCULT_LargeWade",PL_NCULT_BOATABLE="PL_NCULT_BOATABLE", 
+                                    PL_NCULT_SmallWade="PLN_CULT_SmallWade", PL_NCULT_LargeWade="PLN_CULT_LargeWade",PL_NCULT_BOATABLE="PLN_CULT_BOATABLE", 
                                     PL_RANGE_SmallWade="PL_RANGE_SmallWade",PL_RANGE_LargeWade="PL_RANGE_LargeWade", PL_RANGE_BOATABLE="PL_RANGE_BOATABLE",
                                     MT_SROCK_SmallWade="MT_SROCK_SmallWade",MT_SROCK_LargeWade="MT_SROCK_LargeWade", 
                                     MT_NROCK_SmallWade="MT_NROCK_SmallWade", MT_NROCK_LargeWade="MT_NROCK_LargeWade",
@@ -30,15 +31,18 @@ levels(Indicators$THRESH3) <- list( XE_SOUTH_SmallWade="XE_SOUTH_SmallWade",XE_S
 )
 
 Indicators$THRESH2=Indicators$THRESH
-Indicators$THRESH2=ifelse(Indicators$THRESH2=="PL_RANGE_BOATABLE"|Indicators$THRESH2=="PL_NCULT_BOATABLE"|Indicators$THRESH2=="MT_PNW_BOATABLE"|Indicators$THRESH2=="MT_NROCK_BOATABLE"|Indicators$THRESH2=="MT_SROCK_BOATABLE"|Indicators$THRESH2=="XE_NORTH_BOATABLE"|Indicators$THRESH2=="XE_EPLAT_BOATABLE"|Indicators$THRESH2=="XE_SOUTH_BOATABLE","ALL_BOATING",Indicators$THRESH2)
+Indicators$THRESH2=ifelse(Indicators$THRESH2=="PL_RANGE_BOATABLE"|Indicators$THRESH2=="PLN_CULT_BOATABLE"|Indicators$THRESH2=="MT_PNW_BOATABLE"|Indicators$THRESH2=="MT_NROCK_BOATABLE"|Indicators$THRESH2=="MT_SROCK_BOATABLE"|Indicators$THRESH2=="XE_NORTH_BOATABLE"|Indicators$THRESH2=="XE_EPLAT_BOATABLE"|Indicators$THRESH2=="XE_SOUTH_BOATABLE","ALL_BOATING",Indicators$THRESH2)
+Indicators$THRESH4=ifelse(Indicators$ECO10=="XE_EPLAT"|Indicators$ECO10=="XE_SOUTH"|Indicators$ECO10=="PLN_CULT"|Indicators$ECO10=="PL_RANGE","lowstab","highstab")
 
 ############Join bug data to all other indicator data
 #bug threholds are determined depending on the model and the thresholds can be found in Z:\buglab\OE_Modeling\OE_Model_Documentation\OE_Data_Prep_Instructions_SWJ
 #thresholds are applied in excel after running the model
 WRSABugs=read.csv("\\\\share1.bluezone.usu.edu\\miller\\buglab\\Research Projects\\BLM_WRSA_Stream_Surveys\\Results and Reports\\AIM_2011_2015_results\\final_bug_scores_R_input_join_to_all_other_metrics.csv")
 Indicators=join(Indicators,WRSABugs, by="UID",type="left")
-#Indicators$OE=ifelse(Indicators$COUNT<200,NA,Indicators$OE)#75 sites and after consulting Chuck decided to include them for the population estimates but for sites specific flag as having low counts and interpret with caution
-Indicators$OE=ifelse(Indicators$MODELTEST=="F",NA,Indicators$OE)#exclude sites that were outside the experience of the model, 9 sites and most were major rivers
+#Indicators$OErtg=ifelse(Indicators$COUNT<100,NA,Indicators$OErtg)#75 sites and after consulting Chuck decided to include them for the population estimates but for sites specific flag as having low counts and interpret with caution
+#Indicators$OErtg=ifelse(Indicators$COUNT>50 & Indicators$COUNT<100,NA,Indicators$OErtg)#75 sites and after consulting Chuck decided to include them for the population estimates but for sites specific flag as having low counts and interpret with caution
+Indicators$OErtg=ifelse(Indicators$MODELTEST=="F",NA,Indicators$OErtg)#exclude sites that were outside the experience of the model, 9 sites and most were major rivers
+
 
 ############ WQ modeled thresholds
 Indicators$OE_ECrtg=ifelse(Indicators$OE_EC_CHECK <=27.1,'Good',ifelse(Indicators$OE_EC_CHECK >53.7, 'Poor','Fair'))
@@ -50,13 +54,17 @@ Indicators$OE_TPrtg=ifelse(Indicators$OE_TP_CHECK <=9.9,'Good',ifelse(Indicators
 Indicators$PH_CHECKrtg=ifelse((Indicators$PH_CHECK<=6.5|Indicators$PH_CHECK >=9),"Poor",ifelse((Indicators$PH_CHECK >7 & Indicators$PH_CHECK <8.5),"Good","Fair"))
 
 # Bank stability and cover
-Indicators$BnkStability_Erosionalrtg=ifelse(Indicators$BnkStability_Erosional_CHECK>0.80,'Good',ifelse(Indicators$BnkStability_Erosional_CHECK<0.60,'Poor','Fair'))
-Indicators$BnkCover_Erosional_CHECKrtg=ifelse(Indicators$BnkCover_Erosional_CHECK>0.60,'Good',ifelse(Indicators$BnkCover_Erosional_CHECK<0.40,'Poor','Fair'))
+#Indicators$BnkStability_Erosionalrtg=ifelse(Indicators$BnkStability_Erosional_CHECK>0.80,'Good',ifelse(Indicators$BnkStability_Erosional_CHECK<0.60,'Poor','Fair'))
+#Indicators$BnkCover_Erosional_CHECKrtg=ifelse(Indicators$BnkCover_Erosional_CHECK>0.60,'Good',ifelse(Indicators$BnkCover_Erosional_CHECK<0.40,'Poor','Fair'))
 Indicators$BnkCover_StabErosionalrtg=ifelse(Indicators$BnkCover_StabErosional_CHECK>0.80,'Good',ifelse(Indicators$BnkCover_StabErosional_CHECK<0.60,'Poor','Fair'))
 
-Indicators$BnkStability_Allrtg=ifelse(Indicators$BnkStability_All_CHECK>0.80,'Good',ifelse(Indicators$BnkStability_All_CHECK<0.60,'Poor','Fair'))
-Indicators$BnkCover_All_CHECKrtg=ifelse(Indicators$BnkCover_All_CHECK>0.60,'Good',ifelse(Indicators$BnkCover_All_CHECK<0.40,'Poor','Fair'))
-Indicators$BnkCover_StabAllrtg=ifelse(Indicators$BnkCover_StabAll_CHECK>0.80,'Good',ifelse(Indicators$BnkCover_StabAll_CHECK<0.60,'Poor','Fair'))
+#Indicators$BnkStability_Allrtg=ifelse(Indicators$BnkStability_All_CHECK>0.80,'Good',ifelse(Indicators$BnkStability_All_CHECK<0.60,'Poor','Fair'))
+#Indicators$BnkCover_All_CHECKrtg=ifelse(Indicators$BnkCover_All_CHECK>0.60,'Good',ifelse(Indicators$BnkCover_All_CHECK<0.40,'Poor','Fair'))
+#Indicators$BnkCover_StabAllrtg=ifelse(Indicators$BnkCover_StabAll_CHECK>0.80,'Good',ifelse(Indicators$BnkCover_StabAll_CHECK<0.60,'Poor','Fair'))
+
+Indicators$BnkCover_StabErosionalrtg=ifelse(Indicators$THRESH4=="lowstab" & Indicators$BnkCover_StabErosional_CHECK>0.70,'Good',
+                                        ifelse(Indicators$THRESH4=="lowstab"& Indicators$BnkCover_StabErosional_CHECK<0.50,'Poor',
+                                               ifelse(Indicators$THRESH4=="lowstab" & Indicators$BnkCover_StabErosional_CHECK<=0.70 & Indicators$BnkCover_StabErosional_CHECK>=0.50,'Fair',Indicators$BnkCover_StabErosionalrtg)))
 
 
 ############Join indicators to PHAB thresholds determined using EPA reference data in NC_EPA_Data_and_SettingThresholds.R
@@ -71,12 +79,12 @@ IndicatorsJoin$XCDENMIDrtg=ifelse(IndicatorsJoin$XCDENMID_CHECK <=IndicatorsJoin
 IndicatorsJoin$XCDENBKrtg=ifelse(IndicatorsJoin$XCDENBK_CHECK <=IndicatorsJoin$XCDENBK_0.10,"Poor",ifelse(IndicatorsJoin$XCDENBK_CHECK >IndicatorsJoin$XCDENBK_0.30,"Good","Fair"))
 
 #because of low reference sample sizes for boating incision, incision was combined into all boating to get the thresholds, the threshold uses is in the Thresholds_Final table but was not able to be joined into the indicator file because other boating indicators were seperated by ecoregion. Therefore the thresholds were manually input below.
-IndicatorsJoin$LINCIS_Hrtg=ifelse(IndicatorsJoin$LINCIS_H_CHECK >=IndicatorsJoin$LINCIS_H_0.90,"Poor",ifelse(IndicatorsJoin$LINCIS_H_CHECK >IndicatorsJoin$LINCIS_H_0.70,"Good","Fair"))
-IndicatorsJoin$LINCIS_Hrtg=ifelse(IndicatorsJoin$THRESH2!="ALL_BOATING",IndicatorsJoin$LINCIS_Hrtg,
-                                  ifelse((IndicatorsJoin$THRESH2=="ALL_BOATING"& IndicatorsJoin$LINCIS_H_CHECK >=0.3986),"Poor",
-                                         ifelse((IndicatorsJoin$THRESH2=="ALL_BOATING"& IndicatorsJoin$LINCIS_H_CHECK)> 0.2222,"Good","Fair")))
-IndicatorsJoin$PCT_SAFNrtg=ifelse(IndicatorsJoin$PCT_SAFN_CHECK >=IndicatorsJoin$PCT_SAFN_0.90,"Poor",ifelse(IndicatorsJoin$PCT_SAFN_CHECK >IndicatorsJoin$PCT_SAFN_0.70,"Good","Fair"))
-IndicatorsJoin$XEMBEDrtg=ifelse(IndicatorsJoin$XEMBED_CHECK >=IndicatorsJoin$XEMBED_0.90,"Poor",ifelse(IndicatorsJoin$XEMBED_CHECK >IndicatorsJoin$XEMBED_0.70,"Good","Fair"))
+IndicatorsJoin$LINCIS_Hrtg=ifelse(IndicatorsJoin$LINCIS_H_CHECK >=IndicatorsJoin$LINCIS_H_0.90,"Poor",ifelse(IndicatorsJoin$LINCIS_H_CHECK <IndicatorsJoin$LINCIS_H_0.70,"Good","Fair"))
+IndicatorsJoin$LINCIS_Hrtg=ifelse(IndicatorsJoin$THRESH2=="ALL_BOATING"& IndicatorsJoin$LINCIS_H_CHECK >=0.3986,"Poor",
+                                         ifelse(IndicatorsJoin$THRESH2=="ALL_BOATING"& IndicatorsJoin$LINCIS_H_CHECK< 0.2222,"Good",
+                                                ifelse(IndicatorsJoin$THRESH2=="ALL_BOATING"& IndicatorsJoin$LINCIS_H_CHECK <0.3986 & IndicatorsJoin$LINCIS_H_CHECK>= 0.2222,"Fair",IndicatorsJoin$LINCIS_Hrtg)))
+IndicatorsJoin$PCT_SAFNrtg=ifelse(IndicatorsJoin$PCT_SAFN_CHECK >=IndicatorsJoin$PCT_SAFN_0.90,"Poor",ifelse(IndicatorsJoin$PCT_SAFN_CHECK <IndicatorsJoin$PCT_SAFN_0.70,"Good","Fair"))
+IndicatorsJoin$XEMBEDrtg=ifelse(IndicatorsJoin$XEMBED_CHECK >=IndicatorsJoin$XEMBED_0.90,"Poor",ifelse(IndicatorsJoin$XEMBED_CHECK <IndicatorsJoin$XEMBED_0.70,"Good","Fair"))
 
 IndicatorsCond=IndicatorsJoin
 
