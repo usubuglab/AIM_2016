@@ -89,10 +89,11 @@ length(which(v<7))# counts values in v that are less than 7 and excludes NAs
 # make boxplots for every column in boxplotdata-LOOP
 #Par makes your graphic have 2 rows of 6 boxplots
 boxplotdata=ECboxplot
-boxplotdata=boxplotdata[,c(1,20, 2:13,21,22)]
+boxplotdata=boxplotdata[,c(1:11,21:24)]
+boxplotdata=boxplotdata[,c(1:7,20)]
 boxplotdata$Type=as.factor(boxplotdata$Type=)
 par(mfrow=c(1,6))
-for (i in 2:length(boxplotdata) {
+for (i in 2:length(boxplotdata)) {
   boxplot(boxplotdata[,i]~boxplotdata$Type, main=names(boxplotdata[i]))
 }
 boxplot()
