@@ -168,9 +168,17 @@ colnames(samplesUSEDprep)[which(names(samplesUSEDprep) == "SITE_ID")] = "siteID"
 #Remove any weights that are not positive, otherwise an error will tell you "weights must be positive"
 sitesUSEDprep=sitesUSEDprep[sitesUSEDprep$wgt>0,]
 
-samplesUSEDprep=join(samplesUSEDprep,subpopCON,by='siteID')#JC added
-samplesUSEDprep$stratum=samplesUSEDprep$Strata
+sitesUSEDprep=join(sitesUSEDprep,subpopCON,by='siteID')#JC added
+#ecoregions
+sitesUSEDprep$stratum=sitesUSEDprep$Strata
 districts=c('MT_NROCK','MT_PNW','MT_SROCK','Other','XE_EPLAT','XE_NORTH','XE_SOUTH')
+#climate
+sitesUSEDprep$stratum=sitesUSEDprep$Climate
+districts=c('Mountains','Xeric','Plains')
+#westwide
+sitesUSEDprep$stratum=sitesUSEDprep$Westwide
+districts=c('Westwide')
+
 
 ###These need to be run individually. EX: Run code for allotment strata then run the RR figures code. THEN run the next code for all field offices, and then the RR figures. 
 ###Cannot be run all at once because it uses the same column "stratum" 
@@ -196,8 +204,6 @@ districts=c('AFO','ELFO','SFO')
 ##especially add districts!!
 #districts=c('All','MN','MP','MS','OT','XE','XN','XS')
 
-stratum=c('Westwide')
-, 'Mountains','Plains','Xeric'
 
 variableORDER=subset(variableORDER,subset=Indicator %in% sprintf('%srtg',responseVAR) ==FALSE)##############need to run part of the extent figure code above to get variableORDER!
 #Lump Fair into Good (not recommended by EPA, makes more sense for regulatory inclu comparing to DEQ)
