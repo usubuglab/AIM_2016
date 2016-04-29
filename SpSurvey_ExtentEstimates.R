@@ -123,7 +123,12 @@ designCON=data.frame(siteID=siteeval$SITE_ID,
 #                                  } else {print('There are many columns. Data is assumed to be pivoted with indicator and matching condition names as columns.')}
 
 #wrsa
-ResponseInfo=read.csv('Z:\\buglab\\Research Projects\\BLM_WRSA_Stream_Surveys\\Results and Reports\\AIM_2011_2015_results\\IndicatorsCond_27April2016.csv')
+ResponseInfo=read.csv('Z:\\buglab\\Research Projects\\BLM_WRSA_Stream_Surveys\\Results and Reports\\AIM_2011_2015_results\\IndicatorsCond_28April2016.csv')
+
+##exclude QC sites---dont need to worry about it because it is filtered
+#ResponseInfo=subset(ResponseInfo,UID!=12457& UID!=12422& UID!=	12714& UID!=	13550& UID!=	11787& UID!=	13527& UID!=	9779832504& UID!=	13518& UID!=	13539& UID!=	8497901114& UID!=	2772740176& UID!=	3833994365& UID!=	7194282454& UID!=	9846034316& UID!=	7977571143& UID!=	4943503766& UID!=	6152206654& UID!=	6964535047& UID!=	7746712455& UID!=	2956707014& UID!=	4324237804& UID!=	4197418344& UID!=	8537408400& UID!=	4116634326& UID!=	2109978745)
+
+
 #ResponseInfo=IndicatorsCond
 #merge site info to indicator info
 SiteInfo=merge(siteeval,ResponseInfo,by=intersect(colnames(siteeval),colnames(ResponseInfo)),all.x=T)
