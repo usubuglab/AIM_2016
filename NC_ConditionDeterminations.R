@@ -6,10 +6,10 @@
 ##########Get all indicators and join ecoregion and size class info to them
 #either use saved csv or run the JC_IndicatorCalc.R
 #Indicators=read.csv('Z:\\buglab\\Research Projects\\BLM_WRSA_Stream_Surveys\\Results and Reports\\SRM_2015\\final_updated_crosschecked_metrics.csv')
-IndicatorCheck=read.csv('Z:\\buglab\\Research Projects\\BLM_WRSA_Stream_Surveys\\Results and Reports\\AIM_2011_2015_results\\IndicatorCheck_28April2016.csv')
+IndicatorCheck=read.csv('Z:\\buglab\\Research Projects\\BLM_WRSA_Stream_Surveys\\Results and Reports\\AIM_2011_2015_results\\IndicatorCheck_29April2016.csv')
 IndicatorCheck$BNK_THRESH=ifelse(as.numeric(IndicatorCheck$XBKF_W_CHECK)>10,"LargeWade","SmallWade")
 SiteInfo=read.csv('Z:\\buglab\\Research Projects\\AIM\\Projects\\ProjectsPtSummary\\AIM_Aquatic_Sampled_2011_2015_Rinput_into_conditions_final_report_do_not_alter.csv')
-SiteInfoSub=subset(SiteInfo, select=c(SITE_ID_CHECK,Project,Protocol,ECO10,State,FieldOffice,District,StreamOrder,Stratum,StreamSize,Code))
+SiteInfoSub=subset(SiteInfo, select=c(SITE_ID_CHECK,Project,Protocol,ECO10,State,FieldOffice,District,StreamOrder,Stratum,StreamSize,Code,Climate))
 SiteInfoSub$ECO10=ifelse(SiteInfoSub$ECO10=="XE_CALIF","MT_PNW",SiteInfoSub$ECO10)
 SiteInfoSub$ECO10=ifelse(SiteInfoSub$SITE_ID_CHECK=="OT-LS-7009","XE_SOUTH",SiteInfoSub$ECO10)
 Indicators=join(IndicatorCheck, SiteInfoSub, by="SITE_ID_CHECK",type="left",match="first")
@@ -39,15 +39,34 @@ Indicators$THRESH4=ifelse(Indicators$ECO10=="XE_EPLAT"|Indicators$ECO10=="XE_SOU
 #thresholds are applied in excel after running the model
 WRSABugs=read.csv("\\\\share1.bluezone.usu.edu\\miller\\buglab\\Research Projects\\BLM_WRSA_Stream_Surveys\\Results and Reports\\AIM_2011_2015_results\\final_bug_scores_R_input_join_to_all_other_metrics.csv")
 Indicators=join(Indicators,WRSABugs, by="UID",type="left")
-#Indicators$OErtg=ifelse(Indicators$COUNT<100,NA,Indicators$OErtg)#75 sites and after consulting Chuck decided to include them for the population estimates but for sites specific flag as having low counts and interpret with caution
-#Indicators$OErtg=ifelse(Indicators$COUNT>50 & Indicators$COUNT<100,NA,Indicators$OErtg)#75 sites and after consulting Chuck decided to include them for the population estimates but for sites specific flag as having low counts and interpret with caution
 Indicators$OErtg=ifelse(Indicators$MODELTEST=="F",NA,Indicators$OErtg)#exclude sites that were outside the experience of the model, 9 sites and most were major rivers
+Indicators$OE_less100rtg=ifelse(Indicators$COUNT<100,NA,Indicators$OErtg)#75 sites and after consulting Chuck decided to include them for the population estimates but for sites specific flag as having low counts and interpret with caution
+Indicators$OE_50_100rtg=ifelse(Indicators$COUNT>50 & Indicators$COUNT<100,NA,Indicators$OErtg)#75 sites and after consulting Chuck decided to include them for the population estimates but for sites specific flag as having low counts and interpret with caution
 
 
 ############ WQ modeled thresholds
-Indicators$OE_ECrtg=ifelse(Indicators$OE_EC_CHECK <=27.1,'Good',ifelse(Indicators$OE_EC_CHECK >53.7, 'Poor','Fair'))
-Indicators$OE_TNrtg=ifelse(Indicators$OE_TN_CHECK <=52.1,'Good',ifelse(Indicators$OE_TN_CHECK >114.7, 'Poor','Fair'))
-Indicators$OE_TPrtg=ifelse(Indicators$OE_TP_CHECK <=9.9,'Good',ifelse(Indicators$OE_TP_CHECK >21.3, 'Poor','Fair'))
+#Indicators$OE_ECrtg=ifelse(Indicators$OE_EC_CHECK <=27.1,'Good',ifelse(Indicators$OE_EC_CHECK >53.7, 'Poor','Fair'))
+#Indicators$OE_TNrtg=ifelse(Indicators$OE_TN_CHECK <=52.1,'Good',ifelse(Indicators$OE_TN_CHECK >114.7, 'Poor','Fair'))
+#Indicators$OE_TPrtg=ifelse(Indicators$OE_TP_CHECK <=9.9,'Good',ifelse(Indicators$OE_TP_CHECK >21.3, 'Poor','Fair'))
+
+Indicators$OE_ECrtg=ifelse(Indicators$CONDUCTIVITY_CHECK <500,'Good',ifelse(Indicators$CONDUCTIVITY_CHECK >=1000, 'Poor','Fair'))
+
+Indicators$OE_TNrtg=ifelse(
+  ((Indicators$Climate=="Mountains"& Indicators$NTL_CHECK>229)|
+    (Indicators$Climate=="Plains"& Indicators$NTL_CHECK>1570)|
+    (Indicators$Climate=="Xeric"& Indicators$NTL_CHECK>462)),"Poor",
+ifelse(((Indicators$Climate=="Mountains"& Indicators$NTL_CHECK<229 & Indicators$NTL_CHECK>131 )|
+         (Indicators$Climate=="Plains"& Indicators$NTL_CHECK<1570 &Indicators$NTL_CHECK>948)|
+         (Indicators$Climate=="Xeric"& Indicators$NTL_CHECK<462 & Indicators$NTL_CHECK>346)),"Fair","Good"
+ ))
+Indicators$OE_TPrtg=ifelse(
+  ((Indicators$Climate=="Mountains"& Indicators$PTL_CHECK>36)|
+     (Indicators$Climate=="Plains"& Indicators$PTL_CHECK>183)|
+     (Indicators$Climate=="Xeric"& Indicators$PTL_CHECK>70)),"Poor",
+  ifelse(((Indicators$Climate=="Mountains"& Indicators$PTL_CHECK<36 & Indicators$PTL_CHECK>14 )|
+            (Indicators$Climate=="Plains"& Indicators$PTL_CHECK<183 &Indicators$PTL_CHECK>91.8)|
+            (Indicators$Climate=="Xeric"& Indicators$PTL_CHECK<70 & Indicators$PTL_CHECK>35.5)),"Fair","Good"
+  ))
 
 ########### Best Professional Judgement Thresholds
 #PH
