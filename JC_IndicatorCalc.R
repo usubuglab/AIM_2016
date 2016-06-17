@@ -256,7 +256,6 @@ DensPvt$XCDENMID_CHECK=round((DensPvt$DENSIOM/17)*100,digits=2)
 nDensPvt=setNames(count(MidDensiom,"UID"),c("UID","nXCDENMID_CHECK"))#should be 4 locations at 11 transects=44 so half is 22
 DensPvt=merge(nDensPvt,DensPvt,by="UID")
 DensPvt$XCDENMID_CHECK=ifelse(DensPvt$nXCDENMID_CHECK<22,NA,DensPvt$XCDENMID_CHECK)#7 have values of 20
-
 #xcdenbk
 BnkDensiom = subset(densiom, POINT == "LF"|POINT =="RT")
 BnkDensPvt=cast(BnkDensiom,'UID~PARAMETER',value='RESULT',fun=mean)
@@ -687,9 +686,15 @@ if(nrow(thalCheck)>0){print("WARNING! Calculated reach length (METRIC=='reachlen
 
 #LWD
 #C1WM100- (Cummulative count of LWD in bankfull channel across all size classes)/(Reach Length) units are pieces/100m
+LwdWet$TRANSECT=mapvalues(LwdWet$TRANSECT, c("XA", "XB","XC","XD","XE","XF","XG","XH","XI","XJ","XK" ),c("A", "B","C","D","E","F","G","H","I","J","K"))
+LWD_test=setNames(aggregate(RESULT~UID+TRANSECT,data=LwdWet,FUN=sum),c("UID","TRANSECT","C1W"))# count of all LWD pieces per site
+LWD_test2=setNames(count(LWD_test,"UID"),c("UID","NUMTRAN"))# count of the number of transects that wood was collected for #may require package plyr which requires R version > 3????? but I have also gotten count to work in other situations with other version of R required for aquamet
 LWD=setNames(aggregate(RESULT~UID,data=LwdWet,FUN=sum),c("UID","C1W"))# count of all LWD pieces per site
+LWD=merge(LWD_test2,LWD,by=c('UID'),all=T)
 LWD=merge(LWD,TRCHLEN,by=c('UID'), all=T)
-LWD$C1WM100_CHECK=round((LWD$C1W/LWD$TRCHLEN)*100,digits=1)
+LWD$LWD_RCHLEN=(LWD$TRCHLEN/10)*LWD$NUMTRAN #calculate the reach length that wood was collected acreoss
+LWD$C1WM100_CHECK=round((LWD$C1W/LWD$LWD_RCHLEN)*100,digits=1)
+
 #V1WM100
 LWDtt <- textConnection(
   "LWD_Cat  DIAMETER	LENGTH
@@ -741,11 +746,11 @@ poolsmerge$PoolPct=round((poolsmerge$LENGTH/poolsmerge$TRCHLEN)*100,digits=0)
 #residual pool depth
 PoolDepth=cast(PoolDepth,'UID+POINT~PARAMETER',value='RESULT')
 PoolDepth$RPD=PoolDepth$MAXDEPTH-PoolDepth$PTAILDEP
-RPD=setNames(round(aggregate(PoolDepth$RPD,list(UID=PoolDepth$UID),mean)/100,digits=3),c("UID","RPD"))#converted to m
+RPD=setNames(aggregate(PoolDepth$RPD,list(UID=PoolDepth$UID),mean),c("UID","RPD"))#converted to m
 #pool frequency
 count=setNames(count(PoolDepth,"UID"),c("UID","NumPools"))
 poolmerge2=join_all(list(poolsmerge,count,RPD), by="UID")
-poolmerge2$PoolFrq=round((poolmerge2$NumPools/poolmerge2$TRCHLEN)*10000,digits=0)###need to consider what reach length to use here #may need shorted lengths for parial reaches
+poolmerge2$PoolFrq=round((poolmerge2$NumPools/poolmerge2$TRCHLEN)*10000,digits=0)###need to consider what reach length to use here #may need shorted lengths for parial reaches#change to use new parameter POOLRCHLEN
 Pools=setNames(subset(poolmerge2,select=c(UID,PoolPct,RPD,PoolFrq,NumPools)),c("UID","PoolPct_CHECK","RPD_CHECK","PoolFrq_CHECK","NumPools_CHECK"))
 
 #Channel dimensions
@@ -758,10 +763,10 @@ WetWid=subset(WetWid,POINT!=0)#remove duplicate wetted widths
 WetWid=setNames(cast(WetWid,'UID+TRANSECT+POINT~PARAMETER', value='RESULT'), list ("UID","TRANSECT","POINT","WETWID"))
 WetWidSub=WetWid[,c(1,2,4)]# delete the point column
 WetWidAll=rbind(WetWidSub,WetWid2)#merge main transects and intermediate transects together
-WetWidFinal=setNames(round(aggregate(WETWID~UID,data=WetWidAll,FUN=mean),digits=2),list("UID","XWIDTH_CHECK"))#average across all transects
+WetWidFinal=setNames(aggregate(WETWID~UID,data=WetWidAll,FUN=mean),list("UID","XWIDTH_CHECK"))#average across all transects
 nWetWid=setNames(count(WetWidAll,"UID"),c("UID","nXWIDTH_CHECK"))#21 transects
 WetWidFinal=merge(nWetWid,WetWidFinal)
-WetWidFinal$XWIDTH_CHECK=ifelse(WetWidFinal$XWIDTH_CHECK<10,NA,WetWidFinal$XWIDTH_CHECK)#9 ranging from 4-11 not an indicator and just for context so lean towards leaving all measurements
+WetWidFinal$XWIDTH_CHECK=ifelse(WetWidFinal$nXWIDTH_CHECK<10,NA,WetWidFinal$XWIDTH_CHECK)#9 ranging from 4-11 not an indicator and just for context so lean towards leaving all measurements
 
 ##checking for interupted flow sites
 # checkzero=rbind(WetWid,WetWid2)
