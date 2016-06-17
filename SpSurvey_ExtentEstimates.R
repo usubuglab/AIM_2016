@@ -123,15 +123,17 @@ designCON=data.frame(siteID=siteeval$SITE_ID,
 #                                  } else {print('There are many columns. Data is assumed to be pivoted with indicator and matching condition names as columns.')}
 
 #wrsa
-ResponseInfo=read.csv('Z:\\buglab\\Research Projects\\BLM_WRSA_Stream_Surveys\\Results and Reports\\AIM_2011_2015_results\\IndicatorsCond_28April2016.csv')
+ResponseInfo=read.csv('Z:\\buglab\\Research Projects\\BLM_WRSA_Stream_Surveys\\Results and Reports\\AIM_2011_2015_results\\IndicatorsCond_29April2016.csv')
+#ResponseInfo=read.csv('Z:\\buglab\\Research Projects\\BLM_WRSA_Stream_Surveys\\Results and Reports\\AIM_2011_2015_results\\IndicatorsCond_revised_wq_bugs_thresh_example.csv')
 
 ##exclude QC sites---dont need to worry about it because it is filtered
 #ResponseInfo=subset(ResponseInfo,UID!=12457& UID!=12422& UID!=	12714& UID!=	13550& UID!=	11787& UID!=	13527& UID!=	9779832504& UID!=	13518& UID!=	13539& UID!=	8497901114& UID!=	2772740176& UID!=	3833994365& UID!=	7194282454& UID!=	9846034316& UID!=	7977571143& UID!=	4943503766& UID!=	6152206654& UID!=	6964535047& UID!=	7746712455& UID!=	2956707014& UID!=	4324237804& UID!=	4197418344& UID!=	8537408400& UID!=	4116634326& UID!=	2109978745)
+ResponseInfo=IndicatorsCond
 
-
-#ResponseInfo=IndicatorsCond
 #merge site info to indicator info
 SiteInfo=merge(siteeval,ResponseInfo,by=intersect(colnames(siteeval),colnames(ResponseInfo)),all.x=T)
+
+
 #add ratings if not done externally (standard process TBD, could adapt from Stats_Thresholds method in ProbSurveyDB.accdb)
 #note the use of 'rtg' suffix on the indicator name (this is required structure for subsequent code to work)
 #dummies for test set:
@@ -146,9 +148,9 @@ SiteInfo=merge(siteeval,ResponseInfo,by=intersect(colnames(siteeval),colnames(Re
 #########WRSA_SFS ################
 selectVARauto='N'; selectVARchoice=ifelse(selectVARauto=='Y','AllVar','CustomVar')#automatically select all variables
 extentVAR=c('TNT','EvalStatus','EvalStatus2','VALXSITE')#Extent Estimate added here since weights the same (rather than running cat.analysis twice)
-responseVAR=c("OE")# Input here should be bug model
-stressorsVAR=c("OE_TN","OE_TP","OE_EC","PH_CHECK","BnkCover_StabErosional","PCT_SAFN","XEMBED","XFC_NAT","LINCIS_H","XCDENBK","XCMG","INVASIVE_MACRO")#NOT stressorsVAR=c('MMI')   ####'PCT_SAFN','LSUB_DMM')#UTBLM final list: stressorsVAR=c('InvasivesYN','EC','TP','TN','AugST','LBFXWRat','C1WM100','XCDENMID','Stab2','PCT_SAFN')#must be Access names with a matching 'rtg' variable: to view, str(ResponseInfo)
-
+responseVAR=c('OE')# Input here should be bug model
+stressorsVAR=c("OE_TN","OE_TP","OE_EC","PH_CHECK","PCT_SAFN","XFC_NAT","LINCIS_H","XCDENBK","INVASIVE_MACRO")#NOT stressorsVAR=c('MMI')   ####'PCT_SAFN','LSUB_DMM')#UTBLM final list: stressorsVAR=c('InvasivesYN','EC','TP','TN','AugST','LBFXWRat','C1WM100','XCDENMID','Stab2','PCT_SAFN')#must be Access names with a matching 'rtg' variable: to view, str(ResponseInfo)
+#"OE_less100","OE_50_100","BnkCover_StabErosional","XEMBED","XCMG"
 #########UT BLM examples###########
 # selectVARauto='N'; selectVARchoice=ifelse(selectVARauto=='Y','AllVar','CustomVar')#automatically select all variables
 # extentVAR=c('TNT','EvalStatus','VALXSITE')#Extent Estimate added here since weights the same (rather than running cat.analysis twice)
@@ -211,6 +213,7 @@ OE_TNname='Total Nitrogen';OE_TPname='Total Phosphorus';OE_ECname='Conductivity'
 BnkCover_StabErosionalname='Bank Stability';PCT_SAFN_name='% Fine Sediment';XCMGname='Riparian Complexity';XCDENBKname='Riparian Canopy Cover';
 XFC_NATname='Instream Complexity';LINCIS_Hname='Floodplain Connectivity';PCT_SAFNname = 'Fines'
 XEMBEDname='Embeddedness';OEname='Biological Condition'; INVASIVE_MACROname='Benthic Invasives'
+OE_less100name='OE_less100'; OE_50_100name='OE_50_100'
 
 #Old
 TotalHAname='Habitat'; RIPARIANname='Riparian Alt.'; AugSTname= 'Stream Temp.'; SummerSTname= 'Stream Temp (Sum)';
