@@ -1,10 +1,13 @@
-# most run DBpassword_doNotgit.R and DataConsumption_WRSAdb.R setup section first
+#most run DBpassword_doNotgit.R and DataConsumption_WRSAdb.R setup section first
 #must run Project, Year, and Protocol filters in DataConsumption_WRSAdb.R first
 
 #all issues that are found but not dealt with immediately should be recorded in OfficeComments -either on google drive or access database
 #all edits should be added to Z:\buglab\Research Projects\BLM_WRSA_Stream_Surveys\Results and Reports\QA\final QC of all sites collected up to Nov 2015\Office_updates.xsls for WRSA data or Z:\buglab\Research Projects\AIM\Analysis\QC\OfficeUpdates for data collected in 2016 and beyond
 #follow instructions in Z:\buglab\Research Projects\BLM_WRSA_Stream_Surveys\Technology\WRSA data mananagement page 5 for how to format the data and put it into OfficeUpdates table 
 #Jennifer will then copy and paste the edits into the ProbSurvey Access database run the stored export to export a csv. Then run the UpdateDatabase_WRSA.R script and follow its subsequent instructions
+
+#need to run the code below for joins to work
+library(plyr)
 
 ######################################################################################
 #########                          Site Check                                #########
@@ -402,6 +405,9 @@ for (s in 1:length(stratat)){
 
 #retrieve all possible tables by protocol groups and pivot
 #for exploratory purposes to review data and determine expected values, not intended to replace modular SQL solutions for multiple tools
+#UnionTBLnum_pvtQUANTmean_Site is pretty hard to look at. I prefer to look at UnionTBLnum_pvtSUMMARYn_Site sort by parameter and then sort values to look at min and maxes for each parameter across all sites
+#uses tblMETADATA to pull what parameters are in these files so tblMETADATA must be up to date for this to pull newer parameters
+
 tblCOL=c('UID', 'SAMPLE_TYPE','PARAMETER','RESULT','TRANSECT','POINT')
 pvtCOL='UID %s ~ SAMPLE_TYPE + PARAMETER';pvtCOLdefault=sprintf(pvtCOL,'');pvtCOL2=sprintf(pvtCOL,'+ TRANSECT + POINT')
 AggLevel='Site'#options = Site, All
@@ -436,8 +442,63 @@ for (t in 1:length(QUANTtbls)){
 #########                             Parameter Specific Checks                             #########
 #####################################################################################################
 
-######## WQ checks ########
+######## GPS ##########
+#get all coordinates and site metadata
+listsites=tblRetrieve(Parameters=c('SITE_ID','DATE_COL','LOC_NAME','LAT_DD','LON_DD','PROJECT','PROTOCOL','VALXSITE','LAT_DD_BR','LAT_DD_TR','LON_DD_BR','LON_DD_TR','Z_DISTANCEFROMX','TRCHLEN','REPEAT_VISIT'),Projects=projects,Years=years,Protocols=protocols)
+listsites=cast(listsites,'UID~PARAMETER',value='RESULT')
 
+#Check all Z_DISTANCEFROMX to verify within 250 or 500m or allowable distance to be slid
+SlideIssues=subset(listsites,Z_DISTANCEFROMX>0.25)
+
+#Check for merged sites
+Merge=subset(listsites,REPEAT_VISIT!='N')
+#look at FieldTracking or ScoutTracking spreadsheets on the google drive and fill in as needed
+
+#Check that the straight-line distance between BR and TR does not exceed the total reach length (i.e. sinuosity <1 should never happen)
+listsites$straightline=acos(sin(as.numeric(listsites$LAT_DD_BR)*3.141593/180)*sin(as.numeric(listsites$LAT_DD_TR)*3.141593/180) + cos(as.numeric(listsites$LAT_DD_BR)*3.141593/180)*cos(as.numeric(listsites$LAT_DD_TR)*3.141593/180)*cos(as.numeric(listsites$LON_DD_TR)*3.141593/180-as.numeric(listsites$LON_DD_BR)*3.141593/180)) * 6371000
+listsites$SINUOSITY=listsites$TRCHLEN/listsites$straightline
+SinuosityCheck=subset(listsites,SINOUSITY<1)
+
+#After all GPS coordinates check out export coordinates for Ryan Lokteff or GIS tech to compute WestWide bug OE model and EC,TN,TP models
+write.csv(listsites,'postseason_site_coordinates.csv')
+
+#get other useful information associated with sites
+#eventually read in design table from SQL but for now the table should be read in from the path below to compare original coordinates with those that were collected
+designs=read.csv('\\\\share1.bluezone.usu.edu\\miller\\buglab\\Research Projects\\AIM\\AIM_DataManagement\\ProjectMngtSystem\\design_table2.csv')
+#get ecoregional and stream size info for context for values
+designmetadata=read.csv('\\\\share1.bluezone.usu.edu\\miller\\buglab\\Research Projects\\AIM\\MasterSample\\MasterSampleDraws\\Aquatic\\LoticMasterSample\\Attributed\\LoticMasterSampleAttributedPtsWithHybridEcoregions.csv')
+postseason=join(listsites,designs, by="SITE_ID", type="left")
+postseasonmetadata=join(postseason,designmetadata, by="MS_ID", type="left")
+#eventually need to edit the read in csv above to reflect the sampled coordinates for future sample draws at the end of the season
+
+
+
+####### Bugs #########
+#get all bug data
+Bugs=tblRetrieve(Parameters=c('JAR_NO','ACTUAL_DATE','AREA_SAMP','TRAN_NUM','SAMPLER','AREA','BUG_METHOD'),Years=years, Projects=projects)
+Bugspvt=addKEYS(cast(Bugs,'UID~SAMPLE_TYPE+PARAMETER',value='RESULT'),c('SITE_ID','DATE_COL'))
+
+#check surber net and mini surber net areas because they were wrong in the app at the begining of 2016 field season
+AreaCheck1=subset(Bugspvt,(AREA_SAMP!=0.093 & SAMPLER=='SU'))
+AreaCheck2=subset(Bugspvt,(AREA_SAMP!=0.0413 & SAMPLER=='MI'))
+AreaCheck3=subset(Bugspvt,(AREA_SAMP!=0.093 & SAMPLER=='KC'))
+
+#check to make sure 8 or 11 TRAN_NUM at all sites
+SamplingCheck1=subset(Bugspvt,(TRAN_NUM<8 & BUG_METHOD=='Targeted Riffle')
+SamplingCheck2=subset(Bugspvt,(TRAN_NUM<11 & BUG_METHOD=='Reachwide')
+
+#get data ready to submit via http://www.usu.edu/buglab/SampleProcessing/SampleSubmission/
+SubMetadata=c('SITE_ID', 'COUNTY','GNIS_Name','LAT_DD','LON_DD')
+Metadata=postseasonmetadata[SubMetadata]
+Bugspvtsub=c('JAR_NO','ACTUAL_DATE','AREA_SAMP','SAMPLER','BUG_METHOD')
+Bugspvt2=Bugpvt[Bugspvtsub]
+BugsSubmit=join(Bugspvt2,Metadata, by="SITE_ID")
+BugsSubmit$SAMPLER=ifelse(BugsSubmit$SAMPLER=='SU'|BugsSubmit$SAMPLER=='MI',"Surber net",ifelse(BugsSubmit$SAMPLER=='KC',"Kick Net",BugsSubmit$SAMPLER))
+BugsSubmit=BugsSubmit[,c()]#fill in desired columns
+
+                      
+                      
+######## WQ checks ########
 #corrected for temperature check
 WQ2=tblRetrieve(Parameters=c('CONDUCTIVITY','CORRECTED','TEMPERATURE'), Comments='Y', Years=years, Projects=projects)
 WQ1=cast(WQ2,'UID~PARAMETER',value='RESULT')
@@ -447,16 +508,21 @@ WQ3.sub=subset(WQ3,CORRECTED.x!='Y')
 #write.csv(WQ3.sub,'not_temp_corrected_conduct.csv')
 
 #Chem check the hours prior to freezing
-WQtbl=tblRetrieve(Parameters=c('NTL','PTL','EC_PRED','TN_PRED','TP_PRED','TIME_UNFROZEN'),Projects=projects,Years=years,Protocols=protocols)
+WQtbl=tblRetrieve(Parameters=c('NTL','PTL','TN_PRED','TP_PRED','TIME_UNFROZEN'),Projects=projects,Years=years,Protocols=protocols)
 WQpvt$TN_PRED=round(WQpvt$TN_PRED,digits=3)
 WQpvt$TP_PRED=round(WQpvt$TP_PRED,digits=1)
-WQpvt$EC_PRED=round(WQpvt$EC_PRED,digits=2)
-WQpvt$OE_EC=round(WQpvt$CONDUCTIVITY-WQpvt$EC_PRED,digits=2)
 WQpvt$OE_TN=round(WQpvt$NTL-WQpvt$TN_PRED,digits=3)
 WQpvt$OE_TP=round(WQpvt$PTL-WQpvt$TP_PRED,digits=1)
-#make condition determination and count # in each condition
 #graph time_unfrozen with raw values and OE values
-
+plot(WQpvt$TIME_UNFROZEN,WQvt$OE_TN)
+plot(WQpvt$TIME_UNFROZEN,WQvt$OE_TP) 
+                      
+#make condition determination and average time_unfrozen in each condition
+WQpvt$OE_TNrtg=ifelse(WQpvt$OE_TN <=52.1,'Good',ifelse(WQpvt$OE_TN >114.7, 'Poor','Fair'))
+WQpvt$OE_TPrtg=ifelse(WQpvt$OE_TP <=9.9,'Good',ifelse(WQpvt$OE_TP >21.3, 'Poor','Fair'))
+ConditionCheck1=aggregate(TIME_UNFROZEN~OE_TNrtg, data=WQpvt, FUN=mean)
+ConditionCheck2=aggregate(TIME_UNFROZEN~OE_TPrtg, data=WQpvt, FUN=mean) 
+                      
 #view any typical values violations for Conductivity and PH
 Conduct=tblRetrieve(Comments='Y',Parameters=c('CONDUCTIVITY'),Projects=projects,Years=years,Protocols=protocols)
 ConductQuestions=subset(Conduct,RESULT<100 | RESULT>600)# review comments for any sites flagged here 
@@ -464,6 +530,9 @@ PH=tblRetrieve(Comments='Y',Parameters=c('PH'),Projects=projects,Years=years,Pro
 PHQuestions=subset(PH,RESULT<6 | RESULT>9)# review comments for any sites flagged here
 
 #compare any questionable values to ecoregional EPA data
+#can join Conduct to postseasonmetadata by SITE_ID to get the ecoregion
+#should automate this process so that only values that fall outside this range get flagged ---need to join the ecoregion data to the design table; can't remember where all that site metadata from the master sample ended up
+  #could pull code from condition determinations to do that but this code will be pretty complex....for now just leave as a manual task
 read.csv('Z:\\buglab\\Research Projects\\BLM_WRSA_Stream_Surveys\\Results and Reports\\EPA_Data\\EPA_WQ_typical_values.csv')
 
 #instrument check
@@ -472,95 +541,181 @@ WQ2=tblRetrieve(Parameters=c('CONDUCTIVITY','PH','CAL_INST_ID'), Comments='Y', Y
 WQ1=addKEYS(cast(WQ2,'UID~PARAMETER',value='RESULT')  ,c('SITE_ID','DATE_COL','CREW_LEADER'))
 WQ1=subset(WQ1,CAL_INST_ID=='')# fill in data of interest here
 
+                      
+####### incision and bank height ############
+#cross checks implemented in app so just check extreme values, outliers (above), and for unit issues
+heights=addKEYS(tblRetrieve(Parameters=c('INCISED','BANKHT'),Years=years, Projects=projects),c('SITE_ID','DATE_COL','CREW_LEADER'))
+HeightCheck1=heights(RESULT>1.5)
+HeightCheck1=heights(RESULT<0.1)
+
+                      
+                      
+#######   width  #########
+#cross checks implemented in app and extreme values hard to catch/ not so important so just check for outliers(above), and for protocol issues related to dry sites                       
+Depths=tblRetrieve(Parameters=c('DEPTH'),Years=years, Projects=projects)
+Depths=subset(Depths,RESULT==0 & POINT==1)# query wetted width for these transects and UIDs in SQL and check if it is 0 and TRANDRY='Y' 
+#do the opposite query
+Widths=tblRetrieve(Parameters=c('WETWID','BANKWID','TRANDRY'),Years=years, Projects=projects)                      
+Widths=subset(Widths,RESULT==0)# query the corresponding thalweg depths in SQL if present and the VALXSITE to make sure it is INTWADE                      
+pvtWidths=cast(Widths,'UID+TRANSECT~PARAMETER',value='RESULT')
+#dry transects
+DryCheck=subset(pvtWidths,(WETWID!=0 & TRANDRY=='Yes')|(WETWID==0 & TRANDRY=='No')|(WETWID==0 & is.na(TRANDRY)=='TRUE'))#likely needs tweaking                      
+
+   
+                      
+                      
+####### substrate #######
+#get sediment data
+Sed2014=tblRetrieve(Parameters=c('SIZE_NUM','LOC'),Projects=projects,Years=years,Protocols=protocols)
+A_Sed2014=cast(Sed2014,'UID+TRANSECT+POINT~PARAMETER', value='RESULT')
+
+#check "other" categories
+OtherCheck=subset(A_Sed2014,SIZE_NUM=='SWD'|SIZE_NUM=='LWD'|SIZE_NUM=='OM'|SIZE_NUM=='RM')
+OtherCount=aggregate(SIZE_NUM~UID, data=OtherCheck, FUN=length)# not sure this is going to work...like need to tweak
+                      
+#check sample sizes and that bed and bank protocols were followed                       
+C_Sed2014=A_Sed2014[!A_Sed2014$LOC== "BANK", ]
+Nbed_Sed2014pvt=aggregate(.~UID, data=C_Sed2014, length)#number of bed pebbles
+Nall_Sed2014pvt=setNames(cast(Sed2014,'UID~PARAMETER',value='RESULT',fun=length),c("UID","nLOC","nallPCT_SAFN_CHECK"))#number of all collected pebbles
+                      
+                      
+###### Angle  ########                      
+#outlier checks (above) and check for missing SLANT to check if angle was being calculated in app properly
+Angle=tblRetrieve(Parameters=c('ANGLE180','SLANT'),Years=years, Projects=projects)
+pvtAngle=addKEYS(cast(Angle,'UID+TRANSECT+POINT~PARAMETER',value='RESULT'), c('SITE_ID','DATE_COL','CREW_LEADER')                     
+AngleCheck=subset(pvtAngle, SLANT==NA )                      
 
 
+                 
+#######  Riparian Veg  ########
+#overstory >100% check
+riparian1=tblRetrieve(Parameters=c('CANBTRE','CANSTRE'),Years=years, Projects=projects)
+riparian1PVT=cast(riparian1,'UID+TRANSECT+POINT~PARAMETER',value='RESULT')
+riparian1PVT_IND=cast(riparian1,'UID+TRANSECT+POINT~PARAMETER',value='IND')
+riparian1pvt=merge(riparian1PVT,riparian1PVT_IND,by=c('UID','TRANSECT','POINT'),all=T)
+riparian1PVTsub=subset(riparian1pvt,(CANBTRE.x==4 & CANSTRE.x>2) | (CANSTRE.x==4 & CANBTRE.x>2))
 
-### Thalweg checks ###
+#middlestory >100% check
+riparian2=tblRetrieve(Parameters=c('UNDNWDY','UNDWDY'),Years=years, Projects=projects)
+riparian2PVT=cast(riparian2,'UID+TRANSECT+POINT~PARAMETER',value='RESULT')
+riparian2PVT_IND=cast(riparian2,'UID+TRANSECT+POINT~PARAMETER',value='IND')
+riparian2pvt=merge(riparian2PVT,riparian2PVT_IND,by=c('UID','TRANSECT','POINT'),all=T)
+riparian2PVTsub=subset(riparian2pvt,(UNDNWDY.x==4 & UNDWDY.x>2) | (UNDWDY.x==4 & UNDNWDY.x>2))
+
+#understory >100% check
+riparian3=tblRetrieve(Parameters=c('GCNWDY','GCWDY','BARE'),Years=years, Projects=projects)
+riparian3PVT=cast(riparian3,'UID+TRANSECT+POINT~PARAMETER',value='RESULT')
+riparian3PVT_IND=cast(riparian3,'UID+TRANSECT+POINT~PARAMETER',value='IND')
+riparian3pvt=merge(riparian3PVT,riparian3PVT_IND,by=c('UID','TRANSECT','POINT'),all=T)
+riparian3PVTsub=subset(riparian3pvt,(GCNWDY.x==4 & GCWDY.x>2) | (GCWDY.x==4 & GCNWDY.x>2) | (GCNWDY.x==4 & BARE.x>2) | (BARE.x==4 & GCNWDY.x>2) | (BARE.x==4 & GCWDY.x>2) | (GCWDY.x==4 & BARE.x>2))
+
+#veg type missing check
+#canopy
+riparian4=tblRetrieve(Parameters=c('CANVEG','CANBTRE','CANSTRE'),Years=years, Projects=projects)
+riparian4PVT=cast(riparian4,'UID+TRANSECT+POINT~PARAMETER',value='RESULT')
+riparian4pvtsub=subset(riparian4PVT,CANVEG=='N' & CANBTRE>0 & CANSTRE>0)
+
+riparian4PVT_IND=cast(riparian4,'UID+TRANSECT+POINT~PARAMETER',value='IND')
+riparian4pvt=merge(riparian4PVT,riparian4PVT_IND,by=c('UID','TRANSECT','POINT'),all=T)
+riparian4pvtsub2=subset(riparian4pvt,CANVEG.x!='N' & CANBTRE.x==0 & CANSTRE.x==0)
+
+#middle
+riparian5=tblRetrieve(Parameters=c('UNDERVEG','UNDNWDY','UNDWDY'),Years=years, Projects=projects)
+riparian5PVT=cast(riparian5,'UID+TRANSECT+POINT~PARAMETER',value='RESULT')
+riparian5pvtsub=subset(riparian5PVT,UNDERVEG=='N' & UNDNWDY>0 & UNDWDY>0)
+                      
+                      
+                      
+###### Thalweg   #########
 
 #Custom thalweg missing data because number of station is dynamic
 #run thalweg_completion_check SQL query currently under JC Projects folder locally but want to migrate to R or to a view in SQL
-
-
-##crossvalidation/business rules
-##! store and dynamically compose validation rules 
-WetWidthDIFF=sqlQuery(wrsa1314,"select WetTRAN.UID, WetTRAN.TRANSECT, RESULT_PNTthal, RESULT_TRAN
- from (select UID, TRANSECT, RESULT as RESULT_PNTthal from tblpoint
-where parameter like 'wetwid%'
-and POINT='0') as WetPNTthal
-join (select  UID, TRANSECT, RESULT as RESULT_TRAN from tbltransect
-where parameter like 'wetwid%') as WetTRAN
-on (WetTRAN.UID=WetPNTthal.UID and WetTRAN.TRANSECT=WetPNTthal.TRANSECT)
---where ROUND(convert(float,result_pntthal),1) <> ROUND(convert(float,result_tran),1)
---and WetTRAN.UID=11625 --query struggles when running the convert function with multiple UID, makes no sense, running where statement externally in excel via Exact()
-")#should only occur on paper forms where value is recorded twice and therefore appears in the db twice
-
-
-
-############################################################################################################################
-#####Additional QC Checks
-#bank cross-validation WRSA checks
-widhgt=tblRetrieve(Parameters=c('BANKHT','INCISED','WETWID','BANKWID','BARWID'), Projects=c('NORCAL','2015ProtocolOverlap','AKEFO'),Years=c('2013','2014','2015'))
-widhgt2=tblRetrieve(Parameters=c('BANKHT','INCISED','WETWID','WETWIDTH','BANKWID','BARWID','BARWIDTH'),Projects=c('NORCAL','2015ProtocolOverlap','AKEFO'),Years=c('2013','2014','2015'))
-#widhgt=tblRetrieve(Parameters=c('BANKHT','INCISED','WETWID','BANKWID','BARWID'), Projects=c('WRSA','NV','GSENM','COPLT'),Years=c('2015'))
-#widhgt2=tblRetrieve(Parameters=c('BANKHT','INCISED','WETWID','WETWIDTH','BANKWID','BARWID','BARWIDTH'), Projects=c('WRSA','NV','GSENM','COPLT'),Years=c('2015'))
-widhgt=subset(widhgt,nchar(TRANSECT)==1 | substr(TRANSECT,1,1)=='X')
-
-whPVT=cast(widhgt,'UID+TRANSECT~PARAMETER',value='RESULT')
-wnPVTIND=cast(widhgt,'UID+TRANSECT~PARAMETER',value='IND')     
-tranPVT=addKEYS(merge(whPVT,bnkPVT,by=c('UID','TRANSECT'),all=T) ,c('SITE_ID','DATE_COL'))
-rawwhPVT=addKEYS(merge(whPVT,wnPVTIND,by=c('UID','TRANSECT'),all=T) ,c('SITE_ID','DATE_COL'))
-colnames(rawwhPVT)<-c('UID','TRANSECT','BANKHT','BANKWID','BARWID','INCISED','WETWID','BANKHT_IND','BANKWID_IND','BARWID_ID','INCISED_IND','WETWID_ID','DATE_COL','SITE_ID')
-
-bankhtcheck=subset(rawwhPVT,BANKHT>INCISED|BANKHT>1.5)#!possible crossvalidation rule to scan for#no bank heights showed up in the legal value or outlier check so wanted to check units
-wetwidthchecks=subset(rawwhPVT,WETWID>BANKWID)
-write.csv(bankhtcheck,'bankhtincisedcheck_31Aug2015.csv')
-write.csv(wetwidthchecks,'wetwidthchecks_31Aug2015.csv')
-write.csv(rbind(widhgt2,banks),'WidthHeightRaw_31Aug2015.csv')#need raw output to get IND values
-
-#getting raw bank data for a few problem sites
-widhgt=tblRetrieve(Parameters=c('BANKHT','INCISED','WETWID','BANKWID','BARWID'), Projects='AKEFO',Years=c('2015'),SiteCodes=c('AF-LS3-9172','AF-SS1-9146','AA-STR-0013'))
-widhgt2=tblRetrieve(Parameters=c('BANKHT','INCISED','WETWID','WETWIDTH','BANKWID','BARWID','BARWIDTH'), Projects='AKEFO',Years=c('2015'),SiteCodes=c('AF-LS3-9172','AF-SS1-9146','AA-STR-0013'))
-#widhgt=tblRetrieve(Parameters=c('BANKHT','INCISED','WETWID','BANKWID','BARWID'), Projects='WRSA',Years=c('2013','2014'),SiteCodes=c('MN-SS-1133','MP-SS-2091','MS-SS-3126','XE-RO-5081','XE-SS-5105','XS-SS-6135', 'OT-LS-7001',  'OT-LS-7012',	'MP-SS-2080',	'XE-SS-5150',	'MS-LS-3026',	'OT-LS-7019',	'OT-SS-7133'))
-#widhgt2=tblRetrieve(Parameters=c('BANKHT','INCISED','WETWID','WETWIDTH','BANKWID','BARWID','BARWIDTH'), Projects='WRSA',Years=c('2013','2014'),SiteCodes=c('MN-SS-1133','MP-SS-2091','MS-SS-3126','XE-RO-5081','XE-SS-5105','XS-SS-6135', 'OT-LS-7001',  'OT-LS-7012',	'MP-SS-2080',	'XE-SS-5150',	'MS-LS-3026',	'OT-LS-7019',	'OT-SS-7133'))
-widhgt=subset(widhgt,nchar(TRANSECT)==1 | substr(TRANSECT,1,1)=='X')
-
-whPVT=cast(widhgt,'UID+TRANSECT~PARAMETER',value='RESULT')
-wnPVTIND=cast(widhgt,'UID+TRANSECT~PARAMETER',value='IND')     
-rawwhPVT=addKEYS(merge(whPVT,wnPVTIND,by=c('UID','TRANSECT'),all=T) ,c('SITE_ID','DATE_COL'))
-colnames(rawwhPVT)<-c('UID','TRANSECT','BANKHT','BANKWID','BARWID','INCISED','WETWID','BANKHT_IND','BANKWID_IND','BARWID_ID','INCISED_IND','WETWID_ID','DATE_COL','SITE_ID')
-write.csv(rawwhPVT,'problem_sites_cross_valid_bank.csv')
-
-#third bank parameter check on select UIDs based off of summary
-widhgt=addKEYS(tblRetrieve(Parameters=c('BANKHT'), Projects='WRSA',Years=c('2013','2014'),UIDS=c(10376,10381,13517,11833,12717,11847,12648,11836)),c('SITE_ID','DATE_COL'))
-widhgt.sub=addKEYS(TBLout,c('SITE_ID','DATE_COL'))
-
-tblRetrieve(Parameters='ANGLE180', SiteCodes='XN-RO-4085')
+tbl=tblRetrieve(Parameters=c('DEPTH'),Project='WRSA', Years='2014')
+tbl.2=tblRetrieve(Parameters=c('SUB_5_7'),Project='WRSA', Years='2014')
+tbl3=cast(tbl.2,'UID~PARAMETER',value='RESULT',mean)
+tbl.PVT=addKEYS(cast(tbl,'UID~PARAMETER',value='RESULT'),c('SITE_ID'))
+thalweg.missing=merge(tbl.PVT,tbl3, by='UID')
 
 #Increment cross-validation WRSA checks
-incrementcheck=tblRetrieve(Parameters=c('TRCHLEN','INCREMENT','RCHWIDTH'), Projects=c('WRSA','NV','GSENM','COPLT'),Years=c('2015'))
+incrementcheck=tblRetrieve(Parameters=c('TRCHLEN','INCREMENT','RCHWIDTH'), Projects=projects, Years=years,Protocols=protocols)
 incrsub=subset(incrementcheck,UID!=10383)#UID:10383  IND 4849393 needs to be deactivated for this to work
 incrementPVT=cast(incrsub,'UID~PARAMETER',value='RESULT')
 incrementsub=subset(incrementPVT,TRCHLEN/0.01!=INCREMENT)#couldn't get this to work so checked this manually in excel and also checked to make sure that RCHWIDTH*40=TRCHLEN and for RCHWIDTH<2.5 INCREMENT=1 and for RCHWIDTH>2.5<4 INCREMENT=1.5
 write.csv(incrementPVT,'incrementPVT.csv')
-weridinc=tblRetrieve(Parameters=c('INCREMENT'),UIDS='11852')
+#weridinc=tblRetrieve(Parameters=c('INCREMENT'),UIDS='11852')
+                      
+#thalweg checks####couldn't get this to work so did cell referencing in excel to interpolate between values with 1 missing value inbetween
+thalweg<-tblRetrieve(Parameters='DEPTH',Projects=projects,Years=years, Protocols=protocols)
+thalweg_depth<-subset(thalweg,SAMPLE_TYPE!='CROSSSECW')
+thalweg_depth_pvt<-cast(thalweg_depth,'UID+TRANSECT~POINT', value='RESULT')
+thalweg_depth_pvt_order<-thalweg_depth_pvt[with(thalweg_depth_pvt, order(1,29))]
+thaleg_depth_NA<-thalweg_depth_pvt [is.na(thalweg_depth_pvt$'1')==TRUE,c(1:2,4)]
 
-#check 0 substrate flagged in legal values
-substratecheck=addKEYS(tblRetrieve(Parameters=c('SIZE_NUM'),Projects='WRSA',Years=c('2013','2014'),Protocols=c('NRSA13','WRSA14'), Comments='Y'), c('SITE_ID','DATE_COL'))
-zerosubstrate=subset(substratecheck, RESULT==0)
-write.csv(zerosubstrate,'zerosubstrate.csv')
+#thalweg depth/ width EPA check
+#wading sites
+depthcheck=tblRetrieve(Parameters=c('DEPTH'), Projects=projects, Years=years,Protocols=protocols)
+depthcheck.sub=subset(depthcheck,SAMPLE_TYPE!='CROSSSECW')
+pvtdepthcheck=cast(depthcheck.sub,'UID+TRANSECT+POINT~PARAMETER',value='RESULT')
+pvtdepthcheck.sub=subset(pvtdepthcheck,POINT=='0')
+width=tblRetrieve(Parameters=c('WETWID'),Projects=projects, Years=years,Protocols=protocols)
+check=merge(pvtdepthcheck.sub,width,by=c('UID','TRANSECT'),all=T)
+odd_ratio=subset(check,RESULT/(DEPTH/100)>50|RESULT/(DEPTH/100)<1)
+#boating sites
+depthcheck=tblRetrieve(Parameters=c('DEPTH'), Projects=projects, Years=years,Protocols=protocols)
+depthcheck.sub=subset(depthcheck,SAMPLE_TYPE!='CROSSSECW')
+pvtdepthcheck=cast(depthcheck.sub,'UID+TRANSECT+POINT~PARAMETER',value='RESULT')
+pvtdepthcheck.sub=subset(pvtdepthcheck,POINT=='0')
+width=tblRetrieve(Parameters=c('WETWID'),Projects=projects, Years=years,Protocols=protocols)
+check=merge(pvtdepthcheck.sub,width,by=c('UID','TRANSECT'),all=T)
+odd_ratio=subset(check,RESULT/(DEPTH)>50|RESULT/(DEPTH)<1)
 
-#second round cross validation checks
-#checked bht and bankwidth 1st round checks again and did not find any values that still needed to be changed
-incisedhtcheck=subset(rawwhPVT,INCISED>1.5)#many came up but no unit errors obvious
-barwidthchecks=subset(rawwhPVT,BARWID>WETWID)#none found
+                 
+                 
+#########  slope   ################                    
+Slope=tblRetrieve(Parameters=c('AVGSLOPE','SLPRCHLEN','TRCHLEN','PARTIAL_RCHLEN','POOLRCHLEN','SLOPE_COLLECT','PCTGRADE'),Projects=projects, Years=years,Protocols=protocols)                 
+pvtSlope=addKEYS(cast(Slope,'UID~PARAMETER',value='RESULT'), c('SITE_ID','CREW_LEADER'))                
+SlopeCheck1=subset(pvtSlope,PCTGRADE>14|PCTGRADE<3)
+SlopeCheck2=subset(pvtSlope,SLOPE_COLLECT=='PC'|SLOPE_COLLECT=='NC')# needs tweaking
+Pass=tblRetrieve(Parameters=c('ENDTRAN'),Projects=projects, Years=years,Protocols=protocols)                 
+SlopeCheck=subset(TRANSECT,POINT=>4)# passes should not have been 4 or more and if so check which ones were averaged together
+#check average of 3 sites is correct                 
+  
+                 
+                 
+#########  pools   ################                                           
+#getting all pool data for a specfic set of sites---not collecting one of the parameters below anymore
+pools<-addKEYS(tblRetrieve(Parameters=c('HABTYPE','FORMATION','PTAILDEP','MAXDEPTH','LENGTH'),Projects=projects,Comments='Y'),c('SITE_ID'))
+pvtpools=cast(pools,'UID+POINT~PARAMETER',value='RESULT')
+write.csv(pvtpools,'pvtpools.csv')#short and look for min and max and 0 data or unit issues
 
-banks=tblRetrieve(Parameters=c('ANGLE','UNDERCUT'), Projects='WRSA',Years=c('2013','2014'))
-banksnum=subset(banks,is.na(as.numeric(RESULT))==F);banksnum$RESULT=as.numeric(banksnum$RESULT)
-bnkPVT=cast(banks,'UID+TRANSECT~PARAMETER+POINT',value='RESULT')   
-bnkPVTIND=cast(banks,'UID+TRANSECT~PARAMETER+POINT',value='IND')  
-rawwhPVT=addKEYS(merge(bnkPVT,bnkPVTIND,by=c('UID','TRANSECT'),all=T) ,c('SITE_ID','DATE_COL'))
-undercut_checks=subset(rawwhPVT,UNDERCUT_LF.x>1|UNDERCUT_RT.x>1)
-write.csv(undercut_checks,'undercut_checks.csv')#many units issues
+# flow and collected checks
+PoolCollect<-tblRetrieve(Parameters=c('POOL_COLLECT','VALXSITE'),Projects=projects,Comments='Y')
+pvtPoolCollect=addKEYS(cast(PoolCollect,'UID~PARAMETER',value='RESULT'),c('SITE_ID'))
+pvtPoolCollect=subset(pvtPoolCollect,VALXSITE==INTWADE|POOL_COLLECT=='NO_FLOW'|POOL_COLLECT=='NC')#needs tweaking
+                 
+#check sum of lengths not > than total reach length  
+pool_length<-tblRetrieve(Parameters=c('LENGTH'),Projects=projects,Comments='Y')
+pvtpools1=cast(pool_length,'UID~PARAMETER',value='RESULT',fun=sum) 
+reach_length=tblRetrieve(Parameters=c('POOLRCHLEN'),Projects=projects)
+pvtpools2=cast(reach_length,'UID~PARAMETER',value='RESULT') 
+poolsmerge<-merge(pvtpools1,pvtpools2,by=c('UID'),all=T)
+pool_great_100<-subset(poolsmerge,LENGTH>POOLRCHLEN)
+
+
+#########  photos  ###################
+#use to check any questionable values such as bankfull widths and heights                      
+Photo=tblRetrieve(Parameters=c('PHOTO_ID','PHOTO_DESCRIP','PHOTO_TYPE','ROD','DIRECTION','COMMENT'),Projects=projects,Years=years)                   
+pvtPhotos=cast(Photo,'UID+POINT~PARAMETER',value='RESULT')
+
+
+############################################################################################################################
+#Final pivot checks on all indicators to make sure no duplicate data exists from data edits---copy over from indicator calc
+#run summary data and short again to make sure no wacky values
+#pay close attention to sample sizes when running indicators....should probably eventually run missing data checks this way rather than the knarly script above                 
+
+
+
+
 
 ##########################################################################################################################
 ################## Old checks ############################################################################################
@@ -694,6 +849,79 @@ ThalwegCheck=sqldf("select Station.UID, StationDUPLICATES,StationCNT,DepthCNT fr
 print("Warning! Number of Thalweg depths does not match the number expected from the widths/stations!")
 #conflicts happen (i.e. multiple sub_5_7 values per site) when crews forget their reach widths on the first few transects, missing data check added in FM to warn them
 print(ThalwegCheck)  
+                      
+###########################################################################################################                      
+#####Additional QC Checks
+#bank cross-validation WRSA checks
+widhgt=tblRetrieve(Parameters=c('BANKHT','INCISED','WETWID','BANKWID','BARWID'), Projects=c('NORCAL','2015ProtocolOverlap','AKEFO'),Years=c('2013','2014','2015'))
+widhgt2=tblRetrieve(Parameters=c('BANKHT','INCISED','WETWID','WETWIDTH','BANKWID','BARWID','BARWIDTH'),Projects=c('NORCAL','2015ProtocolOverlap','AKEFO'),Years=c('2013','2014','2015'))
+#widhgt=tblRetrieve(Parameters=c('BANKHT','INCISED','WETWID','BANKWID','BARWID'), Projects=c('WRSA','NV','GSENM','COPLT'),Years=c('2015'))
+#widhgt2=tblRetrieve(Parameters=c('BANKHT','INCISED','WETWID','WETWIDTH','BANKWID','BARWID','BARWIDTH'), Projects=c('WRSA','NV','GSENM','COPLT'),Years=c('2015'))
+widhgt=subset(widhgt,nchar(TRANSECT)==1 | substr(TRANSECT,1,1)=='X')
+
+whPVT=cast(widhgt,'UID+TRANSECT~PARAMETER',value='RESULT')
+wnPVTIND=cast(widhgt,'UID+TRANSECT~PARAMETER',value='IND')     
+tranPVT=addKEYS(merge(whPVT,bnkPVT,by=c('UID','TRANSECT'),all=T) ,c('SITE_ID','DATE_COL'))
+rawwhPVT=addKEYS(merge(whPVT,wnPVTIND,by=c('UID','TRANSECT'),all=T) ,c('SITE_ID','DATE_COL'))
+colnames(rawwhPVT)<-c('UID','TRANSECT','BANKHT','BANKWID','BARWID','INCISED','WETWID','BANKHT_IND','BANKWID_IND','BARWID_ID','INCISED_IND','WETWID_ID','DATE_COL','SITE_ID')
+
+bankhtcheck=subset(rawwhPVT,BANKHT>INCISED|BANKHT>1.5)#!possible crossvalidation rule to scan for#no bank heights showed up in the legal value or outlier check so wanted to check units
+wetwidthchecks=subset(rawwhPVT,WETWID>BANKWID)
+write.csv(bankhtcheck,'bankhtincisedcheck_31Aug2015.csv')
+write.csv(wetwidthchecks,'wetwidthchecks_31Aug2015.csv')
+write.csv(rbind(widhgt2,banks),'WidthHeightRaw_31Aug2015.csv')#need raw output to get IND values
+
+#getting raw bank data for a few problem sites
+widhgt=tblRetrieve(Parameters=c('BANKHT','INCISED','WETWID','BANKWID','BARWID'), Projects='AKEFO',Years=c('2015'),SiteCodes=c('AF-LS3-9172','AF-SS1-9146','AA-STR-0013'))
+widhgt2=tblRetrieve(Parameters=c('BANKHT','INCISED','WETWID','WETWIDTH','BANKWID','BARWID','BARWIDTH'), Projects='AKEFO',Years=c('2015'),SiteCodes=c('AF-LS3-9172','AF-SS1-9146','AA-STR-0013'))
+#widhgt=tblRetrieve(Parameters=c('BANKHT','INCISED','WETWID','BANKWID','BARWID'), Projects='WRSA',Years=c('2013','2014'),SiteCodes=c('MN-SS-1133','MP-SS-2091','MS-SS-3126','XE-RO-5081','XE-SS-5105','XS-SS-6135', 'OT-LS-7001',  'OT-LS-7012',  'MP-SS-2080',	'XE-SS-5150',	'MS-LS-3026',	'OT-LS-7019',	'OT-SS-7133'))
+#widhgt2=tblRetrieve(Parameters=c('BANKHT','INCISED','WETWID','WETWIDTH','BANKWID','BARWID','BARWIDTH'), Projects='WRSA',Years=c('2013','2014'),SiteCodes=c('MN-SS-1133','MP-SS-2091','MS-SS-3126','XE-RO-5081','XE-SS-5105','XS-SS-6135', 'OT-LS-7001',  'OT-LS-7012',	'MP-SS-2080',	'XE-SS-5150',	'MS-LS-3026',	'OT-LS-7019',	'OT-SS-7133'))
+widhgt=subset(widhgt,nchar(TRANSECT)==1 | substr(TRANSECT,1,1)=='X')
+
+whPVT=cast(widhgt,'UID+TRANSECT~PARAMETER',value='RESULT')
+wnPVTIND=cast(widhgt,'UID+TRANSECT~PARAMETER',value='IND')     
+rawwhPVT=addKEYS(merge(whPVT,wnPVTIND,by=c('UID','TRANSECT'),all=T) ,c('SITE_ID','DATE_COL'))
+colnames(rawwhPVT)<-c('UID','TRANSECT','BANKHT','BANKWID','BARWID','INCISED','WETWID','BANKHT_IND','BANKWID_IND','BARWID_ID','INCISED_IND','WETWID_ID','DATE_COL','SITE_ID')
+write.csv(rawwhPVT,'problem_sites_cross_valid_bank.csv')
+
+#third bank parameter check on select UIDs based off of summary
+widhgt=addKEYS(tblRetrieve(Parameters=c('BANKHT'), Projects='WRSA',Years=c('2013','2014'),UIDS=c(10376,10381,13517,11833,12717,11847,12648,11836)),c('SITE_ID','DATE_COL'))
+widhgt.sub=addKEYS(TBLout,c('SITE_ID','DATE_COL'))
+
+tblRetrieve(Parameters='ANGLE180', SiteCodes='XN-RO-4085')
+#check 0 substrate flagged in legal values
+substratecheck=addKEYS(tblRetrieve(Parameters=c('SIZE_NUM'),Projects='WRSA',Years=c('2013','2014'),Protocols=c('NRSA13','WRSA14'), Comments='Y'), c('SITE_ID','DATE_COL'))
+zerosubstrate=subset(substratecheck, RESULT==0)
+write.csv(zerosubstrate,'zerosubstrate.csv')
+
+#second round cross validation checks
+#checked bht and bankwidth 1st round checks again and did not find any values that still needed to be changed
+incisedhtcheck=subset(rawwhPVT,INCISED>1.5)#many came up but no unit errors obvious
+barwidthchecks=subset(rawwhPVT,BARWID>WETWID)#none found
+
+banks=tblRetrieve(Parameters=c('ANGLE','UNDERCUT'), Projects='WRSA',Years=c('2013','2014'))
+banksnum=subset(banks,is.na(as.numeric(RESULT))==F);banksnum$RESULT=as.numeric(banksnum$RESULT)
+bnkPVT=cast(banks,'UID+TRANSECT~PARAMETER+POINT',value='RESULT')   
+bnkPVTIND=cast(banks,'UID+TRANSECT~PARAMETER+POINT',value='IND')  
+rawwhPVT=addKEYS(merge(bnkPVT,bnkPVTIND,by=c('UID','TRANSECT'),all=T) ,c('SITE_ID','DATE_COL'))
+undercut_checks=subset(rawwhPVT,UNDERCUT_LF.x>1|UNDERCUT_RT.x>1)
+write.csv(undercut_checks,'undercut_checks.csv')#many units issues                     
+                      
+
+#check on duplicate wetted widths from field forms
+##crossvalidation/business rules
+##! store and dynamically compose validation rules 
+WetWidthDIFF=sqlQuery(wrsa1314,"select WetTRAN.UID, WetTRAN.TRANSECT, RESULT_PNTthal, RESULT_TRAN
+                      from (select UID, TRANSECT, RESULT as RESULT_PNTthal from tblpoint
+                      where parameter like 'wetwid%'
+                      and POINT='0') as WetPNTthal
+                      join (select  UID, TRANSECT, RESULT as RESULT_TRAN from tbltransect
+                      where parameter like 'wetwid%') as WetTRAN
+                      on (WetTRAN.UID=WetPNTthal.UID and WetTRAN.TRANSECT=WetPNTthal.TRANSECT)
+                      --where ROUND(convert(float,result_pntthal),1) <> ROUND(convert(float,result_tran),1)
+                      --and WetTRAN.UID=11625 --query struggles when running the convert function with multiple UID, makes no sense, running where statement externally in excel via Exact()
+                      ")#should only occur on paper forms where value is recorded twice and therefore appears in the db twice
+                                        
 ####################################################################################################
 #Jennifer's attempt to get indicator outliers and boxplots
 #QA boxplots
