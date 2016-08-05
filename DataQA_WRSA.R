@@ -1,43 +1,52 @@
+# most run DBpassword_doNotgit.R and DataConsumption_WRSAdb.R setup section first
+#must run Project, Year, and Protocol filters in DataConsumption_WRSAdb.R first
+
+#all issues that are found but not dealt with immediately should be recorded in OfficeComments -either on google drive or access database
+#all edits should be added to Z:\buglab\Research Projects\BLM_WRSA_Stream_Surveys\Results and Reports\QA\final QC of all sites collected up to Nov 2015\Office_updates.xsls for WRSA data or Z:\buglab\Research Projects\AIM\Analysis\QC\OfficeUpdates for data collected in 2016 and beyond
+#follow instructions in Z:\buglab\Research Projects\BLM_WRSA_Stream_Surveys\Technology\WRSA data mananagement page 5 for how to format the data and put it into OfficeUpdates table 
+#Jennifer will then copy and paste the edits into the ProbSurvey Access database run the stored export to export a csv. Then run the UpdateDatabase_WRSA.R script and follow its subsequent instructions
+
+######################################################################################
+#########                          Site Check                                #########
+######################################################################################
+##First step-do you have all the sites you should?
+listsites=tblRetrieve(Parameters=c('SITE_ID','DATE_COL','LOC_NAME','LAT_DD','LON_DD','PROJECT','PROTOCOL','VALXSITE','LAT_DD_BR','LAT_DD_TR','LON_DD_BR','LON_DD_TR'),Projects=projects,Years=years,Protocols=protocols)
+listsites=setNames(cast(listsites,'UID~PARAMETER',value='RESULT'),c("UID","DATE_COL_CHECK","LAT_DD_CHECK","LAT_DD_BR_CHECK","LAT_DD_TR_CHECK","LOC_NAME_CHECK","LON_DD_CHECK","LON_DD_BR_CHECK","LON_DD_TR_CHECK","PROJECT_CHECK","PROTOCOL_CHECK","SITE_ID_CHECK",'VALXSITE_CHECK'))
+listsites=listsites[,c(1,12,6,2,3,7,10,13,11,5,9,4,8)]
+
+#read in sites from final designations and do a left join to determine if any sampled sites are missing or if sample statuses need to be changed
+#if sites are missing check error logs on server or emails and check last modfied date
+
+#do all sites have correct project?
+#check all partial sites by running missing data checks below
+
+######################################################################################
+########            Comment Check and Office Comments check                 ##########
+######################################################################################
+#export comments table from SQL ----prefer to do this prior to missing data check because might fill in missing data
+    #check for data not entered in fields
+    #check for data that needs to be deleted or moved
+    #check for data quality issues such as flooding prior to taking water quality
+    #check for protocol clarity issues especially dry sites
+    #check for dry transects or partial data notes
+    #especially review QA comments
+    #inactivate resolved or superfluous comments
+
+#review office comments and prioritize anything that might affect below checks----need above site information to link UID to comments and make change
+
+
+#######################################################################################
+########          Preliminary missing data check                            ###########
+#######################################################################################
+# A preliminary check to make sure all paper field forms were entered, partial sites are flagged and no egregious protocol errors with more than a few indicators with >50% data missing
 
 ##missing data parameters
-UnionTBL=tblRetrieve(Table='',Parameters=parameters, Years=c('2013','2014','2015'), Projects=c('NV','GSENM','COPLT','WRSA','NORCAL','2015ProtocolOverlap','AKEFO'),Protocols=c('NRSA13','WRSA14','BOAT14','AK14'))
-                     #ALLp=AllParam,UIDS=UIDs,ALL=AllData,Filter=filter,SiteCodes=sitecodes,Dates=dates,
-                     #Years='2015')#,Projects='WRSA'
-                     #,Protocols='WRSA14')#!? should Protocols='' to bring in all protocols? so as not to neglect failed sites? this was done for weights
-#UnionTBL=tblRetrieve(Table='',Parameters='', Projects=projects,Protocols=protocols)
-#ALLp=AllParam,UIDS=UIDs,ALL=AllData,Filter=filter,SiteCodes=sitecodes,Dates=dates,
-#Years='2015')#,Projects='WRSA'
-
-UIDS=c(76374884476355444736,
-73950247746187892360428,
-8600554176507,
-855484010253916416,
-12658404780762277888,
-43493545308978249728,
-9822980447890095210446,
-51799020664989845292668)
-UnionTBL=tblRetrieve(Parameters=c('BANKHT'),UIDS=c(589309241482436739082))
+UnionTBL=tblRetrieve(Table='', Years=years, Projects=projects,Protocols=protocols)
+#ALLp=AllParam,UIDS=UIDs,ALL=AllData,Filter=filter,SiteCodes=sitecodes,Dates=dates,Years='years',Protocols='protocols')#Protocols='' brings in failed sites as well
 
 CheckAll='N'#options: 'Y' = Check All Parameters for the protocol; 'N' = Check only Parameters in UnionTBL (i.e. if subsetting UnionTBL to single Table and don't want clutter from parameters not interested in)....this is not done automatically because missing data checks are meant to look for parameters that have ZERO readings for a particular dataset, only use in testing and known scenarios (usually where AllParams='Y')
 CommentsCount='N'#'Y' = a comment (as represented by a flag) allows the missing data warning to be ignored; 'N' = missing data is reported regardless and contributes to subsequent percentages. 
 MissingXwalk='MissingBackend'; MetricType='Y'#if MetricType=='Y' then groupings will be done by the bin (Type_Xwalk) and the metric type (Indicator, Covariate, QC)
-
-##testing
-# UnionTBL=tblRetrieve(Table='',ALLp='',ALL=AllData,SiteCodes=c('XE-LS-5010','SU-SS-8349','XN-SS-4135','AA-STR-0008','EL-LS-8126'))#Table='tblREACH'#ALLp=c('VALXSITE','DOM_LAND_USE','DLDLL','ROAD','PH')
-# CheckAll='N'
-# #NorCal1314
-# UnionTBL=tblRetrieve(ALLp='Y',Years=c('2013','2014'),Projects='NorCal')
-# UnionTBLall=UnionTBL#for outlier checks, plan to compare NorCal to only NorCal sites
-# CheckAll='Y'
-# CommentsCount='N'
-##post hitch
-# HitchImport=Sys.Date() # Sys.Date()  for today or text string like '2014-08-18'
-# UIDhitch=UIDselect(Filter=sprintf("INSERTION='%s' and operation='O' ",HitchImport))
-# UnionTBL=tblRetrieve(ALLp='Y',UIDS=UIDhitch$UID)#UnionTBLnorcal=UnionTBL
-# MissingXwalk=''; MetricType='N'
-# CheckAll='Y'
-# CommentsCount='N'
-
 
 ##missing data check
 if('POINT' %in% colnames(UnionTBL) ==FALSE){UnionTBL$POINT=NA};if('TRANSECT' %in% colnames(UnionTBL) ==FALSE){UnionTBL$TRANSECT=NA}
@@ -180,68 +189,12 @@ write.xlsx(MissingCounts,"MissingCounts.xlsx")
   #checking individual sites#View(subset(MissingCounts,subset=UID==''))#View(subset(importmaster,subset=UID==''))# View(subset(tblCOMMENTSin,subset=UID==''))
 
 
+#############################################################################
+########                         outlier check                 ##############
+#############################################################################
 
-
-  
-  #custom missing data check for thalweg since flexible
-  ThalwegCheck=sqldf("select Station.UID, StationDUPLICATES,StationCNT,DepthCNT from 
-                     (select distinct UID, cast((result*2)-1 as numeric) as StationCNT from importmaster where parameter='SUB_5_7') as station
-                     join
-                     (select UID,count(result) as StationDUPLICATES from (select distinct UID, result from importmaster where parameter='SUB_5_7') as stcnt group by UID) as stationcount
-                     on station.uid=stationcount.uid
-                     join 
-                     (select UID, max(cast(point as numeric)) as DepthCNT from importmaster where parameter='DEPTH' group by UID) as depth
-                     on station.uid=depth.uid
-                     where StationCNT > DepthCNT or stationDUPLICATES>1
-                     order by Station.UID")
-  
-  print("Warning! Number of Thalweg depths does not match the number expected from the widths/stations!")
-  #conflicts happen (i.e. multiple sub_5_7 values per site) when crews forget their reach widths on the first few transects, missing data check added in FM to warn them
-  print(ThalwegCheck)  
-
-##legal value checks
-#low-high pairs
-LowHigh=c("MIN,MAX","QLOWI,QHIGHI","QLOWR,QHIGHR");#original FM string: "QLOWI,QHIGHI¶QLOWR,QHIGHR¶MIN,MAX"
-UnionTBLstat=UnionTBL
-#random quirks to ignore in legal checks
-UnionTBLstat=subset(UnionTBLstat,(PARAMETER=='SIZE_CLS' & is.na(as.numeric(RESULT)))==FALSE)#remove text Size_CLS  from 2013 (eventually will not be needed)
-UnionTBLstat=subset(UnionTBLstat,(PARAMETER=='SIZE_CLS' & RESULT=='0')==FALSE)#remove wood/other SIZE_CLS particles so don't fail the check
-#loop over pairs
-for (p in 1:length(LowHigh)){
-  StatPair=strsplit(LowHigh[p],",")
-  StatLow=StatPair[[1]][1]
-  StatHigh=StatPair[[1]][2]
-  StatValues="Select Sample_Type, Parameter, Stat, Result from tblMetadataRange where ACTIVE='TRUE' and STAT='%s' and Protocol='WRSA14'"#! protocol determination should be dynamic!! currently there are only values for WRSA14
-  Low=sqlQuery(wrsa1314,sprintf(StatValues,StatLow))
-  High=sqlQuery(wrsa1314,sprintf(StatValues,StatHigh))
-  LowHighJoin=sqldf("select * from UnionTBLstat 
-              join (select Sample_Type as ST, Parameter as PM, Stat as LowStat,Result as LowResult from Low) L on UnionTBLstat.Sample_Type=L.ST and UnionTBLstat.Parameter=L.PM
-              join (select Sample_Type as ST, Parameter as PM, Stat as HighStat,Result as HighResult from High) H on UnionTBLstat.Sample_Type=H.ST and UnionTBLstat.Parameter=H.PM
-              ")
-  LowHighFail=sqldf("select UID,Transect, Point, IND, Sample_Type,Parameter, 
-                    Result,LowResult,HighResult,LowStat,HighStat
-                    from LowHighJoin
-                    where Result<LowResult or Result>HighResult")
-  if(p==1){LowHighFailOUT=LowHighFail} else{LowHighFailOUT=rbind(LowHighFailOUT,LowHighFail)}
-}
-LowHighFailOUT=addKEYS(LowHighFailOUT,c('SITE_ID','DATE_COL'))#JC added to aid in QC process. However, it has duplicate siteid and date columns at the momment, so not very pretty at the moment
-write.csv(LowHighFailOUT,'LegalChecks.csv')
-
-###WQ checks
-WQ2=tblRetrieve(Parameters=c('CONDUCTIVITY','PH','CAL_INST_ID'), Comments='Y', Years='2015', Projects=c('WRSA','NV','GSENM','COPLT'))
-WQ1=addKEYS(cast(WQ2,'UID~PARAMETER',value='RESULT')  ,c('SITE_ID','DATE_COL','CREW_LEADER'))
-
-WQ2=tblRetrieve(Parameters=c('CONDUCTIVITY','CORRECTED','TEMPERATURE'), Comments='Y', Years='2015', Projects=c('WRSA','NV','GSENM','COPLT'))
-WQ1=cast(WQ2,'UID~PARAMETER',value='RESULT')
-WQind=cast(WQ2,'UID~PARAMETER',value='IND')
-WQ3=addKEYS(merge(WQ1,WQind,by=c('UID'),all=T) ,c('SITE_ID','DATE_COL','CREW_LEADER'))
-WQ3.sub=subset(WQ3,CORRECTED.x!='Y')
-write.csv(WQ3.sub,'not_temp_corrected_conduct.csv')
-
-
-##outlier check
 ##Need to have binMETADATAtemp.csv in your working directory for this script to work. You can get this table from SQL. It is called "tblMETADATAbin".
-##################################need to add IND to output!!!!!!!!!!!###########################################################
+######need to add IND to output!!!!!!!!!!! in the future
 
 #incoming vs. comparison dataset
 UnionTBLsites=unique(UnionTBL$UID)
@@ -443,8 +396,10 @@ for (s in 1:length(stratat)){
 #mimic labelling of site boxplots in strata
 #add "all" boxplot in strata
 
+#######################################################################
+########               summary stats                       ############
+#######################################################################
 
-##summary stats
 #retrieve all possible tables by protocol groups and pivot
 #for exploratory purposes to review data and determine expected values, not intended to replace modular SQL solutions for multiple tools
 tblCOL=c('UID', 'SAMPLE_TYPE','PARAMETER','RESULT','TRANSECT','POINT')
@@ -477,6 +432,53 @@ for (t in 1:length(QUANTtbls)){
   write.csv(eval(parse(text=QUANTtbls[t])),sprintf('%s.csv',QUANTtbls[t]))#could merge-pvtQUANTmean_, but I like them grouped by categories
 }
 
+#####################################################################################################
+#########                             Parameter Specific Checks                             #########
+#####################################################################################################
+
+######## WQ checks ########
+
+#corrected for temperature check
+WQ2=tblRetrieve(Parameters=c('CONDUCTIVITY','CORRECTED','TEMPERATURE'), Comments='Y', Years=years, Projects=projects)
+WQ1=cast(WQ2,'UID~PARAMETER',value='RESULT')
+WQind=cast(WQ2,'UID~PARAMETER',value='IND')
+WQ3=addKEYS(merge(WQ1,WQind,by=c('UID'),all=T) ,c('SITE_ID','DATE_COL','CREW_LEADER'))
+WQ3.sub=subset(WQ3,CORRECTED.x!='Y')
+#write.csv(WQ3.sub,'not_temp_corrected_conduct.csv')
+
+#Chem check the hours prior to freezing
+WQtbl=tblRetrieve(Parameters=c('NTL','PTL','EC_PRED','TN_PRED','TP_PRED','TIME_UNFROZEN'),Projects=projects,Years=years,Protocols=protocols)
+WQpvt$TN_PRED=round(WQpvt$TN_PRED,digits=3)
+WQpvt$TP_PRED=round(WQpvt$TP_PRED,digits=1)
+WQpvt$EC_PRED=round(WQpvt$EC_PRED,digits=2)
+WQpvt$OE_EC=round(WQpvt$CONDUCTIVITY-WQpvt$EC_PRED,digits=2)
+WQpvt$OE_TN=round(WQpvt$NTL-WQpvt$TN_PRED,digits=3)
+WQpvt$OE_TP=round(WQpvt$PTL-WQpvt$TP_PRED,digits=1)
+#make condition determination and count # in each condition
+#graph time_unfrozen with raw values and OE values
+
+#view any typical values violations for Conductivity and PH
+Conduct=tblRetrieve(Comments='Y',Parameters=c('CONDUCTIVITY'),Projects=projects,Years=years,Protocols=protocols)
+ConductQuestions=subset(Conduct,RESULT<100 | RESULT>600)# review comments for any sites flagged here 
+PH=tblRetrieve(Comments='Y',Parameters=c('PH'),Projects=projects,Years=years,Protocols=protocols)
+PHQuestions=subset(PH,RESULT<6 | RESULT>9)# review comments for any sites flagged here
+
+#compare any questionable values to ecoregional EPA data
+read.csv('Z:\\buglab\\Research Projects\\BLM_WRSA_Stream_Surveys\\Results and Reports\\EPA_Data\\EPA_WQ_typical_values.csv')
+
+#instrument check
+#pull all data for instrument if values still not resolved after looking at ecoregional values # not as pertinent this year and in the future because the same instrument will be used for any given proejct and confounded with ecoregional differences
+WQ2=tblRetrieve(Parameters=c('CONDUCTIVITY','PH','CAL_INST_ID'), Comments='Y', Years=years, Projects=projects)
+WQ1=addKEYS(cast(WQ2,'UID~PARAMETER',value='RESULT')  ,c('SITE_ID','DATE_COL','CREW_LEADER'))
+WQ1=subset(WQ1,CAL_INST_ID=='')# fill in data of interest here
+
+
+
+
+### Thalweg checks ###
+
+#Custom thalweg missing data because number of station is dynamic
+#run thalweg_completion_check SQL query currently under JC Projects folder locally but want to migrate to R or to a view in SQL
 
 
 ##crossvalidation/business rules
@@ -493,87 +495,6 @@ on (WetTRAN.UID=WetPNTthal.UID and WetTRAN.TRANSECT=WetPNTthal.TRANSECT)
 ")#should only occur on paper forms where value is recorded twice and therefore appears in the db twice
 
 
-#slope checks
-#!compare to GIS
-###---Connected Slope passes with no gaps---###
-SlopeTran1=tblRetrieve(Parameters=c('ENDTRAN'),Years=c('2014','2015','2016'))#WRSA protocol
-SlopeTran2=tblRetrieve(Parameters=c('SLOPE'),Years=c('2013'))#NRSA protocol
-SlopeTran2$PARAMETER='ENDTRAN'#could choose to add this in database
-SlopeTran2$PointTMP=SlopeTran2$POINT
-SlopeTran2$POINT=SlopeTran2$TRANSECT
-SlopeTran2$TRANSECT=SlopeTran2$PointTMP;SlopeTran2=SlopeTran2[,!(names(SlopeTran2) %in% c('PointTMP'))]
-tran=c('A','B','C','D','E','F','G','H','I','J','K')
-for (t in 1:nrow(SlopeTran2)){
-  SlopeTran2$RESULT[t]=tran[1+grep(SlopeTran2$POINT[t],tran)]#could choose to add this in database
-}
-SlopeTran=rbind(SlopeTran1,SlopeTran2)
-SlopeTran$Start=SlopeTran$POINT;SlopeTran$Stop=SlopeTran$RESULT;SlopeTran=SlopeTran[,!(names(SlopeTran) %in% c('POINT','RESULT'))]
-SlopeTran=SlopeTran[,!(names(SlopeTran) %in% c('SAMPLE_TYPE','PARAMETER','IND','ACTIVE','FLAG','OPERATION','INSERTION','DEPRECATION','REASON'))]#!not necessary, just easier to see when clean
-NotTran=subset(SlopeTran, nchar(Start)>1|nchar(Stop)>1)
-if(nrow(NotTran)>0){print('WARNING: some transects are not single letter transect names. Review and correct'); View(NotTran)}
-St=c('Start','Stop')
-SlopeUID=unique(subset(SlopeTran,select=c(UID,TRANSECT)));SlopeUIDmulti=SlopeUID[0,]
-for (u in 1:nrow(SlopeUID)){
-  SlopeU=subset(SlopeTran,UID==SlopeUID$UID[u] & TRANSECT==SlopeUID$TRANSECT[u]);Urow=nrow(SlopeU);SlopeU=unique(SlopeU);if(Urow!=nrow(SlopeU)){SlopeUIDmulti=rbind(SlopeUIDmulti,unique(subset(SlopeU,select=c(UID,TRANSECT))))}
-  SlopeConnect=SlopeU[1,];SlopeConnect$StartL0=SlopeConnect$Start;SlopeConnect$StartR0=SlopeConnect$Start;SlopeConnect$StopL0=SlopeConnect$Stop;SlopeConnect$StopR0=SlopeConnect$Stop
-  FinalR=SlopeConnect$Stop;FinalL=SlopeConnect$Start
-  if(nrow(SlopeU)==1){SlopeMatch=SlopeU[0,]
-    } else{
-      SlopeMatch=SlopeU[2:nrow(SlopeU),];
-    }
-    if(u==1){SlopeConnectFail=SlopeConnect[1,];SlopeConnectFail$UID=NA;SlopeConnectPass=SlopeConnect[1,];SlopeConnectPass$UID=NA;SlopeMatchFail=SlopeMatch[1,];SlopeMatchFail$UID=NA}
-    SlopeMatch=SlopeMatch[,!(names(SlopeMatch) %in% c('UID','TRANSECT'))];
-    for (m in 1:nrow(SlopeMatch)){
-      if(nrow(SlopeMatch)>0){
-      SlopeMatchL=SlopeMatch; names(SlopeMatchL)[names(SlopeMatchL) %in% St] <- sprintf('%sL%s',St,m)
-      SlopeMatchR=SlopeMatch; names(SlopeMatchR)[names(SlopeMatchR) %in% St] <- sprintf('%sR%s',St,m)
-      SlopeConnect=sqldf(sprintf('select * from SlopeConnect left join SlopeMatchL on ltrim(rtrim(upper(SlopeConnect.StartL%s)))=ltrim(rtrim(upper(SlopeMatchL.StopL%s))) left join SlopeMatchR on ltrim(rtrim(upper(SlopeConnect.StopR%s)))=ltrim(rtrim(upper(SlopeMatchR.StartR%s)))',m-1,m,m-1,m))
-      StartR=unlist(subset(SlopeConnect,select=sprintf('StartR%s',m)));StartL=unlist(subset(SlopeConnect,select=sprintf('StartL%s',m)));StopR=unlist(subset(SlopeConnect,select=sprintf('StopR%s',m)))
-      FinalR=ifelse(is.na(StopR),FinalR,StopR);FinalL=ifelse(is.na(StartL),FinalL,StartL)
-      SlopeMatch=subset(SlopeMatch,(Start %in% c(StartL,StartR))==FALSE)
-    }}
-  SlopeConnect$FinalR=FinalR;SlopeConnect$FinalL=FinalL
-  namesSlope=union(names(SlopeConnectFail),names(SlopeConnect))
-  if (nrow(SlopeMatch)>0){
-    SlopeConnectFail=rbind(ColCheck(SlopeConnectFail,namesSlope),ColCheck(SlopeConnect,namesSlope));
-    SlopeMatchTMP=SlopeMatch;SlopeMatchTMP$UID=SlopeUID$UID[u];SlopeMatchTMP$TRANSECT=SlopeUID$TRANSECT[u]
-    SlopeMatchFail=rbind(SlopeMatchFail,SlopeMatchTMP)
-  } else {SlopeConnectPass=rbind(ColCheck(SlopeConnectPass,namesSlope),ColCheck(SlopeConnect,namesSlope))}
-}
-SlopeConnectFail=subset(SlopeConnectFail,is.na(UID)==F);SlopeConnectPass=subset(SlopeConnectPass,is.na(UID)==F);SlopeMatchFail=subset(SlopeMatchFail,is.na(UID)==F)
-#!Warnings
-SlopeConnectPassEndFail=subset(SlopeConnectPass,((toupper(gsub(" ","",FinalL))=='A'& toupper(gsub(" ","",FinalR))=='K')|(toupper(gsub(" ","",FinalL))=='K'& toupper(gsub(" ","",FinalR))=='A'))==FALSE)
-SlopeConnectPassEndPass=sqldf('select s1.* from SlopeConnectPass as s1 left join SlopeConnectPassEndFail as s2 on s1.UID=s2.UID and s1.TRANSECT=s2.TRANSECT where s2.UID is null')
-SlopeConnectPassCNT=sqldf('select UID, Count(*) as CNT from SlopeConnectPassEndPass group by UID');SlopeConnectPass2Pass=subset(SlopeConnectPassCNT,CNT>1);SlopeConnectPass2Fail=subset(SlopeConnectPassCNT,CNT<2)
-print(sprintf('CONGRATULATIONS! %s sites with 2 successful Slope Passes!',nrow(SlopeConnectPass2Pass)))
-if(nrow(SlopeConnectPassEndFail)>0){print('WARNING: Some slope passes do not start at A or end at K. Summary data at in SlopeConnectPassEndFail. Examine raw data in detail.');View(subset(SlopeConnectPassEndFail,select=c('UID','TRANSECT','FinalL','FinalR')))}
-if(nrow(SlopeConnectPass2Fail)>0){print('WARNING: Some sites have only one connected Slope Pass. This may be because the data has already been cleaned to remove the 2nd pass if within 10%.');print(SlopeConnectPass2Fail)}
-if(nrow(SlopeConnectFail)>0){print('WARNING: Some slope passes had gaps and could not be connected for the entire reach. Summary data in SlopeConnectFail and SlopeMatchFail. Examine raw data in detail.');View(subset(SlopeConnectFail,select=c('UID','TRANSECT','FinalL','FinalR'))); View(SlopeMatchFail)}
-if(nrow(SlopeUIDmulti)>0){print('WARNING: Duplicate transects within same slope pass. Examine raw data in detail.');print(SlopeUIDmulti)}
-
-
-SlopeSlope=tblRetrieve(Parameters=c('SLOPE','PROP','METHOD','SLOPE_UNITS','ENDTRAN'),Years=c('2014','2015','2016'))
-SlopeSlope=subset(SlopeSlope,substr(SAMPLE_TYPE,1,5) =='SLOPE')
-####---SLOPE METHOD CHECK---##
-SlopeDiffMethod=subset(SlopeSlope,PARAMETER %in% c('PROP','METHOD','SLOPE_UNITS') & (RESULT %in% c('100','TR','CM'))==F)
-if(nrow(SlopeDiffMethod)>0){print('WARNING: Slopes with non-standard methods. Expected methods are PROP=100, Method=TR (transit) and Units=CM (centimeters)');View(SlopeDiffMethod)}
-####---SLOPE 10% CHECK---##
-Slope2=subset(SlopeSlope,UID %in% SlopeConnectPass2Pass$UID & PARAMETER=='SLOPE');Slope2$RESULT=as.numeric(Slope2$RESULT)
-Slope2sum=sqldf('select UID,TRANSECT, SUM(RESULT) as SlopeSum from Slope2 group by UID, TRANSECT')
-Slope2sum=cast(Slope2sum,'UID~TRANSECT',value='SlopeSum')
-SlopePass1=abs(Slope2sum[2]);SlopePass2=abs(Slope2sum[3]);
-Slope2sum$TenPCT=ifelse((SlopePass2>(SlopePass1+(SlopePass1*0.1))) | (SlopePass2<(SlopePass1-(SlopePass1*0.1))),'FAIL10%','PASS10%')#! app version is more iterative to check all passes -> could either apply here OR have app flag the slope that passes
-Slope2pass=subset(Slope2sum,TenPCT=='PASS10%' & is.na(Slope2sum[4]));Slope2fail=subset(Slope2sum,TenPCT=='FAIL10%' | is.na(Slope2sum[4])==F)
-if(nrow(Slope2fail)>0){print('WARNING: Pass 1 and 2 were not within 10%% OR if within 10% additional passes were present. Reconcile manually.');View(Slope2fail);View(subset(Slope2,UID %in% Slope2fail$UID ))}#print raw and summmed data for failed
-SlopeManuallyApproveTran1=c('21013264668376829952','5280846501466459068066440','933116886431965036742642','313491917404832989706088','57724867494140169944648','548616094584309022720','6057255640464259809280','21766046479553159758484','30503742404793951322602')
-if(nrow(Slope2pass)>0){print(sprintf('CONGRATULATIONS! Pass 1 met 10%% match requirements for %s sites. Inactivate Pass 2 in WRSAdb (csv exported).',nrow(Slope2pass)));write.csv(subset(SlopeSlope,TRANSECT>1 & UID %in% c(Slope2pass$UID,SlopeManuallyApproveTran1)),'SlopesToInactivate.csv')}#export 2nd passes to inactivate (eventually connect to UpdateDB.R once screened)
-#change externally: 
-#keep Tran2 active, Tran 3 inactive: #subset(SlopeSlope,UID %in% c('81353742941924589578','719428245490921504768','716024640500735016960') & TRANSECT!=2)
-#inactivate tran 1: 716024640500735016960 # reason: ignore this pass #use above subset
-#keep Tran3, omit all previous #subset(SlopeSlope,UID %in% c('863868431598454964244') & TRANSECT!=3)
-#keep Tran1, Point k (not a)  #subset(SlopeSlope,UID %in% c('37519940409184604912244', '47271381432878896252680') & (TRANSECT!=1|POINT=='a'))
-#keep Tran1, Point a (not k)  #subset(SlopeSlope,UID %in% c('8692216624269710244040620') & (TRANSECT!=1|POINT=='k'))
-#makes no sense and no comments to clarify 87601876754740660818804248 #View(cast(subset(SlopeSlope,UID=='87601876754740660818804248'),'UID+TRANSECT+POINT~PARAMETER',value='RESULT'))
 
 ############################################################################################################################
 #####Additional QC Checks
@@ -641,6 +562,138 @@ rawwhPVT=addKEYS(merge(bnkPVT,bnkPVTIND,by=c('UID','TRANSECT'),all=T) ,c('SITE_I
 undercut_checks=subset(rawwhPVT,UNDERCUT_LF.x>1|UNDERCUT_RT.x>1)
 write.csv(undercut_checks,'undercut_checks.csv')#many units issues
 
+##########################################################################################################################
+################## Old checks ############################################################################################
+##########################################################################################################################
+
+##legal value checks
+#low-high pairs
+LowHigh=c("MIN,MAX","QLOWI,QHIGHI","QLOWR,QHIGHR");#original FM string: "QLOWI,QHIGHI¶QLOWR,QHIGHR¶MIN,MAX"
+UnionTBLstat=UnionTBL
+#random quirks to ignore in legal checks
+UnionTBLstat=subset(UnionTBLstat,(PARAMETER=='SIZE_CLS' & is.na(as.numeric(RESULT)))==FALSE)#remove text Size_CLS  from 2013 (eventually will not be needed)
+UnionTBLstat=subset(UnionTBLstat,(PARAMETER=='SIZE_CLS' & RESULT=='0')==FALSE)#remove wood/other SIZE_CLS particles so don't fail the check
+#loop over pairs
+for (p in 1:length(LowHigh)){
+  StatPair=strsplit(LowHigh[p],",")
+  StatLow=StatPair[[1]][1]
+  StatHigh=StatPair[[1]][2]
+  StatValues="Select Sample_Type, Parameter, Stat, Result from tblMetadataRange where ACTIVE='TRUE' and STAT='%s' and Protocol='WRSA14'"#! protocol determination should be dynamic!! currently there are only values for WRSA14
+  Low=sqlQuery(wrsa1314,sprintf(StatValues,StatLow))
+  High=sqlQuery(wrsa1314,sprintf(StatValues,StatHigh))
+  LowHighJoin=sqldf("select * from UnionTBLstat 
+                    join (select Sample_Type as ST, Parameter as PM, Stat as LowStat,Result as LowResult from Low) L on UnionTBLstat.Sample_Type=L.ST and UnionTBLstat.Parameter=L.PM
+                    join (select Sample_Type as ST, Parameter as PM, Stat as HighStat,Result as HighResult from High) H on UnionTBLstat.Sample_Type=H.ST and UnionTBLstat.Parameter=H.PM
+                    ")
+  LowHighFail=sqldf("select UID,Transect, Point, IND, Sample_Type,Parameter, 
+                    Result,LowResult,HighResult,LowStat,HighStat
+                    from LowHighJoin
+                    where Result<LowResult or Result>HighResult")
+  if(p==1){LowHighFailOUT=LowHighFail} else{LowHighFailOUT=rbind(LowHighFailOUT,LowHighFail)}
+}
+LowHighFailOUT=addKEYS(LowHighFailOUT,c('SITE_ID','DATE_COL'))#JC added to aid in QC process. However, it has duplicate siteid and date columns at the momment, so not very pretty at the moment
+write.csv(LowHighFailOUT,'LegalChecks.csv')
+
+####################################################################################################################
+#slope checks
+#!compare to GIS
+###---Connected Slope passes with no gaps---###
+SlopeTran1=tblRetrieve(Parameters=c('ENDTRAN'),Years=c('2014','2015','2016'))#WRSA protocol
+SlopeTran2=tblRetrieve(Parameters=c('SLOPE'),Years=c('2013'))#NRSA protocol
+SlopeTran2$PARAMETER='ENDTRAN'#could choose to add this in database
+SlopeTran2$PointTMP=SlopeTran2$POINT
+SlopeTran2$POINT=SlopeTran2$TRANSECT
+SlopeTran2$TRANSECT=SlopeTran2$PointTMP;SlopeTran2=SlopeTran2[,!(names(SlopeTran2) %in% c('PointTMP'))]
+tran=c('A','B','C','D','E','F','G','H','I','J','K')
+for (t in 1:nrow(SlopeTran2)){
+  SlopeTran2$RESULT[t]=tran[1+grep(SlopeTran2$POINT[t],tran)]#could choose to add this in database
+}
+SlopeTran=rbind(SlopeTran1,SlopeTran2)
+SlopeTran$Start=SlopeTran$POINT;SlopeTran$Stop=SlopeTran$RESULT;SlopeTran=SlopeTran[,!(names(SlopeTran) %in% c('POINT','RESULT'))]
+SlopeTran=SlopeTran[,!(names(SlopeTran) %in% c('SAMPLE_TYPE','PARAMETER','IND','ACTIVE','FLAG','OPERATION','INSERTION','DEPRECATION','REASON'))]#!not necessary, just easier to see when clean
+NotTran=subset(SlopeTran, nchar(Start)>1|nchar(Stop)>1)
+if(nrow(NotTran)>0){print('WARNING: some transects are not single letter transect names. Review and correct'); View(NotTran)}
+St=c('Start','Stop')
+SlopeUID=unique(subset(SlopeTran,select=c(UID,TRANSECT)));SlopeUIDmulti=SlopeUID[0,]
+for (u in 1:nrow(SlopeUID)){
+  SlopeU=subset(SlopeTran,UID==SlopeUID$UID[u] & TRANSECT==SlopeUID$TRANSECT[u]);Urow=nrow(SlopeU);SlopeU=unique(SlopeU);if(Urow!=nrow(SlopeU)){SlopeUIDmulti=rbind(SlopeUIDmulti,unique(subset(SlopeU,select=c(UID,TRANSECT))))}
+  SlopeConnect=SlopeU[1,];SlopeConnect$StartL0=SlopeConnect$Start;SlopeConnect$StartR0=SlopeConnect$Start;SlopeConnect$StopL0=SlopeConnect$Stop;SlopeConnect$StopR0=SlopeConnect$Stop
+  FinalR=SlopeConnect$Stop;FinalL=SlopeConnect$Start
+  if(nrow(SlopeU)==1){SlopeMatch=SlopeU[0,]
+  } else{
+    SlopeMatch=SlopeU[2:nrow(SlopeU),];
+  }
+  if(u==1){SlopeConnectFail=SlopeConnect[1,];SlopeConnectFail$UID=NA;SlopeConnectPass=SlopeConnect[1,];SlopeConnectPass$UID=NA;SlopeMatchFail=SlopeMatch[1,];SlopeMatchFail$UID=NA}
+  SlopeMatch=SlopeMatch[,!(names(SlopeMatch) %in% c('UID','TRANSECT'))];
+  for (m in 1:nrow(SlopeMatch)){
+    if(nrow(SlopeMatch)>0){
+      SlopeMatchL=SlopeMatch; names(SlopeMatchL)[names(SlopeMatchL) %in% St] <- sprintf('%sL%s',St,m)
+      SlopeMatchR=SlopeMatch; names(SlopeMatchR)[names(SlopeMatchR) %in% St] <- sprintf('%sR%s',St,m)
+      SlopeConnect=sqldf(sprintf('select * from SlopeConnect left join SlopeMatchL on ltrim(rtrim(upper(SlopeConnect.StartL%s)))=ltrim(rtrim(upper(SlopeMatchL.StopL%s))) left join SlopeMatchR on ltrim(rtrim(upper(SlopeConnect.StopR%s)))=ltrim(rtrim(upper(SlopeMatchR.StartR%s)))',m-1,m,m-1,m))
+      StartR=unlist(subset(SlopeConnect,select=sprintf('StartR%s',m)));StartL=unlist(subset(SlopeConnect,select=sprintf('StartL%s',m)));StopR=unlist(subset(SlopeConnect,select=sprintf('StopR%s',m)))
+      FinalR=ifelse(is.na(StopR),FinalR,StopR);FinalL=ifelse(is.na(StartL),FinalL,StartL)
+      SlopeMatch=subset(SlopeMatch,(Start %in% c(StartL,StartR))==FALSE)
+    }}
+  SlopeConnect$FinalR=FinalR;SlopeConnect$FinalL=FinalL
+  namesSlope=union(names(SlopeConnectFail),names(SlopeConnect))
+  if (nrow(SlopeMatch)>0){
+    SlopeConnectFail=rbind(ColCheck(SlopeConnectFail,namesSlope),ColCheck(SlopeConnect,namesSlope));
+    SlopeMatchTMP=SlopeMatch;SlopeMatchTMP$UID=SlopeUID$UID[u];SlopeMatchTMP$TRANSECT=SlopeUID$TRANSECT[u]
+    SlopeMatchFail=rbind(SlopeMatchFail,SlopeMatchTMP)
+  } else {SlopeConnectPass=rbind(ColCheck(SlopeConnectPass,namesSlope),ColCheck(SlopeConnect,namesSlope))}
+}
+SlopeConnectFail=subset(SlopeConnectFail,is.na(UID)==F);SlopeConnectPass=subset(SlopeConnectPass,is.na(UID)==F);SlopeMatchFail=subset(SlopeMatchFail,is.na(UID)==F)
+#!Warnings
+SlopeConnectPassEndFail=subset(SlopeConnectPass,((toupper(gsub(" ","",FinalL))=='A'& toupper(gsub(" ","",FinalR))=='K')|(toupper(gsub(" ","",FinalL))=='K'& toupper(gsub(" ","",FinalR))=='A'))==FALSE)
+SlopeConnectPassEndPass=sqldf('select s1.* from SlopeConnectPass as s1 left join SlopeConnectPassEndFail as s2 on s1.UID=s2.UID and s1.TRANSECT=s2.TRANSECT where s2.UID is null')
+SlopeConnectPassCNT=sqldf('select UID, Count(*) as CNT from SlopeConnectPassEndPass group by UID');SlopeConnectPass2Pass=subset(SlopeConnectPassCNT,CNT>1);SlopeConnectPass2Fail=subset(SlopeConnectPassCNT,CNT<2)
+print(sprintf('CONGRATULATIONS! %s sites with 2 successful Slope Passes!',nrow(SlopeConnectPass2Pass)))
+if(nrow(SlopeConnectPassEndFail)>0){print('WARNING: Some slope passes do not start at A or end at K. Summary data at in SlopeConnectPassEndFail. Examine raw data in detail.');View(subset(SlopeConnectPassEndFail,select=c('UID','TRANSECT','FinalL','FinalR')))}
+if(nrow(SlopeConnectPass2Fail)>0){print('WARNING: Some sites have only one connected Slope Pass. This may be because the data has already been cleaned to remove the 2nd pass if within 10%.');print(SlopeConnectPass2Fail)}
+if(nrow(SlopeConnectFail)>0){print('WARNING: Some slope passes had gaps and could not be connected for the entire reach. Summary data in SlopeConnectFail and SlopeMatchFail. Examine raw data in detail.');View(subset(SlopeConnectFail,select=c('UID','TRANSECT','FinalL','FinalR'))); View(SlopeMatchFail)}
+if(nrow(SlopeUIDmulti)>0){print('WARNING: Duplicate transects within same slope pass. Examine raw data in detail.');print(SlopeUIDmulti)}
+
+
+SlopeSlope=tblRetrieve(Parameters=c('SLOPE','PROP','METHOD','SLOPE_UNITS','ENDTRAN'),Years=c('2014','2015','2016'))
+SlopeSlope=subset(SlopeSlope,substr(SAMPLE_TYPE,1,5) =='SLOPE')
+####---SLOPE METHOD CHECK---##
+SlopeDiffMethod=subset(SlopeSlope,PARAMETER %in% c('PROP','METHOD','SLOPE_UNITS') & (RESULT %in% c('100','TR','CM'))==F)
+if(nrow(SlopeDiffMethod)>0){print('WARNING: Slopes with non-standard methods. Expected methods are PROP=100, Method=TR (transit) and Units=CM (centimeters)');View(SlopeDiffMethod)}
+####---SLOPE 10% CHECK---##
+Slope2=subset(SlopeSlope,UID %in% SlopeConnectPass2Pass$UID & PARAMETER=='SLOPE');Slope2$RESULT=as.numeric(Slope2$RESULT)
+Slope2sum=sqldf('select UID,TRANSECT, SUM(RESULT) as SlopeSum from Slope2 group by UID, TRANSECT')
+Slope2sum=cast(Slope2sum,'UID~TRANSECT',value='SlopeSum')
+SlopePass1=abs(Slope2sum[2]);SlopePass2=abs(Slope2sum[3]);
+Slope2sum$TenPCT=ifelse((SlopePass2>(SlopePass1+(SlopePass1*0.1))) | (SlopePass2<(SlopePass1-(SlopePass1*0.1))),'FAIL10%','PASS10%')#! app version is more iterative to check all passes -> could either apply here OR have app flag the slope that passes
+Slope2pass=subset(Slope2sum,TenPCT=='PASS10%' & is.na(Slope2sum[4]));Slope2fail=subset(Slope2sum,TenPCT=='FAIL10%' | is.na(Slope2sum[4])==F)
+if(nrow(Slope2fail)>0){print('WARNING: Pass 1 and 2 were not within 10%% OR if within 10% additional passes were present. Reconcile manually.');View(Slope2fail);View(subset(Slope2,UID %in% Slope2fail$UID ))}#print raw and summmed data for failed
+SlopeManuallyApproveTran1=c('21013264668376829952','5280846501466459068066440','933116886431965036742642','313491917404832989706088','57724867494140169944648','548616094584309022720','6057255640464259809280','21766046479553159758484','30503742404793951322602')
+if(nrow(Slope2pass)>0){print(sprintf('CONGRATULATIONS! Pass 1 met 10%% match requirements for %s sites. Inactivate Pass 2 in WRSAdb (csv exported).',nrow(Slope2pass)));write.csv(subset(SlopeSlope,TRANSECT>1 & UID %in% c(Slope2pass$UID,SlopeManuallyApproveTran1)),'SlopesToInactivate.csv')}#export 2nd passes to inactivate (eventually connect to UpdateDB.R once screened)
+#change externally: 
+#keep Tran2 active, Tran 3 inactive: #subset(SlopeSlope,UID %in% c('81353742941924589578','719428245490921504768','716024640500735016960') & TRANSECT!=2)
+#inactivate tran 1: 716024640500735016960 # reason: ignore this pass #use above subset
+#keep Tran3, omit all previous #subset(SlopeSlope,UID %in% c('863868431598454964244') & TRANSECT!=3)
+#keep Tran1, Point k (not a)  #subset(SlopeSlope,UID %in% c('37519940409184604912244', '47271381432878896252680') & (TRANSECT!=1|POINT=='a'))
+#keep Tran1, Point a (not k)  #subset(SlopeSlope,UID %in% c('8692216624269710244040620') & (TRANSECT!=1|POINT=='k'))
+#makes no sense and no comments to clarify 87601876754740660818804248 #View(cast(subset(SlopeSlope,UID=='87601876754740660818804248'),'UID+TRANSECT+POINT~PARAMETER',value='RESULT'))
+
+##############################################################################################
+#only works right after running old csv import script and even then I don't think it was correct
+#custom missing data check for thalweg since flexible
+ThalwegCheck=sqldf("select Station.UID, StationDUPLICATES,StationCNT,DepthCNT from 
+                     (select distinct UID, cast((result*2)-1 as numeric) as StationCNT from importmaster where parameter='SUB_5_7') as station
+                   join
+                   (select UID,count(result) as StationDUPLICATES from (select distinct UID, result from importmaster where parameter='SUB_5_7') as stcnt group by UID) as stationcount
+                   on station.uid=stationcount.uid
+                   join 
+                   (select UID, max(cast(point as numeric)) as DepthCNT from importmaster where parameter='DEPTH' group by UID) as depth
+                   on station.uid=depth.uid
+                   where StationCNT > DepthCNT or stationDUPLICATES>1
+                   order by Station.UID")
+
+print("Warning! Number of Thalweg depths does not match the number expected from the widths/stations!")
+#conflicts happen (i.e. multiple sub_5_7 values per site) when crews forget their reach widths on the first few transects, missing data check added in FM to warn them
+print(ThalwegCheck)  
 ####################################################################################################
 #Jennifer's attempt to get indicator outliers and boxplots
 #QA boxplots
@@ -821,3 +874,4 @@ for (n in 1:length(ecoregions))
 {subset=indicators$ECOREGION[n,]}
 boxplot(indicators$PH_CHECK)}
 boxplot()
+
