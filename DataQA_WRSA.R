@@ -14,8 +14,8 @@ library(plyr)
 ######################################################################################
 ##First step-do you have all the sites you should?
 listsites=tblRetrieve(Parameters=c('SITE_ID','DATE_COL','LOC_NAME','LAT_DD','LON_DD','PROJECT','PROTOCOL','VALXSITE','LAT_DD_BR','LAT_DD_TR','LON_DD_BR','LON_DD_TR'),Projects=projects,Years=years,Protocols=protocols)
-listsites=setNames(cast(listsites,'UID~PARAMETER',value='RESULT'),c("UID","DATE_COL_CHECK","LAT_DD_CHECK","LAT_DD_BR_CHECK","LAT_DD_TR_CHECK","LOC_NAME_CHECK","LON_DD_CHECK","LON_DD_BR_CHECK","LON_DD_TR_CHECK","PROJECT_CHECK","PROTOCOL_CHECK","SITE_ID_CHECK",'VALXSITE_CHECK'))
-listsites=listsites[,c(1,12,6,2,3,7,10,13,11,5,9,4,8)]
+listsites=cast(listsites,'UID~PARAMETER',value='RESULT')
+
 
 #read in sites from final designations and do a left join to determine if any sampled sites are missing or if sample statuses need to be changed
 #if sites are missing check error logs on server or emails and check last modfied date
@@ -449,15 +449,18 @@ listsites=cast(listsites,'UID~PARAMETER',value='RESULT')
 
 #Check all Z_DISTANCEFROMX to verify within 250 or 500m or allowable distance to be slid
 SlideIssues=subset(listsites,Z_DISTANCEFROMX>0.25)
+View(SlideIssues)
 
 #Check for merged sites
 Merge=subset(listsites,REPEAT_VISIT!='N')
+View(Merge)
 #look at FieldTracking or ScoutTracking spreadsheets on the google drive and fill in as needed
 
 #Check that the straight-line distance between BR and TR does not exceed the total reach length (i.e. sinuosity <1 should never happen)
 listsites$straightline=acos(sin(as.numeric(listsites$LAT_DD_BR)*3.141593/180)*sin(as.numeric(listsites$LAT_DD_TR)*3.141593/180) + cos(as.numeric(listsites$LAT_DD_BR)*3.141593/180)*cos(as.numeric(listsites$LAT_DD_TR)*3.141593/180)*cos(as.numeric(listsites$LON_DD_TR)*3.141593/180-as.numeric(listsites$LON_DD_BR)*3.141593/180)) * 6371000
-listsites$SINUOSITY=listsites$TRCHLEN/listsites$straightline
-SinuosityCheck=subset(listsites,SINOUSITY<1)
+listsites$SINUOSITY=as.numeric(listsites$TRCHLEN)/as.numeric(listsites$straightline)
+SinuosityCheck=subset(listsites,SINUOSITY<1)
+View(SinuosityCheck)
 
 #After all GPS coordinates check out export coordinates for Ryan Lokteff or GIS tech to compute WestWide bug OE model and EC,TN,TP models
 write.csv(listsites,'postseason_site_coordinates.csv')
@@ -465,9 +468,9 @@ write.csv(listsites,'postseason_site_coordinates.csv')
 #get other useful information associated with sites
 #eventually read in design table from SQL but for now the table should be read in from the path below to compare original coordinates with those that were collected
 designs=read.csv('\\\\share1.bluezone.usu.edu\\miller\\buglab\\Research Projects\\AIM\\AIM_DataManagement\\ProjectMngtSystem\\design_table2.csv')
+postseason=join(listsites,designs, by="SITE_ID", type="left")
 #get ecoregional and stream size info for context for values
 designmetadata=read.csv('\\\\share1.bluezone.usu.edu\\miller\\buglab\\Research Projects\\AIM\\MasterSample\\MasterSampleDraws\\Aquatic\\LoticMasterSample\\Attributed\\LoticMasterSampleAttributedPtsWithHybridEcoregions.csv')
-postseason=join(listsites,designs, by="SITE_ID", type="left")
 postseasonmetadata=join(postseason,designmetadata, by="MS_ID", type="left")
 #eventually need to edit the read in csv above to reflect the sampled coordinates for future sample draws at the end of the season
 
@@ -479,23 +482,23 @@ Bugs=tblRetrieve(Parameters=c('JAR_NO','ACTUAL_DATE','AREA_SAMP','TRAN_NUM','SAM
 Bugspvt=addKEYS(cast(Bugs,'UID~SAMPLE_TYPE+PARAMETER',value='RESULT'),c('SITE_ID','DATE_COL'))
 
 #check surber net and mini surber net areas because they were wrong in the app at the begining of 2016 field season
-AreaCheck1=subset(Bugspvt,(AREA_SAMP!=0.093 & SAMPLER=='SU'))
-AreaCheck2=subset(Bugspvt,(AREA_SAMP!=0.0413 & SAMPLER=='MI'))
-AreaCheck3=subset(Bugspvt,(AREA_SAMP!=0.093 & SAMPLER=='KC'))
+AreaCheck1=subset(Bugspvt,(as.numeric(BERW_AREA_SAMP)!=0.093 & BERW_SAMPLER=='SU'))
+AreaCheck2=subset(Bugspvt,(as.numeric(BERW_AREA_SAMP)!=0.0413 & BERW_SAMPLER=='MI'))
+AreaCheck3=subset(Bugspvt,(as.numeric(BERW_AREA_SAMP)!=0.093 & BERW_SAMPLER=='KC'))
 
 #check to make sure 8 or 11 TRAN_NUM at all sites
-SamplingCheck1=subset(Bugspvt,(TRAN_NUM<8 & BUG_METHOD=='Targeted Riffle')
-SamplingCheck2=subset(Bugspvt,(TRAN_NUM<11 & BUG_METHOD=='Reachwide')
+SamplingCheck1=subset(Bugspvt,(BERW_TRAN_NUM<8 & BERW_BUG_METHOD=='Targeted Riffle'))
+SamplingCheck2=subset(Bugspvt,(BERW_TRAN_NUM<11 & BERW_BUG_METHOD=='Reachwide'))
 
 #get data ready to submit via http://www.usu.edu/buglab/SampleProcessing/SampleSubmission/
-SubMetadata=c('SITE_ID', 'COUNTY','GNIS_Name','LAT_DD','LON_DD')
+SubMetadata=c('UID','SITE_ID', 'COUNTY','GNIS_Name','LAT_DD','LON_DD')
 Metadata=postseasonmetadata[SubMetadata]
-Bugspvtsub=c('JAR_NO','ACTUAL_DATE','AREA_SAMP','SAMPLER','BUG_METHOD')
-Bugspvt2=Bugpvt[Bugspvtsub]
+Bugspvtsub=c('SITE_ID','BERW_JAR_NO','BERW_ACTUAL_DATE','BERW_AREA','BERW_SAMPLER','BERW_BUG_METHOD')
+Bugspvt2=Bugspvt[Bugspvtsub]
 BugsSubmit=join(Bugspvt2,Metadata, by="SITE_ID")
-BugsSubmit$SAMPLER=ifelse(BugsSubmit$SAMPLER=='SU'|BugsSubmit$SAMPLER=='MI',"Surber net",ifelse(BugsSubmit$SAMPLER=='KC',"Kick Net",BugsSubmit$SAMPLER))
-BugsSubmit=BugsSubmit[,c()]#fill in desired columns
-
+BugsSubmit$BERW_SAMPLER=ifelse(BugsSubmit$BERW_SAMPLER=='SU'|BugsSubmit$BERW_SAMPLER=='MI',"Surber net",ifelse(BugsSubmit$BERW_SAMPLER=='KC',"Kick net",BugsSubmit$BERW_SAMPLER))
+BugsSubmit=BugsSubmit[,c(1,2,9,10,11,3,5,6,7,8)]#fill in desired columns
+write.csv(BugsSubmit,'BugsSubmit.csv')
                       
                       
 ######## WQ checks ########
@@ -504,15 +507,14 @@ WQ2=tblRetrieve(Parameters=c('CONDUCTIVITY','CORRECTED','TEMPERATURE'), Comments
 WQ1=cast(WQ2,'UID~PARAMETER',value='RESULT')
 WQind=cast(WQ2,'UID~PARAMETER',value='IND')
 WQ3=addKEYS(merge(WQ1,WQind,by=c('UID'),all=T) ,c('SITE_ID','DATE_COL','CREW_LEADER'))
-WQ3.sub=subset(WQ3,CORRECTED.x!='Y')
+WQ3.sub=subset(WQ3,CORRECTED.x!='Yes')
 #write.csv(WQ3.sub,'not_temp_corrected_conduct.csv')
 
 #Chem check the hours prior to freezing
 WQtbl=tblRetrieve(Parameters=c('NTL','PTL','TN_PRED','TP_PRED','TIME_UNFROZEN'),Projects=projects,Years=years,Protocols=protocols)
-WQpvt$TN_PRED=round(WQpvt$TN_PRED,digits=3)
-WQpvt$TP_PRED=round(WQpvt$TP_PRED,digits=1)
-WQpvt$OE_TN=round(WQpvt$NTL-WQpvt$TN_PRED,digits=3)
-WQpvt$OE_TP=round(WQpvt$PTL-WQpvt$TP_PRED,digits=1)
+WQpvt=addKEYS(cast(WQtbl,'UID~PARAMETER',value='RESULT'),c('SITE_ID','CREW_LEADER'))
+WQpvt$OE_TN=WQpvt$NTL-WQpvt$TN_PRED
+WQpvt$OE_TP=WQpvt$PTL-WQpvt$TP_PRED
 #graph time_unfrozen with raw values and OE values
 plot(WQpvt$TIME_UNFROZEN,WQvt$OE_TN)
 plot(WQpvt$TIME_UNFROZEN,WQvt$OE_TP) 
@@ -526,14 +528,16 @@ ConditionCheck2=aggregate(TIME_UNFROZEN~OE_TPrtg, data=WQpvt, FUN=mean)
 #view any typical values violations for Conductivity and PH
 Conduct=tblRetrieve(Comments='Y',Parameters=c('CONDUCTIVITY'),Projects=projects,Years=years,Protocols=protocols)
 ConductQuestions=subset(Conduct,RESULT<100 | RESULT>600)# review comments for any sites flagged here 
+postseasonmetadata_ecoregion=postseasonmetadata[,c('UID','ECO_10')]
+ConductQuestions=join(ConductQuestions,postseasonmetadata_ecoregion, by="UID",type="left")
 PH=tblRetrieve(Comments='Y',Parameters=c('PH'),Projects=projects,Years=years,Protocols=protocols)
 PHQuestions=subset(PH,RESULT<6 | RESULT>9)# review comments for any sites flagged here
+PHQuestions=join(PHQuestions,postseasonmetadata_ecoregion, by="UID",type="left")
 
 #compare any questionable values to ecoregional EPA data
-#can join Conduct to postseasonmetadata by SITE_ID to get the ecoregion
 #should automate this process so that only values that fall outside this range get flagged ---need to join the ecoregion data to the design table; can't remember where all that site metadata from the master sample ended up
   #could pull code from condition determinations to do that but this code will be pretty complex....for now just leave as a manual task
-read.csv('Z:\\buglab\\Research Projects\\BLM_WRSA_Stream_Surveys\\Results and Reports\\EPA_Data\\EPA_WQ_typical_values.csv')
+read.csv('\\\\share1.bluezone.usu.edu\\miller\\buglab\\Research Projects\\BLM_WRSA_Stream_Surveys\\Results and Reports\\EPA_Data\\EPA_WQ_typical_values.csv')
 
 #instrument check
 #pull all data for instrument if values still not resolved after looking at ecoregional values # not as pertinent this year and in the future because the same instrument will be used for any given proejct and confounded with ecoregional differences
@@ -545,8 +549,8 @@ WQ1=subset(WQ1,CAL_INST_ID=='')# fill in data of interest here
 ####### incision and bank height ############
 #cross checks implemented in app so just check extreme values, outliers (above), and for unit issues
 heights=addKEYS(tblRetrieve(Parameters=c('INCISED','BANKHT'),Years=years, Projects=projects),c('SITE_ID','DATE_COL','CREW_LEADER'))
-HeightCheck1=heights(RESULT>1.5)
-HeightCheck1=heights(RESULT<0.1)
+HeightCheck1=subset(heights,RESULT>1.5|RESULT<0.1)
+View(HeightCheck1)
 
                       
                       
@@ -556,8 +560,8 @@ Depths=tblRetrieve(Parameters=c('DEPTH'),Years=years, Projects=projects)
 Depths=subset(Depths,RESULT==0 & POINT==1)# query wetted width for these transects and UIDs in SQL and check if it is 0 and TRANDRY='Y' 
 #do the opposite query
 Widths=tblRetrieve(Parameters=c('WETWID','BANKWID','TRANDRY'),Years=years, Projects=projects)                      
-Widths=subset(Widths,RESULT==0)# query the corresponding thalweg depths in SQL if present and the VALXSITE to make sure it is INTWADE                      
 pvtWidths=cast(Widths,'UID+TRANSECT~PARAMETER',value='RESULT')
+Widths=subset(Widths,RESULT==0)# query the corresponding thalweg depths in SQL if present and the VALXSITE to make sure it is INTWADE                      
 #dry transects
 DryCheck=subset(pvtWidths,(WETWID!=0 & TRANDRY=='Yes')|(WETWID==0 & TRANDRY=='No')|(WETWID==0 & is.na(TRANDRY)=='TRUE'))#likely needs tweaking                      
 
@@ -570,19 +574,23 @@ Sed2014=tblRetrieve(Parameters=c('SIZE_NUM','LOC'),Projects=projects,Years=years
 A_Sed2014=cast(Sed2014,'UID+TRANSECT+POINT~PARAMETER', value='RESULT')
 
 #check "other" categories
-OtherCheck=subset(A_Sed2014,SIZE_NUM=='SWD'|SIZE_NUM=='LWD'|SIZE_NUM=='OM'|SIZE_NUM=='RM')
-OtherCount=aggregate(SIZE_NUM~UID, data=OtherCheck, FUN=length)# not sure this is going to work...like need to tweak
+OtherCheck=subset(A_Sed2014,SIZE_NUM=='0')
+#OtherCheck=subset(A_Sed2014,SIZE_NUM=='SWD'|SIZE_NUM=='LWD'|SIZE_NUM=='OM'|SIZE_NUM=='RM')
+OtherCount=setNames(aggregate(SIZE_NUM~UID, data=OtherCheck, FUN=length),c("UID","CountOther"))# if greater than 10% of pebbles i.e. 21 then look at categories
                       
 #check sample sizes and that bed and bank protocols were followed                       
 C_Sed2014=A_Sed2014[!A_Sed2014$LOC== "BANK", ]
 Nbed_Sed2014pvt=aggregate(.~UID, data=C_Sed2014, length)#number of bed pebbles
-Nall_Sed2014pvt=setNames(cast(Sed2014,'UID~PARAMETER',value='RESULT',fun=length),c("UID","nLOC","nallPCT_SAFN_CHECK"))#number of all collected pebbles
-                      
-                      
+Nbed_Sed2014pvt=setNames(Nbed_Sed2014pvt[,c(1,5)],c("UID","nbed"))
+Nall_Sed2014pvt=setNames(cast(Sed2014,'UID~PARAMETER',value='RESULT',fun=length),c("UID","nLOC","nall"))#number of all collected pebbles
+Nall_Sed2014pvt=Nall_Sed2014pvt[,c(1,3)]
+sample_size=join(Nbed_Sed2014pvt,Nall_Sed2014pvt, by="UID")                      
+view(sample_size)
+
 ###### Angle  ########                      
 #outlier checks (above) and check for missing SLANT to check if angle was being calculated in app properly
 Angle=tblRetrieve(Parameters=c('ANGLE180','SLANT'),Years=years, Projects=projects)
-pvtAngle=addKEYS(cast(Angle,'UID+TRANSECT+POINT~PARAMETER',value='RESULT'), c('SITE_ID','DATE_COL','CREW_LEADER')                     
+pvtAngle=addKEYS(cast(Angle,'UID+TRANSECT+POINT~PARAMETER',value='RESULT'), c('SITE_ID','DATE_COL','CREW_LEADER'))                     
 AngleCheck=subset(pvtAngle, SLANT==NA )                      
 
 
@@ -630,8 +638,8 @@ riparian5pvtsub=subset(riparian5PVT,UNDERVEG=='N' & UNDNWDY>0 & UNDWDY>0)
 
 #Custom thalweg missing data because number of station is dynamic
 #run thalweg_completion_check SQL query currently under JC Projects folder locally but want to migrate to R or to a view in SQL
-tbl=tblRetrieve(Parameters=c('DEPTH'),Project='WRSA', Years='2014')
-tbl.2=tblRetrieve(Parameters=c('SUB_5_7'),Project='WRSA', Years='2014')
+tbl=tblRetrieve(Parameters=c('DEPTH'),Project=projects, Years=years,Protocols=protocols)
+tbl.2=tblRetrieve(Parameters=c('SUB_5_7'),Project=projects, Years=years,Protocols=protocols)
 tbl3=cast(tbl.2,'UID~PARAMETER',value='RESULT',mean)
 tbl.PVT=addKEYS(cast(tbl,'UID~PARAMETER',value='RESULT'),c('SITE_ID'))
 thalweg.missing=merge(tbl.PVT,tbl3, by='UID')
@@ -672,12 +680,12 @@ odd_ratio=subset(check,RESULT/(DEPTH)>50|RESULT/(DEPTH)<1)
                  
                  
 #########  slope   ################                    
-Slope=tblRetrieve(Parameters=c('AVGSLOPE','SLPRCHLEN','TRCHLEN','PARTIAL_RCHLEN','POOLRCHLEN','SLOPE_COLLECT','PCTGRADE'),Projects=projects, Years=years,Protocols=protocols)                 
+Slope=tblRetrieve(Parameters=c('AVGSLOPE','SLPRCHLEN','TRCHLEN','PARTIAL_RCHLEN','POOLRCHLEN','SLOPE_COLLECT','PCT_GRADE','VALXSITE'),Projects=projects, Years=years,Protocols=protocols)                 
 pvtSlope=addKEYS(cast(Slope,'UID~PARAMETER',value='RESULT'), c('SITE_ID','CREW_LEADER'))                
-SlopeCheck1=subset(pvtSlope,PCTGRADE>14|PCTGRADE<3)
-SlopeCheck2=subset(pvtSlope,SLOPE_COLLECT=='PC'|SLOPE_COLLECT=='NC')# needs tweaking
+SlopeCheck1=subset(pvtSlope,as.numeric(PCT_GRADE)>14|as.numeric(PCT_GRADE)<1)
+SlopeCheck2=subset(pvtSlope,SLOPE_COLLECT=='Partial'|SLOPE_COLLECT=='No Slope')
 Pass=tblRetrieve(Parameters=c('ENDTRAN'),Projects=projects, Years=years,Protocols=protocols)                 
-SlopeCheck=subset(TRANSECT,POINT=>4)# passes should not have been 4 or more and if so check which ones were averaged together
+SlopeCheck=subset(Pass,TRANSECT>=4)# passes should not have been 4 or more and if so check which ones were averaged together
 #check average of 3 sites is correct                 
   
                  
@@ -691,7 +699,7 @@ write.csv(pvtpools,'pvtpools.csv')#short and look for min and max and 0 data or 
 # flow and collected checks
 PoolCollect<-tblRetrieve(Parameters=c('POOL_COLLECT','VALXSITE'),Projects=projects,Comments='Y')
 pvtPoolCollect=addKEYS(cast(PoolCollect,'UID~PARAMETER',value='RESULT'),c('SITE_ID'))
-pvtPoolCollect=subset(pvtPoolCollect,VALXSITE==INTWADE|POOL_COLLECT=='NO_FLOW'|POOL_COLLECT=='NC')#needs tweaking
+pvtPoolCheck=subset(pvtPoolCollect,VALXSITE=='INTWADE'|POOL_COLLECT=='NO_FLOW'|POOL_COLLECT=='NC')#needs tweaking
                  
 #check sum of lengths not > than total reach length  
 pool_length<-tblRetrieve(Parameters=c('LENGTH'),Projects=projects,Comments='Y')
