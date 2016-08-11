@@ -70,6 +70,10 @@ RipGB=tblRetrieve(Parameters=c("BARE"),Projects=projects,Years=years,Protocols=p
 #RipAllpvt=cast(RipALL,'UID+TRANSECT+POINT~PARAMETER',value='RESULT')# check data structure to make sure no duplicates
 #unique(RipAllpvt$TRANSECT)
 
+#new Riparian
+RipBLM=tblRetrieve(Parameters=c('CANRIPW','UNRIPW','GCRIP','INVASW', 'NATIVW','INVASH','NATIVH','SEGRUSH'),Projects=projects,Years=years,Protocols=protocols)
+pvtRipBLM=cast(RipBLM,'UID+TRANSECT+POINT~PARAMETER',value='RESULT')
+
 #Getting data for aquamet check W1_HALL
 #Figure out the differences... Human influence sample type...
 Human_Influ=tblRetrieve(Parameters=c('BUILD','LOG','MINE','PARK','PAST','PAVE','PIPES','ROAD','ROW','TRASH','WALL'), Projects=projects,Years=years,Protocols=protocols)                       
@@ -92,6 +96,10 @@ BankStab=tblRetrieve(Parameters=c('STABLE','EROSION','COVER'), Projects=projects
 #BankStabpvt=cast(BankStab,'UID+TRANSECT+POINT~PARAMETER',value='RESULT')
 #unique(BankStab$POINT)
 #unique(BankStab$TRANSECT)
+
+BankStabCoverClass=tblRetrieve(Parameters=c('BNK_VEG','BNK_COBBLE','BNK_LWD','BNK_BEDROCK'),Projects=projects,Years=years,Protocols=protocols)
+pvtBankStabCoverClass=cast(BankStabCoverClass,'UID+TRANSECT+POINT~PARAMETER',value='RESULT')
+meanBankStabCoverClass=cast(BankStabCoverClass,'UID~PARAMETER',value='RESULT',fun=mean)#currently not working
 
 #Angle-PIBO method only
 Angle=tblRetrieve(Parameters=c('ANGLE180'),Projects=projects, Years=years,Protocols=protocols)
@@ -129,6 +137,20 @@ BankWid=tblRetrieve(Parameters=c('BANKWID'),Projects=projects, Years=years,Proto
 #WetWidpvt=cast(WetWid,'UID+TRANSECT+POINT~PARAMETER',value='RESULT')
 #WetWid2pvt=cast(WetWid2,'UID+TRANSECT~PARAMETER',value='RESULT')
 #BankWidpvt=cast(BankWid,'UID+TRANSECT~PARAMETER',value='RESULT')
+
+#Floodwidth
+FloodWidth=tblRetrieve(Parameters=c('FLOODWID'), Projects=projects, Years=years,Protocols=protocols)
+avgFloodWidth=cast(FloodWidth,'UID~PARAMETER',value='RESULT', fun=mean)
+
+#percent dry
+dry=tblRetrieve(Parameters=c('TRANDRY'),Projects=projects, Years=years,Protocols=protocols)
+pvtdry=cast(dry,'UID+TRANSECT~PARAMETER',value='RESULT')
+countdry=count(pvtdry,c("UID","TRANDRY"))
+countdry=cast()#
+
+#flow for thalweg
+flow=tblRetrieve(Parameters=c('FLOW'),Projects=projects, Years=years,Protocols=protocols)
+countflow=count(flow,c("UID","RESULT"))
 
 #METADATA
 listsites=tblRetrieve(Parameters=c('SITE_ID','DATE_COL','LOC_NAME','LAT_DD','LON_DD','PROJECT','PROTOCOL','VALXSITE','LAT_DD_BR','LAT_DD_TR','LON_DD_BR','LON_DD_TR'),Projects=projects,Years=years,Protocols=protocols)
@@ -269,6 +291,7 @@ BnkDensPvt$XCDENBK_CHECK=ifelse(BnkDensPvt$nXCDENBK_CHECK<11,NA,BnkDensPvt$XCDEN
 ###Then I subset the data so that missing values would not cause errors. 
 ###Then I pivoted by the max to chose the max transect value (If XA=5 and A=2 then the XA value would be chosen and the A value removed, note that it is no longer called XA so there would just be 2 A transects for a site with an A sidechannel)
 ### Then take the average at each site for bank height and incised height. Merge the data back together and then calculate LINCIS_H
+#note that mathematically it does not matter whether you take the mean bankfull height and subtract it from the mean incision height or if you take the paired bankfull height and incision height differences and then calculate a mean
 Incision$TRANSECT=mapvalues(Incision$TRANSECT, c("XA", "XB","XC","XD","XE","XF","XG","XH","XI","XJ","XK" ),c("A", "B","C","D","E","F","G","H","I","J","K"))
 INCISED=subset(Incision, PARAMETER=="INCISED")
 BANKHT=subset(Incision, PARAMETER=="BANKHT")
@@ -372,6 +395,7 @@ G_Sed2014=merge(F_Sed2014,Nbed, by="UID")
 
 # Combine the two datasets for PCT_SAFN together so that I don't have multiple files for the same thing
 H_Sed=rbind(pctsafn_2013,G_Sed2014)
+#PCT_SAFN_ALL=Nall_Sed2014pvtsub
 PCT_SAFN_ALL=join(H_Sed,Nall_Sed2014pvtsub,by="UID",type="left")
 PCT_SAFN_sub=subset(PCT_SAFN_ALL,nPCT_SAFN_CHECK<50)
 PCT_SAFN_ALL$PCT_SAFN_CHECK=ifelse(PCT_SAFN_ALL$nPCT_SAFN_CHECK<50,NA,PCT_SAFN_ALL$PCT_SAFN_CHECK)
@@ -653,7 +677,7 @@ QR1$QR1_CHECK=(QR1$QRveg1*QR1$QRVeg2*QR1$QRDIST1)^0.333
 ###########################################
 #Angle
 Angle$RESULT=ifelse(Angle$RESULT<45,45,Angle$RESULT)
-MeanAngle=setNames(round(cast(Angle,'UID~PARAMETER',value='RESULT',fun=mean),digits=0),c("UID","ANGLE180_CHECK"))                                             
+MeanAngle=setNames(cast(Angle,'UID~PARAMETER',value='RESULT',fun=mean),c("UID","ANGLE180_CHECK"))                                             
 #sample size
 nAngle=setNames(count(Angle,"UID"),c("UID","nANGLE180_CHECK"))# 2 banks* 11 transects=22
 MeanAngle=merge(nAngle,MeanAngle, by="UID")
@@ -667,7 +691,7 @@ Slope_Per$SlopePct=round(((Slope_Per$SLOPE/100)/(Slope_Per$SLPRCHLEN))*100,digit
 Slope_Per=setNames(Slope_Per,c("UID","SLOPE_CHECK","SLPRCHLEN_CHECK","SlopePct_CHECK"))
 
 #Thalweg                                                                                                                                                                    
-ThalwegMean=round(cast(thalweg,'UID~PARAMETER',value='RESULT',fun=mean),digits=1)
+ThalwegMean=cast(thalweg,'UID~PARAMETER',value='RESULT',fun=mean)
 ThalwegMean=setNames(ThalwegMean, c("UID","XDEPTH_CHECK"))
 ThalwegSD=cast(thalweg,'UID~PARAMETER',value='RESULT',fun=sd)
 ThalwegSD=setNames(ThalwegSD,c("UID","SDDEPTH"))
@@ -763,7 +787,7 @@ WetWid=subset(WetWid,POINT!=0)#remove duplicate wetted widths
 WetWid=setNames(cast(WetWid,'UID+TRANSECT+POINT~PARAMETER', value='RESULT'), list ("UID","TRANSECT","POINT","WETWID"))
 WetWidSub=WetWid[,c(1,2,4)]# delete the point column
 WetWidAll=rbind(WetWidSub,WetWid2)#merge main transects and intermediate transects together
-WetWidFinal=setNames(aggregate(WETWID~UID,data=WetWidAll,FUN=mean),list("UID","XWIDTH_CHECK"))#average across all transects
+WetWidFinal=setNames(aggregate(as.numeric(WETWID)~UID,data=WetWidAll,FUN=mean),list("UID","XWIDTH_CHECK"))#average across all transects
 nWetWid=setNames(count(WetWidAll,"UID"),c("UID","nXWIDTH_CHECK"))#21 transects
 WetWidFinal=merge(nWetWid,WetWidFinal)
 WetWidFinal$XWIDTH_CHECK=ifelse(WetWidFinal$nXWIDTH_CHECK<10,NA,WetWidFinal$XWIDTH_CHECK)#9 ranging from 4-11 not an indicator and just for context so lean towards leaving all measurements
@@ -777,7 +801,7 @@ WetWidFinal$XWIDTH_CHECK=ifelse(WetWidFinal$nXWIDTH_CHECK<10,NA,WetWidFinal$XWID
 
 BankWid$TRANSECT=mapvalues(BankWid$TRANSECT, c("XA", "XB","XC","XD","XE","XF","XG","XH","XI","XJ","XK" ),c("A", "B","C","D","E","F","G","H","I","J","K"))#change all side channels to normal transects
 BankWidpvt=cast(BankWid,'UID+TRANSECT~PARAMETER', value='RESULT', fun=sum)#sum across side channels and main transects
-BankWidpvt=setNames(round(aggregate(BankWidpvt$BANKWID,list(UID=BankWidpvt$UID),mean),digits=2),c("UID","XBKF_W_CHECK"))#average all transects
+BankWidpvt=setNames(aggregate(BankWidpvt$BANKWID,list(UID=BankWidpvt$UID),mean),c("UID","XBKF_W_CHECK"))#average all transects
 nBankWid=setNames(count(BankWid,"UID"),c("UID","nXBKF_W_CHECK"))# should have 11 transects
 BankWidFinal=merge(nBankWid,BankWidpvt)
 BankWidFinal$XBXK_W_CHECK=ifelse(BankWidFinal$nXBKF_W_CHECK<5,NA,BankWidFinal$XBKF_W_CHECK)# one site with 4 leave in
@@ -792,12 +816,13 @@ BankWidFinal$XBXK_W_CHECK=ifelse(BankWidFinal$nXBKF_W_CHECK<5,NA,BankWidFinal$XB
 #To get all calculated values together... Although some tables still have the metrics included.
 #IndicatorCheckJoin=join_all(list(listsites,WQfinal,BnkErosional,BnkAll,fishpvt2,DensPvt,BnkDensPvt,XCMGW_new1,XCMG_new1,XGB_new1,IncBnk,BankWid,WetWid,XEMBED,PCT_SAFN_ALL,W1_HALL,QR1,MeanAngle,Slope_Per,Thalweg,Pools),by="UID")
 IndicatorCheckJoin=join_all(list(listsites,WQfinal,BnkErosional,BnkAll,fishpvt2,DensPvt,BnkDensPvt,XCMG_new1,IncBnk,BankWidFinal,WetWidFinal,XEMBED,PCT_SAFN_ALL,MeanAngle,Slope_Per,Thalweg,Pools,LWD),by="UID")
+IndicatorCheckJoin=join_all(list(listsites,BnkErosional,BnkAll,fishpvt2,DensPvt,BnkDensPvt,XCMG_new1,IncBnk,BankWidFinal,WetWidFinal,XEMBED,PCT_SAFN_ALL,MeanAngle,Slope_Per,Thalweg,LWD),by="UID")
 
 #To remove all of the metrics and only get the indicators subset by UID and all those columns ending in "CHECK". Hmm..not really sure what the $ is doing here, the code works without it, but all the examples I've looked at keep the $ so I kept it too... 
 IndicatorCheck=IndicatorCheckJoin[,c("UID",grep("CHECK$", colnames(IndicatorCheckJoin),value=TRUE))]
 #write.csv(IndicatorCheck,"C:\\Users\\Nicole\\Desktop\\IndicatorCheck2.csv")
 #Remove all other data files as they are no longer needed
 IndicatorCheck=subset(IndicatorCheck,PROTOCOL_CHECK=="BOAT14")
-write.csv(IndicatorCheck,"IndicatorCheck_29April2016.csv")
+write.csv(IndicatorCheck,"IndicatorCheck_9August2016.csv")
 rm(PHfinal,XGB_new,XGB_new1,BankStab,Banks,RipGB,EMBED,Human_Influ,W1_HALL,W1_HALL_NRSA,QR1,XEMBED,BnkDensPvt,BnkDensiom,densiom,RipXCMG,XCMG_new,XCMG_new1,RipWW,XCMGW_new,XCMGW_new1,IndicatorCheckJoin,fish,fishpvt2,
    MidDensiom,DensPvt,Incision,INCISED,BANKHT,Inc,Bnk,xIncht,xBnkht,IncBnk,Sediment,pctsafn,Sed2014,A_Sed2014,C_Sed2014,E_Sed2014,F_Sed2014,PCT_SAFN_ALL)

@@ -659,6 +659,11 @@ thalweg_depth_pvt<-cast(thalweg_depth,'UID+TRANSECT~POINT', value='RESULT')
 thalweg_depth_pvt_order<-thalweg_depth_pvt[with(thalweg_depth_pvt, order(1,29))]
 thaleg_depth_NA<-thalweg_depth_pvt [is.na(thalweg_depth_pvt$'1')==TRUE,c(1:2,4)]
 
+#check too deep variable for any depths that need trig 
+toodeep=tblRetrieve(Parameters=c('TOODEEP','DEPTH_ANGLE','DEPTH'),Projects=projects,Years=years, Protocols=protocols)
+pvttoodeep=cast(toodeep,'UID+TRANSECT+POINT~PARAMETER',value='RESULT')
+TooDeepCheck=subset(pvttoodeep,TOODEEP=='Yes')
+
 #thalweg depth/ width EPA check
 #wading sites
 depthcheck=tblRetrieve(Parameters=c('DEPTH'), Projects=projects, Years=years,Protocols=protocols)
@@ -685,10 +690,15 @@ pvtSlope=addKEYS(cast(Slope,'UID~PARAMETER',value='RESULT'), c('SITE_ID','CREW_L
 SlopeCheck1=subset(pvtSlope,as.numeric(PCT_GRADE)>14|as.numeric(PCT_GRADE)<1)
 SlopeCheck2=subset(pvtSlope,SLOPE_COLLECT=='Partial'|SLOPE_COLLECT=='No Slope')
 Pass=tblRetrieve(Parameters=c('ENDTRAN'),Projects=projects, Years=years,Protocols=protocols)                 
-SlopeCheck=subset(Pass,TRANSECT>=4)# passes should not have been 4 or more and if so check which ones were averaged together
-#check average of 3 sites is correct                 
-  
-                 
+SlopeCheck=subset(Pass,TRANSECT>2)# if more than 2 passes need to manually check which ones to average
+#avgslope does not get computed in the app if the passes are not within 10%.... for those passes manually average and flag as not within 10%?                
+# sites with pct_grade==0 are not within 10%
+NOT10PER=subset(pvtSlope,PCT_GRADE=='0')
+# for any sites that failed the within 10% check, see idividual passes below
+IndividualSlope=tblRetrieve(Parameters=c('SLOPE'),Projects=projects, Years=years,Protocols=protocols)
+pvtIndividualSlope=addKEYS(cast(IndividualSlope,'UID+TRANSECT~PARAMETER',value='RESULT', fun=sum),c('SITE_ID','CREW_LEADER'))#note Transect=Pass
+#still need to check a site with 3 passes to make sure Reid averaged slope properly
+
                  
 #########  pools   ################                                           
 #getting all pool data for a specfic set of sites---not collecting one of the parameters below anymore
