@@ -122,7 +122,7 @@ thalweg=subset(thalweg,SAMPLE_TYPE!='CROSSSECW')
 
 #Pools
 pool_length=tblRetrieve(Parameters=c('LENGTH'),Projects=projects, Years=years,Protocols=protocols)
-reach_length=tblRetrieve(Parameters=c('TRCHLEN'),Projects=projects, Years=years,Protocols=protocols)
+reach_length=tblRetrieve(Parameters=c('POOLRCHLEN'),Projects=projects, Years=years,Protocols=protocols)
 PoolDepth=tblRetrieve(Parameters=c('PTAILDEP','MAXDEPTH'), Projects=projects, Years=years,Protocols=protocols)
 
 #Sinuosity
@@ -163,7 +163,7 @@ LwdCatWet=unclass(sqlQuery(wrsa1314,"select SAMPLE_TYPE,PARAMETER from tblMetada
 LwdCatDry=unclass(sqlQuery(wrsa1314,"select SAMPLE_TYPE,PARAMETER from tblMetadata where Sample_TYPE like 'LWDW%' and PARAMETER like 'D%'"))$PARAMETER
 LwdWet=tblRetrieve(Parameters=LwdCatWet,Projects=projects,Years=years,Protocols=protocols)
 LwdDry=tblRetrieve(Parameters=LwdCatDry,Projects=projects,Years=years,Protocols=protocols)
-TRCHLEN=tblRetrieve(Parameters=c('TRCHLEN','INCREMENT'),Projects=projects,Years=years,Protocols=protocols)
+TRCHLEN=tblRetrieve(Parameters=c('TRCHLEN','INCREMENT'),Projects=projects,Years=years,Protocols=protocols)#not using TRCHLEN
 TRCHLEN=cast(TRCHLEN,'UID~PARAMETER',value='RESULT')
 #TRCHLEN is not the same as the reachlen used in Aquamet
 #The reachlen is calc from mulitplying INCREMENT by the thalweg stations
@@ -367,6 +367,8 @@ A_Sed2014=cast(Sed2014,'UID+TRANSECT+POINT~PARAMETER', value='RESULT')
 #All pebbles 
 # E_Sed2014=A_Sed2014[complete.cases(A_Sed2014[,c("LOC","SIZE_NUM")]),]
 # E_Sed2014$SAFN_True=ifelse(E_Sed2014$SIZE_NUM == "1", 1, 0)
+#E_Sed2014$SAFN_True=ifelse(E_Sed2014$SIZE_NUM == "1"| E_Sed2014$SIZE_NUM =="2", 1, 0)#changed to include 2 for 2016 data because we switched back to seperating out sands and fines
+#E_Sed2014$SAFN_True=ifelse(as.numeric(E_Sed2014$SIZE_NUM)<=6 & as.numeric(E_Sed2014$SIZE_NUM)!=0, 1, 0)#changed to include 2 for 2016 data because we switched back to seperating out sands and fines
 # F_Sed2014=setNames(aggregate(E_Sed2014$SAFN_True,list(UID=E_Sed2014$UID),mean), c("UID","PCT_SAFN_CHECK"))########this still counts particles with 0s in the particle count and as not fines; is this what we want to do?
 # F_Sed2014$PCT_SAFN_CHECK=round(F_Sed2014$PCT_SAFN_CHECK*100,digits=1)
 
@@ -376,7 +378,8 @@ A_Sed2014=cast(Sed2014,'UID+TRANSECT+POINT~PARAMETER', value='RESULT')
 C_Sed2014=A_Sed2014[!A_Sed2014$LOC== "BANK", ]
 #Can't use na.omit because it omits all records with an NA in ANY field. I only want to remove NAs in the LOC and the SIZE_NUM (sediment result) field. 
 E_Sed2014=C_Sed2014[complete.cases(C_Sed2014[,c("LOC","SIZE_NUM")]),]
-E_Sed2014$SAFN_True=ifelse(E_Sed2014$SIZE_NUM == "1", 1, 0)
+E_Sed2014$SAFN_True=ifelse(E_Sed2014$SIZE_NUM == "1"| E_Sed2014$SIZE_NUM =="2", 1, 0)#changed to include 2 for 2016 data because we switched back to seperating out sands and fines
+#E_Sed2014$SAFN_True=ifelse(as.numeric(E_Sed2014$SIZE_NUM)<=6 & as.numeric(E_Sed2014$SIZE_NUM)!=0, 1, 0)#changed to include 2 for 2016 data because we switched back to seperating out sands and fines
 F_Sed2014=setNames(aggregate(E_Sed2014$SAFN_True,list(UID=E_Sed2014$UID),mean), c("UID","PCT_SAFN_CHECK"))########this still counts particles with 0s in the particle count and as not fines; is this what we want to do?
 F_Sed2014$PCT_SAFN_CHECK=round(F_Sed2014$PCT_SAFN_CHECK*100,digits=1)
 
@@ -716,8 +719,12 @@ LWD_test2=setNames(count(LWD_test,"UID"),c("UID","NUMTRAN"))# count of the numbe
 LWD=setNames(aggregate(RESULT~UID,data=LwdWet,FUN=sum),c("UID","C1W"))# count of all LWD pieces per site
 LWD=merge(LWD_test2,LWD,by=c('UID'),all=T)
 LWD=merge(LWD,TRCHLEN,by=c('UID'), all=T)
-LWD$LWD_RCHLEN=(LWD$TRCHLEN/10)*LWD$NUMTRAN #calculate the reach length that wood was collected acreoss
 LWD$C1WM100_CHECK=round((LWD$C1W/LWD$LWD_RCHLEN)*100,digits=1)
+#To get the reach length for which LWD was accesssed divide the total reach length by 10 to get the transect spacing and then multiply times the number of LWD transects sampled
+#This is different than the EPA's reach length. The EPA determines reach length by approximating the number of intended thalweg stations
+#They take the greater of either the max number of stations occurring at each transect or the station "mode" occurring at a site
+#This seems overly complex and not very accurate.
+LWD$LWD_RCHLEN=(LWD$TRCHLEN/10)*LWD$NUMTRAN 
 
 #V1WM100
 LWDtt <- textConnection(
@@ -766,7 +773,7 @@ LWD_sizes$VOLUME=pi*((1.33*(LWD_sizes$DIAMETER/2)^2)*(1.33*LWD_sizes$LENGTH))#pg
 pvtpools1=cast(pool_length,'UID~PARAMETER',value='RESULT',fun=sum) 
 pvtpools2=cast(reach_length,'UID~PARAMETER',value='RESULT') 
 poolsmerge=merge(pvtpools1,pvtpools2,by=c('UID'),all=T)
-poolsmerge$PoolPct=round((poolsmerge$LENGTH/poolsmerge$TRCHLEN)*100,digits=0)
+poolsmerge$PoolPct=round((poolsmerge$LENGTH/poolsmerge$POOLRCHLEN)*100,digits=0)
 #residual pool depth
 PoolDepth=cast(PoolDepth,'UID+POINT~PARAMETER',value='RESULT')
 PoolDepth$RPD=PoolDepth$MAXDEPTH-PoolDepth$PTAILDEP
@@ -774,8 +781,9 @@ RPD=setNames(aggregate(PoolDepth$RPD,list(UID=PoolDepth$UID),mean),c("UID","RPD"
 #pool frequency
 count=setNames(count(PoolDepth,"UID"),c("UID","NumPools"))
 poolmerge2=join_all(list(poolsmerge,count,RPD), by="UID")
-poolmerge2$PoolFrq=round((poolmerge2$NumPools/poolmerge2$TRCHLEN)*10000,digits=0)###need to consider what reach length to use here #may need shorted lengths for parial reaches#change to use new parameter POOLRCHLEN
+poolmerge2$PoolFrq=round((poolmerge2$NumPools/poolmerge2$POOLRCHLEN)*10000,digits=0)###need to consider what reach length to use here #may need shorted lengths for parial reaches#change to use new parameter POOLRCHLEN
 Pools=setNames(subset(poolmerge2,select=c(UID,PoolPct,RPD,PoolFrq,NumPools)),c("UID","PoolPct_CHECK","RPD_CHECK","PoolFrq_CHECK","NumPools_CHECK"))
+#exclude pool data from sites that were
 
 #Channel dimensions
 #note the EPA combines all side channel, main and intermediate transects and then takes the max wetted width for a total of 10 values (excluding transect K?) instead of 21. This is likely an artifact of them adding intermediate transects halway through the project
