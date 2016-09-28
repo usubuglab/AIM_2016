@@ -719,12 +719,12 @@ LWD_test2=setNames(count(LWD_test,"UID"),c("UID","NUMTRAN"))# count of the numbe
 LWD=setNames(aggregate(RESULT~UID,data=LwdWet,FUN=sum),c("UID","C1W"))# count of all LWD pieces per site
 LWD=merge(LWD_test2,LWD,by=c('UID'),all=T)
 LWD=merge(LWD,TRCHLEN,by=c('UID'), all=T)
-LWD$C1WM100_CHECK=round((LWD$C1W/LWD$LWD_RCHLEN)*100,digits=1)
 #To get the reach length for which LWD was accesssed divide the total reach length by 10 to get the transect spacing and then multiply times the number of LWD transects sampled
 #This is different than the EPA's reach length. The EPA determines reach length by approximating the number of intended thalweg stations
 #They take the greater of either the max number of stations occurring at each transect or the station "mode" occurring at a site
 #This seems overly complex and not very accurate.
 LWD$LWD_RCHLEN=(LWD$TRCHLEN/10)*LWD$NUMTRAN 
+LWD$C1WM100_CHECK=round((LWD$C1W/LWD$LWD_RCHLEN)*100,digits=1)
 
 #V1WM100
 LWDtt <- textConnection(
