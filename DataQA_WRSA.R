@@ -470,7 +470,7 @@ write.csv(listsites,'postseason_site_coordinates.csv')
 designs=read.csv('\\\\share1.bluezone.usu.edu\\miller\\buglab\\Research Projects\\AIM\\AIM_DataManagement\\ProjectMngtSystem\\design_table2.csv')
 postseason=join(listsites,designs, by="SITE_ID", type="left")
 #get ecoregional and stream size info for context for values
-designmetadata=read.csv('\\\\share1.bluezone.usu.edu\\miller\\buglab\\Research Projects\\AIM\\MasterSample\\MasterSampleDraws\\Aquatic\\LoticMasterSample\\Attributed\\LoticMasterSampleAttributedPtsWithHybridEcoregions.csv')
+designmetadata=read.csv('\\\\share1.bluezone.usu.edu\\miller\\buglab\\Research Projects\\AIM\\GRTS_CodeGuidance\\MasterSample\\MasterSampleDraws\\Aquatic\\LoticMasterSample\\Attributed\\LoticMasterSampleAttributedPtsWithHybridEcoregions.csv')
 postseasonmetadata=join(postseason,designmetadata, by="MS_ID", type="left")
 #eventually need to edit the read in csv above to reflect the sampled coordinates for future sample draws at the end of the season
 
@@ -507,7 +507,7 @@ WQ2=tblRetrieve(Parameters=c('CONDUCTIVITY','CORRECTED','TEMPERATURE'), Comments
 WQ1=cast(WQ2,'UID~PARAMETER',value='RESULT')
 WQind=cast(WQ2,'UID~PARAMETER',value='IND')
 WQ3=addKEYS(merge(WQ1,WQind,by=c('UID'),all=T) ,c('SITE_ID','DATE_COL','CREW_LEADER'))
-WQ3.sub=subset(WQ3,CORRECTED.x!='Yes')
+WQ3.sub=subset(WQ3,CORRECTED.x!='Y')
 #write.csv(WQ3.sub,'not_temp_corrected_conduct.csv')
 
 #Chem check the hours prior to freezing
@@ -585,7 +585,7 @@ Nbed_Sed2014pvt=setNames(Nbed_Sed2014pvt[,c(1,5)],c("UID","nbed"))
 Nall_Sed2014pvt=setNames(cast(Sed2014,'UID~PARAMETER',value='RESULT',fun=length),c("UID","nLOC","nall"))#number of all collected pebbles
 Nall_Sed2014pvt=Nall_Sed2014pvt[,c(1,3)]
 sample_size=join(Nbed_Sed2014pvt,Nall_Sed2014pvt, by="UID")                      
-view(sample_size)
+View(sample_size)
 
 ###### Angle  ########                      
 #outlier checks (above) and check for missing SLANT to check if angle was being calculated in app properly
@@ -646,7 +646,7 @@ thalweg.missing=merge(tbl.PVT,tbl3, by='UID')
 
 #Increment cross-validation WRSA checks
 incrementcheck=tblRetrieve(Parameters=c('TRCHLEN','INCREMENT','RCHWIDTH'), Projects=projects, Years=years,Protocols=protocols)
-incrsub=subset(incrementcheck,UID!=10383)#UID:10383  IND 4849393 needs to be deactivated for this to work
+incrsub=subset(incrementcheck,UID!='1500BC4F-C9B3-4FFC-9639-B5054B0FCD62')#UID:10383  IND 4849393 needs to be deactivated for this to work
 incrementPVT=cast(incrsub,'UID~PARAMETER',value='RESULT')
 incrementsub=subset(incrementPVT,TRCHLEN/0.01!=INCREMENT)#couldn't get this to work so checked this manually in excel and also checked to make sure that RCHWIDTH*40=TRCHLEN and for RCHWIDTH<2.5 INCREMENT=1 and for RCHWIDTH>2.5<4 INCREMENT=1.5
 write.csv(incrementPVT,'incrementPVT.csv')
@@ -662,7 +662,7 @@ thaleg_depth_NA<-thalweg_depth_pvt [is.na(thalweg_depth_pvt$'1')==TRUE,c(1:2,4)]
 #check too deep variable for any depths that need trig 
 toodeep=tblRetrieve(Parameters=c('TOODEEP','DEPTH_ANGLE','DEPTH'),Projects=projects,Years=years, Protocols=protocols)
 pvttoodeep=cast(toodeep,'UID+TRANSECT+POINT~PARAMETER',value='RESULT')
-TooDeepCheck=subset(pvttoodeep,TOODEEP=='Yes')
+TooDeepCheck=subset(pvttoodeep,TOODEEP=='Y')
 
 #thalweg depth/ width EPA check
 #wading sites
@@ -703,7 +703,7 @@ pvtIndividualSlope=addKEYS(cast(IndividualSlope,'UID+TRANSECT~PARAMETER',value='
 #########  pools   ################                                           
 #getting all pool data for a specfic set of sites---not collecting one of the parameters below anymore
 pools<-addKEYS(tblRetrieve(Parameters=c('HABTYPE','FORMATION','PTAILDEP','MAXDEPTH','LENGTH'),Projects=projects,Comments='Y'),c('SITE_ID'))
-pvtpools=cast(pools,'UID+POINT~PARAMETER',value='RESULT')
+pvtpools=cast(pools,'UID+TRANSECT+POINT~PARAMETER',value='RESULT')
 write.csv(pvtpools,'pvtpools.csv')#short and look for min and max and 0 data or unit issues
 
 # flow and collected checks
