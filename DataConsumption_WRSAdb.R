@@ -57,6 +57,7 @@ protocols=c('WADE2016')
 projects=c('CO_FR_STANDARD_2016','CO_NW_STANDARD_2016','ID_SA_STANDARD_2016','ID_STATE_STANDARD_2016','NM_FMD_STANDARD_2016','OR_PR_PERENNIAL_2016','UT_GR_STANDARD_2016','UT_WD_STANDARD_2016','WY_RA_STANDARD_2016')
 protocols=c('WRSA14')#for separating differences in overall protocol, may not be relevant for some parameters
 projects=c('WRSA','NV','GSENM','COPLT','2015ProtocolOverlap','AKEFO','NORCAL')# most useful for separating NorCal and WRSA, note that abbreviations differ between Access and SQL/FM
+projects=c('NORCAL')
 projects=c('OR_PR_PERENNIAL_2016')# most useful for separating NorCal and WRSA, note that abbreviations differ between Access and SQL/FM
 dates=''##example:c('05/05/2005')
 hitchs=c('')#NOT WORKING YET, hitch and crew level generally maintained by Access not SQL
