@@ -19,7 +19,7 @@
 #To get WQ data for 3 parameters for all NorCal sites #add turbidity and temp
 WQtbl=tblRetrieve(Parameters=c('CONDUCTIVITY','PH','NTL','PTL','TURBIDITY','TEMPERATURE','EC_PRED','TN_PRED','TP_PRED'),Projects=projects,Years=years,Protocols=protocols)
 WQpvt=cast(WQtbl,'UID~PARAMETER',value='RESULT')
-
+#WQfinal=WQpvt
 
 # #Get pH for NorCal
 # PHtbl=tblRetrieve(Parameters=c('PH'),Projects=projects,Years=years,Protocols=protocols)
@@ -262,7 +262,7 @@ WQfinal=WQfinal[,c(1,2,3,13,6,9,12,4,8,11,5,7,10)]
 ###### The way this is calculated causes NA's to be treated as blanks that do not count for or against the average. For example if only 1 NA for BOULDR then you would divide boulders by 10 transects instead of 11. See UID 11625 for an example.
 fish$ResultsPer=ifelse(fish$RESULT == 1, 0.05,ifelse(fish$RESULT == 2, 0.25,ifelse(fish$RESULT == 3, 0.575,ifelse(fish$RESULT == 4, 0.875,ifelse(fish$RESULT ==0, 0, NA)))))
 fishpvt2=cast(fish,'UID~PARAMETER', value='ResultsPer',fun='mean')
-fishpvt2$XFC_NAT_CHECK=round(rowSums(fishpvt2[,c(2,3,4,5,6,7)]),digits=2)
+fishpvt2$XFC_NAT_CHECK=rowSums(fishpvt2[,c(2,3,4,5,6,7)])
 #sample size
 fishpvt3=cast(fish,'UID~PARAMETER', value='ResultsPer',fun='length')
 fishpvt2$nXFC_NAT_CHECK=(fishpvt3$BOULDR+fishpvt3$BRUSH+fishpvt3$LVTREE+fishpvt3$OVRHNG+fishpvt3$UNDCUT+fishpvt3$WOODY)# 6 categories *11 transects 
@@ -364,15 +364,6 @@ A_Sed2014=cast(Sed2014,'UID+TRANSECT+POINT~PARAMETER', value='RESULT')
 #B_Sed2014=A_Sed2014[order(A_Sed2014$SIZE_NUM),]
 #View(B_Sed2014[2000:2588,])
 
-#All pebbles 
-# E_Sed2014=A_Sed2014[complete.cases(A_Sed2014[,c("LOC","SIZE_NUM")]),]
-# E_Sed2014$SAFN_True=ifelse(E_Sed2014$SIZE_NUM == "1", 1, 0)
-#E_Sed2014$SAFN_True=ifelse(E_Sed2014$SIZE_NUM == "1"| E_Sed2014$SIZE_NUM =="2", 1, 0)#changed to include 2 for 2016 data because we switched back to seperating out sands and fines
-#E_Sed2014$SAFN_True=ifelse(as.numeric(E_Sed2014$SIZE_NUM)<=6 & as.numeric(E_Sed2014$SIZE_NUM)!=0, 1, 0)#changed to include 2 for 2016 data because we switched back to seperating out sands and fines
-# F_Sed2014=setNames(aggregate(E_Sed2014$SAFN_True,list(UID=E_Sed2014$UID),mean), c("UID","PCT_SAFN_CHECK"))########this still counts particles with 0s in the particle count and as not fines; is this what we want to do?
-# F_Sed2014$PCT_SAFN_CHECK=round(F_Sed2014$PCT_SAFN_CHECK*100,digits=1)
-
-
 #only bed pebbles
 #Remove all sediment records that were collected on the "BANK"
 C_Sed2014=A_Sed2014[!A_Sed2014$LOC== "BANK", ]
@@ -380,14 +371,22 @@ C_Sed2014=A_Sed2014[!A_Sed2014$LOC== "BANK", ]
 E_Sed2014=C_Sed2014[complete.cases(C_Sed2014[,c("LOC","SIZE_NUM")]),]
 E_Sed2014$SAFN_True=ifelse(E_Sed2014$SIZE_NUM == "1"| E_Sed2014$SIZE_NUM =="2", 1, 0)#changed to include 2 for 2016 data because we switched back to seperating out sands and fines
 #E_Sed2014$SAFN_True=ifelse(as.numeric(E_Sed2014$SIZE_NUM)<=6 & as.numeric(E_Sed2014$SIZE_NUM)!=0, 1, 0)#changed to include 2 for 2016 data because we switched back to seperating out sands and fines
-F_Sed2014=setNames(aggregate(E_Sed2014$SAFN_True,list(UID=E_Sed2014$UID),mean), c("UID","PCT_SAFN_CHECK"))########this still counts particles with 0s in the particle count and as not fines; is this what we want to do?
-F_Sed2014$PCT_SAFN_CHECK=round(F_Sed2014$PCT_SAFN_CHECK*100,digits=1)
+F_Sed2014=setNames(aggregate(E_Sed2014$SAFN_True,list(UID=E_Sed2014$UID),mean), c("UID","bedPCT_SAFN_CHECK"))########this still counts particles with 0s in the particle count and as not fines; is this what we want to do?
+F_Sed2014$bedPCT_SAFN_CHECK=round(F_Sed2014$bedPCT_SAFN_CHECK*100,digits=1)
+
+#All pebbles 
+I_Sed2014=A_Sed2014[complete.cases(A_Sed2014[,c("LOC","SIZE_NUM")]),]
+I_Sed2014$SAFN_True=ifelse(I_Sed2014$SIZE_NUM == "1", 1, 0)
+I_Sed2014$SAFN_True=ifelse(I_Sed2014$SIZE_NUM == "1"| I_Sed2014$SIZE_NUM =="2", 1, 0)#changed to include 2 for 2016 data because we switched back to seperating out sands and fines
+#I_Sed2014$SAFN_True=ifelse(as.numeric(E_Sed2014$SIZE_NUM)<=6 & as.numeric(E_Sed2014$SIZE_NUM)!=0, 1, 0)#changed to include 2 for 2016 data because we switched back to seperating out sands and fines
+J_Sed2014=setNames(aggregate(I_Sed2014$SAFN_True,list(UID=I_Sed2014$UID),mean), c("UID","allPCT_SAFN_CHECK"))########this still counts particles with 0s in the particle count and as not fines; is this what we want to do?
+J_Sed2014$allPCT_SAFN_CHECK=round(J_Sed2014$allPCT_SAFN_CHECK*100,digits=1)
 
 #sample sizes
 Nall_Sed2014pvt=setNames(cast(Sed2014,'UID~PARAMETER',value='RESULT',fun=length),c("UID","nLOC","nallPCT_SAFN_CHECK"))#number of all collected pebbles
 Nall_Sed2014pvtsub=subset(Nall_Sed2014pvt, select=c(UID,nallPCT_SAFN_CHECK))
 Nbed_Sed2014pvt=aggregate(.~UID, data=C_Sed2014, length)#number of bed pebbles
-Nbed=setNames(subset(Nbed_Sed2014pvt, select=c(UID,SIZE_NUM)),c("UID","nPCT_SAFN_CHECK"))
+Nbed=setNames(subset(Nbed_Sed2014pvt, select=c(UID,SIZE_NUM)),c("UID","nbedPCT_SAFN_CHECK"))
 # 7 sites from AK had right around 100 which they should according the the AK protocol
 # 4 WRSA sites had right around 100 pebbles so these were included
 # 2 WRSA sites had values between 60-70 but this is still more than half of pebbles collected in 2013 so this data was included and used
@@ -395,13 +394,15 @@ Nbed=setNames(subset(Nbed_Sed2014pvt, select=c(UID,SIZE_NUM)),c("UID","nPCT_SAFN
 # 1 NV site at 59 and 1 NV at 100
 
 G_Sed2014=merge(F_Sed2014,Nbed, by="UID")
+K_Sed2014=merge(J_Sed2014,Nall_Sed2014pvtsub, by="UID")
 
 # Combine the two datasets for PCT_SAFN together so that I don't have multiple files for the same thing
-H_Sed=rbind(pctsafn_2013,G_Sed2014)
-#PCT_SAFN_ALL=Nall_Sed2014pvtsub
-PCT_SAFN_ALL=join(H_Sed,Nall_Sed2014pvtsub,by="UID",type="left")
-PCT_SAFN_sub=subset(PCT_SAFN_ALL,nPCT_SAFN_CHECK<50)
-PCT_SAFN_ALL$PCT_SAFN_CHECK=ifelse(PCT_SAFN_ALL$nPCT_SAFN_CHECK<50,NA,PCT_SAFN_ALL$PCT_SAFN_CHECK)
+#H_Sed=rbind(pctsafn_2013,G_Sed2014)# uncomment for 2013 data
+#PCT_SAFN_ALL=join(H_Sed,K_Sed2014,by="UID",type="left")#uncomment for 2013 data
+PCT_SAFN_ALL=join(G_Sed2014,K_Sed2014,by="UID",type="left")
+PCT_SAFN_sub=subset(PCT_SAFN_ALL,nallPCT_SAFN_CHECK<50)
+PCT_SAFN_ALL$allPCT_SAFN_CHECK=ifelse(PCT_SAFN_ALL$nallPCT_SAFN_CHECK<50,NA,PCT_SAFN_ALL$allPCT_SAFN_CHECK)
+PCT_SAFN_ALL$bedPCT_SAFN_CHECK=ifelse(PCT_SAFN_ALL$nallPCT_SAFN_CHECK<50,NA,PCT_SAFN_ALL$bedPCT_SAFN_CHECK)
 
 ###################################################################################################################################
 #other sediment metrics
@@ -722,9 +723,11 @@ LWD=merge(LWD,TRCHLEN,by=c('UID'), all=T)
 #To get the reach length for which LWD was accesssed divide the total reach length by 10 to get the transect spacing and then multiply times the number of LWD transects sampled
 #This is different than the EPA's reach length. The EPA determines reach length by approximating the number of intended thalweg stations
 #They take the greater of either the max number of stations occurring at each transect or the station "mode" occurring at a site
-#This seems overly complex and not very accurate.
+#This seems overly complex....particularly the mode part why not get an accurate number of stations per transect? 
+#Our method could over estimate wood though...crews may have evaluated sections of the thalweg but not recorded a wood value because they forgot or something else
+#However not all crews collecting thalweg in future and may not be able to get thalweg depths where you could get wood...we probably could use another parameter that is collected at all thalweg stations (side channel presence- but did not collect this in 2016) 
 LWD$LWD_RCHLEN=(LWD$TRCHLEN/10)*LWD$NUMTRAN 
-LWD$C1WM100_CHECK=round((LWD$C1W/LWD$LWD_RCHLEN)*100,digits=1)
+LWD$C1WM100_CHECK=round((LWD$C1W/LWD$LWD_RCHLEN)*100,digits=1)# get the pieces/100m
 
 #V1WM100
 LWDtt <- textConnection(
@@ -775,7 +778,7 @@ pvtpools2=cast(reach_length,'UID~PARAMETER',value='RESULT')
 poolsmerge=merge(pvtpools1,pvtpools2,by=c('UID'),all=T)
 poolsmerge$PoolPct=round((poolsmerge$LENGTH/poolsmerge$POOLRCHLEN)*100,digits=0)
 #residual pool depth
-PoolDepth=cast(PoolDepth,'UID+POINT~PARAMETER',value='RESULT')
+PoolDepth=cast(PoolDepth,'UID+TRANSECT+POINT~PARAMETER',value='RESULT')
 PoolDepth$RPD=PoolDepth$MAXDEPTH-PoolDepth$PTAILDEP
 RPD=setNames(aggregate(PoolDepth$RPD,list(UID=PoolDepth$UID),mean),c("UID","RPD"))#converted to m
 #pool frequency
@@ -783,7 +786,8 @@ count=setNames(count(PoolDepth,"UID"),c("UID","NumPools"))
 poolmerge2=join_all(list(poolsmerge,count,RPD), by="UID")
 poolmerge2$PoolFrq=round((poolmerge2$NumPools/poolmerge2$POOLRCHLEN)*10000,digits=0)###need to consider what reach length to use here #may need shorted lengths for parial reaches#change to use new parameter POOLRCHLEN
 Pools=setNames(subset(poolmerge2,select=c(UID,PoolPct,RPD,PoolFrq,NumPools)),c("UID","PoolPct_CHECK","RPD_CHECK","PoolFrq_CHECK","NumPools_CHECK"))
-#exclude pool data from sites that were
+#exclude pool data from sites that had interrupted flow.
+
 
 #Channel dimensions
 #note the EPA combines all side channel, main and intermediate transects and then takes the max wetted width for a total of 10 values (excluding transect K?) instead of 21. This is likely an artifact of them adding intermediate transects halway through the project
@@ -824,6 +828,7 @@ BankWidFinal$XBXK_W_CHECK=ifelse(BankWidFinal$nXBKF_W_CHECK<5,NA,BankWidFinal$XB
 #To get all calculated values together... Although some tables still have the metrics included.
 #IndicatorCheckJoin=join_all(list(listsites,WQfinal,BnkErosional,BnkAll,fishpvt2,DensPvt,BnkDensPvt,XCMGW_new1,XCMG_new1,XGB_new1,IncBnk,BankWid,WetWid,XEMBED,PCT_SAFN_ALL,W1_HALL,QR1,MeanAngle,Slope_Per,Thalweg,Pools),by="UID")
 IndicatorCheckJoin=join_all(list(listsites,WQfinal,BnkErosional,BnkAll,fishpvt2,DensPvt,BnkDensPvt,XCMG_new1,IncBnk,BankWidFinal,WetWidFinal,XEMBED,PCT_SAFN_ALL,MeanAngle,Slope_Per,Thalweg,Pools,LWD),by="UID")
+IndicatorCheckJoin=join_all(list(listsites,WQfinal,BnkErosional,BnkAll,DensPvt,BnkDensPvt,XCMG_new1,IncBnk,BankWidFinal,WetWidFinal,PCT_SAFN_ALL,MeanAngle,Slope_Per,Thalweg,Pools,LWD),by="UID")
 IndicatorCheckJoin=join_all(list(listsites,BnkErosional,BnkAll,fishpvt2,DensPvt,BnkDensPvt,XCMG_new1,IncBnk,BankWidFinal,WetWidFinal,XEMBED,PCT_SAFN_ALL,MeanAngle,Slope_Per,Thalweg,LWD),by="UID")
 
 #To remove all of the metrics and only get the indicators subset by UID and all those columns ending in "CHECK". Hmm..not really sure what the $ is doing here, the code works without it, but all the examples I've looked at keep the $ so I kept it too... 
