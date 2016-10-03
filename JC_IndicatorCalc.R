@@ -405,8 +405,12 @@ PCT_SAFN_sub=subset(PCT_SAFN_ALL,nallPCT_SAFN_CHECK<50)
 PCT_SAFN_ALL$allPCT_SAFN_CHECK=ifelse(PCT_SAFN_ALL$nallPCT_SAFN_CHECK<50,NA,PCT_SAFN_ALL$allPCT_SAFN_CHECK)
 PCT_SAFN_ALL$bedPCT_SAFN_CHECK=ifelse(PCT_SAFN_ALL$nallPCT_SAFN_CHECK<50,NA,PCT_SAFN_ALL$bedPCT_SAFN_CHECK)
 
-
-
+#other sed metrics
+A_Sed2014=subset(A_Sed2014,SIZE_NUM!=0)
+D50=quantile(as.numeric(A_Sed2014$SIZE_NUM),prob=0.50)
+D16=quantile(as.numeric(A_Sed2014$SIZE_NUM),prob=0.16)
+D84=quantile(as.numeric(A_Sed2014$SIZE_NUM),prob=0.84)
+GeometricMean=exp(mean(log10(as.numeric(A_Sed2014$SIZE_NUM))))
 
 ###################################################################################################################################
 #other sediment metrics
