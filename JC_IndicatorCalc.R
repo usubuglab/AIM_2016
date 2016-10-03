@@ -347,14 +347,14 @@ IncBnk$xbnk_h_CHECK=round(IncBnk$xbnk_h_CHECK,digits=2)
 #pctSAFN=merge(pctfn,pctsa, All=TRUE)
 #pctSAFN$PCT_SAFN_CHECK=pctSAFN$PCT_FN_CHECK+pctSAFN$PCT_SA_CHECK
 
-#### 2013 data and Boating data which was also stored in Size_CLS
+#### 2013 data and Boating data which was also stored in Size_CLS. 2013 field protocol only collected Bed sediment, unlike 2014 and beyond which collected bed and bank sediment. 
 ####Doing sand and fines together
 Sediment$SAFN_True=ifelse(Sediment$RESULT == "SA", 1,ifelse(Sediment$RESULT == "FN", 1, 0))
-pctsafn=setNames((aggregate(Sediment$SAFN_True,by=list(UID=Sediment$UID), data=Sediment, FUN='mean')),c("UID","PCT_SAFN_CHECK"))#had to remove NorCal code that casted by Sample_Type because of boating data
-pctsafn$PCT_SAFN_CHECK=round(pctsafn$PCT_SAFN_CHECK*100,digits=1)
+pctsafn=setNames((aggregate(Sediment$SAFN_True,by=list(UID=Sediment$UID), data=Sediment, FUN='mean')),c("UID","bedPCT_SAFN_CHECK"))#had to remove NorCal code that casted by Sample_Type because of boating data
+pctsafn$bedPCT_SAFN_CHECK=round(pctsafn$bedPCT_SAFN_CHECK*100,digits=1)
 Sedimentpvt=cast(Sediment,'UID~PARAMETER',value='RESULT',fun=length)# number of pebbles collected at intermediate and main transects
-Sedimentpvt$nPCT_SAFN_CHECK=(Sedimentpvt$SIZE_CLS+Sedimentpvt$XSIZE_CLS) # number of pebbles collected at all transects only 4 boating sites had less than 50
-Sedimentpvtsub=subset(Sedimentpvt,select=c(UID,nPCT_SAFN_CHECK))
+Sedimentpvt$nbedPCT_SAFN_CHECK=(Sedimentpvt$SIZE_CLS+Sedimentpvt$XSIZE_CLS) # number of pebbles collected at all transects only 4 boating sites had less than 50
+Sedimentpvtsub=subset(Sedimentpvt,select=c(UID,nbedPCT_SAFN_CHECK))
 pctsafn_2013=merge(pctsafn,Sedimentpvtsub,by="UID")
 
 #Now for 2014 data... 
@@ -398,12 +398,15 @@ G_Sed2014=merge(F_Sed2014,Nbed, by="UID")
 K_Sed2014=merge(J_Sed2014,Nall_Sed2014pvtsub, by="UID")
 
 # Combine the two datasets for PCT_SAFN together so that I don't have multiple files for the same thing
-#H_Sed=rbind(pctsafn_2013,G_Sed2014)# uncomment for 2013 data
-#PCT_SAFN_ALL=join(H_Sed,K_Sed2014,by="UID",type="left")#uncomment for 2013 data
+#2013+
+H_Sed=rbind(pctsafn_2013,G_Sed2014)# uncomment for 2013 data
+#2013+
+PCT_SAFN_ALL=join(H_Sed,K_Sed2014,by="UID",type="left")#uncomment for 2013 data
+#2014 only?
 PCT_SAFN_ALL=join(G_Sed2014,K_Sed2014,by="UID",type="left")
 PCT_SAFN_sub=subset(PCT_SAFN_ALL,nallPCT_SAFN_CHECK<50)
 PCT_SAFN_ALL$allPCT_SAFN_CHECK=ifelse(PCT_SAFN_ALL$nallPCT_SAFN_CHECK<50,NA,PCT_SAFN_ALL$allPCT_SAFN_CHECK)
-PCT_SAFN_ALL$bedPCT_SAFN_CHECK=ifelse(PCT_SAFN_ALL$nallPCT_SAFN_CHECK<50,NA,PCT_SAFN_ALL$bedPCT_SAFN_CHECK)
+PCT_SAFN_ALL$bedPCT_SAFN_CHECK=ifelse(PCT_SAFN_ALL$nbedPCT_SAFN_CHECK<50,NA,PCT_SAFN_ALL$bedPCT_SAFN_CHECK)
 
 #other sed metrics
 A_Sed2014=subset(A_Sed2014,SIZE_NUM!=0)
