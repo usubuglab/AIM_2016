@@ -563,7 +563,7 @@ Widths=tblRetrieve(Parameters=c('WETWID','BANKWID','TRANDRY'),Years=years, Proje
 pvtWidths=cast(Widths,'UID+TRANSECT~PARAMETER',value='RESULT')
 Widths=subset(Widths,RESULT==0)# query the corresponding thalweg depths in SQL if present and the VALXSITE to make sure it is INTWADE                      
 #dry transects
-DryCheck=subset(pvtWidths,(WETWID!=0 & TRANDRY=='Yes')|(WETWID==0 & TRANDRY=='No')|(WETWID==0 & is.na(TRANDRY)=='TRUE'))#likely needs tweaking                      
+DryCheck=subset(pvtWidths,(WETWID!=0 & TRANDRY=='Y')|(WETWID==0 & TRANDRY=='N')|(WETWID==0 & is.na(TRANDRY)=='TRUE'))#likely needs tweaking                      
 
    
                       
@@ -695,8 +695,9 @@ SlopeCheck=subset(Pass,TRANSECT>2)# if more than 2 passes need to manually check
 # sites with pct_grade==0 are not within 10%
 NOT10PER=subset(pvtSlope,PCT_GRADE=='0')
 # for any sites that failed the within 10% check, see idividual passes below
-IndividualSlope=tblRetrieve(Parameters=c('SLOPE'),Projects=projects, Years=years,Protocols=protocols)
+IndividualSlope=tblRetrieve(Parameters=c('SLOPE','STARTHEIGHT','ENDHEIGHT'),Projects=projects, Years=years,Protocols=protocols)
 pvtIndividualSlope=addKEYS(cast(IndividualSlope,'UID+TRANSECT~PARAMETER',value='RESULT', fun=sum),c('SITE_ID','CREW_LEADER'))#note Transect=Pass
+pvtIndividualSlope=addKEYS(cast(IndividualSlope,'UID+TRANSECT+POINT~PARAMETER',value='RESULT'),c('SITE_ID','CREW_LEADER'))#note Transect=Pass
 #still need to check a site with 3 passes to make sure Reid averaged slope properly
 
                  
