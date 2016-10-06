@@ -138,6 +138,10 @@ View(data[3500:4500,])
 #### | means OR
 #### & means AND
 
+#Read indicator data in...
+IndicatorCheck=read.csv('C:\\Users\\Nicole\\Desktop\\AIM_2016\\Rinput_IndicatorCheck_3October2016.csv')
+
+
 #############################################################################
 
 ##############    Water quality condition determinations      ###############
@@ -183,12 +187,14 @@ View(data[3500:4500,])
 ###Conductivity #Modelled thresholds
 IndicatorCheck$OE_ECrtg=ifelse(WQfinal$OE_EC <=27.1,'Good',ifelse(WQfinal$OE_EC >53.7, 'Poor','Fair'))
 
+#IndicatorCheck$OE_ECrtg=ifelse(IndicatorCheck$OE_EC_CHECK <=27.1,'Good',ifelse(IndicatorCheck$OE_EC_CHECK >53.7, 'Poor','Fair'))
+
 ###Total N
 IndicatorCheck$OE_TNrtg=ifelse(WQfinal$OE_TN <=52.1,'Good',ifelse(WQfinal$OE_TN >114.7, 'Poor','Fair'))
-
+#IndicatorCheck$OE_TNrtg=ifelse(IndicatorCheck$OE_TN_CHECK <=52.1,'Good',ifelse(IndicatorCheck$OE_TN_CHECK >114.7, 'Poor','Fair'))
 ###Total P
 IndicatorCheck$OE_TPrtg=ifelse(WQfinal$OE_TP <=9.9,'Good',ifelse(WQfinal$OE_TP >21.3, 'Poor','Fair'))
-
+#IndicatorCheck$OE_TPrtg=ifelse(IndicatorCheck$OE_TP_CHECK <=9.9,'Good',ifelse(IndicatorCheck$OE_TP_CHECK >21.3, 'Poor','Fair'))
 
 
 ##Trying to Check how the EPA thresholds would cause a difference in the number of G F P 
@@ -219,7 +225,11 @@ IndicatorCheck$OE_TPrtg=ifelse(WQfinal$OE_TP <=9.9,'Good',ifelse(WQfinal$OE_TP >
 #############################################################################
 
 #All raw model results
+#2014
 NorCalBugs=read.csv("\\\\share1.bluezone.usu.edu\\miller\\buglab\\Research Projects\\BLM_WRSA_Stream_Surveys\\Results and Reports\\NorCal_2013\\Analysis\\BugModels\\ALL_BugModel_Results.csv")
+#2016 Smoke Creek WS assessment
+NorCalBugs=read.csv("\\\\share1.bluezone.usu.edu\\miller\\buglab\\Research Projects\\BLM_WRSA_Stream_Surveys\\Results and Reports\\NorCal_2013\\Analysis\\BugModels\\2013to2015NVMMI_Results.csv")
+
 
 #Invasive bugs 
 NorCalInvasives=read.csv("\\\\share1.bluezone.usu.edu\\miller\\buglab\\Research Projects\\BLM_WRSA_Stream_Surveys\\Results and Reports\\NorCal_2013\\InvertebrateData\\FinalInvasive_R_Input.csv")
@@ -493,6 +503,8 @@ IndicatorCheck$BnkCover_StabAllrtg=ifelse(IndicatorCheck$BnkCover_StabAll_CHECK>
 #First I need to combine Ecoregions to the sampled sites. 
 #Read in ecoregion to sample sitecode
 NorCalSites_Ecoregions=read.csv("\\\\share1.bluezone.usu.edu\\miller\\buglab\\Research Projects\\BLM_WRSA_Stream_Surveys\\Results and Reports\\NorCal_2013\\Analysis\\UID_SiteID_Ecoregions.csv")
+#SmokeCreek WS
+NorCalSites_Ecoregions=read.csv("\\\\share1.bluezone.usu.edu\\miller\\buglab\\Research Projects\\BLM_WRSA_Stream_Surveys\\Results and Reports\\NorCal_2013\\Analysis\\Rinput_2016run_NorCal_SiteID_EcoregionJoin_FromAccess.csv")
 
 #Because UIDs get turned into different values when exported as a csv I was unable to use the merge function because UIDs did not match exactly. Be careful with using this method in the future... 
 t1=NorCalSites_Ecoregions[order(NorCalSites_Ecoregions$UID, decreasing=FALSE),]
@@ -603,6 +615,7 @@ IndicatorCond_ECO_LVL_3NAME$NRSA_W1_HALL_CHECKrtg=ifelse(IndicatorCond_ECO_LVL_3
 
 #Add bug, INVASIVES, conductivity, and other WQ columns to the Indicator Conditions file. 
 #AllWQ2
+#For 2016 run# NorCalBugs$NV_MMI_Cond=NorCalBugs$MMI_Condition
 NorCalBugs$NV_MMIrtg=ifelse(NorCalBugs$NV_MMI_Cond=="Reference","Good",ifelse(NorCalBugs$NV_MMI_Cond=="Impaired","Poor","Fair"))
 NVMMIfinal=NorCalBugs[,c(1,2,5,6,10)]
 
@@ -612,6 +625,11 @@ t1=NVMMIfinal[order(NVMMIfinal$UID, decreasing=FALSE),]
 t2=IndicatorCond_ECO3[order(IndicatorCond_ECO3$UID, decreasing=FALSE),]
 t3=NorCalInvasives[order(NorCalInvasives$UID, decreasing=FALSE),]
 IndicatorConditions_ECO3_FINAL=cbind(t1,t2,t3)
+
+
+#2016 merging bug and indicators manually in excel due to having UID issues. 
+write.csv(t2,"IndicatorConditions2016_MinusBugs.csv")
+
 
 #IndicatorConditions_ECO3_FINAL=merge(IndicatorCond_ECO3, NVMMIfinal, all=TRUE)
 
@@ -626,10 +644,15 @@ IndicatorConditions_ECO3_FINAL=cbind(t1,t2,t3)
 #                                                     "LINCIS_H_CHECK","LINCIS_H_CHECKrtg","xcdenmid_CHECK","xcdenmid_CHECKrtg")]
 
 #Should be able to just put all column names that you want in the below code
-IndicatorCond_ExtEstSsubset=IndicatorConditions_ECO3_FINAL[,c("UID", "NV_MMI","NV_MMIrtg","NV_Invasives","NV_Invasivesrtg",
-                                                     "OE_Conduct","OE_Conductrtg","OE_TN","OE_TNrtg","OE_TP","OE_TPrtg","PH_CHECK","PH_CHECKrtg",
+IndicatorCond_ExtEstSsubset=IndicatorConditions_ECO3_FINAL[,c("UID", 
+                                                              #"NV_MMI","NV_MMIrtg","NV_Invasives","NV_Invasivesrtg",
+                                                    # "OE_Conduct","OE_Conductrtg",
+                                                     "OE_EC_CHECK", "OE_ECrtg",
+                                                     "OE_TN_CHECK","OE_TNrtg","OE_TP_CHECK","OE_TPrtg","PH_CHECK","PH_CHECKrtg",
                                                      "BnkStability_BLM_CHECK","BnkStability_BLM_CHECKrtg","PCT_SAFN_CHECK","PCT_SAFN_CHECKrtg",
-                                                     "XCMG_CHECK","XCMG_CHECKrtg","XGB_CHECK","XGB_CHECKrtg","XFC_NAT_CHECK","XFC_NAT_CHECKrtg",
+                                                     "XCMG_CHECK","XCMG_CHECKrtg",
+                                                    #"XGB_CHECK","XGB_CHECKrtg",
+                                                     "XFC_NAT_CHECK","XFC_NAT_CHECKrtg",
                                                      "LINCIS_H_CHECK","LINCIS_H_CHECKrtg","xcdenmid_CHECK","xcdenmid_CHECKrtg")]
 
 

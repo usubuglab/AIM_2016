@@ -247,6 +247,7 @@ WQpvt$OE_TN=round(WQpvt$NTL-WQpvt$TN_PRED,digits=3)
 WQpvt$OE_TP=round(WQpvt$PTL-WQpvt$TP_PRED,digits=1)
 WQfinal=setNames(WQpvt,c("UID","CONDUCTIVITY_CHECK","EC_PRED_CHECK","NTL_CHECK","PH_CHECK","PTL_CHECK","TEMPERATURE_CHECK","TN_PRED_CHECK","TP_PRED_CHECK","TURBIDITY_CHECK","OE_EC_CHECK","OE_TN_CHECK","OE_TP_CHECK"))
 WQfinal=WQfinal[,c(1,2,3,13,6,9,12,4,8,11,5,7,10)]
+#If no turbidity data, the sitecode will appear in the TURBIDITY_CHECK column because SiteCode was pulled when the data was pulled from the database. 
 
 
 #############################################################################
