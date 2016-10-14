@@ -73,17 +73,17 @@ Indicators$OE_TPrtg=ifelse(
 Indicators$PH_CHECKrtg=ifelse((Indicators$PH_CHECK<=6.5|Indicators$PH_CHECK >=9),"Poor",ifelse((Indicators$PH_CHECK >7 & Indicators$PH_CHECK <8.5),"Good","Fair"))
 
 # Bank stability and cover
-#Indicators$BnkStability_Erosionalrtg=ifelse(Indicators$BnkStability_Erosional_CHECK>0.80,'Good',ifelse(Indicators$BnkStability_Erosional_CHECK<0.60,'Poor','Fair'))
-#Indicators$BnkCover_Erosional_CHECKrtg=ifelse(Indicators$BnkCover_Erosional_CHECK>0.60,'Good',ifelse(Indicators$BnkCover_Erosional_CHECK<0.40,'Poor','Fair'))
-Indicators$BnkCover_StabErosionalrtg=ifelse(Indicators$BnkCover_StabErosional_CHECK>0.80,'Good',ifelse(Indicators$BnkCover_StabErosional_CHECK<0.60,'Poor','Fair'))
+#Indicators$BnkStability_Erosionalrtg=ifelse(Indicators$BnkStability_Erosional_CHECK>80,'Good',ifelse(Indicators$BnkStability_Erosional_CHECK<60,'Poor','Fair'))
+#Indicators$BnkCover_Erosional_CHECKrtg=ifelse(Indicators$BnkCover_Erosional_CHECK>60,'Good',ifelse(Indicators$BnkCover_Erosional_CHECK<40,'Poor','Fair'))
+Indicators$BnkCover_StabErosionalrtg=ifelse(Indicators$BnkCover_StabErosional_CHECK>80,'Good',ifelse(Indicators$BnkCover_StabErosional_CHECK<60,'Poor','Fair'))
 
-#Indicators$BnkStability_Allrtg=ifelse(Indicators$BnkStability_All_CHECK>0.80,'Good',ifelse(Indicators$BnkStability_All_CHECK<0.60,'Poor','Fair'))
-#Indicators$BnkCover_All_CHECKrtg=ifelse(Indicators$BnkCover_All_CHECK>0.60,'Good',ifelse(Indicators$BnkCover_All_CHECK<0.40,'Poor','Fair'))
-#Indicators$BnkCover_StabAllrtg=ifelse(Indicators$BnkCover_StabAll_CHECK>0.80,'Good',ifelse(Indicators$BnkCover_StabAll_CHECK<0.60,'Poor','Fair'))
+#Indicators$BnkStability_Allrtg=ifelse(Indicators$BnkStability_All_CHECK>80,'Good',ifelse(Indicators$BnkStability_All_CHECK<60,'Poor','Fair'))
+#Indicators$BnkCover_All_CHECKrtg=ifelse(Indicators$BnkCover_All_CHECK>60,'Good',ifelse(Indicators$BnkCover_All_CHECK<40,'Poor','Fair'))
+#Indicators$BnkCover_StabAllrtg=ifelse(Indicators$BnkCover_StabAll_CHECK>80,'Good',ifelse(Indicators$BnkCover_StabAll_CHECK<60,'Poor','Fair'))
 
-Indicators$BnkCover_StabErosionalrtg=ifelse(Indicators$THRESH4=="lowstab" & Indicators$BnkCover_StabErosional_CHECK>0.70,'Good',
-                                        ifelse(Indicators$THRESH4=="lowstab"& Indicators$BnkCover_StabErosional_CHECK<0.50,'Poor',
-                                               ifelse(Indicators$THRESH4=="lowstab" & Indicators$BnkCover_StabErosional_CHECK<=0.70 & Indicators$BnkCover_StabErosional_CHECK>=0.50,'Fair',Indicators$BnkCover_StabErosionalrtg)))
+Indicators$BnkCover_StabErosionalrtg=ifelse(Indicators$THRESH4=="lowstab" & Indicators$BnkCover_StabErosional_CHECK>70,'Good',
+                                        ifelse(Indicators$THRESH4=="lowstab"& Indicators$BnkCover_StabErosional_CHECK<50,'Poor',
+                                               ifelse(Indicators$THRESH4=="lowstab" & Indicators$BnkCover_StabErosional_CHECK<=70 & Indicators$BnkCover_StabErosional_CHECK>=50,'Fair',Indicators$BnkCover_StabErosionalrtg)))
 
 
 ############Join indicators to PHAB thresholds determined using EPA reference data in NC_EPA_Data_and_SettingThresholds.R

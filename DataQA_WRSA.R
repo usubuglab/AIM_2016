@@ -448,19 +448,19 @@ listsites=tblRetrieve(Parameters=c('SITE_ID','DATE_COL','LOC_NAME','LAT_DD','LON
 listsites=cast(listsites,'UID~PARAMETER',value='RESULT')
 
 #Check all Z_DISTANCEFROMX to verify within 250 or 500m or allowable distance to be slid
-SlideIssues=subset(listsites,Z_DISTANCEFROMX>0.25)
-View(SlideIssues)
+SlideIssues=subset(listsites,as.numeric(Z_DISTANCEFROMX)>0.25)# not working because of "?"
+write.csv(SlideIssues,'SlideIssues.csv')
 
 #Check for merged sites
 Merge=subset(listsites,REPEAT_VISIT!='N')
-View(Merge)
+write.csv(Merge,'Merge.csv')
 #look at FieldTracking or ScoutTracking spreadsheets on the google drive and fill in as needed
 
 #Check that the straight-line distance between BR and TR does not exceed the total reach length (i.e. sinuosity <1 should never happen)
 listsites$straightline=acos(sin(as.numeric(listsites$LAT_DD_BR)*3.141593/180)*sin(as.numeric(listsites$LAT_DD_TR)*3.141593/180) + cos(as.numeric(listsites$LAT_DD_BR)*3.141593/180)*cos(as.numeric(listsites$LAT_DD_TR)*3.141593/180)*cos(as.numeric(listsites$LON_DD_TR)*3.141593/180-as.numeric(listsites$LON_DD_BR)*3.141593/180)) * 6371000
 listsites$SINUOSITY=as.numeric(listsites$TRCHLEN)/as.numeric(listsites$straightline)
 SinuosityCheck=subset(listsites,SINUOSITY<1)
-View(SinuosityCheck)
+write.csv(SinuosityCheck,'SinuosityCheck.csv')
 
 #After all GPS coordinates check out export coordinates for Ryan Lokteff or GIS tech to compute WestWide bug OE model and EC,TN,TP models
 write.csv(listsites,'postseason_site_coordinates.csv')
@@ -485,10 +485,16 @@ Bugspvt=addKEYS(cast(Bugs,'UID~SAMPLE_TYPE+PARAMETER',value='RESULT'),c('SITE_ID
 AreaCheck1=subset(Bugspvt,(as.numeric(BERW_AREA_SAMP)!=0.093 & BERW_SAMPLER=='SU'))
 AreaCheck2=subset(Bugspvt,(as.numeric(BERW_AREA_SAMP)!=0.0413 & BERW_SAMPLER=='MI'))
 AreaCheck3=subset(Bugspvt,(as.numeric(BERW_AREA_SAMP)!=0.093 & BERW_SAMPLER=='KC'))
+write.csv(AreaCheck1,'AreaCheck1.csv')
+write.csv(AreaCheck2,'AreaCheck2.csv')
+write.csv(AreaCheck3,'AreaCheck3.csv')
+
 
 #check to make sure 8 or 11 TRAN_NUM at all sites
-SamplingCheck1=subset(Bugspvt,(BERW_TRAN_NUM<8 & BERW_BUG_METHOD=='Targeted Riffle'))
-SamplingCheck2=subset(Bugspvt,(BERW_TRAN_NUM<11 & BERW_BUG_METHOD=='Reachwide'))
+SamplingCheck1=subset(Bugspvt,(BERW_TRAN_NUM<8 & BERW_BUG_METHOD=='TARGETED RIFFLE'))
+SamplingCheck2=subset(Bugspvt,(BERW_TRAN_NUM<11 & BERW_BUG_METHOD=='REACH WIDE'))
+write.csv(SamplingCheck1,'SamplingCheck1.csv')
+write.csv(SamplingCheck2,'SamplingCheck2.csv')
 
 #get data ready to submit via http://www.usu.edu/buglab/SampleProcessing/SampleSubmission/
 SubMetadata=c('UID','SITE_ID', 'COUNTY','GNIS_Name','LAT_DD','LON_DD')
@@ -497,7 +503,7 @@ Bugspvtsub=c('SITE_ID','BERW_JAR_NO','BERW_ACTUAL_DATE','BERW_AREA','BERW_SAMPLE
 Bugspvt2=Bugspvt[Bugspvtsub]
 BugsSubmit=join(Bugspvt2,Metadata, by="SITE_ID")
 BugsSubmit$BERW_SAMPLER=ifelse(BugsSubmit$BERW_SAMPLER=='SU'|BugsSubmit$BERW_SAMPLER=='MI',"Surber net",ifelse(BugsSubmit$BERW_SAMPLER=='KC',"Kick net",BugsSubmit$BERW_SAMPLER))
-BugsSubmit=BugsSubmit[,c(1,2,9,10,11,3,5,6,7,8)]#fill in desired columns
+BugsSubmit=BugsSubmit[,c(1,2,9,10,11,3,5,6,4,7,8)]#fill in desired columns
 write.csv(BugsSubmit,'BugsSubmit.csv')
                       
                       
@@ -526,13 +532,15 @@ ConditionCheck1=aggregate(TIME_UNFROZEN~OE_TNrtg, data=WQpvt, FUN=mean)
 ConditionCheck2=aggregate(TIME_UNFROZEN~OE_TPrtg, data=WQpvt, FUN=mean) 
                       
 #view any typical values violations for Conductivity and PH
-Conduct=tblRetrieve(Comments='Y',Parameters=c('CONDUCTIVITY'),Projects=projects,Years=years,Protocols=protocols)
+Conduct=addKEYS(tblRetrieve(Comments='Y',Parameters=c('CONDUCTIVITY'),Projects=projects,Years=years,Protocols=protocols),c('SITE_ID'))
 ConductQuestions=subset(Conduct,RESULT<100 | RESULT>600)# review comments for any sites flagged here 
 postseasonmetadata_ecoregion=postseasonmetadata[,c('UID','ECO_10')]
 ConductQuestions=join(ConductQuestions,postseasonmetadata_ecoregion, by="UID",type="left")
-PH=tblRetrieve(Comments='Y',Parameters=c('PH'),Projects=projects,Years=years,Protocols=protocols)
+write.csv(ConductQuestions,'ConductQuestions.csv')
+PH=addKEYS(tblRetrieve(Comments='Y',Parameters=c('PH'),Projects=projects,Years=years,Protocols=protocols),c('SITE_ID'))
 PHQuestions=subset(PH,RESULT<6 | RESULT>9)# review comments for any sites flagged here
 PHQuestions=join(PHQuestions,postseasonmetadata_ecoregion, by="UID",type="left")
+write.csv(PHQuestions,'PHQuestions.csv')
 
 #compare any questionable values to ecoregional EPA data
 #should automate this process so that only values that fall outside this range get flagged ---need to join the ecoregion data to the design table; can't remember where all that site metadata from the master sample ended up
@@ -551,20 +559,21 @@ WQ1=subset(WQ1,CAL_INST_ID=='')# fill in data of interest here
 heights=addKEYS(tblRetrieve(Parameters=c('INCISED','BANKHT'),Years=years, Projects=projects),c('SITE_ID','DATE_COL','CREW_LEADER'))
 HeightCheck1=subset(heights,RESULT>1.5|RESULT<0.1)
 View(HeightCheck1)
-
+write.csv(HeightCheck1,'HeightCheck1.csv')
                       
                       
 #######   width  #########
 #cross checks implemented in app and extreme values hard to catch/ not so important so just check for outliers(above), and for protocol issues related to dry sites                       
 Depths=tblRetrieve(Parameters=c('DEPTH'),Years=years, Projects=projects)
 Depths=subset(Depths,RESULT==0 & POINT==1)# query wetted width for these transects and UIDs in SQL and check if it is 0 and TRANDRY='Y' 
+write.csv(Depths,'Depths.csv')
 #do the opposite query
 Widths=tblRetrieve(Parameters=c('WETWID','BANKWID','TRANDRY'),Years=years, Projects=projects)                      
 pvtWidths=cast(Widths,'UID+TRANSECT~PARAMETER',value='RESULT')
 Widths=subset(Widths,RESULT==0)# query the corresponding thalweg depths in SQL if present and the VALXSITE to make sure it is INTWADE                      
+write.csv(Widths,'Widths.csv')#something is wrong because this is aggregating things to counts
 #dry transects
 DryCheck=subset(pvtWidths,(WETWID!=0 & TRANDRY=='Y')|(WETWID==0 & TRANDRY=='N')|(WETWID==0 & is.na(TRANDRY)=='TRUE'))#likely needs tweaking                      
-
    
                       
                       
