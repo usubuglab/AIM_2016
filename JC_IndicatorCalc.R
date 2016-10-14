@@ -414,11 +414,10 @@ K_Sed2014=merge(J_Sed2014,Nall_Sed2014pvtsub, by="UID")
 
 # Combine the two datasets for PCT_SAFN together so that I don't have multiple files for the same thing
 #2013+
-#H_Sed=rbind(pctsafn_2013,G_Sed2014)# uncomment for 2013 data
+H_Sed=rbind(pctsafn_2013,G_Sed2014)# uncomment for 2013 data
 #2013+
-#PCT_SAFN_ALL=join(H_Sed,K_Sed2014,by="UID",type="left")#uncomment for 2013 data
+PCT_SAFN_ALL=join(H_Sed,K_Sed2014,by="UID",type="left")#uncomment for 2013 data
 #2014 only?
-PCT_SAFN_ALL=join_all(list(pctsafn_2013, G_Sed2014,K_Sed2014),by="UID",type="left")
 #PCT_SAFN_ALL=join(G_Sed2014,K_Sed2014,by="UID",type="left")
 #PCT_SAFN_sub=subset(PCT_SAFN_ALL,nallPCT_SAFN_CHECK<50)
 PCT_SAFN_ALL$allPCT_SAFN_CHECK=ifelse(PCT_SAFN_ALL$nallPCT_SAFN_CHECK<50,NA,PCT_SAFN_ALL$allPCT_SAFN_CHECK)
@@ -815,8 +814,9 @@ poolsmerge=merge(pvtpools1,pvtpools2,by=c('UID'),all=T)
 poolsmerge$PoolPct=round((poolsmerge$LENGTH/poolsmerge$POOLRCHLEN)*100,digits=0)
 #residual pool depth
 PoolDepth=cast(PoolDepth,'UID+TRANSECT+POINT~PARAMETER',value='RESULT')
-PoolDepth$RPD=round((PoolDepth$MAXDEPTH-PoolDepth$PTAILDEP)/100,digits=2)# convert from cm to m
+PoolDepth$RPD=(PoolDepth$MAXDEPTH-PoolDepth$PTAILDEP)/100# convert from cm to m
 RPD=setNames(aggregate(PoolDepth$RPD,list(UID=PoolDepth$UID),mean),c("UID","RPD"))#converted to m
+RPD$RPD=round(RPD$RPD,digits=2)
 #pool frequency
 count=setNames(count(PoolDepth,"UID"),c("UID","NumPools"))
 poolmerge2=join_all(list(poolsmerge,count,RPD), by="UID")
@@ -874,6 +874,6 @@ IndicatorCheck=IndicatorCheckJoin[,c("UID",grep("CHECK$", colnames(IndicatorChec
 #write.csv(IndicatorCheck,"C:\\Users\\Nicole\\Desktop\\IndicatorCheck2.csv")
 #Remove all other data files as they are no longer needed
 IndicatorCheck=subset(IndicatorCheck,PROTOCOL_CHECK=="BOAT14")
-write.csv(IndicatorCheck,"IndicatorCheck_7October2016_v3.csv")
+write.csv(IndicatorCheck,"IndicatorCheck_7October2016_v5.csv")
 rm(PHfinal,XGB_new,XGB_new1,BankStab,Banks,RipGB,EMBED,Human_Influ,W1_HALL,W1_HALL_NRSA,QR1,XEMBED,BnkDensPvt,BnkDensiom,densiom,RipXCMG,XCMG_new,XCMG_new1,RipWW,XCMGW_new,XCMGW_new1,IndicatorCheckJoin,fish,fishpvt2,
    MidDensiom,DensPvt,Incision,INCISED,BANKHT,Inc,Bnk,xIncht,xBnkht,IncBnk,Sediment,pctsafn,Sed2014,A_Sed2014,C_Sed2014,E_Sed2014,F_Sed2014,PCT_SAFN_ALL)
