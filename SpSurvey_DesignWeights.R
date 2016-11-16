@@ -20,6 +20,8 @@
 ##pull in relevant SiteInfo
 #because full design file was stored in Access I had to merge the sample status from access with SQL in excel and NN has to be assigned manually in this process as well so that the NNs are after the last TS site in each stratum-mdcaty (see above)
 siteeval=read.csv('Z:\\buglab\\Research Projects\\BLM_WRSA_Stream_Surveys\\Results and Reports\\AIM_2011_2015_results\\siteeval_Rinput.csv')
+#NC's computer is mapped differently, tourbleshooting # siteeval=read.csv('\\\\share1.bluezone.usu.edu\\miller\\buglab\\Research Projects\\BLM_WRSA_Stream_Surveys\\Results and Reports\\AIM_2011_2015_results\\siteeval_Rinput.csv')
+
 #make sure Access site status evaluation matches SQL
 #make sure VISIT_NO=1 for all sites used 
 #read in sampled Lat and Long for input into extent estimates for computing error
@@ -45,6 +47,7 @@ summary(siteeval$wgt_cat) # look at all categories
 #approximations of the number of stream km included as multi-thread channels was estimated to be 800 km and so it was decided that it was not worth correcting for this error, which would require joining tony's file to the NHD plus and to get the StreamCalcRemov column and excluding sites where this column=0
 #there was a higher probability that a multi-thread channel would be selected than a single thread channel because of this error but nothing can be done to correct for this spatially, only to correct the number of stream km in the target pop. Since 800 km is small in the grand scheme of errors in the NHD. No correction to the sample frame was made.
 att <- read.dbf("Z:\\GIS\\Projects\\NRSA\\BLM_NRSA.dbf")
+#NC's computer is mapped differently, troubleshooting# att <- read.dbf("\\\\share1.bluezone.usu.edu\\miller\\GIS\\Projects\\NRSA\\BLM_NRSA.dbf")
 head(att)
 
 # change length to km
@@ -114,6 +117,10 @@ siteeval=tblRetrieve(Table='',Parameters=c('VALXSITE','STRATUM','MDCATY','WGT'),
 
 <<<<<<< HEAD
 siteeval=tblRetrieve(Table='',Parameters=c('VALXSITE','STRATUM','MDCATY','WGT'),Projects='NorCal',Protocols='',Years=c('2013','2014'))
+#2016# The below line of code reads in a csv that does not need to be altered
+# siteeval=read.csv('C:\\Users\\Nicole\\Desktop\\NorCal_SmokeCreekWSassessment\\SmokeCreekWS_FinalDesign2016_Rinput.csv')
+# #2016Run2# siteeval=read.csv('C:\\Users\\Nicole\\Desktop\\NorCal_SmokeCreekWSassessment\\SmokeCreekWS_FinalDesign2016_Rinput_Run2.csv')
+
 
 #remove QA duplicates
 =======
@@ -161,7 +168,7 @@ siteeval$EvalStatus[siteeval$UID=='81222692014']='NT'
 #Data file to alter[row number, "column name"]="value you want there instead of what is there"
 #siteeval[siteeval$UID=='13712',"EvalStatus"]='NT'
 
-#To "remove" the below three sites from the extent estimates. These Sites were found to be outliers in the NV MMI model
+#To "remove" the below three sites from the extent estimates. These Sites were found to be outliers in the NV MMI model (12453,EL-SS-8124;11777,AR-SS-8017;12476,SU-SS-8322)
 # As of 9April2015 We are NOT using the three lines of code below. We are inlcuding these sites for all indicators EXCEPT the MMI
 #siteeval[siteeval$UID=='11777',"EvalStatus"]='IA'
 #siteeval[siteeval$UID=='12476',"EvalStatus"]='IA'
@@ -206,14 +213,19 @@ siteeval$EvalStatus[siteeval$UID=='81222692014']='NT'
 
 ##NorCal Reweighting 2Oct2015: Below is tony Olsen's original GIS file that he ran weights with
 att <- read.dbf("\\\\share1.bluezone.usu.edu\\miller\\GIS\\Projects\\NRSA\\NC_ReProject_BLM_NRSA")
+#2016# att <- read.dbf("\\\\share1.bluezone.usu.edu\\miller\\GIS\\Projects\\CAblm\\WSjoin_NC_ReProject_BLM_NRSA_SmokeCkAssess")
 att$length_km <- att$length_mdm/1000
 
 summary(att$BLM_UNIT)
+#2016# summary(att$BLM_UNIT16)
 #  summarize sample frame
 tmp <- tapply(att$length_km, list(att$BLM_UNIT , att$DES_NRSA14), sum)
+#2016 Run 1 only# tmp <- tapply(att$length_km, list(att$BLM_UNIT16 , att$DES_NRSA16), sum)
+#2016Run2likely wrong# tmp <- tapply(att$length_km, list(att$BLM_UNIT16 , att$DES_NRSA14), sum)
 tmp[is.na(tmp)] <- 0
 round(addmargins(tmp), 2)
 att$stratum_BLM_UNIT <- att$BLM_UNIT
+#2016# att$stratum_BLM_UNIT <- att$BLM_UNIT16
 levels(att$stratum_BLM_UNIT) <- c(levels(att$stratum_BLM_UNIT), "Other")
 att$stratum_BLM_UNIT[is.na(att$stratum_BLM_UNIT)] <- "Other"
 
@@ -264,7 +276,7 @@ siteeval$Wgt_Final <- adjwgt(sites=siteeval$EvalStatus != "NN",
 
 sum(siteeval$Wgt_Final)
 
-write.csv(siteeval,'AdjustedWeights.csv');View(siteeval)
+write.csv(siteeval,'AdjustedWeights_2016_Try1_Run2.csv');View(siteeval)
 
 #siteeval=read.csv('AdjustedWeights.csv')
 

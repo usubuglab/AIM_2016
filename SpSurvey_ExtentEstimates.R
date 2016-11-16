@@ -12,6 +12,14 @@
 #                                       Surprise_Field_Office=c("Surprise Field Office",
 #                                                               "Surprise Field Office Home Camp")
 # )
+#2016 Start# 
+#siteeval=read.csv('AdjustedWeights_2016TRY2.csv')
+siteeval=read.csv('AdjustedWeights_2016_Try1_Run2.csv')
+#siteeval$SITE_ID=siteeval$Sitecode
+#siteeval$Field_Office <- as.factor("Smoke Creek Watershed")
+#siteeval$STRATUM=siteeval$Field_Office
+#2016 stop#
+
 #subpopuations do NOT need to be in the original design. Others that were considered and investigated in preliminary analysis in UTBLM:
 # ,StreamOrder=SiteInfo$StreamOrder, #low sample sizes (see warnings in cat.analysis)
 # Ecoregion=SiteInfo$EcoregionIII_Name #low sample sizes (see warnings in cat.analysis)
@@ -26,6 +34,11 @@ subpopCON=data.frame(siteID=siteeval$SITE_ID,
                         Climate=siteeval$CLIMATE,
                         Strata=siteeval$STRATUM
                         )
+#2016 start
+#subpopCON=data.frame(siteID=siteeval$SITE_ID,
+#                     Strata=siteeval$STRATUM
+#)
+#2016 stop
 
 ###-------Coordinates for variance estimates-------------###
 ## Need equal area coordinates for variance estimation 
@@ -48,6 +61,11 @@ levels(siteeval$TNT ) <- list(Target=c("TS", "UNK", "IA"),
 
 
 ###-------"Design" files (sites and weights)-------------###
+#2016# NorCal Smoke Creek WS assessment:
+# siteeval$xcoord=siteeval$MidpointLo
+# siteeval$ycoord=siteeval$MidpointLa
+# siteeval$VALXSITE=siteeval$FinalDes
+
 sitesCON=data.frame(siteID=siteeval$SITE_ID,
                     Use=(siteeval$EvalStatus !="NN")# revision approved via email with Tony Olsen Feb 2014#old pre-2014 version:# Use=(SiteInfo$EvalStatus_Target=="TS")# 
                     #Use=(SiteInfo$SampleDate!='' &
@@ -72,12 +90,16 @@ designCON=data.frame(siteID=siteeval$SITE_ID,
 #ResponseInfo=read.csv('\\\\share2.bluezone.usu.edu\\miller\\buglab\\Research Projects\\UT_BLM_Prob_Baseline\\Analyses\\GRTSweights\\Stats_Metrics_4Feb2014.csv');ResponseInfo$UID=siteeval$UID[1:nrow(ResponseInfo)];ResponseInfo$DATE_COL=siteeval$DATE_COL[1:nrow(ResponseInfo)]#(UID randomly assigned for testing)#UTBLM OE scores updated 2/4/14 for all>1="good" and no NA for low split counts (most become poor); Access query "Stats_MetricsOutputCompileForR" #previous inputs: Stats_Metrics_30Oct12
 #FLAT
 #ResponseInfo=read.csv('\\\\share2.bluezone.usu.edu\\miller\\buglab\\Research Projects\\BLM_WRSA_Stream_Surveys\\Results and Reports\\NorCal_2013\\AquametTEST\\metsSubstrateCharacterization.csv')
+
 ######NorCal examples#########
 #########################PIVOT
-#Below line removes three outliers from all indicators
+#Below line removes three outliers from all indicators (12453,EL-SS-8124;11777,AR-SS-8017;12476,SU-SS-8322)
 #ResponseInfo=read.csv('\\\\share1.bluezone.usu.edu\\miller\\buglab\\Research Projects\\BLM_WRSA_Stream_Surveys\\Results and Reports\\NorCal_2013\\Analysis\\ExtentEstimates\\NorCal_ExtEst_Input_ReduceAllIndicators.csv')
 #Below line uses only 67 sites for MMI but 70 sites for all 
 #ResponseInfo=read.csv('\\\\share1.bluezone.usu.edu\\miller\\buglab\\Research Projects\\BLM_WRSA_Stream_Surveys\\Results and Reports\\NorCal_2013\\Analysis\\ExtentEstimates\\NorCal_ExtEst_Input_ReduceMMI.csv')
+
+#2016 NorCal ELFO WS assessment#
+#ResponseInfo=read.csv('C:\\Users\\Nicole\\Desktop\\NorCal_SmokeCreekWSassessment\\SmokeCreek_ExtEst_Input.csv')
 
 #######SRM input file
 #ResponseInfo=read.csv('Z:\\buglab\\Research Projects\\BLM_WRSA_Stream_Surveys\\Results and Reports\\SRM_2015\\ResponseInfo.csv')
@@ -158,7 +180,7 @@ stressorsVAR=c("OE_TN","OE_TP","OE_EC","PH_CHECK","PCT_SAFN","XFC_NAT","LINCIS_H
 # stressorsVAR=c('PCT_SAFN','LSUB_DMM')#UTBLM final list: stressorsVAR=c('InvasivesYN','EC','TP','TN','AugST','LBFXWRat','C1WM100','XCDENMID','Stab2','PCT_SAFN')#must be Access names with a matching 'rtg' variable: to view, str(ResponseInfo)
 #########NorCal examples###########
 #responseVAR=c("NV_MMI")# Input here should be bug model
-#stressorsVAR=c("NV_Invasives","OE_TN","OE_TP","OE_Conduct","PH_CHECK","BnkStability_BLM_CHECK","PCT_SAFN_CHECK","XCMG_CHECK","XFC_NAT_CHECK","LINCIS_H_CHECK","xcdenmid_CHECK","INVASIVE_MACRO)#,"XEMBED_CHECK")#NOT stressorsVAR=c('MMI')   ####'PCT_SAFN','LSUB_DMM')#UTBLM final list: stressorsVAR=c('InvasivesYN','EC','TP','TN','AugST','LBFXWRat','C1WM100','XCDENMID','Stab2','PCT_SAFN')#must be Access names with a matching 'rtg' variable: to view, str(ResponseInfo)
+#stressorsVAR=c("NV_Invasives","OE_TN","OE_TP","OE_Conduct","PH_CHECK","BnkStability_BLM_CHECK","PCT_SAFN_CHECK","XCMG_CHECK","XFC_NAT_CHECK","LINCIS_H_CHECK","xcdenmid_CHECK","INVASIVE_MACRO")#,"XEMBED_CHECK")#NOT stressorsVAR=c('MMI')   ####'PCT_SAFN','LSUB_DMM')#UTBLM final list: stressorsVAR=c('InvasivesYN','EC','TP','TN','AugST','LBFXWRat','C1WM100','XCDENMID','Stab2','PCT_SAFN')#must be Access names with a matching 'rtg' variable: to view, str(ResponseInfo)
 #"XGB_CHECK",
 #To remove MMI from "Poor"/stressorgraphs Use code below
 #responseVAR=c("OE_TN")# Input here is bogus
@@ -206,6 +228,9 @@ stressorsVAR=setdiff(stressorsVAR,omitVAR)
 # #XGB_CHECKname='Bare Ground';
 # XFC_NAT_CHECKname='Instream Complexity';LINCIS_H_CHECKname='Floodplain Connectivity'
 
+
+
+
 #XEMBED_CHECKname='Embeddedness';OEname='Biological Condition'; Invasivesname='Benthic Invasives;#SRM
 
 #WRSA SFS
@@ -221,6 +246,13 @@ C1WM100name='LWD*';XCDENMIDname = 'Canopy*' ; PCT_SAFNname = 'Fines'; LBFXWRatna
 #EPA Statistical summary: LBFXWRat is an index of streamside flood inundation potential. A high value of LBFXWRat indicates that a stream or river has very unconstrained access to the valley flood plain and has flood flows sufficiently large to do so.
 #brokered through varConvert function stored in FNC_tblRetrievePVT.R
 
+
+#2016 NorCalWS assessment
+#Should be moved to a more appropriate place, temporary for now. 
+# Not Sure this is needed. catdata$siteID=catdata$SITE_ID
+#SiteInfo$NV_MMIrtg=SiteInfo$NV_MMI_Cond_2
+#SiteInfo$OE_Conductrtg=SiteInfo$OE_ECrtg
+#SiteInfo$BnkStability_BLM_CHECKrtg=SiteInfo$BnkStability_Erosionalrtg
 
 
 ###-------------------------------------------Run Categorical Analysis------------------------------------------###
@@ -245,7 +277,7 @@ results.cat <- cat.analysis(sites = sitesCON,
 
 ParameterSampleSizes=subset(results.cat,subset=Subpopulation=='Westwide' & Category=='Total');print(ParameterSampleSizes)#samplesize is NResp
 
-write.csv(results.cat,'ExtentEstimates.csv');View(results.cat)
+write.csv(results.cat,'ExtentEstimates_Run2_15Nov2016.csv');View(results.cat)
 
 #old code to force popsize scaling; Tony doesn't typically recommend using and was more necessary for UTBLM segments (not KM)
 #popsizeCON=list("Utah"=c("C"=1600,"G"=1100,"W"=400,"Y"=900),"Districts"=list("C"=c("C"=1600),"G"=c("G"=1100),"W"=c("W"=400),"Y"=c("Y"=900)))

@@ -628,7 +628,10 @@ IndicatorConditions_ECO3_FINAL=cbind(t1,t2,t3)
 
 
 #2016 merging bug and indicators manually in excel due to having UID issues. 
-write.csv(t2,"IndicatorConditions2016_MinusBugs.csv")
+#write.csv(IndicatorCond_ECO_LVL_3NAME,"IndicatorConditions2016_MinusBugs.csv")
+#IndicatorConditions_ECO3_FINAL=read.csv("REAL_IndicatorConditions2016_MinusBugs.csv")
+#IndicatorConditions_ECO3_FINAL$NV_MMI_Cond_2=ifelse(IndicatorConditions_ECO3_FINAL$NV_MMI_Cond=="Reference","Good",ifelse(IndicatorConditions_ECO3_FINAL$NV_MMI_Cond=="Impaired","Poor","Fair"))
+g
 
 
 #IndicatorConditions_ECO3_FINAL=merge(IndicatorCond_ECO3, NVMMIfinal, all=TRUE)
@@ -645,18 +648,19 @@ write.csv(t2,"IndicatorConditions2016_MinusBugs.csv")
 
 #Should be able to just put all column names that you want in the below code
 IndicatorCond_ExtEstSsubset=IndicatorConditions_ECO3_FINAL[,c("UID", 
-                                                              #"NV_MMI","NV_MMIrtg","NV_Invasives","NV_Invasivesrtg",
+                                                              "NV_MMI","NV_MMI_Cond_2","NV_Invasives","NV_Invasivesrtg",
                                                     # "OE_Conduct","OE_Conductrtg",
                                                      "OE_EC_CHECK", "OE_ECrtg",
                                                      "OE_TN_CHECK","OE_TNrtg","OE_TP_CHECK","OE_TPrtg","PH_CHECK","PH_CHECKrtg",
-                                                     "BnkStability_BLM_CHECK","BnkStability_BLM_CHECKrtg","PCT_SAFN_CHECK","PCT_SAFN_CHECKrtg",
+                                                     "BnkStability_Erosional_CHECK","BnkStability_Erosionalrtg","bedPCT_SAFN_CHECK","PCT_SAFN_CHECKrtg",
                                                      "XCMG_CHECK","XCMG_CHECKrtg",
                                                     #"XGB_CHECK","XGB_CHECKrtg",
                                                      "XFC_NAT_CHECK","XFC_NAT_CHECKrtg",
-                                                     "LINCIS_H_CHECK","LINCIS_H_CHECKrtg","xcdenmid_CHECK","xcdenmid_CHECKrtg")]
+                                                     "LINCIS_H_CHECK","LINCIS_H_CHECKrtg","XCDENMID_CHECK","xcdenmid_CHECKrtg")]
 
 
 write.csv(IndicatorCond_ExtEstSsubset,'\\\\share1.bluezone.usu.edu\\miller\\buglab\\Research Projects\\BLM_WRSA_Stream_Surveys\\Results and Reports\\NorCal_2013\\Analysis\\ExtentEstimates\\NorCal_ExtEst_Input.csv')
+#2016# write.csv(IndicatorCond_ExtEstSsubset,'C:\\Users\\Nicole\\Desktop\\NorCal_SmokeCreekWSassessment\\SmokeCreek_ExtEst_Input.csv')
 
                                              
 
