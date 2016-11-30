@@ -6,15 +6,33 @@
 ##########Get all indicators and join ecoregion and size class info to them
 #either use saved csv or run the JC_IndicatorCalc.R
 #Indicators=read.csv('Z:\\buglab\\Research Projects\\BLM_WRSA_Stream_Surveys\\Results and Reports\\SRM_2015\\final_updated_crosschecked_metrics.csv')
-IndicatorCheck=read.csv('Z:\\buglab\\Research Projects\\BLM_WRSA_Stream_Surveys\\Results and Reports\\AIM_2011_2015_results\\IndicatorCheck_29April2016.csv')
+IndicatorCheck=read.csv('IndicatorCheck2016data_21October2016.csv')
+#IndicatorCheck=read.csv('Z:\\buglab\\Research Projects\\BLM_WRSA_Stream_Surveys\\Results and Reports\\AIM_2011_2015_results\\IndicatorCheck_29April2016.csv')
 IndicatorCheck$BNK_THRESH=ifelse(as.numeric(IndicatorCheck$XBKF_W_CHECK)>10,"LargeWade","SmallWade")
-SiteInfo=read.csv('Z:\\buglab\\Research Projects\\AIM\\Projects\\ProjectsPtSummary\\AIM_Aquatic_Sampled_2011_2015_Rinput_into_conditions_final_report_do_not_alter.csv')
-SiteInfoSub=subset(SiteInfo, select=c(SITE_ID_CHECK,Project,Protocol,ECO10,State,FieldOffice,District,StreamOrder,Stratum,StreamSize,Code,Climate))
-SiteInfoSub$ECO10=ifelse(SiteInfoSub$ECO10=="XE_CALIF","MT_PNW",SiteInfoSub$ECO10)
-SiteInfoSub$ECO10=ifelse(SiteInfoSub$SITE_ID_CHECK=="OT-LS-7009","XE_SOUTH",SiteInfoSub$ECO10)
+#2011-2015 data
+#SiteInfo=read.csv('Z:\\buglab\\Research Projects\\AIM\\Projects\\ProjectsPtSummary\\AIM_Aquatic_Sampled_2011_2015_Rinput_into_conditions_final_report_do_not_alter.csv')
+
+#2016 data
+listsites=tblRetrieve(Parameters=c('SITE_ID','DATE_COL','LOC_NAME','LAT_DD','LON_DD','PROJECT','PROTOCOL','VALXSITE','LAT_DD_BR','LAT_DD_TR','LON_DD_BR','LON_DD_TR','Z_DISTANCEFROMX','TRCHLEN','REPEAT_VISIT'),Projects=projects,Years=years,Protocols=protocols)
+listsites=cast(listsites,'UID~PARAMETER',value='RESULT')
+designs=read.csv('\\\\share1.bluezone.usu.edu\\miller\\buglab\\Research Projects\\AIM\\AIM_DataManagement\\ProjectMngtSystem\\design_table2.csv')
+postseason=join(listsites,designs, by="SITE_ID", type="left")
+#get ecoregional and stream size info for context for values
+designmetadata=read.csv('\\\\share1.bluezone.usu.edu\\miller\\buglab\\Research Projects\\AIM\\GRTS_CodeGuidance\\MasterSample\\MasterSampleDraws\\Aquatic\\LoticMasterSample\\Attributed\\LoticMasterSampleAttributedPtsWithHybridEcoregions.csv')
+SiteInfoSub=join(postseason,designmetadata, by="MS_ID", type="left")
+SiteInfoSub$SITE_ID_CHECK=SiteInfoSub$SITE_ID
+
+#2011-2015 edits
+#SiteInfoSub=subset(SiteInfo, select=c(SITE_ID_CHECK,Project,Protocol,ECO10,State,FieldOffice,District,StreamOrder,Stratum,StreamSize,Code,Climate))
+#SiteInfoSub$ECO10=ifelse(SiteInfoSub$ECO10=="XE_CALIF","MT_PNW",SiteInfoSub$ECO10)
+#SiteInfoSub$ECO10=ifelse(SiteInfoSub$SITE_ID_CHECK=="OT-LS-7009","XE_SOUTH",SiteInfoSub$ECO10)
+
 Indicators=join(IndicatorCheck, SiteInfoSub, by="SITE_ID_CHECK",type="left",match="first")
-Indicators$BNK_THRESH=ifelse(Indicators$Protocol=="BOATABLE","BOATABLE",Indicators$BNK_THRESH)
-Indicators$THRESH=paste(Indicators$ECO10,Indicators$BNK_THRESH, sep="_")
+
+Indicators$BNK_THRESH=ifelse(Indicators$PROTOCOL_CHECK=='BOAT2016',"BOATABLE",Indicators$BNK_THRESH)
+#Indicators$BNK_THRESH=ifelse(Indicators$Protocol=="BOATABLE","BOATABLE",Indicators$BNK_THRESH)
+Indicators$THRESH=paste(Indicators$ECO_10,Indicators$BNK_THRESH, sep="_")
+#Indicators$THRESH=paste(Indicators$ECO10,Indicators$BNK_THRESH, sep="_")
 Indicators$THRESH3=as.factor(Indicators$THRESH)
 levels(Indicators$THRESH3) <- list( XE_SOUTH_SmallWade="XE_SOUTH_SmallWade",XE_SOUTH_LargeWade="XE_SOUTH_LargeWade", 
                                     MT_SWEST_SmallWade="MT_SWEST_SmallWade",MT_SWEST_LargeWade="MT_SWEST_LargeWade", 
@@ -32,7 +50,9 @@ levels(Indicators$THRESH3) <- list( XE_SOUTH_SmallWade="XE_SOUTH_SmallWade",XE_S
 
 Indicators$THRESH2=Indicators$THRESH
 Indicators$THRESH2=ifelse(Indicators$THRESH2=="PL_RANGE_BOATABLE"|Indicators$THRESH2=="PLN_CULT_BOATABLE"|Indicators$THRESH2=="MT_PNW_BOATABLE"|Indicators$THRESH2=="MT_NROCK_BOATABLE"|Indicators$THRESH2=="MT_SROCK_BOATABLE"|Indicators$THRESH2=="XE_NORTH_BOATABLE"|Indicators$THRESH2=="XE_EPLAT_BOATABLE"|Indicators$THRESH2=="XE_SOUTH_BOATABLE","ALL_BOATING",Indicators$THRESH2)
-Indicators$THRESH4=ifelse(Indicators$ECO10=="XE_EPLAT"|Indicators$ECO10=="XE_SOUTH"|Indicators$ECO10=="PLN_CULT"|Indicators$ECO10=="PL_RANGE","lowstab","highstab")
+#Indicators$THRESH4=ifelse(Indicators$ECO10=="XE_EPLAT"|Indicators$ECO10=="XE_SOUTH"|Indicators$ECO10=="PLN_CULT"|Indicators$ECO10=="PL_RANGE","lowstab","highstab")
+Indicators$THRESH4=ifelse(Indicators$ECO_10=="XE_EPLAT"|Indicators$ECO_10=="XE_SOUTH"|Indicators$ECO_10=="PLN_CULT"|Indicators$ECO_10=="PL_RANGE","lowstab","highstab")
+
 
 ############Join bug data to all other indicator data
 #bug threholds are determined depending on the model and the thresholds can be found in Z:\buglab\OE_Modeling\OE_Model_Documentation\OE_Data_Prep_Instructions_SWJ
@@ -102,7 +122,7 @@ IndicatorsJoin$LINCIS_Hrtg=ifelse(IndicatorsJoin$LINCIS_H_CHECK >=IndicatorsJoin
 IndicatorsJoin$LINCIS_Hrtg=ifelse(IndicatorsJoin$THRESH2=="ALL_BOATING"& IndicatorsJoin$LINCIS_H_CHECK >=0.3986,"Poor",
                                          ifelse(IndicatorsJoin$THRESH2=="ALL_BOATING"& IndicatorsJoin$LINCIS_H_CHECK< 0.2222,"Good",
                                                 ifelse(IndicatorsJoin$THRESH2=="ALL_BOATING"& IndicatorsJoin$LINCIS_H_CHECK <0.3986 & IndicatorsJoin$LINCIS_H_CHECK>= 0.2222,"Fair",IndicatorsJoin$LINCIS_Hrtg)))
-IndicatorsJoin$PCT_SAFNrtg=ifelse(IndicatorsJoin$PCT_SAFN_CHECK >=IndicatorsJoin$PCT_SAFN_0.90,"Poor",ifelse(IndicatorsJoin$PCT_SAFN_CHECK <IndicatorsJoin$PCT_SAFN_0.70,"Good","Fair"))
+IndicatorsJoin$allPCT_SAFNrtg=ifelse(IndicatorsJoin$allPCT_SAFN_CHECK >=IndicatorsJoin$PCT_SAFN_0.90,"Poor",ifelse(IndicatorsJoin$allPCT_SAFN_CHECK <IndicatorsJoin$PCT_SAFN_0.70,"Good","Fair"))
 IndicatorsJoin$XEMBEDrtg=ifelse(IndicatorsJoin$XEMBED_CHECK >=IndicatorsJoin$XEMBED_0.90,"Poor",ifelse(IndicatorsJoin$XEMBED_CHECK <IndicatorsJoin$XEMBED_0.70,"Good","Fair"))
 
 IndicatorsCond=IndicatorsJoin

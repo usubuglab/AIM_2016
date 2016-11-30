@@ -444,7 +444,7 @@ for (t in 1:length(QUANTtbls)){
 
 ######## GPS ##########
 #get all coordinates and site metadata
-listsites=tblRetrieve(Parameters=c('SITE_ID','DATE_COL','LOC_NAME','LAT_DD','LON_DD','PROJECT','PROTOCOL','VALXSITE','LAT_DD_BR','LAT_DD_TR','LON_DD_BR','LON_DD_TR','Z_DISTANCEFROMX','TRCHLEN','REPEAT_VISIT'),Projects=projects,Years=years,Protocols=protocols)
+listsites=tblRetrieve(Parameters=c('SITE_ID','DATE_COL','LOC_NAME','LAT_DD','LON_DD','PROJECT','PROTOCOL','VALXSITE','LAT_DD_BR','LAT_DD_TR','LON_DD_BR','LON_DD_TR','Z_DISTANCEFROMX','TRCHLEN','REPEAT_VISIT','SLIDE_YN'),Projects=projects,Years=years,Protocols=protocols)
 listsites=cast(listsites,'UID~PARAMETER',value='RESULT')
 
 #Check all Z_DISTANCEFROMX to verify within 250 or 500m or allowable distance to be slid
@@ -468,18 +468,20 @@ write.csv(listsites,'postseason_site_coordinates.csv')
 #get other useful information associated with sites
 #eventually read in design table from SQL but for now the table should be read in from the path below to compare original coordinates with those that were collected
 designs=read.csv('\\\\share1.bluezone.usu.edu\\miller\\buglab\\Research Projects\\AIM\\AIM_DataManagement\\ProjectMngtSystem\\design_table2.csv')
-postseason=join(listsites,designs, by="SITE_ID", type="left")
+postseasonmetadata=join(listsites,designs, by="SITE_ID", type="left")
 #get ecoregional and stream size info for context for values
-designmetadata=read.csv('\\\\share1.bluezone.usu.edu\\miller\\buglab\\Research Projects\\AIM\\GRTS_CodeGuidance\\MasterSample\\MasterSampleDraws\\Aquatic\\LoticMasterSample\\Attributed\\LoticMasterSampleAttributedPtsWithHybridEcoregions.csv')
-postseasonmetadata=join(postseason,designmetadata, by="MS_ID", type="left")
+#designmetadata=read.csv('\\\\share1.bluezone.usu.edu\\miller\\buglab\\Research Projects\\AIM\\GRTS_CodeGuidance\\MasterSample\\MasterSampleDraws\\Aquatic\\LoticMasterSample\\Attributed\\LoticMasterSampleAttributedPtsWithHybridEcoregions.csv')
+#postseasonmetadata=join(postseason,designmetadata, by="MS_ID", type="left")
 #eventually need to edit the read in csv above to reflect the sampled coordinates for future sample draws at the end of the season
+postseasonmetadata$CALC_DISTFROMX=acos(sin(as.numeric(postseasonmetadata$LAT_DD)*3.141593/180)*sin(as.numeric(postseasonmetadata$DESIGN_LAT)*3.141593/180) + cos(as.numeric(postseasonmetadata$LAT_DD)*3.141593/180)*cos(as.numeric(postseasonmetadata$DESIGN_LAT)*3.141593/180)*cos(as.numeric(postseasonmetadata$DESIGN_LON)*3.141593/180-as.numeric(postseasonmetadata$LON_DD)*3.141593/180)) * 6371000
 
 
 
 ####### Bugs #########
 #get all bug data
-Bugs=tblRetrieve(Parameters=c('JAR_NO','ACTUAL_DATE','AREA_SAMP','TRAN_NUM','SAMPLER','AREA','BUG_METHOD'),Years=years, Projects=projects)
+Bugs=tblRetrieve(Parameters=c('JAR_NO','ACTUAL_DATE','AREA_SAMP','TRAN_NUM','SAMPLER','AREA','BUG_METHOD','VALXSITE','PROTOCOL','PROJECT'),Years=years, Projects=projects,Protocol=protocols)
 Bugspvt=addKEYS(cast(Bugs,'UID~SAMPLE_TYPE+PARAMETER',value='RESULT'),c('SITE_ID','DATE_COL'))
+
 
 #check surber net and mini surber net areas because they were wrong in the app at the begining of 2016 field season
 AreaCheck1=subset(Bugspvt,(as.numeric(BERW_AREA_SAMP)!=0.093 & BERW_SAMPLER=='SU'))
@@ -497,13 +499,14 @@ write.csv(SamplingCheck1,'SamplingCheck1.csv')
 write.csv(SamplingCheck2,'SamplingCheck2.csv')
 
 #get data ready to submit via http://www.usu.edu/buglab/SampleProcessing/SampleSubmission/
-SubMetadata=c('UID','SITE_ID', 'COUNTY','GNIS_Name','LAT_DD','LON_DD')
+postseasonmetadata=subset(postseasonmetadata,PROTOCOL!='FAILED')
+SubMetadata=c('UID','SITE_ID', 'COUNTY','STREAM_NAME','LAT_DD','LON_DD','PROJECT','STRATUM')
 Metadata=postseasonmetadata[SubMetadata]
 Bugspvtsub=c('SITE_ID','BERW_JAR_NO','BERW_ACTUAL_DATE','BERW_AREA','BERW_SAMPLER','BERW_BUG_METHOD')
 Bugspvt2=Bugspvt[Bugspvtsub]
 BugsSubmit=join(Bugspvt2,Metadata, by="SITE_ID")
 BugsSubmit$BERW_SAMPLER=ifelse(BugsSubmit$BERW_SAMPLER=='SU'|BugsSubmit$BERW_SAMPLER=='MI',"Surber net",ifelse(BugsSubmit$BERW_SAMPLER=='KC',"Kick net",BugsSubmit$BERW_SAMPLER))
-BugsSubmit=BugsSubmit[,c(1,2,9,10,11,3,5,6,4,7,8)]#fill in desired columns
+BugsSubmit=BugsSubmit[,c(12,13,1,2,9,10,11,3,5,6,4,7,8)]#fill in desired columns
 write.csv(BugsSubmit,'BugsSubmit.csv')
                       
                       
@@ -586,23 +589,25 @@ A_Sed2014=cast(Sed2014,'UID+TRANSECT+POINT~PARAMETER', value='RESULT')
 OtherCheck=subset(A_Sed2014,SIZE_NUM=='0')
 #OtherCheck=subset(A_Sed2014,SIZE_NUM=='SWD'|SIZE_NUM=='LWD'|SIZE_NUM=='OM'|SIZE_NUM=='RM')
 OtherCount=setNames(aggregate(SIZE_NUM~UID, data=OtherCheck, FUN=length),c("UID","CountOther"))# if greater than 10% of pebbles i.e. 21 then look at categories
-                      
+write.csv(OtherCount,'OtherCount.csv')
+
 #check sample sizes and that bed and bank protocols were followed                       
 C_Sed2014=A_Sed2014[!A_Sed2014$LOC== "BANK", ]
 Nbed_Sed2014pvt=aggregate(.~UID, data=C_Sed2014, length)#number of bed pebbles
 Nbed_Sed2014pvt=setNames(Nbed_Sed2014pvt[,c(1,5)],c("UID","nbed"))
 Nall_Sed2014pvt=setNames(cast(Sed2014,'UID~PARAMETER',value='RESULT',fun=length),c("UID","nLOC","nall"))#number of all collected pebbles
 Nall_Sed2014pvt=Nall_Sed2014pvt[,c(1,3)]
-sample_size=join(Nbed_Sed2014pvt,Nall_Sed2014pvt, by="UID")                      
-View(sample_size)
+sample_size=addKEYS(join(Nbed_Sed2014pvt,Nall_Sed2014pvt, by="UID"),c('SITE_ID'))                      
+write.csv(sample_size,'sed_sample_size.csv')
 
 ###### Angle  ########                      
 #outlier checks (above) and check for missing SLANT to check if angle was being calculated in app properly
 Angle=tblRetrieve(Parameters=c('ANGLE180','SLANT'),Years=years, Projects=projects)
 pvtAngle=addKEYS(cast(Angle,'UID+TRANSECT+POINT~PARAMETER',value='RESULT'), c('SITE_ID','DATE_COL','CREW_LEADER'))                     
-AngleCheck=subset(pvtAngle, SLANT==NA )                      
-
-
+AngleCheck1=subset(pvtAngle, is.na(SLANT=='TRUE'))                      
+AngleCheck2=subset(pvtAngle, SLANT=='OB' & as.numeric(ANGLE180)<90)  
+write.csv(AngleCheck1,'AngleCheck1.csv')
+write.csv(AngleCheck2,'AngleCheck2.csv')
                  
 #######  Riparian Veg  ########
 #overstory >100% check
@@ -648,10 +653,12 @@ riparian5pvtsub=subset(riparian5PVT,UNDERVEG=='N' & UNDNWDY>0 & UNDWDY>0)
 #Custom thalweg missing data because number of station is dynamic
 #run thalweg_completion_check SQL query currently under JC Projects folder locally but want to migrate to R or to a view in SQL
 tbl=tblRetrieve(Parameters=c('DEPTH'),Project=projects, Years=years,Protocols=protocols)
-tbl.2=tblRetrieve(Parameters=c('SUB_5_7'),Project=projects, Years=years,Protocols=protocols)
+tbl.2=tblRetrieve(Parameters=c('NUM_THALWEG'),Project=projects, Years=years,Protocols=protocols)
 tbl3=cast(tbl.2,'UID~PARAMETER',value='RESULT',mean)
-tbl.PVT=addKEYS(cast(tbl,'UID~PARAMETER',value='RESULT'),c('SITE_ID'))
+tbl.PVT=addKEYS(cast(tbl,'UID~PARAMETER',value='RESULT'),c('SITE_ID'))# count is default
 thalweg.missing=merge(tbl.PVT,tbl3, by='UID')
+thalweg.missing$PctComplete=thalweg.missing$DEPTH/(thalweg.missing$NUM_THALWEG*10)*100
+write.csv(thalweg.missing,'thalweg.missing.csv')
 
 #Increment cross-validation WRSA checks
 incrementcheck=tblRetrieve(Parameters=c('TRCHLEN','INCREMENT','RCHWIDTH'), Projects=projects, Years=years,Protocols=protocols)
@@ -674,7 +681,7 @@ pvttoodeep=cast(toodeep,'UID+TRANSECT+POINT~PARAMETER',value='RESULT')
 TooDeepCheck=subset(pvttoodeep,TOODEEP=='Y')
 
 #thalweg depth/ width EPA check
-#wading sites
+#wading sites-----------not curenly working depths not being joined properly
 depthcheck=tblRetrieve(Parameters=c('DEPTH'), Projects=projects, Years=years,Protocols=protocols)
 depthcheck.sub=subset(depthcheck,SAMPLE_TYPE!='CROSSSECW')
 pvtdepthcheck=cast(depthcheck.sub,'UID+TRANSECT+POINT~PARAMETER',value='RESULT')
@@ -697,7 +704,7 @@ odd_ratio=subset(check,RESULT/(DEPTH)>50|RESULT/(DEPTH)<1)
 Slope=tblRetrieve(Parameters=c('AVGSLOPE','SLPRCHLEN','TRCHLEN','PARTIAL_RCHLEN','POOLRCHLEN','SLOPE_COLLECT','PCT_GRADE','VALXSITE'),Projects=projects, Years=years,Protocols=protocols)                 
 pvtSlope=addKEYS(cast(Slope,'UID~PARAMETER',value='RESULT'), c('SITE_ID','CREW_LEADER'))                
 SlopeCheck1=subset(pvtSlope,as.numeric(PCT_GRADE)>14|as.numeric(PCT_GRADE)<1)
-SlopeCheck2=subset(pvtSlope,SLOPE_COLLECT=='Partial'|SLOPE_COLLECT=='No Slope')
+SlopeCheck2=subset(pvtSlope,SLOPE_COLLECT=='PARTIAL'|SLOPE_COLLECT=='NO SLOPE')
 Pass=tblRetrieve(Parameters=c('ENDTRAN'),Projects=projects, Years=years,Protocols=protocols)                 
 SlopeCheck=subset(Pass,TRANSECT>2)# if more than 2 passes need to manually check which ones to average
 #avgslope does not get computed in the app if the passes are not within 10%.... for those passes manually average and flag as not within 10%?                
@@ -706,23 +713,25 @@ NOT10PER=subset(pvtSlope,PCT_GRADE=='0')
 # for any sites that failed the within 10% check, see idividual passes below
 IndividualSlope=tblRetrieve(Parameters=c('SLOPE','STARTHEIGHT','ENDHEIGHT'),Projects=projects, Years=years,Protocols=protocols)
 pvtIndividualSlope=addKEYS(cast(IndividualSlope,'UID+TRANSECT~PARAMETER',value='RESULT', fun=sum),c('SITE_ID','CREW_LEADER'))#note Transect=Pass
-pvtIndividualSlope=addKEYS(cast(IndividualSlope,'UID+TRANSECT+POINT~PARAMETER',value='RESULT'),c('SITE_ID','CREW_LEADER'))#note Transect=Pass
+#pvtIndividualSlope=addKEYS(cast(IndividualSlope,'UID+TRANSECT+POINT~PARAMETER',value='RESULT'),c('SITE_ID','CREW_LEADER'))#note Transect=Pass
 #still need to check a site with 3 passes to make sure Reid averaged slope properly
 
                  
 #########  pools   ################                                           
 #getting all pool data for a specfic set of sites---not collecting one of the parameters below anymore
-pools<-addKEYS(tblRetrieve(Parameters=c('HABTYPE','FORMATION','PTAILDEP','MAXDEPTH','LENGTH'),Projects=projects,Comments='Y'),c('SITE_ID'))
+pools<-addKEYS(tblRetrieve(Parameters=c('HABTYPE','FORMATION','PTAILDEP','MAXDEPTH','LENGTH'),Projects=projects,Years=years,Protocols=protocols, Comments='Y'),c('SITE_ID'))
 pvtpools=cast(pools,'UID+TRANSECT+POINT~PARAMETER',value='RESULT')
 write.csv(pvtpools,'pvtpools.csv')#short and look for min and max and 0 data or unit issues
 
 # flow and collected checks
-PoolCollect<-tblRetrieve(Parameters=c('POOL_COLLECT','VALXSITE'),Projects=projects,Comments='Y')
-pvtPoolCollect=addKEYS(cast(PoolCollect,'UID~PARAMETER',value='RESULT'),c('SITE_ID'))
-pvtPoolCheck=subset(pvtPoolCollect,VALXSITE=='INTWADE'|POOL_COLLECT=='NO_FLOW'|POOL_COLLECT=='NC')#needs tweaking
-                 
+PoolCollect<-tblRetrieve(Parameters=c('POOL_COLLECT','VALXSITE','POOLRCHLEN','TRCHLEN','SLOPE_COLLECT','SLPRCHLEN'),Projects=projects,Years=years,Protocols=protocols, Comments='Y')
+pvtPoolCollect=addKEYS(cast(PoolCollect,'UID~PARAMETER',value='RESULT'),c('SITE_ID','CREW_LEADER'))
+pvtPoolCheck=subset(pvtPoolCollect,VALXSITE=='INTWADE'|POOL_COLLECT=='NF'|POOL_COLLECT=='NC')#needs tweaking
+write.csv(pvtPoolCheck,'poolNCNFCheck.csv')
+
 #check sum of lengths not > than total reach length  
-pool_length<-tblRetrieve(Parameters=c('LENGTH'),Projects=projects,Comments='Y')
+pool_length<-tblRetrieve(Parameters=c('LENGTH'),Projects=projects,Years=years,Protocols=protocols, Comments='Y')
+pool_length$RESULT=as.numeric(pool_length$RESULT)
 pvtpools1=cast(pool_length,'UID~PARAMETER',value='RESULT',fun=sum) 
 reach_length=tblRetrieve(Parameters=c('POOLRCHLEN'),Projects=projects)
 pvtpools2=cast(reach_length,'UID~PARAMETER',value='RESULT') 
@@ -738,7 +747,7 @@ pvtPhotos=cast(Photo,'UID+POINT~PARAMETER',value='RESULT')
 
 ############################################################################################################################
 #Final pivot checks on all indicators to make sure no duplicate data exists from data edits---copy over from indicator calc
-#run summary data and short again to make sure no wacky values
+#run summary data and sort again to make sure no wacky values
 #pay close attention to sample sizes when running indicators....should probably eventually run missing data checks this way rather than the knarly script above                 
 
 
