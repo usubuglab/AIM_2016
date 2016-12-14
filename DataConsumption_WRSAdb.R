@@ -38,7 +38,7 @@ library(plyr)
 
 #SQL assistance functions
 #loaded from a separate R script
-source('FNC_tblRetrievePVT.R')
+source('FNC_tblRetrievePVT_new.R')
 #common sQL strings that need to be incorporated:
 ##(select * from tblVERIFICATION where PARAMETER='site_id') v on v.UID=tblPOINT.uid
 
