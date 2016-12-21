@@ -37,10 +37,11 @@ wrsa1314=odbcDriverConnect(connection = wrsaConnectSTR)
 #SWJ to do: throw the function into a separate referenced script because multiple files are using this
 
 options(stringsAsFactors=F,"scipen"=50)#general option, otherwise default read is as factors which assigns arbitrary number behind the scenes to most columns
+library(plyr)
 
 #SQL assistance functions
 #loaded from a separate R script
-source('FNC_tblRetrievePVT.R')
+source('FNC_tblRetrievePVT_new.R')
 #common sQL strings that need to be incorporated:
 ##(select * from tblVERIFICATION where PARAMETER='site_id') v on v.UID=tblPOINT.uid
 
@@ -50,19 +51,23 @@ source('FNC_tblRetrievePVT.R')
 #FILTERS
 ##from most to least specific
 AllData='N'#set to 'Y' (meaning 'yes') if you want to query all sites (note this is quite time consuming and large, use provided filters wherever possible)
-sitecodes=c('OT-SS-7112')#c('EL-LS-8134','EL-SS-8127','MN-LS-1004','MN-SS-1104','MS-SS-3103','XE-RO-5086','XN-LS-4016','XN-SS-4128','XS-LS-6029' )#QAduplicateSites#c('AR-LS-8003','AR-LS-8007', 'TP-LS-8240')#sites for NorCalTesting
+#escalante watershed sites
+sitecodes=c('CO-LS-9400','CO-LS-9432','CO-RO-9416','GS-LS-9010','GS-LS-9026','GS-LS-9027','GS-LS-9036','GS-RO-9003','GS-RO-9007','GS-RO-9008','GS-RO-9014','GS-SS-9004','GS-SS-9006','GS-SS-9012','GS-SS-9020','GS-SS-9022', 'GS-SS-9024','XE-LS-5005','XE-LS-5021','XE-LS-5025', 'XE-SS-5143')
+sitecodes=c('WD-TR-004', 'BO-SS-10238', 'GN-SS-10434', 'CR-SS-10621')
+sitecodes=c('')#c('EL-LS-8134','EL-SS-8127','MN-LS-1004','MN-SS-1104','MS-SS-3103','XE-RO-5086','XN-LS-4016','XN-SS-4128','XS-LS-6029' )#QAduplicateSites#c('AR-LS-8003','AR-LS-8007', 'TP-LS-8240')#sites for NorCalTesting
 years=c('2013','2014','2015')#as character, not number
 years=c('')
 years=c('2016')
-#years=c('2015')#as character, not number
+#years=c('2015','2016')#as character, not number
 #protocols=c('BOAT14')#for separating differences in overall protocol, may not be relevant for some parameters
 protocols=c('NRSA13','WRSA14','BOAT14','AK14')#for separating differences in overall protocol, may not be relevant for some parameters
 protocols=c('WADE2016','BOAT2016')
+protocols=c('NRSA13','WRSA14','BOAT14','AK14','WADE2016','BOAT2016')
 projects=c('AKEFO','NPRA15','AK_GL_STANDARD_2016','AK_CY_UTILITYCORRIDOR_2016','WA_SP_STANDARD_2016','CO_FR_STANDARD_2016','CO_SW_STANDARD_2016','CO_NW_STANDARD_2016','ID_SA_STANDARD_2016','ID_STATE_STANDARD_2016','NM_FMD_STANDARD_2016','OR_PR_PERENNIAL_2016','OR_PR_INTERMITTENT_2016','UT_GR_STANDARD_2016','UT_WD_STANDARD_2016','WY_RA_STANDARD_2016')
 protocols=c('WRSA14')#for separating differences in overall protocol, may not be relevant for some parameters
 projects=c('WRSA','NV','GSENM','COPLT','2015ProtocolOverlap','AKEFO','NORCAL')# most useful for separating NorCal and WRSA, note that abbreviations differ between Access and SQL/FM
-projects=c('NORCAL')
-projects=c('OR_PR_PERENNIAL_2016')# most useful for separating NorCal and WRSA, note that abbreviations differ between Access and SQL/FM
+projects=c('CO_FR_STANDARD_2016')
+projects=c('CO_NW_STANDARD_2016')# most useful for separating NorCal and WRSA, note that abbreviations differ between Access and SQL/FM
 dates=''##example:c('05/05/2005')
 hitchs=c('')#NOT WORKING YET, hitch and crew level generally maintained by Access not SQL
 crews=c('R1')#NOT WORKING YET, hitch and crew level generally maintained by Access not SQL#see crewKC in customrequests for possible method
