@@ -27,6 +27,9 @@ for (r in 1:length(requiredPACKAGES)){
 ##Establish an ODBC connection##
 #the db was created in SQL Server Manager on 11/19/2013 by Sarah Judson#
 wrsaConnectSTR=sprintf("Driver={SQL Server Native Client 10.0};Server=%s;Database=%s;Uid=%s; Pwd=%s;",DBserver,DBname,DBuser, DBpassword)#specify backupdatabase or orignial database
+if( grepl(">= 8",Sys.info()['release']) ){
+  wrsaConnectSTR=sprintf("Driver=ODBC Driver 13 for SQL Server;Server=%s;Database=%s;Uid=%s; Pwd=%s;",DBserver,DBname,DBuser, DBpassword)#specify backupdatabase or orignial database
+}
 #wrsaConnectSTR=sprintf("Driver={SQL Server Native Client 10.0};Server=%s;Database=WRSAdb;Uid=%s; Pwd=%s;",DBserver,DBuser, DBpassword)
 wrsa1314=odbcDriverConnect(connection = wrsaConnectSTR)
 #test that connection is open # sqlQuery(wrsa1314,"select top 10 * from tblVerification")
