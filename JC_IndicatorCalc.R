@@ -285,7 +285,7 @@ WQpvt$EC_PRED=round(WQpvt$EC_PRED,digits=2)
 WQpvt$OE_EC=round(WQpvt$CONDUCTIVITY-WQpvt$EC_PRED,digits=2)
 WQpvt$OE_TN=round(WQpvt$NTL-WQpvt$TN_PRED,digits=3)
 WQpvt$OE_TP=round(WQpvt$PTL-WQpvt$TP_PRED,digits=1)
-WQfinal=setNames(WQpvt,c("UID","CONDUCTIVITY_CHECK","EC_PRED_CHECK","NTL_CHECK","PH_CHECK","PTL_CHECK","TEMPERATURE_CHECK","TN_PRED_CHECK","TP_PRED_CHECK","TURBIDITY_CHECK","OE_EC_CHECK","OE_TN_CHECK","OE_TP_CHECK"))
+WQfinal=setNames(WQpvt,c("UID","CONDUCTIVITY_CHECK","EC_PRED_CHECK","NTL_CHECK","PH_CHECK","PTL_CHECK","TEMPERATURE_CHECK","TN_PRED_CHECK","TP_PRED_CHECK","OE_EC_CHECK","OE_TN_CHECK","OE_TP_CHECK"))"TURBIDITY_CHECK"
 WQfinal=WQfinal[,c(1,2,3,11,6,9,13,4,8,12,5,7,10)]
 #If no turbidity data, the sitecode will appear in the TURBIDITY_CHECK column because SiteCode was pulled when the data was pulled from the database. 
 
@@ -397,7 +397,7 @@ IncBnk$xbnk_h_CHECK=round(IncBnk$xbnk_h_CHECK,digits=2)
 
 #### 2013 data and Boating data which was also stored in Size_CLS. 2013 field protocol only collected Bed sediment, unlike 2014 and beyond which collected bed and bank sediment. 
 ####Doing sand and fines together
-#Sediment=subset(Sediment,RESULT!="OT"& RESULT!="WD")
+#Sediment=subset(Sediment,RESULT!="OT"& RESULT!="WD") #####need to check on how other particles were stored in 2013 and then need to exclude them
 Sediment$SAFN_True=ifelse(Sediment$RESULT == "SA", 1,ifelse(Sediment$RESULT == "FN", 1, 0))
 pctsafn=setNames((aggregate(Sediment$SAFN_True,by=list(UID=Sediment$UID), data=Sediment, FUN='mean')),c("UID","bedPCT_SAFN_CHECK"))#had to remove NorCal code that casted by Sample_Type because of boating data
 pctsafn$bedPCT_SAFN_CHECK=round(pctsafn$bedPCT_SAFN_CHECK*100,digits=1)
@@ -405,9 +405,12 @@ Sedimentpvt=cast(Sediment,'UID~PARAMETER',value='RESULT',fun=length)# number of 
 Sedimentpvt$nbedPCT_SAFN_CHECK=(Sedimentpvt$SIZE_CLS+Sedimentpvt$XSIZE_CLS) # number of pebbles collected at all transects only 4 boating sites had less than 50
 Sedimentpvtsub=subset(Sedimentpvt,select=c(UID,nbedPCT_SAFN_CHECK))
 pctsafn_2013=merge(pctsafn,Sedimentpvtsub,by="UID")
+#pctsafn_2013$nallPCT_SAFN_CHECK=pctsafn_2013$nbedPCT_SAFN_CHECK#duplicate bed data into a variable for all particles so that the data comes over in one column when combined with 2014+ data but this data should be used with caution because of protocol differences!
+#pctsafn_2013$allPCT_SAFN_CHECK=pctsafn_2013$bedPCT_SAFN_CHECK#duplicate bed data into a variable for all particles so that the data comes over in one column when combined with 2014+ data but this data should be used with caution because of protocol differences!
+
 
 #Now for 2014 data... 
-#counting other particles
+#counting other particles.....if more than 50% of sample size reQC the data to see if some particles should be changed to fines
 Sed2014_OT=subset(Sed2014,RESULT==0 & PARAMETER=='SIZE_NUM')
 Sed2014_SED=subset(Sed2014, RESULT!=0 & PARAMETER=='SIZE_NUM')
 A_Sed2014_OT=setNames(cast(Sed2014_OT,'UID~PARAMETER', value='RESULT',fun=length),c('UID','countOT'))
@@ -415,6 +418,7 @@ A_Sed2014_SED=setNames(cast(Sed2014_SED,'UID~PARAMETER', value='RESULT',fun=leng
 A_Sed2014_count=merge(A_Sed2014_OT,A_Sed2014_SED,by='UID',all=T)
 A_Sed2014_count$PCT=A_Sed2014_count$countOT/(A_Sed2014_count$countOT+A_Sed2014_count$countSED)*100
 
+Sed2014=subset(Sed2014,RESULT!='0')# removing all "Other" particles so that only inorganic particles are included in the PctSAFN calc
 A_Sed2014=cast(Sed2014,'UID+TRANSECT+POINT~PARAMETER', value='RESULT')
 ##Checking how many records should be deleted by ordering and just looking at how many bank and na locations there are. 
 #B_Sed2014=A_Sed2014[order(A_Sed2014$LOC),]
@@ -468,7 +472,7 @@ PCT_SAFN_ALL$bedPCT_SAFN_CHECK=ifelse(PCT_SAFN_ALL$nbedPCT_SAFN_CHECK<50,NA,PCT_
 #other sed metrics
 Sed2014_MEAS=subset(Sed2014,RESULT!=0 & PARAMETER=='SIZE_NUM')
 Sed2014_MEAS$RESULT=as.numeric(Sed2014_MEAS$RESULT)
-pvtSed2014_D=set.Names(cast(Sed2014_MEAS,'UID~PARAMETER',value='RESULT',function(x) quantile(x,c(0.50,0.16,0.84))),c('UID','D50_CHECK','D16_CHECK','D84_CHECK'))
+pvtSed2014_D=setNames(cast(Sed2014_MEAS,'UID~PARAMETER',value='RESULT',function(x) quantile(x,c(0.50,0.16,0.84))),c('UID','D50_CHECK','D16_CHECK','D84_CHECK'))
 pvtSed2014_GM=setNames(cast(Sed2014_MEAS,'UID~PARAMETER',value='RESULT',function(x) exp(mean(log10(x)))),c('UID','GEOMEAN_CHECK'))
 ALLSED=join_all(list(PCT_SAFN_ALL,pvtSed2014_D,pvtSed2014_GM),by='UID')
 
@@ -753,11 +757,15 @@ QR1$QR1_CHECK=(QR1$QRveg1*QR1$QRVeg2*QR1$QRDIST1)^0.333
 #Angle
 Angle$RESULT=ifelse(Angle$RESULT<45,45,Angle$RESULT)
 Angle$RESULT=as.numeric(Angle$RESULT)
+
+#2016+ data
 #need to treat side channels the same as with banks stability and only use the angles from the outer banks
 #run the side channel section of the bank stability prior to running this to get pvtSideBank3
 Angle=merge(Angle,pvtSideBank3, by=c('UID','TRANSECT'),all=T)
 Angle$SIDCHN_BNK=ifelse(is.na(Angle$SIDCHN_BNK)==T,Angle$POINT,Angle$SIDCHN_BNK)
 Angle=subset(Angle,Angle$SIDCHN_BNK==Angle$POINT)
+
+#all years
 MeanAngle=setNames(cast(Angle,'UID~PARAMETER',value='RESULT',fun=mean),c("UID","ANGLE180_CHECK"))
 
 #sample size
@@ -773,6 +781,7 @@ Slope_Per=merge(Slope_height,SlpReachLen, by=c('UID'), all=T)
 Slope_Per$SlopePct=round(((Slope_Per$SLOPE/100)/(Slope_Per$SLPRCHLEN))*100,digits=2)
 Slope_Per=setNames(Slope_Per,c("UID","SLOPE_CHECK","SLPRCHLEN_CHECK","SlopePct_CHECK"))
 
+#2016+ data
 pvtSlope=cast(Slope,'UID~PARAMETER',value='RESULT')                
 pvtSlope$PCT_GRADE_CHECK=round(as.numeric(pvtSlope$PCT_GRADE),digits=2)
 pvtSlope$AVGSLOPE_CHECK=pvtSlope$AVGSLOPE
@@ -865,22 +874,27 @@ pvtpools1=cast(pool_length,'UID~PARAMETER',value='RESULT',fun=sum)
 pvtpools2=cast(reach_length,'UID~PARAMETER',value='RESULT') 
 poolsmerge=merge(pvtpools1,pvtpools2,by=c('UID'),all=T)
 poolsmerge$PoolPct=round((poolsmerge$LENGTH/poolsmerge$POOLRCHLEN)*100,digits=0)
-pvtpoolcollect=cast(poolcollect,'UID~PARAMETER',value='RESULT')
-poolsmerge=merge(poolsmerge,pvtpoolcollect,by=c('UID'))
-poolsmerge$PoolPct=ifelse(poolsmerge$POOL_COLLECT=='NP',0,poolsmerge$PoolPct)
 
 #residual pool depth
 PoolDepth=cast(PoolDepth,'UID+TRANSECT+POINT~PARAMETER',value='RESULT')
 PoolDepth$RPD=(PoolDepth$MAXDEPTH-PoolDepth$PTAILDEP)/100# convert from cm to m
 RPD=setNames(aggregate(PoolDepth$RPD,list(UID=PoolDepth$UID),mean),c("UID","RPD"))#converted to m
 RPD$RPD=round(RPD$RPD,digits=2)
-#pool frequency
+
+#combine all pool metrics and add pool frequency
 count=setNames(count(PoolDepth,"UID"),c("UID","NumPools"))
 poolmerge2=join_all(list(poolsmerge,count,RPD), by="UID")
 poolmerge2$PoolFrq=round((poolmerge2$NumPools/poolmerge2$POOLRCHLEN)*1000,digits=0)###need to consider what reach length to use here #may need shorted lengths for parial reaches#change to use new parameter POOLRCHLEN
-poolmerge2$PoolFrq=ifelse(poolmerge2$POOL_COLLECT=='NP',0,poolmerge2$PoolFrq)
+
+#properly 0 out data if there were no pools and properly designate pools as NA if no flow
+pvtpoolcollect=cast(poolcollect,'UID~PARAMETER',value='RESULT')
+poolmerge2=merge(poolmerge2,pvtpoolcollect,by=c('UID'),all=T)
+poolmerge2$PoolPct=ifelse(poolmerge2$POOL_COLLECT=='NP',0,ifelse(poolmerge2$POOL_COLLECT=='NF',NA,poolmerge2$PoolPct))
+poolmerge2$PoolFrq=ifelse(poolmerge2$POOL_COLLECT=='NP',0,ifelse(poolmerge2$POOL_COLLECT=='NF',NA,poolmerge2$PoolFrq))
+poolmerge2$RPD=ifelse(poolmerge2$POOL_COLLECT=='NP',NA,ifelse(poolmerge2$POOL_COLLECT=='NF',NA,poolmerge2$RPD)) 
+poolmerge2$NumPools=ifelse(poolmerge2$POOL_COLLECT=='NP',0,ifelse(poolmerge2$POOL_COLLECT=='NF',NA,poolmerge2$NumPools)) 
 Pools=setNames(subset(poolmerge2,select=c(UID,PoolPct,RPD,PoolFrq,NumPools)),c("UID","PoolPct_CHECK","RPD_CHECK","PoolFrq_CHECK","NumPools_CHECK"))
-#exclude pool data from sites that had interrupted flow.
+
 
 
 #Channel dimensions
