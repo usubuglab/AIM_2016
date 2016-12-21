@@ -50,7 +50,7 @@ Incision=tblRetrieve(Parameters=c('INCISED','BANKHT'),Projects=projects,Years=ye
 #incisionpvt=cast(Incision,'UID+TRANSECT~PARAMETER',value='RESULT')# check data structure to make sure no duplicates
 
 #Getting data for aquamet check of pct_safn.
-Sediment=tblRetrieve(Parameters=c('SIZE_CLS','XSIZE_CLS'),Projects=projects,Years=years,Protocols=protocols)
+Sediment=tblRetrieve(Parameters=c('SIZE_CLS','XSIZE_CLS'),Projects=projects,Years=years,Protocols=protocols,SiteCodes=sitecodes)
 Sed2014=tblRetrieve(Parameters=c('SIZE_NUM','LOC'),Projects=projects,Years=years,Protocols=protocols,SiteCodes=sitecodes)
 #unique(Sediment$RESULT)
 #Sedimentpvt=cast(Sediment,'UID+TRANSECT+POINT~PARAMETER',value='RESULT')# check data structure to make sure no duplicates
@@ -62,7 +62,7 @@ Sed2014=tblRetrieve(Parameters=c('SIZE_NUM','LOC'),Projects=projects,Years=years
 #WR_Sed2014=tblRetrieve(Parameters=c('SIZE_NUM'),Projects=projects,Years=years,Protocols=protocols)
 
 #Getting data for aquamet check of XCMG
-#RipALL=tblRetrieve(Parameters=c("BARE","CANBTRE","CANSTRE","CANVEG","GCNWDY","GCWDY","UNDERVEG","UNDNWDY","UNDWDY"),Projects=projects,Years=years,Protocols=protocols)
+#RipALL=tblRetrieve(Parameters=c("BARE","CANBTRE","CANSTRE","CANVEG","GCNWDY","GCWDY","UNDERVEG","UNDNWDY","UNDWDY"),Projects=projects,Years=years,Protocols=protocols,SiteCodes=sitecodes)
 #unique(RipALL$RESULT)
 RipXCMG=tblRetrieve(Parameters=c("CANBTRE","CANSTRE","GCNWDY","GCWDY","UNDNWDY","UNDWDY"),Projects=projects,Years=years,Protocols=protocols,SiteCodes=sitecodes)
 #unique(RipXCMG$RESULT)
@@ -77,13 +77,13 @@ pvtRipBLM=cast(RipBLM,'UID+TRANSECT+POINT~PARAMETER',value='RESULT')
 
 #Getting data for aquamet check W1_HALL
 #Figure out the differences... Human influence sample type...
-Human_Influ=tblRetrieve(Parameters=c('BUILD','LOG','MINE','PARK','PAST','PAVE','PIPES','ROAD','ROW','TRASH','WALL'), Projects=projects,Years=years,Protocols=protocols)                       
+Human_Influ=tblRetrieve(Parameters=c('BUILD','LOG','MINE','PARK','PAST','PAVE','PIPES','ROAD','ROW','TRASH','WALL'), Projects=projects,Years=years,Protocols=protocols,SiteCodes=sitecodes)                       
 #Human_Influpvt=cast(Human_Influ,'UID+TRANSECT+POINT~PARAMETER',value='RESULT')
 #unique(Human_Influ$RESULT)
 #unique(Human_Influpvt$POINT)
 
 #Getting data for aquamet check XEMBED
-EMBED=tblRetrieve(Parameters='EMBED', Projects=projects,Years=years,Protocols=protocols)
+EMBED=tblRetrieve(Parameters='EMBED', Projects=projects,Years=years,Protocols=protocols,SiteCodes=sitecodes)
 #EMBEDpvt=cast(EMBED,'UID+TRANSECT+POINT~PARAMETER',value='RESULT')
 #unique(EMBED$RESULT)
 #unique(EMBED$TRANSECT)
@@ -100,7 +100,7 @@ SideBank=tblRetrieve(Parameters=c('SIDCHN_BNK'),Projects=projects,Years=years,Pr
 #unique(BankStab$POINT)
 #unique(BankStab$TRANSECT)
 
-BankStabCoverClass=tblRetrieve(Parameters=c('BNK_VEG','BNK_COBBLE','BNK_LWD','BNK_BEDROCK'),Projects=projects,Years=years,Protocols=protocols)
+BankStabCoverClass=tblRetrieve(Parameters=c('BNK_VEG','BNK_COBBLE','BNK_LWD','BNK_BEDROCK'),Projects=projects,Years=years,Protocols=protocols,SiteCodes=sitecodes)
 #pvtBankStabCoverClass=cast(BankStabCoverClass,'UID+TRANSECT+POINT~PARAMETER',value='RESULT')
 BankStabCoverClass$RESULT=as.numeric(BankStabCoverClass$RESULT)
 meanBankStabCoverClass=setNames(cast(BankStabCoverClass,'UID~PARAMETER',value='RESULT',fun=mean),c('UID','BNK_BEDROCK_CHECK','BNK_COBBLE_CHECK','BNK_LWD_CHECK','BNK_VEG_CHECK'))
@@ -117,8 +117,8 @@ Angle=tblRetrieve(Parameters=c('ANGLE180'),Projects=projects, Years=years,Protoc
 #min(Angle$RESULT);max(Angle$RESULT)
 
 #Slope
-Slope_height=tblRetrieve(Parameters=c('SLOPE'), Projects=projects, Years=years,Protocols=protocols)
-SlpReachLen=tblRetrieve(Parameters=c('SLPRCHLEN'), Projects=projects, Years=years,Protocols=protocols)
+Slope_height=tblRetrieve(Parameters=c('SLOPE'), Projects=projects, Years=years,Protocols=protocols,SiteCodes=sitecodes)
+SlpReachLen=tblRetrieve(Parameters=c('SLPRCHLEN'), Projects=projects, Years=years,Protocols=protocols,SiteCodes=sitecodes)
 #Slope_heightpvt=cast(Slope_height,'UID+TRANSECT+POINT~PARAMETER',value='RESULT')
 #SlpReachLenpvt=cast(SlpReachLen,'UID+TRANSECT+POINT~PARAMETER',value='RESULT')
 Slope=tblRetrieve(Parameters=c('AVGSLOPE','SLPRCHLEN','TRCHLEN','PARTIAL_RCHLEN','POOLRCHLEN','SLOPE_COLLECT','PCT_GRADE','VALXSITE'),Projects=projects, Years=years,Protocols=protocols,SiteCodes=sitecodes)                 
@@ -178,7 +178,7 @@ listsites$SINUOSITY_CHECK=round(as.numeric(listsites$TRCHLEN)/as.numeric(listsit
 LwdCatWet=unclass(sqlQuery(wrsa1314,"select SAMPLE_TYPE,PARAMETER from tblMetadata where Sample_TYPE like 'LWDW%' and PARAMETER like 'W%'"))$PARAMETER
 LwdCatDry=unclass(sqlQuery(wrsa1314,"select SAMPLE_TYPE,PARAMETER from tblMetadata where Sample_TYPE like 'LWDW%' and PARAMETER like 'D%'"))$PARAMETER
 LwdWet=tblRetrieve(Parameters=LwdCatWet,Projects=projects,Years=years,Protocols=protocols,SiteCodes=sitecodes)
-LwdDry=tblRetrieve(Parameters=LwdCatDry,Projects=projects,Years=years,Protocols=protocols)
+LwdDry=tblRetrieve(Parameters=LwdCatDry,Projects=projects,Years=years,Protocols=protocols,SiteCodes=sitecodes)
 #pvtLwdWet=cast(LwdWet, 'UID~PARAMETER',value='RESULT',fun=sum)
 #pvtLwdDry=cast(LwdDry,'UID~PARAMETER',value='RESULT',fun=sum)
 pvtLwd=merge(pvtLwdWet,pvtLwdDry, by='UID')
@@ -204,7 +204,8 @@ TRCHLEN=cast(TRCHLEN,'UID~PARAMETER',value='RESULT')
 #############################################################################
 #Need to decide on removing depositional banks
 #combine data from main channels and side channels
-#BankStab$TRANSECT=mapvalues(BankStab$TRANSECT, c("XA", "XB","XC","XD","XE","XF","XG","XH","XI","XJ","XK" ),c("A", "B","C","D","E","F","G","H","I","J","K"))
+#BankStab$TRANSECT=mapvalues(BankStab$TRANSECT, c("XA", "XB","XC","XD","XE","XF","XG","XH","XI","XJ","XK" ),c("A", "B","C","D","E","F","G","H","I","J","K"))# no longer do this!!!!!!!!!!!!!!!!!!!!!!!!
+#Banks=cast(BankStab, 'UID+TRANSECT+POINT~PARAMETER', value='RESULT', fun=max)#take whichever main or side channel is most unstable (max uses the highest alphbetically which is Erosional, uncovered, and slump--(eroding is least stable but since getting combined it doesn't matter)) #no longer do this!!!!!!!!!!!
 #Pivot data so that Each parameter has it's own column
 Banks=cast(BankStab, 'UID+TRANSECT+POINT~PARAMETER', value='RESULT')#decided to average across all side channels because PIBO takes only the outside banks but can't determine which are the outside banks after the fact
 
@@ -222,7 +223,7 @@ Banks=merge(Banks,pvtSideBank3,by=c('UID','TRANSECT'), all=T)
 Banks$SIDCHN_BNK=ifelse(is.na(Banks$SIDCHN_BNK)==T,Banks$POINT,Banks$SIDCHN_BNK)
 Banks=subset(Banks,Banks$SIDCHN_BNK==Banks$POINT)
 
-#Banks=cast(BankStab, 'UID+TRANSECT+POINT~PARAMETER', value='RESULT', fun=max)#take whichever main or side channel is most unstable (max uses the highest alphbetically which is Erosional, uncovered, and slump--(eroding is least stable but since getting combined it doesn't matter))
+####this section is for all years
 #I want to calculate the percent of banks that are Covered.  
 Banks$CoverValue=as.numeric(ifelse(Banks$COVER=='UC',"0",ifelse(Banks$COVER=='CV',"1","NA")))
 #I want to calculate the percent of banks that are Stable (Absent) 

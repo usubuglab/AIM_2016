@@ -48,6 +48,9 @@ source('FNC_tblRetrievePVT_new.R')
 #FILTERS
 ##from most to least specific
 AllData='N'#set to 'Y' (meaning 'yes') if you want to query all sites (note this is quite time consuming and large, use provided filters wherever possible)
+#escalante watershed sites
+sitecodes=c('CO-LS-9400','CO-LS-9432','CO-RO-9416','GS-LS-9010','GS-LS-9026','GS-LS-9027','GS-LS-9036','GS-RO-9003','GS-RO-9007','GS-RO-9008','GS-RO-9014','GS-SS-9004','GS-SS-9006','GS-SS-9012','GS-SS-9020','GS-SS-9022', 'GS-SS-9024','XE-LS-5005','XE-LS-5021','XE-LS-5025', 'XE-SS-5143')
+sitecodes=c('WD-TR-004', 'BO-SS-10238', 'GN-SS-10434', 'CR-SS-10621')
 sitecodes=c('')#c('EL-LS-8134','EL-SS-8127','MN-LS-1004','MN-SS-1104','MS-SS-3103','XE-RO-5086','XN-LS-4016','XN-SS-4128','XS-LS-6029' )#QAduplicateSites#c('AR-LS-8003','AR-LS-8007', 'TP-LS-8240')#sites for NorCalTesting
 years=c('2013','2014','2015')#as character, not number
 years=c('')
