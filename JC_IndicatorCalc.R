@@ -137,6 +137,12 @@ reach_length=tblRetrieve(Parameters=c('POOLRCHLEN'),Projects=projects, Years=yea
 PoolDepth=tblRetrieve(Parameters=c('PTAILDEP','MAXDEPTH'), Projects=projects, Years=years,Protocols=protocols,SiteCode=sitecodes)
 poolcollect=tblRetrieve(Parameters='POOL_COLLECT',Projects=projects, Years=years,Protocols=protocols,SiteCode=sitecodes)
 
+#Pool Tail Fines
+PoolFines=tblRetrieve(Parameters=c('POOLFINES2','POOLFINES6','POOLNOMEAS'),Projects=projects, Years=years,Protocols=protocols,SiteCode=sitecodes)
+#pvtPoolFines=addKEYS(cast(PoolFines,'UID+TRANSECT+POINT~PARAMETER',value='RESULT'),c('SITE_ID'))
+pvtPoolFines$PctPoolFines
+melt()
+
 #Channel Dimensions
 WetWid=tblRetrieve(Parameters=c('WETWIDTH'),Projects=projects, Years=years,Protocols=protocols,SiteCode=sitecodes)#Wetted widths from thalweg
 WetWid2=tblRetrieve(Parameters=c('WETWID'),Projects=projects, Years=years,Protocols=protocols,SiteCode=sitecodes)#Wetted widths from main transects
@@ -397,7 +403,7 @@ IncBnk$xbnk_h_CHECK=round(IncBnk$xbnk_h_CHECK,digits=2)
 
 #### 2013 data and Boating data which was also stored in Size_CLS. 2013 field protocol only collected Bed sediment, unlike 2014 and beyond which collected bed and bank sediment. 
 ####Doing sand and fines together
-#Sediment=subset(Sediment,RESULT!="OT"& RESULT!="WD") #####need to check on how other particles were stored in 2013 and then need to exclude them
+Sediment=subset(Sediment,RESULT!="OT"& RESULT!="WD") #removing all other or wood particles
 Sediment$SAFN_True=ifelse(Sediment$RESULT == "SA", 1,ifelse(Sediment$RESULT == "FN", 1, 0))
 pctsafn=setNames((aggregate(Sediment$SAFN_True,by=list(UID=Sediment$UID), data=Sediment, FUN='mean')),c("UID","bedPCT_SAFN_CHECK"))#had to remove NorCal code that casted by Sample_Type because of boating data
 pctsafn$bedPCT_SAFN_CHECK=round(pctsafn$bedPCT_SAFN_CHECK*100,digits=1)
@@ -410,14 +416,6 @@ pctsafn_2013=merge(pctsafn,Sedimentpvtsub,by="UID")
 
 
 #Now for 2014 data... 
-#counting other particles.....if more than 50% of sample size reQC the data to see if some particles should be changed to fines
-Sed2014_OT=subset(Sed2014,RESULT==0 & PARAMETER=='SIZE_NUM')
-Sed2014_SED=subset(Sed2014, RESULT!=0 & PARAMETER=='SIZE_NUM')
-A_Sed2014_OT=setNames(cast(Sed2014_OT,'UID~PARAMETER', value='RESULT',fun=length),c('UID','countOT'))
-A_Sed2014_SED=setNames(cast(Sed2014_SED,'UID~PARAMETER', value='RESULT',fun=length),c('UID','countSED'))
-A_Sed2014_count=merge(A_Sed2014_OT,A_Sed2014_SED,by='UID',all=T)
-A_Sed2014_count$PCT=A_Sed2014_count$countOT/(A_Sed2014_count$countOT+A_Sed2014_count$countSED)*100
-
 Sed2014=subset(Sed2014,RESULT!='0')# removing all "Other" particles so that only inorganic particles are included in the PctSAFN calc
 A_Sed2014=cast(Sed2014,'UID+TRANSECT+POINT~PARAMETER', value='RESULT')
 ##Checking how many records should be deleted by ordering and just looking at how many bank and na locations there are. 
