@@ -10,32 +10,7 @@ BnkDensPvt$XCDENBK_CHECK=ifelse(BnkDensPvt$nXCDENBK_CHECK<11,NA,BnkDensPvt$XCDEN
 #### New RIP STart
 
 ####
-# get data for new Riparian
-RipBLM=addKEYS(tblRetrieve(Parameters=c('CANRIPW','UNRIPW','GCRIP','INVASW', 'NATIVW','INVASH','NATIVH','SEGRUSH'),Projects=projects,Years=years,Protocols=protocols),c('SITE_ID'))
 
-#### 
-#Riparian vegetation cover
-RIP_VEG=subset(RipBLM, PARAMETER == 'CANRIPW'|PARAMETER == 'UNRIPW'|PARAMETER == 'GCRIP')
-RIP_VEG$ResultsPer=ifelse(RIP_VEG$RESULT == 1, 0.05,ifelse(RIP_VEG$RESULT == 2, 0.25,ifelse(RIP_VEG$RESULT == 3, 0.575,ifelse(RIP_VEG$RESULT == 4, 0.875,ifelse(RIP_VEG$RESULT ==0, 0, NA)))))
-nRIP_VEG=setNames(count(RIP_VEG,c("UID",'PARAMETER')),c("UID",'PARAMETER',"nRIP_VEG_CHECK"))#
-nRIP_VEG=setNames(cast(nRIP_VEG,"UID~PARAMETER",value="nRIP_VEG_CHECK",fun="sum"),c('UID','nCANRIPW_CHECK','nUNRIPW_CHECK', 'nGCRIP_CHECK'))
-RIP_VEG=setNames(cast(RIP_VEG,'UID~PARAMETER', value='ResultsPer',fun='mean'),c('UID','CANRIPW_CHECK','UNRIPW_CHECK', 'GCRIP_CHECK'))
-RIP_VEG=merge(nRIP_VEG,RIP_VEG,by="UID")
-RIP_VEG$CANRIPW_CHECK=ifelse(RIP_VEG$nCANRIPW_CHECK<10,NA,RIP_VEG$CANRIPW_CHECK)#total=22,but collected at 5 transects=10, so min N=10
-RIP_VEG$UNRIPW_CHECK=ifelse(RIP_VEG$nUNRIPW_CHECK<10,NA,RIP_VEG$UNRIPW_CHECK)#total=22,but collected at 5 transects=10, so min N=10
-RIP_VEG$GCRIP_CHECK=ifelse(RIP_VEG$nGCRIP_CHECK<10,NA,RIP_VEG$GCRIP_CHECK)#total=22,but collected at 5 transects=10, so min N=10
-
-####
-#Riparian vegetation frequency
-#Works!!!Try to take NA out of quotes and you may not need as.numeric
-FQCY_VEG=subset(RipBLM, PARAMETER == 'INVASW'|PARAMETER == 'NATIVW'|PARAMETER == 'INVASH'|PARAMETER == 'NATIVH'|
-                  PARAMETER == 'SEGRUSH')
-nFQCY_VEG=setNames(count(FQCY_VEG,c("UID",'PARAMETER')),c("UID",'PARAMETER',"nFQCY_VEG_CHECK"))#6 strata *2 banks*11 transects=132 so half data=66
-nFQCY_VEG=cast(nFQCY_VEG,"UID~PARAMETER",value="nFQCY_VEG_CHECK",fun="sum")
-FQCY_VEG$RESULT_A=as.numeric(ifelse(FQCY_VEG$RESULT == 'N', 0,ifelse(FQCY_VEG$RESULT == 'Y', 1,"NA")))
-FQCY_VEG=cast(FQCY_VEG,'UID~PARAMETER',value='RESULT_A',fun=mean)
-FQCY_VEG=merge(nFQCY_VEG,FQCY_VEG,by="UID")
-FQCY_VEG$INVASW_CHECK=ifelse(FQCY_VEG$nCANRIPW_CHECK<10,NA,FQCY_VEG$CANRIPW_CHECK)#total=22,but collected at 5 transects=10, so min N=10
 
 #### New RIP STOP
 #################
