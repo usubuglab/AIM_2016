@@ -111,13 +111,6 @@ SideBank=tblRetrieve(Parameters=c('SIDCHN_BNK'),Projects=projects,Years=years,Pr
 
 BankStabCoverClass=tblRetrieve(Parameters=c('BNK_VEG','BNK_COBBLE','BNK_LWD','BNK_BEDROCK'),Projects=projects,Years=years,Protocols=protocols,SiteCodes=sitecodes)
 #pvtBankStabCoverClass=cast(BankStabCoverClass,'UID+TRANSECT+POINT~PARAMETER',value='RESULT')
-BankStabCoverClass$RESULT=as.numeric(BankStabCoverClass$RESULT)
-meanBankStabCoverClass=setNames(cast(BankStabCoverClass,'UID~PARAMETER',value='RESULT',fun=mean),c('UID','BNK_BEDROCK_CHECK','BNK_COBBLE_CHECK','BNK_LWD_CHECK','BNK_VEG_CHECK'))
-meanBankStabCoverClass$BNK_BEDROCK_CHECK=round(meanBankStabCoverClass$BNK_BEDROCK_CHECK,digits=0)
-meanBankStabCoverClass$BNK_COBBLE_CHECK=round(meanBankStabCoverClass$BNK_COBBLE_CHECK,digits=0)
-meanBankStabCoverClass$BNK_LWD_CHECK=round(meanBankStabCoverClass$BNK_LWD_CHECK,digits=0)
-meanBankStabCoverClass$BNK_VEG_CHECK=round(meanBankStabCoverClass$BNK_VEG_CHECK,digits=0)
-
 
 #Angle-PIBO method only
 Angle=tblRetrieve(Parameters=c('ANGLE180'),Projects=projects, Years=years,Protocols=protocols,SiteCodes=sitecodes)
@@ -148,9 +141,6 @@ poolcollect=tblRetrieve(Parameters='POOL_COLLECT',Projects=projects, Years=years
 
 #Pool Tail Fines
 PoolFines=tblRetrieve(Parameters=c('POOLFINES2','POOLFINES6','POOLNOMEAS'),Projects=projects, Years=years,Protocols=protocols,SiteCode=sitecodes)
-#pvtPoolFines=addKEYS(cast(PoolFines,'UID+TRANSECT+POINT~PARAMETER',value='RESULT'),c('SITE_ID'))
-pvtPoolFines$PctPoolFines
-melt()
 
 #Channel Dimensions
 WetWid=tblRetrieve(Parameters=c('WETWIDTH'),Projects=projects, Years=years,Protocols=protocols,SiteCode=sitecodes)#Wetted widths from thalweg
@@ -285,6 +275,15 @@ BnkAll$BnkCover_StabAll_CHECK=round(BnkAll$BnkCover_StabAll_CHECK*100,digits=0)
 # BnkAll$BnkCover_StabAll_CHECK=ifelse(BnkAll$nBnkCover_StabAll_CHECK<21,NA,BnkAll$BnkCover_StabAll_CHECK)
 # BnkAll$BnkCover_All_CHECK=ifelse(BnkAll$nBnkCover_StabAll_CHECK<21,NA,BnkAll$BnkCover_All_CHECK)  
 # BnkAll$BnkStability_All_CHECK=ifelse(BnkAll$nBnkCover_StabAll_CHECK<21,NA,BnkAll$BnkStability_All_CHECK) 
+
+
+#new Bank Stability Cover Classes
+BankStabCoverClass$RESULT=as.numeric(BankStabCoverClass$RESULT)
+meanBankStabCoverClass=setNames(cast(BankStabCoverClass,'UID~PARAMETER',value='RESULT',fun=mean),c('UID','BNK_BEDROCK_CHECK','BNK_COBBLE_CHECK','BNK_LWD_CHECK','BNK_VEG_CHECK'))
+meanBankStabCoverClass$BNK_BEDROCK_CHECK=round(meanBankStabCoverClass$BNK_BEDROCK_CHECK,digits=0)
+meanBankStabCoverClass$BNK_COBBLE_CHECK=round(meanBankStabCoverClass$BNK_COBBLE_CHECK,digits=0)
+meanBankStabCoverClass$BNK_LWD_CHECK=round(meanBankStabCoverClass$BNK_LWD_CHECK,digits=0)
+meanBankStabCoverClass$BNK_VEG_CHECK=round(meanBankStabCoverClass$BNK_VEG_CHECK,digits=0)
 
 #############################################################################
 
@@ -928,6 +927,43 @@ poolmerge2$RPD=ifelse(poolmerge2$POOL_COLLECT=='NP',NA,ifelse(poolmerge2$POOL_CO
 poolmerge2$NumPools=ifelse(poolmerge2$POOL_COLLECT=='NP',0,ifelse(poolmerge2$POOL_COLLECT=='NF',NA,poolmerge2$NumPools)) 
 Pools=setNames(subset(poolmerge2,select=c(UID,PoolPct,RPD,PoolFrq,NumPools)),c("UID","PoolPct_CHECK","RPD_CHECK","PoolFrq_CHECK","NumPools_CHECK"))
 
+##Pool Tail Fines
+pvtPoolFines=cast(PoolFines,'UID+TRANSECT+POINT~PARAMETER',value='RESULT')#need to pivot to create the pctPoolFInes variable
+pvtPoolFines$PctPoolFines2_CHECK=pvtPoolFines$POOLFINES2/(50-pvtPoolFines$POOLNOMEAS)*100
+pvtPoolFines$PctPoolFines6_CHECK=pvtPoolFines$POOLFINES6/(50-pvtPoolFines$POOLNOMEAS)*100
+aggpvt1PoolFines=aggregate(PctPoolFines2_CHECK~UID+TRANSECT,data=pvtPoolFines, FUN='mean')#average pool fines at a pool first # note these exclude NAs
+aggpvt2PoolFines=aggregate(PctPoolFines6_CHECK~UID+TRANSECT,data=pvtPoolFines, FUN='mean')#average pool fines at a pool first # note these exclude NAs
+aggpvt3PoolFines=aggregate(PctPoolFines2_CHECK~UID,data=aggpvt1PoolFines, FUN='mean')#average pool fines at a pool first # note these exclude NAs
+aggpvt4PoolFines=aggregate(PctPoolFines6_CHECK~UID,data=aggpvt2PoolFines, FUN='mean')#average pool fines at a pool first # note these exclude NAs
+aggpvt5PoolFines=setNames(aggregate(PctPoolFines2_CHECK~UID,data=aggpvt1PoolFines, FUN='sd'),c("UID","PctPoolFines2SD"))#average pool fines at a pool first # note these exclude NAs
+aggpvt6PoolFines=setNames(aggregate(PctPoolFines6_CHECK~UID,data=aggpvt2PoolFines, FUN='sd'),c("UID","PctPoolFines6SD"))#average pool fines at a pool first # note these exclude NAs
+FinalpvtPoolFines=join_all(list(aggpvt3PoolFines,aggpvt4PoolFines,aggpvt5PoolFines,aggpvt6PoolFines,aggpvt6PoolFines),by=c('UID'))
+FinalpvtPoolFines$PctPoolFines2_CHECK=round(FinalpvtPoolFines$PctPoolFines2_CHECK,digits=2)
+FinalpvtPoolFines$PctPoolFines6_CHECK=round(FinalpvtPoolFines$PctPoolFines6_CHECK,digits=2)
+#calc CV for PIBO QC check
+FinalpvtPoolFines$PctPoolFines2CV=FinalpvtPoolFines$PctPoolFines2SD/FinalpvtPoolFines$PctPoolFines2_CHECK#sites with CV >1.414 should be QCed 
+FinalpvtPoolFines$PctPoolFines6CV=FinalpvtPoolFines$PctPoolFines6SD/FinalpvtPoolFines$PctPoolFines6_CHECK#sites with CV >1.414 should be QCed 
+subQC=subset(FinalpvtPoolFines,FinalpvtPoolFines$PctPoolFines6CV>=1.41|FinalpvtPoolFines$PctPoolFines2CV>=1.41)#sites with CV >1.414 should be QCed 
+
+########## troubleshooting ################
+####trying to figure out how to do averages all in one step but it averages transects and points ect or addes extra UID columns and Transect columns in
+# agg2pvtPoolFines=aggregate(.~UID,data=pvtPoolFines, FUN='mean')#average pool fines at a pool first#note this method excludes NAs...I think that is OK though
+# agg2pvtPoolFines$PctPoolFines2_CHECK=round(agg2pvtPoolFines$PctPoolFines2_CHECK,digits=2)
+# agg2pvtPoolFines$PctPoolFines6_CHECK=round(agg2pvtPoolFines$PctPoolFines6_CHECK,digits=2)
+# agg3pvtPoolFines=setNames(aggregate(.~UID,data=pvtPoolFines, FUN='sd'),c("UID","TRANSECT","POOLFINES2SD","POOLFINES6SD","POOLFINES#average pool fines at a pool first#note this method excludes NAs...I think that is OK though
+####Alternative method that dones't exclude NAs but it somehow adds multiple UID columns...melt is yet another option but I deleted that section of code
+#aggpvtPoolFines=aggregate(pvtPoolFines,by=list(UID=pvtPoolFines$UID,TRANSECT=pvtPoolFines$TRANSECT), FUN='mean')#average pool fines at a pool first
+#agg2pvtPoolFines=aggregate(aggpvtPoolFines,by=list(UID=aggpvtPoolFines$UID), FUN='mean')#then average across pools
+#agg3pvtPoolFines=aggregate(aggpvtPoolFines,by=list(UID=aggpvtPoolFines$UID), FUN='sd')#then average across pools
+#####cast and melt options
+# pvtPoolFines=cast(PoolFines,'UID+TRANSECT+POINT~PARAMETER',value='RESULT')#need to pivot to create the pctPoolFInes variable 
+# pvtPoolFines$PctPoolFines2_CHECK=pvtPoolFines$POOLFINES2/(50-pvtPoolFines$POOLNOMEAS)*100
+# pvtPoolFines$PctPoolFines6_CHECK=pvtPoolFines$POOLFINES6/(50-pvtPoolFines$POOLNOMEAS)*100
+# PoolFinesMelt=melt.data.frame(pvtPoolFines,id=c('UID','TRANSECT','POINT'))# make flat again so we can use the cast function to take the average ...more elegant solution would be writing a loop but rest of indicators all use cast so stuck with this approach
+# pvt2PoolFines=cast(PoolFinesMelt,'UID+TRANSECT~variable',value='value',fun='mean')#average 3 replicates per pool first
+# PoolFinesMelt2=melt.data.frame(pvt2PoolFines,id=c('UID','TRANSECT')) # make flat again so we can use cast function to take mean of all pools
+# pvt3PoolFines=cast(PoolFinesMelt2,'UID~variable',value='value',fun='mean')#take average of average pool tail fines at each pool
+################################################
 
 
 #Channel dimensions
@@ -973,7 +1009,7 @@ BankWidFinal$XBKF_W_CHECK=round(BankWidFinal$XBKF_W_CHECK,digits=2)
 #IndicatorCheckJoin=join_all(list(listsites,WQfinal,BnkErosional,BnkAll,fishpvt2,DensPvt,BnkDensPvt,XCMGW_new1,XCMG_new1,XGB_new1,IncBnk,BankWid,WetWid,XEMBED,PCT_SAFN_ALL,W1_HALL,QR1,MeanAngle,Slope_Per,Thalweg,Pools),by="UID")
 IndicatorCheckJoin=join_all(list(listsites,WQfinal,BnkErosional,BnkAll,fishpvt2,DensPvt,BnkDensPvt,XCMG_new1,IncBnk,BankWidFinal,WetWidFinal,XEMBED,PCT_SAFN_ALL,MeanAngle,Slope_Per,Thalweg,Pools,LWD),by="UID")
 IndicatorCheckJoin=join_all(list(listsites,WQfinal,BnkErosional,BnkAll,DensPvt,BnkDensPvt,XCMG_new1,IncBnk,BankWidFinal,WetWidFinal,PCT_SAFN_ALL,MeanAngle,Thalweg,Pools,LWD,avgFloodWidth),by="UID")
-IndicatorCheckJoin=join_all(list(listsites,WQfinal,BnkErosional,BnkAll,meanBankStabCoverClass,DensPvt,BnkDensPvt,RIP_VEG, FQCY_VEG,XCMG_new1,IncBnk,BankWidFinal,WetWidFinal,ALLSED,MeanAngle,Thalweg,Pools,LWD,avgFloodWidth,pvtSlope),by="UID")
+IndicatorCheckJoin=join_all(list(listsites,WQfinal,BnkErosional,BnkAll,meanBankStabCoverClass,DensPvt,BnkDensPvt,RIP_VEG, FQCY_VEG,XCMG_new1,IncBnk,BankWidFinal,WetWidFinal,ALLSED,MeanAngle,Thalweg,Pools,FinalpvtPoolFines,LWD,avgFloodWidth,pvtSlope),by="UID")
 IndicatorCheckJoin=join_all(list(listsites,BnkErosional,BnkAll,fishpvt2,DensPvt,BnkDensPvt,XCMG_new1,IncBnk,BankWidFinal,WetWidFinal,XEMBED,PCT_SAFN_ALL,MeanAngle,Slope_Per,Thalweg,LWD),by="UID")
 
 #To remove all of the metrics and only get the indicators subset by UID and all those columns ending in "CHECK". Hmm..not really sure what the $ is doing here, the code works without it, but all the examples I've looked at keep the $ so I kept it too... 
