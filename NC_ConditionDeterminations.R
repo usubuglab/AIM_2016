@@ -6,6 +6,7 @@
 ##########Get all indicators and join ecoregion and size class info to them
 #either use saved csv or run the JC_IndicatorCalc.R
 #Indicators=read.csv('Z:\\buglab\\Research Projects\\BLM_WRSA_Stream_Surveys\\Results and Reports\\SRM_2015\\final_updated_crosschecked_metrics.csv')
+#IndicatorCheck=read.csv('Z:\\buglab\\Research Projects\\AIM\\Projects\\Utah\\GSENM\\Aquatics\\IndicatorCheck_21Dec2016_GrandStaircase.csv')
 IndicatorCheck=read.csv('IndicatorCheck2016data_21October2016.csv')
 #IndicatorCheck=read.csv('Z:\\buglab\\Research Projects\\BLM_WRSA_Stream_Surveys\\Results and Reports\\AIM_2011_2015_results\\IndicatorCheck_29April2016.csv')
 IndicatorCheck$BNK_THRESH=ifelse(as.numeric(IndicatorCheck$XBKF_W_CHECK)>10,"LargeWade","SmallWade")
@@ -31,8 +32,8 @@ Indicators=join(IndicatorCheck, SiteInfoSub, by="SITE_ID_CHECK",type="left",matc
 
 Indicators$BNK_THRESH=ifelse(Indicators$PROTOCOL_CHECK=='BOAT2016',"BOATABLE",Indicators$BNK_THRESH)
 #Indicators$BNK_THRESH=ifelse(Indicators$Protocol=="BOATABLE","BOATABLE",Indicators$BNK_THRESH)
-Indicators$THRESH=paste(Indicators$ECO_10,Indicators$BNK_THRESH, sep="_")
-#Indicators$THRESH=paste(Indicators$ECO10,Indicators$BNK_THRESH, sep="_")
+Indicators$THRESH=paste(Indicators$ECO10,Indicators$BNK_THRESH, sep="_")#2011-2015
+#Indicators$THRESH=paste(Indicators$ECO_10,Indicators$BNK_THRESH, sep="_")#2016
 Indicators$THRESH3=as.factor(Indicators$THRESH)
 levels(Indicators$THRESH3) <- list( XE_SOUTH_SmallWade="XE_SOUTH_SmallWade",XE_SOUTH_LargeWade="XE_SOUTH_LargeWade", 
                                     MT_SWEST_SmallWade="MT_SWEST_SmallWade",MT_SWEST_LargeWade="MT_SWEST_LargeWade", 
@@ -65,28 +66,33 @@ Indicators$OE_50_100rtg=ifelse(Indicators$COUNT>50 & Indicators$COUNT<100,NA,Ind
 
 
 ############ WQ modeled thresholds
-#Indicators$OE_ECrtg=ifelse(Indicators$OE_EC_CHECK <=27.1,'Good',ifelse(Indicators$OE_EC_CHECK >53.7, 'Poor','Fair'))
-#Indicators$OE_TNrtg=ifelse(Indicators$OE_TN_CHECK <=52.1,'Good',ifelse(Indicators$OE_TN_CHECK >114.7, 'Poor','Fair'))
-#Indicators$OE_TPrtg=ifelse(Indicators$OE_TP_CHECK <=9.9,'Good',ifelse(Indicators$OE_TP_CHECK >21.3, 'Poor','Fair'))
+Indicators$OE_ECrtg=ifelse(Indicators$OE_EC_CHECK <=27.1,'Good',ifelse(Indicators$OE_EC_CHECK >53.7, 'Poor','Fair'))
+Indicators$OE_TNrtg=ifelse(Indicators$OE_TN_CHECK <=52.1,'Good',ifelse(Indicators$OE_TN_CHECK >114.7, 'Poor','Fair'))
+Indicators$OE_TPrtg=ifelse(Indicators$OE_TP_CHECK <=9.9,'Good',ifelse(Indicators$OE_TP_CHECK >21.3, 'Poor','Fair'))
 
-Indicators$OE_ECrtg=ifelse(Indicators$CONDUCTIVITY_CHECK <500,'Good',ifelse(Indicators$CONDUCTIVITY_CHECK >=1000, 'Poor','Fair'))
+# Indicators$OE_ECrtg=ifelse(Indicators$CONDUCTIVITY_CHECK <500,'Good',ifelse(Indicators$CONDUCTIVITY_CHECK >=1000, 'Poor','Fair'))
+# 
+# Indicators$OE_TNrtg=ifelse(
+#   ((Indicators$Climate=="Mountains"& Indicators$NTL_CHECK>229)|
+#     (Indicators$Climate=="Plains"& Indicators$NTL_CHECK>1570)|
+#     (Indicators$Climate=="Xeric"& Indicators$NTL_CHECK>462)),"Poor",
+# ifelse(((Indicators$Climate=="Mountains"& Indicators$NTL_CHECK<229 & Indicators$NTL_CHECK>131 )|
+#          (Indicators$Climate=="Plains"& Indicators$NTL_CHECK<1570 &Indicators$NTL_CHECK>948)|
+#          (Indicators$Climate=="Xeric"& Indicators$NTL_CHECK<462 & Indicators$NTL_CHECK>346)),"Fair","Good"
+#  ))
+# Indicators$OE_TPrtg=ifelse(
+#   ((Indicators$Climate=="Mountains"& Indicators$PTL_CHECK>36)|
+#      (Indicators$Climate=="Plains"& Indicators$PTL_CHECK>183)|
+#      (Indicators$Climate=="Xeric"& Indicators$PTL_CHECK>70)),"Poor",
+#   ifelse(((Indicators$Climate=="Mountains"& Indicators$PTL_CHECK<36 & Indicators$PTL_CHECK>14 )|
+#             (Indicators$Climate=="Plains"& Indicators$PTL_CHECK<183 &Indicators$PTL_CHECK>91.8)|
+#             (Indicators$Climate=="Xeric"& Indicators$PTL_CHECK<70 & Indicators$PTL_CHECK>35.5)),"Fair","Good"
+#   ))
 
-Indicators$OE_TNrtg=ifelse(
-  ((Indicators$Climate=="Mountains"& Indicators$NTL_CHECK>229)|
-    (Indicators$Climate=="Plains"& Indicators$NTL_CHECK>1570)|
-    (Indicators$Climate=="Xeric"& Indicators$NTL_CHECK>462)),"Poor",
-ifelse(((Indicators$Climate=="Mountains"& Indicators$NTL_CHECK<229 & Indicators$NTL_CHECK>131 )|
-         (Indicators$Climate=="Plains"& Indicators$NTL_CHECK<1570 &Indicators$NTL_CHECK>948)|
-         (Indicators$Climate=="Xeric"& Indicators$NTL_CHECK<462 & Indicators$NTL_CHECK>346)),"Fair","Good"
- ))
-Indicators$OE_TPrtg=ifelse(
-  ((Indicators$Climate=="Mountains"& Indicators$PTL_CHECK>36)|
-     (Indicators$Climate=="Plains"& Indicators$PTL_CHECK>183)|
-     (Indicators$Climate=="Xeric"& Indicators$PTL_CHECK>70)),"Poor",
-  ifelse(((Indicators$Climate=="Mountains"& Indicators$PTL_CHECK<36 & Indicators$PTL_CHECK>14 )|
-            (Indicators$Climate=="Plains"& Indicators$PTL_CHECK<183 &Indicators$PTL_CHECK>91.8)|
-            (Indicators$Climate=="Xeric"& Indicators$PTL_CHECK<70 & Indicators$PTL_CHECK>35.5)),"Fair","Good"
-  ))
+# Ecoregion  Salinity Good-Fair	Salinity Fair-Poor	Total N Good-Fair	Total N Fair-Poor	Total P Good-Fair	Total P Fair-Poor
+# Mountains	500	1000	131	229	14	36
+# Plains	500	1000	948	1570	91.8	183
+# Xeric	500	1000	346	462	35.5	70 
 
 ########### Best Professional Judgement Thresholds
 #PH

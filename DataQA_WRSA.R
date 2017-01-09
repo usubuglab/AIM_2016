@@ -578,18 +578,37 @@ write.csv(Widths,'Widths.csv')#something is wrong because this is aggregating th
 #dry transects
 DryCheck=subset(pvtWidths,(WETWID!=0 & TRANDRY=='Y')|(WETWID==0 & TRANDRY=='N')|(WETWID==0 & is.na(TRANDRY)=='TRUE'))#likely needs tweaking                      
 write.csv(DryCheck,'DryCheck.csv')   
-                      
+
+# #interrupted flow checks---easier to do directly in SQL so see check_interrupted_sites SQL script
+# Interrupt=tblRetrieve(Parameters=c('VALXSITE'),Years=years, Projects=projects,SiteCodes=sitecodes)
+# Interrupt=subset(Interrupt,RESULT=='INTWADE')
+# DryTran=tblRetrieve(Parameters=c('TRANDRY'),Years=years, Projects=projects,SiteCodes=sitecodes)
+# Interrupt_CHECK=join(Interrupt,DryTran, by=c('UID'))
+# DryTran=subset(DryTran,RESULT=='Y')
                       
 ####### substrate #######
 #get sediment data
+Sediment=tblRetrieve(Parameters=c('SIZE_CLS','XSIZE_CLS'),Projects=projects,Years=years,Protocols=protocols,SiteCodes=sitecodes)
 Sed2014=tblRetrieve(Parameters=c('SIZE_NUM','LOC'),Projects=projects,Years=years,Protocols=protocols)
 A_Sed2014=cast(Sed2014,'UID+TRANSECT+POINT~PARAMETER', value='RESULT')
 
-#check "other" categories
-OtherCheck=subset(A_Sed2014,SIZE_NUM=='0')
-#OtherCheck=subset(A_Sed2014,SIZE_NUM=='SWD'|SIZE_NUM=='LWD'|SIZE_NUM=='OM'|SIZE_NUM=='RM')
-OtherCount=setNames(aggregate(SIZE_NUM~UID, data=OtherCheck, FUN=length),c("UID","CountOther"))# if greater than 10% of pebbles i.e. 21 then look at categories
-write.csv(OtherCount,'OtherCount.csv')
+##check % of paricles that were "other" categories
+#2013 data
+Sediment_OT=subset(Sediment,RESULT=="OT"| RESULT=="WD")
+Sediment_SED=subset(Sediment,RESULT!="OT"& RESULT!="WD")
+Sed_OT=setNames(count(Sediment_OT,"UID"),c('UID','countOT'))
+Sed_SED=setNames(count(Sediment_SED,"UID"),c('UID','countSED'))
+Sed_count=merge(Sed_OT,Sed_SED,by='UID',all=T)
+Sed_count$PCT=Sed_count$countOT/(Sed_count$countOT+Sed_count$countSED)*100#if greater than 10% look to see what the OT is
+write.csv(Sed_count,'OtherCount2013.csv')
+#2014+ data
+Sed2014_OT=subset(Sed2014,RESULT==0 & PARAMETER=='SIZE_NUM')
+Sed2014_SED=subset(Sed2014, RESULT!=0 & PARAMETER=='SIZE_NUM')
+A_Sed2014_OT=setNames(cast(Sed2014_OT,'UID~PARAMETER', value='RESULT',fun=length),c('UID','countOT'))
+A_Sed2014_SED=setNames(cast(Sed2014_SED,'UID~PARAMETER', value='RESULT',fun=length),c('UID','countSED'))
+A_Sed2014_count=merge(A_Sed2014_OT,A_Sed2014_SED,by='UID',all=T)
+A_Sed2014_count$PCT=A_Sed2014_count$countOT/(A_Sed2014_count$countOT+A_Sed2014_count$countSED)*100#if greater than 10% look to see what the OT is
+write.csv(A_Sed2014_count,'OtherCount2014.csv')
 
 #check sample sizes and that bed and bank protocols were followed                       
 C_Sed2014=A_Sed2014[!A_Sed2014$LOC== "BANK", ]
