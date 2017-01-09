@@ -4,9 +4,18 @@
 #############################################################################
 # FIRST Run the settup section of DataConsumption_WRSAdb.R
 # SECOND Run filters for appropriate project, years, and protocols.
-####projects=c('WRSA','NV','GSENM','COPLT','2015ProtocolOverlap','AKEFO','NORCAL')# most useful for separating NorCal and WRSA, note that abbreviations differ between Access and SQL/FM
-####years=c('2013','2014','2015')#as character, not number
-####protocols=c('NRSA13','WRSA14','BOAT14','AK14')#for separating differences in overall protocol, may not be relevant for some parameters
+####
+#Pre-2016 master list # projects=c('WRSA','NV','GSENM','COPLT','2015ProtocolOverlap','AKEFO','NORCAL')# most useful for separating NorCal and WRSA, note that abbreviations differ between Access and SQL/FM
+#2016 master list# 
+projects=c('AKEFO','NPRA15','AK_GL_STANDARD_2016','AK_CY_UTILITYCORRIDOR_2016','WA_SP_STANDARD_2016','CO_FR_STANDARD_2016','CO_SW_STANDARD_2016','CO_NW_STANDARD_2016','ID_SA_STANDARD_2016','ID_STATE_STANDARD_2016','NM_FMD_STANDARD_2016','OR_PR_PERENNIAL_2016','OR_PR_INTERMITTENT_2016','UT_GR_STANDARD_2016','UT_WD_STANDARD_2016','WY_RA_STANDARD_2016')
+
+####
+years=c('2013','2014','2015','2016')#as character, not number
+####
+#Pre-2016# protocols=c('NRSA13','WRSA14','BOAT14','AK14')#for separating differences in overall protocol, may not be relevant for some parameters
+#2016#
+protocols=c('WADE2016','BOAT2016')
+
 ########Sitecode filter will likely be use to check data at one site or troubleshoot code during processing. Must add to code as needed as it is not built in to code below.
 ########sitecodes=c('OT-SS-7112')#c('EL-LS-8134','EL-SS-8127','MN-LS-1004','MN-SS-1104','MS-SS-3103','XE-RO-5086','XN-LS-4016','XN-SS-4128','XS-LS-6029' )#QAduplicateSites#c('AR-LS-8003','AR-LS-8007', 'TP-LS-8240')#sites for NorCalTesting
 
@@ -14,7 +23,7 @@
 
 ######################    Getting all of the Data      ######################
 
-#############################################################################
+##############################################################################
 library(plyr)
 
 #To get WQ data for 3 parameters for all NorCal sites #add turbidity and temp
