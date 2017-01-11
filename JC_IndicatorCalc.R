@@ -16,6 +16,7 @@ years=c('2013','2014','2015','2016')#as character, not number
 #2016#
 protocols=c('WADE2016','BOAT2016')
 
+sitecodes=c('')
 ########Sitecode filter will likely be use to check data at one site or troubleshoot code during processing. Must add to code as needed as it is not built in to code below.
 ########sitecodes=c('OT-SS-7112')#c('EL-LS-8134','EL-SS-8127','MN-LS-1004','MN-SS-1104','MS-SS-3103','XE-RO-5086','XN-LS-4016','XN-SS-4128','XS-LS-6029' )#QAduplicateSites#c('AR-LS-8003','AR-LS-8007', 'TP-LS-8240')#sites for NorCalTesting
 
@@ -168,6 +169,7 @@ countflow=count(flow,c("UID","RESULT"))
 #METADATA
 listsites=tblRetrieve(Parameters=c('SITE_ID','DATE_COL','LOC_NAME','LAT_DD','LON_DD','PROJECT','PROTOCOL','VALXSITE','LAT_DD_BR','LAT_DD_TR','LON_DD_BR','LON_DD_TR'),Projects=projects,Years=years,Protocols=protocols,SiteCodes=sitecodes)
 #listsites=setNames(cast(listsites,'UID~PARAMETER',value='RESULT'),c("UID","DATE_COL_CHECK","LAT_DD_CHECK","LAT_DD_BR_CHECK","LAT_DD_TR_CHECK","LON_DD_CHECK","LON_DD_BR_CHECK","LON_DD_TR_CHECK","PROJECT_CHECK","PROTOCOL_CHECK","SITE_ID_CHECK",'VALXSITE_CHECK'))
+#don't run the last 2 lines for 2016 data because different # of columns...LOC_NAME not in 2016 data...should I join it back in?
 listsites=setNames(cast(listsites,'UID~PARAMETER',value='RESULT'),c("UID","DATE_COL_CHECK","LAT_DD_CHECK","LAT_DD_BR_CHECK","LAT_DD_TR_CHECK","LOC_NAME_CHECK","LON_DD_CHECK","LON_DD_BR_CHECK","LON_DD_TR_CHECK","PROJECT_CHECK","PROTOCOL_CHECK","SITE_ID_CHECK",'VALXSITE_CHECK'))
 listsites=listsites[,c(1,12,6,2,3,7,10,13,11,5,9,4,8)]
 
@@ -649,6 +651,9 @@ nRIP_VEG=setNames(count(RIP_VEG,c("UID",'PARAMETER')),c("UID",'PARAMETER',"nRIP_
 nRIP_VEG=setNames(cast(nRIP_VEG,"UID~PARAMETER",value="nRIP_VEG_CHECK",fun="sum"),c('UID','nCANRIPW_CHECK','nUNRIPW_CHECK', 'nGCRIP_CHECK'))
 RIP_VEG=setNames(cast(RIP_VEG,'UID~PARAMETER', value='ResultsPer',fun='mean'),c('UID','CANRIPW_CHECK','UNRIPW_CHECK', 'GCRIP_CHECK'))
 RIP_VEG=merge(nRIP_VEG,RIP_VEG,by="UID")
+RIP_VEG$CANRIPW_CHECK=round(RIP_VEG$CANRIPW_CHECK,digits=2)
+RIP_VEG$UNRIPW_CHECK=round(RIP_VEG$UNRIPW_CHECK,digits=2)
+RIP_VEG$GCRIP_CHECK=round(RIP_VEG$GCRIP_CHECK,digits=2)
 RIP_VEG$CANRIPW_CHECK=ifelse(RIP_VEG$nCANRIPW_CHECK<10,NA,RIP_VEG$CANRIPW_CHECK)#total=22,but collected at 5 transects=10, so min N=10
 RIP_VEG$UNRIPW_CHECK=ifelse(RIP_VEG$nUNRIPW_CHECK<10,NA,RIP_VEG$UNRIPW_CHECK)#total=22,but collected at 5 transects=10, so min N=10
 RIP_VEG$GCRIP_CHECK=ifelse(RIP_VEG$nGCRIP_CHECK<10,NA,RIP_VEG$GCRIP_CHECK)#total=22,but collected at 5 transects=10, so min N=10
@@ -658,12 +663,21 @@ RIP_VEG$GCRIP_CHECK=ifelse(RIP_VEG$nGCRIP_CHECK<10,NA,RIP_VEG$GCRIP_CHECK)#total
 #Works!!!Try to take NA out of quotes and you may not need as.numeric
 FQCY_VEG=subset(RipBLM, PARAMETER == 'INVASW'|PARAMETER == 'NATIVW'|PARAMETER == 'INVASH'|PARAMETER == 'NATIVH'|
                   PARAMETER == 'SEGRUSH')
-nFQCY_VEG=setNames(count(FQCY_VEG,c("UID",'PARAMETER')),c("UID",'PARAMETER',"nFQCY_VEG_CHECK"))#6 strata *2 banks*11 transects=132 so half data=66
+nFQCY_VEG=setNames(count(FQCY_VEG,c("UID",'PARAMETER')),c("UID",'PARAMETER',"nFQCY_VEG_CHECK"))#total=22,but collected at 5 transects=10, so min N=10
 nFQCY_VEG=cast(nFQCY_VEG,"UID~PARAMETER",value="nFQCY_VEG_CHECK",fun="sum")
-FQCY_VEG$RESULT_A=as.numeric(ifelse(FQCY_VEG$RESULT == 'N', 0,ifelse(FQCY_VEG$RESULT == 'Y', 1,"NA")))
+FQCY_VEG$RESULT_A=as.numeric(ifelse(FQCY_VEG$RESULT == 'N', 0,ifelse(FQCY_VEG$RESULT == 'Y', 100,"NA")))
 FQCY_VEG=cast(FQCY_VEG,'UID~PARAMETER',value='RESULT_A',fun=mean)
-FQCY_VEG=merge(nFQCY_VEG,FQCY_VEG,by="UID")
-FQCY_VEG$INVASW_CHECK=ifelse(FQCY_VEG$nCANRIPW_CHECK<10,NA,FQCY_VEG$CANRIPW_CHECK)#total=22,but collected at 5 transects=10, so min N=10
+FQCY_VEG=setNames(merge(nFQCY_VEG,FQCY_VEG,by="UID"),c("UID","nINVASH_CHECK","nINVASW_CHECK","nNATIVH_CHECK","nNATIVW_CHECK","nSEGRUSH_CHECK","INVASH_CHECK","INVASW_CHECK","NATIVH_CHECK","NATIVW_CHECK","SEGRUSH_CHECK"))                  
+FQCY_VEG$INVASW_CHECK=round(FQCY_VEG$INVASW_CHECK,digits=0)
+FQCY_VEG$INVASH_CHECK=round(FQCY_VEG$INVASH_CHECK,digits=0)
+FQCY_VEG$NATIVH_CHECK=round(FQCY_VEG$NATIVH_CHECK,digits=0)
+FQCY_VEG$NATIVW_CHECK=round(FQCY_VEG$NATIVW_CHECK,digits=0)
+FQCY_VEG$SEGRUSH_CHECK=round(FQCY_VEG$SEGRUSH_CHECK,digits=0)
+FQCY_VEG$INVASW_CHECK=ifelse(FQCY_VEG$nINVASW_CHECK<10,NA,FQCY_VEG$INVASW_CHECK)#total=22,but collected at 5 transects=10, so min N=10
+FQCY_VEG$INVASH_CHECK=ifelse(FQCY_VEG$nINVASH_CHECK<10,NA,FQCY_VEG$INVASH_CHECK)#total=22,but collected at 5 transects=10, so min N=10
+FQCY_VEG$NATIVH_CHECK=ifelse(FQCY_VEG$nNATIVH_CHECK<10,NA,FQCY_VEG$NATIVH_CHECK)#total=22,but collected at 5 transects=10, so min N=10
+FQCY_VEG$NATIVW_CHECK=ifelse(FQCY_VEG$nNATIVW_CHECK<10,NA,FQCY_VEG$NATIVW_CHECK)#total=22,but collected at 5 transects=10, so min N=10
+FQCY_VEG$SEGRUSH_CHECK=ifelse(FQCY_VEG$nSEGRUSH_CHECK<10,NA,FQCY_VEG$SEGRUSH_CHECK)#total=22,but collected at 5 transects=10, so min N=10
 
 
 #xcmg
@@ -938,12 +952,13 @@ aggpvt4PoolFines=aggregate(PctPoolFines6_CHECK~UID,data=aggpvt2PoolFines, FUN='m
 aggpvt5PoolFines=setNames(aggregate(PctPoolFines2_CHECK~UID,data=aggpvt1PoolFines, FUN='sd'),c("UID","PctPoolFines2SD"))#average pool fines at a pool first # note these exclude NAs
 aggpvt6PoolFines=setNames(aggregate(PctPoolFines6_CHECK~UID,data=aggpvt2PoolFines, FUN='sd'),c("UID","PctPoolFines6SD"))#average pool fines at a pool first # note these exclude NAs
 FinalpvtPoolFines=join_all(list(aggpvt3PoolFines,aggpvt4PoolFines,aggpvt5PoolFines,aggpvt6PoolFines,aggpvt6PoolFines),by=c('UID'))
-FinalpvtPoolFines$PctPoolFines2_CHECK=round(FinalpvtPoolFines$PctPoolFines2_CHECK,digits=2)
-FinalpvtPoolFines$PctPoolFines6_CHECK=round(FinalpvtPoolFines$PctPoolFines6_CHECK,digits=2)
+FinalpvtPoolFines$PctPoolFines2_CHECK=round(FinalpvtPoolFines$PctPoolFines2_CHECK,digits=0)
+FinalpvtPoolFines$PctPoolFines6_CHECK=round(FinalpvtPoolFines$PctPoolFines6_CHECK,digits=0)
 #calc CV for PIBO QC check
 FinalpvtPoolFines$PctPoolFines2CV=FinalpvtPoolFines$PctPoolFines2SD/FinalpvtPoolFines$PctPoolFines2_CHECK#sites with CV >1.414 should be QCed 
 FinalpvtPoolFines$PctPoolFines6CV=FinalpvtPoolFines$PctPoolFines6SD/FinalpvtPoolFines$PctPoolFines6_CHECK#sites with CV >1.414 should be QCed 
 subQC=subset(FinalpvtPoolFines,FinalpvtPoolFines$PctPoolFines6CV>=1.41|FinalpvtPoolFines$PctPoolFines2CV>=1.41)#sites with CV >1.414 should be QCed 
+#sample sizes were checked on raw data- if only 1 replicate in a pool data was inactivated and if more than 50% of remaining data missing data all data for site inactivated
 
 ########## troubleshooting ################
 ####trying to figure out how to do averages all in one step but it averages transects and points ect or addes extra UID columns and Transect columns in
