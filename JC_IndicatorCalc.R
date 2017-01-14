@@ -156,16 +156,6 @@ FloodWidth=tblRetrieve(Parameters=c('FLOODWID'), Projects=projects, Years=years,
 avgFloodWidth=setNames(cast(FloodWidth,'UID~PARAMETER',value='RESULT', fun=mean),c("UID","FLD_WT_CHECK"))
 avgFloodWidth$FLD_WT_CHECK=round(avgFloodWidth$FLD_WT_CHECK,digits=2)
 
-#percent dry
-dry=tblRetrieve(Parameters=c('TRANDRY'),Projects=projects, Years=years,Protocols=protocols)
-pvtdry=cast(dry,'UID+TRANSECT~PARAMETER',value='RESULT')
-countdry=count(pvtdry,c("UID","TRANDRY"))
-
-
-#flow for thalweg
-flow=tblRetrieve(Parameters=c('FLOW'),Projects=projects, Years=years,Protocols=protocols)
-countflow=count(flow,c("UID","RESULT"))
-
 #METADATA
 listsites=tblRetrieve(Parameters=c('SITE_ID','DATE_COL','LOC_NAME','LAT_DD','LON_DD','PROJECT','PROTOCOL','VALXSITE','LAT_DD_BR','LAT_DD_TR','LON_DD_BR','LON_DD_TR'),Projects=projects,Years=years,Protocols=protocols,SiteCodes=sitecodes)
 #listsites=setNames(cast(listsites,'UID~PARAMETER',value='RESULT'),c("UID","DATE_COL_CHECK","LAT_DD_CHECK","LAT_DD_BR_CHECK","LAT_DD_TR_CHECK","LON_DD_CHECK","LON_DD_BR_CHECK","LON_DD_TR_CHECK","PROJECT_CHECK","PROTOCOL_CHECK","SITE_ID_CHECK",'VALXSITE_CHECK'))
@@ -844,6 +834,79 @@ ThalwegSD=setNames(ThalwegSD,c("UID","SDDEPTH"))
 Thalweg=merge(Thalweg,ThalwegSD,by=c('UID'), all=T)
 Thalweg$CVDEPTH_CHECK=round(Thalweg$SDDEPTH/Thalweg$XDEPTH,digits=2)
 
+#omit cases with incomplete thalweg 2016+ data 
+tbl=tblRetrieve(Parameters=c('DEPTH'),Project=projects, Years=years,Protocols=protocols,SiteCodes=sitecodes)
+tbl.2=tblRetrieve(Parameters=c('NUM_THALWEG'),Project=projects, Years=years,Protocols=protocols,SiteCodes=sitecodes)
+tbl3=cast(tbl.2,'UID~PARAMETER',value='RESULT',mean)
+tbl.PVT=addKEYS(cast(tbl,'UID~PARAMETER',value='RESULT'),c('SITE_ID'))# count is default
+thalweg.missing=merge(tbl.PVT,tbl3, by='UID')
+thalweg.missing$pctcomplete=thalweg.missing$DEPTH/(thalweg.missing$NUM_THALWEG*10)*100
+Thalweg=merge(Thalweg,thalweg.missing, by=c('UID')
+Thalweg$XDEPTH_CHECK=ifelse(Thalweg$pctcomplete<100,NA,Thalweg$XDEPTH_CHECK)
+Thalweg$CVDEPTH_CHECK=ifelse(Thalweg$pctcomplete<100,NA,Thalweg$CVDEPTH_CHECK)  
+              
+# #omit cases with incomplete thalweg 2014-2015
+# thalweg.missing2014=sqlQuery(wrsa1314,sprintf("select Station.UID, depth.transect,StationCNT,DepthCNT from 
+#                                               (select distinct UID,
+#                                                             CASE 
+#                                                             WHEN parameter='sub_5_7' and RESULT='5' THEN cast(RESULT*2 as numeric)
+#                                                             WHEN parameter='sub_5_7' and RESULT='7' THEN cast(RESULT*2+1 as numeric)
+#                                                             WHEN parameter='sub_5_7' and RESULT='14' THEN cast (RESULT*2+2 as numeric)
+#                                                             ELSE 'ISSUE'
+#                                                             END as StationCNT from tbltransect where parameter='SUB_5_7' and ACTIVE='true') as station
+#                                                             join
+#                                                             (select UID, transect, count(point) as DepthCNT from tblpoint where parameter='DEPTH' and POINT not in('CT','LC','LF','RC','RT') and ACTIVE='true' group by UID, transect) as depth
+#                                                             on station.uid=depth.uid
+#                                                             --where StationCNT > DepthCNT 
+#                                                             order by Station.UID, depth.transect"))
+# thalweg.missing2014$pctcomplete=thalweg.missing2014$DepthCNT/thalweg.missing2014$StationCNT*100
+# thalweg.missing2014_2=aggregate(pctcomplete~UID, data=thalweg.missing2014,mean)
+# #omit cases with incomplete thalweg 2013
+# thalweg.missing2013=sqlQuery(wrsa1314,sprintf("select Station.UID, StationDUPLICATES,StationCNT,DepthCNT from 
+#                                               (select distinct UID,
+#                                                CASE 
+#                                                WHEN RESULT='5' THEN cast(RESULT*20 as numeric)
+#                                                WHEN RESULT='7' THEN cast(RESULT*20+10 as numeric)
+#                                                WHEN RESULT='14' THEN cast (RESULT*20+20 as numeric)
+#                                                ELSE 'ISSUE'
+#                                                END as StationCNT from tblpoint where parameter='SUB_5_7' and ACTIVE='true') as station
+#                                               join
+#                                               (select UID,count(result) as StationDUPLICATES from (select distinct UID, result from tblpoint where parameter='SUB_5_7' and ACTIVE='true') as stcnt group by UID) as stationcount
+#                                               on station.uid=stationcount.uid
+#                                               join 
+#                                               (select UID, count(point) as DepthCNT from tblpoint where parameter='DEPTH' and POINT not in('CT','LC','LF','RC','RT') and ACTIVE='true' group by UID) as depth
+#                                               on station.uid=depth.uid
+#                                               --where StationCNT > DepthCNT or stationDUPLICATES>1
+#                                               order by Station.UID"))
+# thalweg.missing2013$pctcomplete=thalweg.missing2013$DepthCNT/thalweg.missing2013$StationCNT*100
+# thalweg.missing2013_2=aggregate(pctcomplete~UID, data=thalweg.missing2013,mean)                             
+#Thalweg=merge(Thalweg,thalweg.missing2014, by=c('UID')
+#Thalweg=merge(Thalweg,thalweg.missing2013, by=c('UID')               
+#Thalweg$XDEPTH_CHECK=ifelse(Thalweg$pctcomplete<100,NA,Thalweg$XDEPTH_CHECK)
+#Thalweg$CVDEPTH_CHECK=ifelse(Thalweg$pctcomplete<100,NA,Thalweg$CVDEPTH_CHECK)              
+
+              
+##Percent Dry
+#decided to use number of thalweg depth=0 because more spatially explict...this means this indicator can't be calc if thalweg not collected
+CountThalweg=setNames(count(thalweg,"UID"),c('UID','nDEPTH'))
+Dry=subset(thalweg,RESULT=='0')
+Dry=setNames(count(Dry,"UID"),c('UID','nDRY'))
+PctDry=merge(CountThalweg,Dry,by=c('UID'),all=TRUE)
+PctDry$PctDry_CHECK=ifelse(is.na(PctDry$nDRY/PctDry$nDEPTH*100)==TRUE,0,PctDry$nDRY/PctDry$nDEPTH*100)        
+PctDry$PctDry_CHECK=round(PctDry$PctDry_CHECK,digits=0)              
+              
+###alternative ways of looking at flow and dryness              
+# #percent dry based on # of dry transects
+#dry=tblRetrieve(Parameters=c('TRANDRY'),Projects=projects, Years=years,Protocols=protocols)
+#pvtdry=cast(dry,'UID+TRANSECT~PARAMETER',value='RESULT')
+#countdry=count(pvtdry,c("UID","TRANDRY"))
+#               
+#               
+##flow for thalweg
+#flow=tblRetrieve(Parameters=c('FLOW'),Projects=projects, Years=years,Protocols=protocols)
+#countflow=count(flow,c("UID","RESULT"))              
+              
+              
 ###########################################
 cdData <- tblRetrieve(Parameter=c("ACTRANSP", "DISTANCE", "INCREMNT", "SIDCHN", "OFF_CHAN", "REACHLENGTH"), Projects=projects,Years=years,Protocols=protocols)
 metsoutGeneral <- metsGeneral(thalweg, channelgeometry)#working, but odd values coming out for reachlength still >> trouble shoot thalweg$STATION (currently set to numeric); seems to be good >> next up:  cdData data subset driving the station count which results in 0 for many NRSA sites which don't include all the "No"s for side channel, etc. >> cdData <- subset(indat, PARAMETER %in% c("ACTRANSP", "DISTANCE", "INCREMNT", "SIDCHN", "OFF_CHAN", "REACHLENGTH"))
@@ -1024,7 +1087,7 @@ BankWidFinal$XBKF_W_CHECK=round(BankWidFinal$XBKF_W_CHECK,digits=2)
 #IndicatorCheckJoin=join_all(list(listsites,WQfinal,BnkErosional,BnkAll,fishpvt2,DensPvt,BnkDensPvt,XCMGW_new1,XCMG_new1,XGB_new1,IncBnk,BankWid,WetWid,XEMBED,PCT_SAFN_ALL,W1_HALL,QR1,MeanAngle,Slope_Per,Thalweg,Pools),by="UID")
 IndicatorCheckJoin=join_all(list(listsites,WQfinal,BnkErosional,BnkAll,fishpvt2,DensPvt,BnkDensPvt,XCMG_new1,IncBnk,BankWidFinal,WetWidFinal,XEMBED,PCT_SAFN_ALL,MeanAngle,Slope_Per,Thalweg,Pools,LWD),by="UID")
 IndicatorCheckJoin=join_all(list(listsites,WQfinal,BnkErosional,BnkAll,DensPvt,BnkDensPvt,XCMG_new1,IncBnk,BankWidFinal,WetWidFinal,PCT_SAFN_ALL,MeanAngle,Thalweg,Pools,LWD,avgFloodWidth),by="UID")
-IndicatorCheckJoin=join_all(list(listsites,WQfinal,BnkErosional,BnkAll,meanBankStabCoverClass,DensPvt,BnkDensPvt,RIP_VEG, FQCY_VEG,XCMG_new1,IncBnk,BankWidFinal,WetWidFinal,ALLSED,MeanAngle,Thalweg,Pools,FinalpvtPoolFines,LWD,avgFloodWidth,pvtSlope),by="UID")
+IndicatorCheckJoin=join_all(list(listsites,WQfinal,BnkErosional,BnkAll,meanBankStabCoverClass,DensPvt,BnkDensPvt,RIP_VEG, FQCY_VEG,XCMG_new1,IncBnk,BankWidFinal,WetWidFinal,ALLSED,MeanAngle,Thalweg,PctDry,Pools,FinalpvtPoolFines,LWD,avgFloodWidth,pvtSlope),by="UID")
 IndicatorCheckJoin=join_all(list(listsites,BnkErosional,BnkAll,fishpvt2,DensPvt,BnkDensPvt,XCMG_new1,IncBnk,BankWidFinal,WetWidFinal,XEMBED,PCT_SAFN_ALL,MeanAngle,Slope_Per,Thalweg,LWD),by="UID")
 
 #To remove all of the metrics and only get the indicators subset by UID and all those columns ending in "CHECK". Hmm..not really sure what the $ is doing here, the code works without it, but all the examples I've looked at keep the $ so I kept it too... 

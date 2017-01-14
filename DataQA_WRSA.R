@@ -676,8 +676,45 @@ tbl.2=tblRetrieve(Parameters=c('NUM_THALWEG'),Project=projects, Years=years,Prot
 tbl3=cast(tbl.2,'UID~PARAMETER',value='RESULT',mean)
 tbl.PVT=addKEYS(cast(tbl,'UID~PARAMETER',value='RESULT'),c('SITE_ID'))# count is default
 thalweg.missing=merge(tbl.PVT,tbl3, by='UID')
-thalweg.missing$PctComplete=thalweg.missing$DEPTH/(thalweg.missing$NUM_THALWEG*10)*100
+thalweg.missing$pctcomplete=thalweg.missing$DEPTH/(thalweg.missing$NUM_THALWEG*10)*100
 write.csv(thalweg.missing,'thalweg.missing.csv')
+
+#2014-2015
+thalweg.missing2014=sqlQuery(wrsa1314,sprintf("select Station.UID, depth.transect,StationCNT,DepthCNT from 
+                                              (select distinct UID,
+                                               CASE 
+                                               WHEN parameter='sub_5_7' and RESULT='5' THEN cast(RESULT*2 as numeric)
+                                               WHEN parameter='sub_5_7' and RESULT='7' THEN cast(RESULT*2+1 as numeric)
+                                               WHEN parameter='sub_5_7' and RESULT='14' THEN cast (RESULT*2+2 as numeric)
+                                               ELSE 'ISSUE'
+                                               END as StationCNT from tbltransect where parameter='SUB_5_7' and ACTIVE='true') as station
+                                              join
+                                              (select UID, transect, count(point) as DepthCNT from tblpoint where parameter='DEPTH' and POINT not in('CT','LC','LF','RC','RT') and ACTIVE='true' group by UID, transect) as depth
+                                              on station.uid=depth.uid
+                                              --where StationCNT > DepthCNT 
+                                              order by Station.UID, depth.transect"))
+thalweg.missing2014$pctcomplete=thalweg.missing2014$DepthCNT/thalweg.missing2014$StationCNT*100
+thalweg.missing2014_2=aggregate(pctcomplete~UID, data=thalweg.missing2014,mean)
+
+#2013
+thalweg.missing2013=sqlQuery(wrsa1314,sprintf("select Station.UID, StationDUPLICATES,StationCNT,DepthCNT from 
+                                              (select distinct UID,
+                                               CASE 
+                                               WHEN RESULT='5' THEN cast(RESULT*20 as numeric)
+                                               WHEN RESULT='7' THEN cast(RESULT*20+10 as numeric)
+                                               WHEN RESULT='14' THEN cast (RESULT*20+20 as numeric)
+                                               ELSE 'ISSUE'
+                                               END as StationCNT from tblpoint where parameter='SUB_5_7' and ACTIVE='true') as station
+                                              join
+                                              (select UID,count(result) as StationDUPLICATES from (select distinct UID, result from tblpoint where parameter='SUB_5_7' and ACTIVE='true') as stcnt group by UID) as stationcount
+                                              on station.uid=stationcount.uid
+                                              join 
+                                              (select UID, count(point) as DepthCNT from tblpoint where parameter='DEPTH' and POINT not in('CT','LC','LF','RC','RT') and ACTIVE='true' group by UID) as depth
+                                              on station.uid=depth.uid
+                                              --where StationCNT > DepthCNT or stationDUPLICATES>1
+                                              order by Station.UID"))
+thalweg.missing2013$pctcomplete=thalweg.missing2013$DepthCNT/thalweg.missing2013$StationCNT*100
+thalweg.missing2013_2=aggregate(pctcomplete~UID, data=thalweg.missing2013,mean)                             
 
 #Increment cross-validation WRSA checks
 incrementcheck=tblRetrieve(Parameters=c('TRCHLEN','INCREMENT','RCHWIDTH'), Projects=projects, Years=years,Protocols=protocols,SiteCodes=sitecodes)
