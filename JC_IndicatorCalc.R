@@ -153,8 +153,7 @@ BankWid=tblRetrieve(Parameters=c('BANKWID'),Projects=projects, Years=years,Proto
 
 #Floodwidth
 FloodWidth=tblRetrieve(Parameters=c('FLOODWID'), Projects=projects, Years=years,Protocols=protocols,SiteCode=sitecodes)
-avgFloodWidth=setNames(cast(FloodWidth,'UID~PARAMETER',value='RESULT', fun=mean),c("UID","FLD_WT_CHECK"))
-avgFloodWidth$FLD_WT_CHECK=round(avgFloodWidth$FLD_WT_CHECK,digits=2)
+
 
 #METADATA
 listsites=tblRetrieve(Parameters=c('SITE_ID','DATE_COL','LOC_NAME','LAT_DD','LON_DD','PROJECT','PROTOCOL','VALXSITE','LAT_DD_BR','LAT_DD_TR','LON_DD_BR','LON_DD_TR'),Projects=projects,Years=years,Protocols=protocols,SiteCodes=sitecodes)
@@ -166,10 +165,10 @@ listsites=listsites[,c(1,12,6,2,3,7,10,13,11,5,9,4,8)]
 #Sinuosity
 listsites$straightline=acos(sin(as.numeric(listsites$LAT_DD_BR_CHECK)*3.141593/180)*sin(as.numeric(listsites$LAT_DD_TR_CHECK)*3.141593/180) + cos(as.numeric(listsites$LAT_DD_BR_CHECK)*3.141593/180)*cos(as.numeric(listsites$LAT_DD_TR_CHECK)*3.141593/180)*cos(as.numeric(listsites$LON_DD_TR_CHECK)*3.141593/180-as.numeric(listsites$LON_DD_BR_CHECK)*3.141593/180)) * 6371000
 TRCHLEN=tblRetrieve(Parameters=c('TRCHLEN','INCREMENT'),Projects=projects,Years=years,Protocols=protocols)#not using TRCHLEN
-TRCHLEN=cast(TRCHLEN,'UID~PARAMETER',value='RESULT')
+TRCHLEN=setNames(cast(TRCHLEN,'UID~PARAMETER',value='RESULT'),c('UID','INCREMENT','TRCHLEN_CHECK'))
 listsites=merge(TRCHLEN,listsites, by='UID', all=T)
-listsites$SINUOSITY_CHECK=round(as.numeric(listsites$TRCHLEN)/as.numeric(listsites$straightline),digits=2)
-
+listsites$SINUOSITY_CHECK=round(as.numeric(listsites$TRCHLEN_CHECK)/as.numeric(listsites$straightline),digits=2)
+listsites$SINUOSITY_CHECK=ifelse(listsites$SINUOSITY_CHECK<1,NA,listsites$SINUOSITY_CHECK)
 
 #average # of pieces of wood?------ONLY QUERYING WADEABLE WOOD??? or are all boating parameters the same....I think I looked into this and they are?
 LwdCatWet=unclass(sqlQuery(wrsa1314,"select SAMPLE_TYPE,PARAMETER from tblMetadata where Sample_TYPE like 'LWDW%' and PARAMETER like 'W%'"))$PARAMETER
@@ -472,6 +471,10 @@ Sed2014_MEAS=subset(Sed2014,RESULT!=0 & PARAMETER=='SIZE_NUM')
 Sed2014_MEAS$RESULT=as.numeric(Sed2014_MEAS$RESULT)
 pvtSed2014_D=setNames(cast(Sed2014_MEAS,'UID~PARAMETER',value='RESULT',function(x) quantile(x,c(0.50,0.16,0.84))),c('UID','D50_CHECK','D16_CHECK','D84_CHECK'))
 pvtSed2014_GM=setNames(cast(Sed2014_MEAS,'UID~PARAMETER',value='RESULT',function(x) exp(mean(log10(x)))),c('UID','GEOMEAN_CHECK'))
+pvtSed2014_D$D50_CHECK=round(pvtSed2014_D$D50_CHECK,digit=0)
+pvtSed2014_D$D16_CHECK=round(pvtSed2014_D$D16_CHECK,digit=0)
+pvtSed2014_D$D84_CHECK=round(pvtSed2014_D$D84_CHECK,digit=0)
+pvtSed2014_GM$GEOMEAN_CHECK=round(pvtSed2014_GM$GEOMEAN_CHECK,digit=0)
 ALLSED=join_all(list(PCT_SAFN_ALL,pvtSed2014_D,pvtSed2014_GM),by='UID')
 
 ###################################################################################################################################
@@ -841,7 +844,7 @@ tbl3=cast(tbl.2,'UID~PARAMETER',value='RESULT',mean)
 tbl.PVT=addKEYS(cast(tbl,'UID~PARAMETER',value='RESULT'),c('SITE_ID'))# count is default
 thalweg.missing=merge(tbl.PVT,tbl3, by='UID')
 thalweg.missing$pctcomplete=thalweg.missing$DEPTH/(thalweg.missing$NUM_THALWEG*10)*100
-Thalweg=merge(Thalweg,thalweg.missing, by=c('UID')
+Thalweg=merge(Thalweg,thalweg.missing, by=c('UID'))
 Thalweg$XDEPTH_CHECK=ifelse(Thalweg$pctcomplete<100,NA,Thalweg$XDEPTH_CHECK)
 Thalweg$CVDEPTH_CHECK=ifelse(Thalweg$pctcomplete<100,NA,Thalweg$CVDEPTH_CHECK)  
               
@@ -999,7 +1002,7 @@ LWDvolume=merge(nLWD,LWDvolume,by="UID",all=TRUE) #Merge sample sizes to data fi
 LWDvolume$V1WM100_CHECK=ifelse(LWDvolume$nLWD>=64&LWDvolume$YEAR>='2014'&LWDvolume$SAMPLE_TYPE!='LWDB',LWDvolume$V1WM100,# For wadeable sites collected in 2014 or later, total data points for entire reach=160 (16 per transect, 10 transects), 5 transects of data would be 80, but because large wood is collected between transects Jennifer and Nicole decided to allow for 4 transects of data which is 64
                                ifelse(LWDvolume$nLWD>=48&LWDvolume$YEAR<'2014'&LWDvolume$SAMPLE_TYPE!='LWDB',LWDvolume$V1WM100,# For wadeable sites collected in 2013, total data points for entire reach=120, 5 transects of data would be 60, but because large wood is collected between transects Jennifer and Nicole decided to allow for 4 transects of data which is 48
                                       ifelse(LWDvolume$nLWD>=48&LWDvolume$SAMPLE_TYPE=='LWDB',LWDvolume$V1WM100,NA))) # For boatable sites collected in any year, total data points for entire reach=120, 5 transects of data would be 60, but because large wood is collected between transects Jennifer and Nicole decided to allow for 4 transects of data which is 48
-
+LWDvolume$V1WM100_CHECK=round(LWDvolume$V1WM100_CHECK,digits=1)
 
 #The if statement above was not working, so I started developing this code, in the process I fixed the if statement above....
 #LWDvolumeBoat=subset(LWDvolume,SAMPLE_TYPE=='LWDB')
@@ -1128,13 +1131,20 @@ BankWidFinal$XBKF_W_CHECK=round(BankWidFinal$XBKF_W_CHECK,digits=2)
 #wet=WetWid$XWIDTH_CHECK
 #quantile(wet,0.15)
                       
+#Flood Prone Width
+avgFloodWidth=setNames(cast(FloodWidth,'UID~PARAMETER',value='RESULT', fun=mean),c("UID","FLD_WT_CHECK"))
+avgFloodWidth$FLD_WT_CHECK=round(avgFloodWidth$FLD_WT_CHECK,digits=2)
+
+#Entrenchment
+avgFloodWidth=merge(avgFloodWidth,BankWidFinal,by=c('UID'))
+avgFloodWidth$ENTRENCH_CHECK=round(avgFloodWidth$FLD_WT_CHECK/avgFloodWidth$XBKF_W_CHECK,digits=2)
 
 ####################################################################################################################################                     
 #To get all calculated values together... Although some tables still have the metrics included.
 #IndicatorCheckJoin=join_all(list(listsites,WQfinal,BnkErosional,BnkAll,fishpvt2,DensPvt,BnkDensPvt,XCMGW_new1,XCMG_new1,XGB_new1,IncBnk,BankWid,WetWid,XEMBED,PCT_SAFN_ALL,W1_HALL,QR1,MeanAngle,Slope_Per,Thalweg,Pools),by="UID")
 IndicatorCheckJoin=join_all(list(listsites,WQfinal,BnkErosional,BnkAll,fishpvt2,DensPvt,BnkDensPvt,XCMG_new1,IncBnk,BankWidFinal,WetWidFinal,XEMBED,PCT_SAFN_ALL,MeanAngle,Slope_Per,Thalweg,Pools,LWD),by="UID")
 IndicatorCheckJoin=join_all(list(listsites,WQfinal,BnkErosional,BnkAll,DensPvt,BnkDensPvt,XCMG_new1,IncBnk,BankWidFinal,WetWidFinal,PCT_SAFN_ALL,MeanAngle,Thalweg,Pools,LWD,avgFloodWidth),by="UID")
-IndicatorCheckJoin=join_all(list(listsites,WQfinal,BnkErosional,BnkAll,meanBankStabCoverClass,DensPvt,BnkDensPvt,RIP_VEG, FQCY_VEG,XCMG_new1,IncBnk,BankWidFinal,WetWidFinal,ALLSED,MeanAngle,Thalweg,PctDry,Pools,FinalpvtPoolFines,LWD,avgFloodWidth,pvtSlope),by="UID")
+IndicatorCheckJoin=join_all(list(listsites,WQfinal,BnkErosional,BnkAll,meanBankStabCoverClass,DensPvt,BnkDensPvt,RIP_VEG, FQCY_VEG,XCMG_new1,IncBnk,BankWidFinal,WetWidFinal,ALLSED,MeanAngle,Thalweg,PctDry,Pools,FinalpvtPoolFines,LWD,LWDvolume, avgFloodWidth,pvtSlope),by="UID")
 IndicatorCheckJoin=join_all(list(listsites,BnkErosional,BnkAll,fishpvt2,DensPvt,BnkDensPvt,XCMG_new1,IncBnk,BankWidFinal,WetWidFinal,XEMBED,PCT_SAFN_ALL,MeanAngle,Slope_Per,Thalweg,LWD),by="UID")
 
 #To remove all of the metrics and only get the indicators subset by UID and all those columns ending in "CHECK". Hmm..not really sure what the $ is doing here, the code works without it, but all the examples I've looked at keep the $ so I kept it too... 
@@ -1142,6 +1152,6 @@ IndicatorCheck=IndicatorCheckJoin[,c("UID",grep("CHECK$", colnames(IndicatorChec
 #write.csv(IndicatorCheck,"C:\\Users\\Nicole\\Desktop\\IndicatorCheck2.csv")
 #Remove all other data files as they are no longer needed
 IndicatorCheck=subset(IndicatorCheck,PROTOCOL_CHECK=="BOAT14")
-write.csv(IndicatorCheck,"IndicatorCheck2016data_21October2016.csv")
+write.csv(IndicatorCheck,"IndicatorCheck2016data_14Jan2017.csv")
 rm(PHfinal,XGB_new,XGB_new1,BankStab,Banks,RipGB,EMBED,Human_Influ,W1_HALL,W1_HALL_NRSA,QR1,XEMBED,BnkDensPvt,BnkDensiom,densiom,RipXCMG,XCMG_new,XCMG_new1,RipWW,XCMGW_new,XCMGW_new1,IndicatorCheckJoin,fish,fishpvt2,
    MidDensiom,DensPvt,Incision,INCISED,BANKHT,Inc,Bnk,xIncht,xBnkht,IncBnk,Sediment,pctsafn,Sed2014,A_Sed2014,C_Sed2014,E_Sed2014,F_Sed2014,PCT_SAFN_ALL)
