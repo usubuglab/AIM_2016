@@ -917,6 +917,7 @@ thalCheck$check=ifelse(thalCheck$RESULT>thalCheck$VALUEl & thalCheck$RESULT<thal
 if(nrow(thalCheck)>0){print("WARNING! Calculated reach length (METRIC=='reachlen') significantly different from field recorded Reach Length (PARAMETER=='TRCHLEN'). Confirm correct INCREMENT parameter.")}
 
 
+
 #LWD
 #C1WM100- (Cummulative count of LWD in bankfull channel across all size classes)/(Reach Length) units are pieces/100m
 LwdWet$TRANSECT=mapvalues(LwdWet$TRANSECT, c("XA", "XB","XC","XD","XE","XF","XG","XH","XI","XJ","XK" ),c("A", "B","C","D","E","F","G","H","I","J","K"))
@@ -934,37 +935,83 @@ LWD=merge(LWD,TRCHLEN,by=c('UID'), all=T)
 LWD$LWD_RCHLEN=(LWD$TRCHLEN/10)*LWD$NUMTRAN 
 LWD$C1WM100_CHECK=round((LWD$C1W/LWD$LWD_RCHLEN)*100,digits=1)# get the pieces/100m
 
+
 #V1WM100
+#MUST run C1WM100 code prior to this code so that the RCHLEN (reach length) code works. 
+#Duplications of size classes below are so that the table works with sites sampled with the 2013 protocol as well as the 2014 and later protocol 
+#Because the Boatable and Wadeable sites have the same PARAMETER name but different size classes, To distinquish I've added "B_" in front of the boatable site PARAMETER. 
+#All categories match our metadata table. 
+#Based on Jawson Law's Code and communication with Phil Kauffman I have assigned a max or upper end value to those categories which were >some number
+
 LWDtt <- textConnection(
-  "LWD_Cat  DIAMETER	LENGTH
-  WLDLL	0.6	15
-  WLDML	0.6	5
-  WLDSL	0.6	1.5
-  WMDLL	0.3	15
-  WMDML	0.3	5
-  WMDSL	0.3	1.5
-  WSDLL	0.1	15
-  WSDML	0.1	5
-  WSDSL	0.1	1.5
-  WXDLL	0.8	15
-  WXDML	0.8	5
-  WXDSL	0.8	1.5
-  WLDSML  0.6	1.5
-  WMDSML	0.3	1.5
-  WSDSML	0.1	1.5
-  WXDSML	0.8	1.5
-  WSDSSL	0.1	1.5
-  WXDSSL	0.8	1.5
-  WMDSSL	0.3	1.5
-  WLDSSL	0.6	1.5
-  #WLDSML	0.6	3
-  #WMDSML	0.3	3
-  #WSDSML	0.1	3
-  #WXDSML	0.8	3"
-  )
+  "PARAMETER  Min_DIAMETER	Max_DIAMETER	Min_LENGTH	Max_LENGTH
+  B_WLDLL	0.8	1	30	75
+  B_WLDML	0.8	1	15	30
+  B_WLDSL	0.8	1	5	15
+  B_WMDLL	0.6	0.8	30	75
+  B_WMDML	0.6	0.8	15	30
+  B_WMDSL	0.6	0.8	5	15
+  B_WSDLL	0.3	0.6	30	75
+  B_WSDML	0.3	0.6	15	30
+  B_WSDSL	0.3	0.6	5	15
+  B_WXDLL	1	2	30	75
+  B_WXDML	1	2	15	30
+  B_WXDSL	1	2	5	15
+  WLDLL	0.6	0.8	15	30
+  WLDML	0.6	0.8	5	15
+  WLDSL	0.6	0.8	1.5	5
+  WMDLL	0.3	0.6	15	30
+  WMDML	0.3	0.6	5	15
+  WMDSL	0.3	0.6	1.5	5
+  WSDLL	0.1	0.3	15	30
+  WSDML	0.1	0.3	5	15
+  WSDSL	0.1	0.3	1.5	5
+  WXDLL	0.8	2	15	30
+  WXDML	0.8	2	5	15
+  WXDSL	0.8	2	1.5	5
+  WLDSML	0.6	0.8	3	5
+  WMDSML	0.3	0.6	3	5
+  WSDSML	0.1	0.3	3	5
+  WXDSML	0.8	2	3	5
+  WSDSSL	0.1	0.3	1.5	3
+  WXDSSL	0.8	2	1.5	3
+  WMDSSL	0.3	0.6	1.5	3
+  WLDSSL	0.6	0.8	1.5	3"
+)
+
+
+#Creates a table of the volume value that corresponds to the size category.
 LWD_sizes <- read.table(LWDtt, header = TRUE, stringsAsFactors = FALSE)
 close(LWDtt)
-LWD_sizes$VOLUME=pi*((1.33*(LWD_sizes$DIAMETER/2)^2)*(1.33*LWD_sizes$LENGTH))#pg 31 of Kauffman 1999 and he cites Robison 1998
+#Equation found in Kauffman 99 (pg 31 of Kauffman 1999 and he cites Robison 1998) is wrong, first noticed because it does not produce values equal to those found in aquamet. Jason Law has the correct code, confirmed by Phil Kauffman and also produces the same values found in Aquamet. Aquamet code only uses calculated values from the equation but does not contain the equation itself
+LWD_sizes$VOLUME=pi*((0.5*(LWD_sizes$Min_DIAMETER+((LWD_sizes$Max_DIAMETER-LWD_sizes$Min_DIAMETER)/3)))^2)*(LWD_sizes$Min_LENGTH+((LWD_sizes$Max_LENGTH-LWD_sizes$Min_LENGTH)/3))
+
+LwdWet$PARAMETER=ifelse(LwdWet$SAMPLE_TYPE=="LWDB",sprintf('%s%s',"B_",LwdWet$PARAMETER),LwdWet$PARAMETER)#Adds a "B_" to all boatable parameters so that we can run the same code for everything. 
+LWDvol1=join(LwdWet,LWD_sizes, by='PARAMETER') #Appends the correct volume value to size class in the table of data
+LWDvol1$VOLcalc=LWDvol1$VOLUME*LWDvol1$RESULT #Get the overall volume of wood for each size class
+LWDvolume=setNames(cast(LWDvol1,"UID+DATE_COL+SAMPLE_TYPE~ACTIVE", value="VOLcalc", fun="sum"),c('UID','DATE_COL','SAMPLE_TYPE','LWDvol')) #Pivots table to get the overall volume of wood for the entire reach. Keep Date so we can set different sample size requirements for different years
+LWDvolume=merge(LWDvolume,subset(LWD, select=c(UID,LWD_RCHLEN),all=TRUE), by="UID",all=TRUE)#Need to run code within lwd count code before this will work
+LWDvolume$V1WM100=(LWDvolume$LWDvol/LWDvolume$LWD_RCHLEN)*100
+nLWD=setNames(count(LwdWet,"UID"),c("UID","nLWD"))#Calculates sample size for each site
+LWDvolume$YEAR=format(as.Date(LWDvolume$DATE_COL,'%m/%d/%Y'),'%Y') #Separates year from the date as an easy way to apply apply the sample size needed code below since we had different samplke sizes in different years.
+LWDvolume=merge(nLWD,LWDvolume,by="UID",all=TRUE) #Merge sample sizes to data file by UID
+#Excludes all site values if they do not meet the minumum sample size required:
+LWDvolume$V1WM100_CHECK=ifelse(LWDvolume$nLWD>=64&LWDvolume$YEAR>='2014'&LWDvolume$SAMPLE_TYPE!='LWDB',LWDvolume$V1WM100,# For wadeable sites collected in 2014 or later, total data points for entire reach=160 (16 per transect, 10 transects), 5 transects of data would be 80, but because large wood is collected between transects Jennifer and Nicole decided to allow for 4 transects of data which is 64
+                               ifelse(LWDvolume$nLWD>=48&LWDvolume$YEAR<'2014'&LWDvolume$SAMPLE_TYPE!='LWDB',LWDvolume$V1WM100,# For wadeable sites collected in 2013, total data points for entire reach=120, 5 transects of data would be 60, but because large wood is collected between transects Jennifer and Nicole decided to allow for 4 transects of data which is 48
+                                      ifelse(LWDvolume$nLWD>=48&LWDvolume$SAMPLE_TYPE=='LWDB',LWDvolume$V1WM100,NA))) # For boatable sites collected in any year, total data points for entire reach=120, 5 transects of data would be 60, but because large wood is collected between transects Jennifer and Nicole decided to allow for 4 transects of data which is 48
+
+
+#The if statement above was not working, so I started developing this code, in the process I fixed the if statement above....
+#LWDvolumeBoat=subset(LWDvolume,SAMPLE_TYPE=='LWDB')
+#LWDvolume2014beyond=subset((LWDvolume,SAMPLE_TYPE=='LWDW'&YEAR>=2014))
+#LWDvolume2013before=subset((LWDvolume,SAMPLE_TYPE=='LWDW'&YEAR<2014))
+
+#LWDvolumeBoat$V1WM100_CHECK= ifelse(LWDvolumeBoat$nLWD>=48,LWDvolumeBoat$V1WM100,'NA')
+#LWDvolume2014beyond$V1WM100_CHECK=ifelse(LWDvolume2014beyond$nLWD>=64,LWDvolumeBoat$V1WM100,'NA')
+#LWDvolume2013before$V1WM100_CHECK=ifelse(LWDvolume2013before$nLWD>=48,LWDvolumeBoat$V1WM100,'NA')
+
+#LWDvolume=rbind(LWDvolumeBoat,LWDvolume2014beyond,LWDvolume2013before)
+
 
 # XwalkUnion=Xwalk(XwalkName='Aquamet1',Table='XwalkUnion',Source='R',XwalkDirection='')#!need to formally omit unused parameters and track down unknowns to see how they are used in aquamet (i.e. Assessment, etc)
 # #collapse LWD
