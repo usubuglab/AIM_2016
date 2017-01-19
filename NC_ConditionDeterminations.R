@@ -11,7 +11,7 @@ IndicatorCheck=read.csv('IndicatorCheck2016data_21October2016.csv')
 #IndicatorCheck=read.csv('Z:\\buglab\\Research Projects\\BLM_WRSA_Stream_Surveys\\Results and Reports\\AIM_2011_2015_results\\IndicatorCheck_29April2016.csv')
 IndicatorCheck$BNK_THRESH=ifelse(as.numeric(IndicatorCheck$XBKF_W_CHECK)>10,"LargeWade","SmallWade")
 #2011-2015 data
-#SiteInfo=read.csv('Z:\\buglab\\Research Projects\\AIM\\Projects\\ProjectsPtSummary\\AIM_Aquatic_Sampled_2011_2015_Rinput_into_conditions_final_report_do_not_alter.csv')
+#SiteInfo=read.csv('Z:\\buglab\\Research Projects\\AIM\\Projects\\AquaticProjectSummaries\\ProjectsPtSummary\\AIM_Aquatic_Sampled_2011_2015_Rinput_into_conditions_final_report_do_not_alter.csv')
 
 #2016 data
 listsites=tblRetrieve(Parameters=c('SITE_ID','DATE_COL','LOC_NAME','LAT_DD','LON_DD','PROJECT','PROTOCOL','VALXSITE','LAT_DD_BR','LAT_DD_TR','LON_DD_BR','LON_DD_TR','Z_DISTANCEFROMX','TRCHLEN','REPEAT_VISIT'),Projects=projects,Years=years,Protocols=protocols)
@@ -133,7 +133,7 @@ IndicatorsJoin$XEMBEDrtg=ifelse(IndicatorsJoin$XEMBED_CHECK >=IndicatorsJoin$XEM
 
 IndicatorsCond=IndicatorsJoin
 
-write.csv(IndicatorsCond,'IndicatorsCond.csv')     
+write.csv(IndicatorsCond,'IndicatorsCond18Jan2017.csv')     
 
 ############### continue on to the SpSurvey_DesignWeights and SPSurvey_ExtentEstimates R scripts ######################                                 
 
