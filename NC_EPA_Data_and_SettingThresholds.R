@@ -327,6 +327,9 @@ T9=join_all(list(T3,T4), by="ECO10")
 T1=setNames(aggregate(SED_RS_final$RP100, by = list(SED_RS_final$ECO10), FUN = quantile,probs=0.10,na.rm=TRUE), c("ECO10","RP100_0.10"))
 T2=setNames(aggregate(SED_RS_final$RP100, by = list(SED_RS_final$ECO10), FUN = quantile,probs=0.30,na.rm=TRUE), c("ECO10","RP100_0.30"))
 T10=join_all(list(T1,T2), by="ECO10")
+
+
+
 ##Combine all
 SED_THRESHOLDS_ECO10=join_all(list(T5,T7,T8,T9,T10),by="ECO10")
 
@@ -434,6 +437,16 @@ T9=join_all(list(T3,T4), by="THRESH3")
 T1=setNames(aggregate(SED_RS_final$RP100, by = list(SED_RS_final$THRESH3), FUN = quantile,probs=0.10,na.rm=TRUE), c("THRESH3","RP100_0.10"))
 T2=setNames(aggregate(SED_RS_final$RP100, by = list(SED_RS_final$THRESH3), FUN = quantile,probs=0.30,na.rm=TRUE), c("THRESH3","RP100_0.30"))
 T10=join_all(list(T1,T2), by="THRESH3")
+
+#C1WM100
+T1=setNames(aggregate(as.numeric(SED_RS_final$C1WM100), by = list(SED_RS_final$THRESH3), FUN = quantile,probs=0.10,na.rm=TRUE), c("THRESH3","C1WM100_0.10"))
+T2=setNames(aggregate(as.numeric(SED_RS_final$C1WM100), by = list(SED_RS_final$THRESH3), FUN = quantile,probs=0.30,na.rm=TRUE), c("THRESH3","C1WM100_0.30"))
+#V1WM100
+T3=setNames(aggregate(as.numeric(SED_RS_final$V1WM100), by = list(SED_RS_final$THRESH3), FUN = quantile,probs=0.10,na.rm=TRUE), c("THRESH3","V1WM100_0.10"))
+T4=setNames(aggregate(as.numeric(SED_RS_final$V1WM100), by = list(SED_RS_final$THRESH3), FUN = quantile,probs=0.30,na.rm=TRUE), c("THRESH3","V1WM100_0.30"))
+
+T10=join_all(list(T1,T2,T3,T4), by="THRESH3")
+
 ##Combine all
 SED_THRESHOLDS_ECO10=join_all(list(T5,T7,T8,T9,T10),by="THRESH3")
 

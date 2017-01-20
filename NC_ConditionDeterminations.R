@@ -51,8 +51,8 @@ levels(Indicators$THRESH3) <- list( XE_SOUTH_SmallWade="XE_SOUTH_SmallWade",XE_S
 
 Indicators$THRESH2=Indicators$THRESH
 Indicators$THRESH2=ifelse(Indicators$THRESH2=="PL_RANGE_BOATABLE"|Indicators$THRESH2=="PLN_CULT_BOATABLE"|Indicators$THRESH2=="MT_PNW_BOATABLE"|Indicators$THRESH2=="MT_NROCK_BOATABLE"|Indicators$THRESH2=="MT_SROCK_BOATABLE"|Indicators$THRESH2=="XE_NORTH_BOATABLE"|Indicators$THRESH2=="XE_EPLAT_BOATABLE"|Indicators$THRESH2=="XE_SOUTH_BOATABLE","ALL_BOATING",Indicators$THRESH2)
-#Indicators$THRESH4=ifelse(Indicators$ECO10=="XE_EPLAT"|Indicators$ECO10=="XE_SOUTH"|Indicators$ECO10=="PLN_CULT"|Indicators$ECO10=="PL_RANGE","lowstab","highstab")
-Indicators$THRESH4=ifelse(Indicators$ECO_10=="XE_EPLAT"|Indicators$ECO_10=="XE_SOUTH"|Indicators$ECO_10=="PLN_CULT"|Indicators$ECO_10=="PL_RANGE","lowstab","highstab")
+Indicators$THRESH4=ifelse(Indicators$ECO10=="XE_EPLAT"|Indicators$ECO10=="XE_SOUTH"|Indicators$ECO10=="PLN_CULT"|Indicators$ECO10=="PL_RANGE","lowstab","highstab")
+#Indicators$THRESH4=ifelse(Indicators$ECO_10=="XE_EPLAT"|Indicators$ECO_10=="XE_SOUTH"|Indicators$ECO_10=="PLN_CULT"|Indicators$ECO_10=="PL_RANGE","lowstab","highstab")
 
 
 ############Join bug data to all other indicator data
@@ -133,7 +133,7 @@ IndicatorsJoin$XEMBEDrtg=ifelse(IndicatorsJoin$XEMBED_CHECK >=IndicatorsJoin$XEM
 
 IndicatorsCond=IndicatorsJoin
 
-write.csv(IndicatorsCond,'IndicatorsCond18Jan2017.csv')     
+write.csv(IndicatorsCond,'IndicatorsCond_2016data_19Jan2017.csv')     
 
 ############### continue on to the SpSurvey_DesignWeights and SPSurvey_ExtentEstimates R scripts ######################                                 
 
