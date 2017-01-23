@@ -525,8 +525,8 @@ WQpvt=addKEYS(cast(WQtbl,'UID~PARAMETER',value='RESULT'),c('SITE_ID','CREW_LEADE
 WQpvt$OE_TN=WQpvt$NTL-WQpvt$TN_PRED
 WQpvt$OE_TP=WQpvt$PTL-WQpvt$TP_PRED
 #graph time_unfrozen with raw values and OE values
-plot(WQpvt$TIME_UNFROZEN,WQvt$OE_TN)
-plot(WQpvt$TIME_UNFROZEN,WQvt$OE_TP) 
+plot(WQpvt$TIME_UNFROZEN,WQpvt$OE_TN)
+plot(WQpvt$TIME_UNFROZEN,WQpvt$OE_TP) 
                       
 #make condition determination and average time_unfrozen in each condition
 WQpvt$OE_TNrtg=ifelse(WQpvt$OE_TN <=52.1,'Good',ifelse(WQpvt$OE_TN >114.7, 'Poor','Fair'))

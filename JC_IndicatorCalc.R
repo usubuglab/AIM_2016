@@ -16,7 +16,7 @@ years=c('2013','2014','2015','2016')#as character, not number
 #2016#
 protocols=c('WADE2016','BOAT2016')
 
-sitecodes=c('FMD-TR-003')
+sitecodes=c('')
 ########Sitecode filter will likely be use to check data at one site or troubleshoot code during processing. Must add to code as needed as it is not built in to code below.
 ########sitecodes=c('OT-SS-7112')#c('EL-LS-8134','EL-SS-8127','MN-LS-1004','MN-SS-1104','MS-SS-3103','XE-RO-5086','XN-LS-4016','XN-SS-4128','XS-LS-6029' )#QAduplicateSites#c('AR-LS-8003','AR-LS-8007', 'TP-LS-8240')#sites for NorCalTesting
 
