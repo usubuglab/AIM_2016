@@ -413,8 +413,8 @@ IncBnk$xbnk_h_CHECK=round(IncBnk$xbnk_h_CHECK,digits=2)
 ####Doing sand and fines together
 Sediment=subset(Sediment,RESULT!="OT"& RESULT!="WD") #removing all other or wood particles
 Sediment$SAFN_True=ifelse(Sediment$RESULT == "SA", 1,ifelse(Sediment$RESULT == "FN", 1, 0))
-pctsafn=setNames((aggregate(Sediment$SAFN_True,by=list(UID=Sediment$UID), data=Sediment, FUN='mean')),c("UID","bedPCT_SAFN_CHECK"))#had to remove NorCal code that casted by Sample_Type because of boating data
-pctsafn$bedPCT_SAFN_CHECK=round(pctsafn$bedPCT_SAFN_CHECK*100,digits=1)
+pctsafn=setNames((aggregate(Sediment$SAFN_True,by=list(UID=Sediment$UID), data=Sediment, FUN='mean')),c("UID","bedPCT_SAFN2_CHECK"))#had to remove NorCal code that casted by Sample_Type because of boating data
+pctsafn$bedPCT_SAFN2_CHECK=round(pctsafn$bedPCT_SAFN2_CHECK*100,digits=1)
 Sedimentpvt=cast(Sediment,'UID~PARAMETER',value='RESULT',fun=length)# number of pebbles collected at intermediate and main transects
 Sedimentpvt$nbedPCT_SAFN_CHECK=(Sedimentpvt$SIZE_CLS+Sedimentpvt$XSIZE_CLS) # number of pebbles collected at all transects only 4 boating sites had less than 50
 Sedimentpvtsub=subset(Sedimentpvt,select=c(UID,nbedPCT_SAFN_CHECK))
@@ -437,18 +437,24 @@ A_Sed2014=cast(Sed2014,'UID+TRANSECT+POINT~PARAMETER', value='RESULT')
 C_Sed2014=A_Sed2014[!A_Sed2014$LOC== "BANK", ]
 #Can't use na.omit because it omits all records with an NA in ANY field. I only want to remove NAs in the LOC and the SIZE_NUM (sediment result) field. 
 E_Sed2014=C_Sed2014[complete.cases(C_Sed2014[,c("LOC","SIZE_NUM")]),]
-E_Sed2014$SAFN_True=ifelse(E_Sed2014$SIZE_NUM == "1"| E_Sed2014$SIZE_NUM =="2", 1, 0)#changed to include 2 for 2016 data because we switched back to seperating out sands and fines
-#E_Sed2014$SAFN_True=ifelse(as.numeric(E_Sed2014$SIZE_NUM)<=6 & as.numeric(E_Sed2014$SIZE_NUM)!=0, 1, 0)#changed to include 2 for 2016 data because we switched back to seperating out sands and fines
-F_Sed2014=setNames(aggregate(E_Sed2014$SAFN_True,list(UID=E_Sed2014$UID),mean), c("UID","bedPCT_SAFN_CHECK"))########this still counts particles with 0s in the particle count and as not fines; is this what we want to do?
-F_Sed2014$bedPCT_SAFN_CHECK=round(F_Sed2014$bedPCT_SAFN_CHECK*100,digits=1)
+E_Sed2014$SAFN2_True=ifelse(E_Sed2014$SIZE_NUM == "1"| E_Sed2014$SIZE_NUM =="2", 1, 0)#changed to include 2 for 2016 data because we switched back to seperating out sands and fines
+E_Sed2014$SAFN6_True=ifelse(as.numeric(E_Sed2014$SIZE_NUM)<=6, 1, 0)
+F_Sed2014_2=setNames(aggregate(E_Sed2014$SAFN2_True,list(UID=E_Sed2014$UID),mean), c("UID","bedPCT_SAFN2_CHECK"))########this still counts particles with 0s in the particle count and as not fines; is this what we want to do?
+F_Sed2014_6=setNames(aggregate(E_Sed2014$SAFN6_True,list(UID=E_Sed2014$UID),mean), c("UID","bedPCT_SAFN6_CHECK"))########this still counts particles with 0s in the particle count and as not fines; is this what we want to do?
+F_Sed2014=merge(F_Sed2014_2,F_Sed2014_6, by='UID')
+F_Sed2014$bedPCT_SAFN2_CHECK=round(F_Sed2014$bedPCT_SAFN2_CHECK*100,digits=1)
+F_Sed2014$bedPCT_SAFN6_CHECK=round(F_Sed2014$bedPCT_SAFN6_CHECK*100,digits=1)
 
 #All pebbles 
 I_Sed2014=A_Sed2014[complete.cases(A_Sed2014[,c("LOC","SIZE_NUM")]),]
-I_Sed2014$SAFN_True=ifelse(I_Sed2014$SIZE_NUM == "1", 1, 0)
-I_Sed2014$SAFN_True=ifelse(I_Sed2014$SIZE_NUM == "1"| I_Sed2014$SIZE_NUM =="2", 1, 0)#changed to include 2 for 2016 data because we switched back to seperating out sands and fines
-#I_Sed2014$SAFN_True=ifelse(as.numeric(E_Sed2014$SIZE_NUM)<=6 & as.numeric(E_Sed2014$SIZE_NUM)!=0, 1, 0)#changed to include 2 for 2016 data because we switched back to seperating out sands and fines
-J_Sed2014=setNames(aggregate(I_Sed2014$SAFN_True,list(UID=I_Sed2014$UID),mean), c("UID","allPCT_SAFN_CHECK"))########this still counts particles with 0s in the particle count and as not fines; is this what we want to do?
-J_Sed2014$allPCT_SAFN_CHECK=round(J_Sed2014$allPCT_SAFN_CHECK*100,digits=1)
+#I_Sed2014$SAFN_True=ifelse(I_Sed2014$SIZE_NUM == "1", 1, 0)
+I_Sed2014$SAFN2_True=ifelse(I_Sed2014$SIZE_NUM == "1"| I_Sed2014$SIZE_NUM =="2", 1, 0)#changed to include 2 for 2016 data because we switched back to seperating out sands and fines
+I_Sed2014$SAFN6_True=ifelse(as.numeric(I_Sed2014$SIZE_NUM)<=6 , 1, 0) 
+J_Sed2014_2=setNames(aggregate(I_Sed2014$SAFN2_True,list(UID=I_Sed2014$UID),mean), c("UID","allPCT_SAFN2_CHECK"))
+J_Sed2014_6=setNames(aggregate(I_Sed2014$SAFN6_True,list(UID=I_Sed2014$UID),mean), c("UID","allPCT_SAFN6_CHECK"))
+J_Sed2014=merge(J_Sed2014_2,J_Sed2014_6, by='UID')
+J_Sed2014$allPCT_SAFN2_CHECK=round(J_Sed2014$allPCT_SAFN2_CHECK*100,digits=1)
+J_Sed2014$allPCT_SAFN6_CHECK=round(J_Sed2014$allPCT_SAFN6_CHECK*100,digits=1)
 
 #sample sizes
 Nall_Sed2014pvt=setNames(cast(Sed2014,'UID~PARAMETER',value='RESULT',fun=length),c("UID","nLOC","nallPCT_SAFN_CHECK"))#number of all collected pebbles
@@ -947,7 +953,7 @@ LWD=merge(LWD,TRCHLEN,by=c('UID'), all=T)
 #Our method could over estimate wood though...crews may have evaluated sections of the thalweg but not recorded a wood value because they forgot or something else
 #However not all crews collecting thalweg in future and may not be able to get thalweg depths where you could get wood...we probably could use another parameter that is collected at all thalweg stations (side channel presence- but did not collect this in 2016) 
 LWD$LWD_RCHLEN=(LWD$TRCHLEN/10)*LWD$NUMTRAN 
-LWD$C1WM100_CHECK=round((LWD$C1W/LWD$LWD_RCHLEN)*100,digits=2)# get the pieces/100m
+LWD$C1WM100_CHECK=round((LWD$C1W/LWD$LWD_RCHLEN)*100,digits=3)# get the pieces/100m
 #to exclude data that has less than 50% run volume code and code below
 
 
@@ -1021,7 +1027,7 @@ LWD=merge(LWD,LWDvolume,by="UID")
 LWD$C1WM100_CHECK=ifelse(LWD$nLWD>=64&LWD$YEAR>='2014'&LWD$SAMPLE_TYPE!='LWDB',LWD$C1WM100,# For wadeable sites collected in 2014 or later, total data points for entire reach=160 (16 per transect, 10 transects), 5 transects of data would be 80, but because large wood is collected between transects Jennifer and Nicole decided to allow for 4 transects of data which is 64
                                ifelse(LWD$nLWD>=48&LWD$YEAR<'2014'&LWD$SAMPLE_TYPE!='LWDB',LWD$C1WM100,# For wadeable sites collected in 2013, total data points for entire reach=120, 5 transects of data would be 60, but because large wood is collected between transects Jennifer and Nicole decided to allow for 4 transects of data which is 48
                                       ifelse(LWD$nLWD>=48&LWD$SAMPLE_TYPE=='LWDB',LWD$C1WM100,NA))) # For boatable sites collected in any year, total data points for entire reach=120, 5 transects of data would be 60, but because large wood is collected between transects Jennifer and Nicole decided to allow for 4 transects of data which is 48
-LWD$V1WM100_CHECK=round(LWD$V1WM100_CHECK,digits=2)
+LWD$V1WM100_CHECK=round(LWD$V1WM100_CHECK,digits=3)
 
 #The if statement above was not working, so I started developing this code, in the process I fixed the if statement above....
 #LWDvolumeBoat=subset(LWDvolume,SAMPLE_TYPE=='LWDB')

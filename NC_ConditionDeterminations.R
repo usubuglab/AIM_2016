@@ -128,7 +128,7 @@ IndicatorsJoin$LINCIS_Hrtg=ifelse(IndicatorsJoin$LINCIS_H_CHECK >=IndicatorsJoin
 IndicatorsJoin$LINCIS_Hrtg=ifelse(IndicatorsJoin$THRESH2=="ALL_BOATING"& IndicatorsJoin$LINCIS_H_CHECK >=0.3986,"Poor",
                                          ifelse(IndicatorsJoin$THRESH2=="ALL_BOATING"& IndicatorsJoin$LINCIS_H_CHECK< 0.2222,"Good",
                                                 ifelse(IndicatorsJoin$THRESH2=="ALL_BOATING"& IndicatorsJoin$LINCIS_H_CHECK <0.3986 & IndicatorsJoin$LINCIS_H_CHECK>= 0.2222,"Fair",IndicatorsJoin$LINCIS_Hrtg)))
-IndicatorsJoin$allPCT_SAFNrtg=ifelse(IndicatorsJoin$allPCT_SAFN_CHECK >=IndicatorsJoin$PCT_SAFN_0.90,"Poor",ifelse(IndicatorsJoin$allPCT_SAFN_CHECK <IndicatorsJoin$PCT_SAFN_0.70,"Good","Fair"))
+IndicatorsJoin$allPCT_SAFN2rtg=ifelse(IndicatorsJoin$allPCT_SAFN2_CHECK >=IndicatorsJoin$PCT_SAFN_0.90,"Poor",ifelse(IndicatorsJoin$allPCT_SAFN2_CHECK <IndicatorsJoin$PCT_SAFN_0.70,"Good","Fair"))
 IndicatorsJoin$XEMBEDrtg=ifelse(IndicatorsJoin$XEMBED_CHECK >=IndicatorsJoin$XEMBED_0.90,"Poor",ifelse(IndicatorsJoin$XEMBED_CHECK <IndicatorsJoin$XEMBED_0.70,"Good","Fair"))
 
 IndicatorsCond=IndicatorsJoin
