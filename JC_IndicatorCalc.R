@@ -106,12 +106,12 @@ BankStab=tblRetrieve(Parameters=c('STABLE','EROSION','COVER'), Projects=projects
 SideBank=tblRetrieve(Parameters=c('SIDCHN_BNK'),Projects=projects,Years=years,Protocols=protocols,SiteCodes=sitecodes)
 
 #unique(BankStab$RESULT)
-#BankStabpvt=cast(BankStab,'UID+TRANSECT+POINT~PARAMETER',value='RESULT')
+#BankStabpvt=addKEYS(cast(BankStab,'UID+TRANSECT+POINT~PARAMETER',value='RESULT'),c('SITE_ID'))
 #unique(BankStab$POINT)
 #unique(BankStab$TRANSECT)
 
 BankStabCoverClass=tblRetrieve(Parameters=c('BNK_VEG','BNK_COBBLE','BNK_LWD','BNK_BEDROCK'),Projects=projects,Years=years,Protocols=protocols,SiteCodes=sitecodes)
-#pvtBankStabCoverClass=cast(BankStabCoverClass,'UID+TRANSECT+POINT~PARAMETER',value='RESULT')
+#pvtBankStabCoverClass=addKEYS(cast(BankStabCoverClass,'UID+TRANSECT+POINT~PARAMETER',value='RESULT'),c('SITE_ID'))
 
 #Angle-PIBO method only
 Angle=tblRetrieve(Parameters=c('ANGLE180'),Projects=projects, Years=years,Protocols=protocols,SiteCodes=sitecodes)
@@ -837,8 +837,10 @@ Slope_Per=setNames(Slope_Per,c("UID","AVGSLOPE_CHECK","SLPRCHLEN_CHECK","PCT_GRA
 
 #2016+ data
 Slope_Per=cast(Slope,'UID~PARAMETER',value='RESULT')                
-Slope_Per$PCT_GRADE_CHECK=round(as.numeric(pvtSlope$PCT_GRADE),digits=2)
-Slope_Per$AVGSLOPE_CHECK=pvtSlope$AVGSLOPE
+Slope_Per$PCT_GRADE_CHECK=round(as.numeric(Slope_Per$PCT_GRADE),digits=2)
+Slope_Per$AVGSLOPE_CHECK=Slope_Per$AVGSLOPE
+
+
 
 #Thalweg                                                                                                                                                                    
 #fixing issues with boating and wading in different units
@@ -864,21 +866,20 @@ Thalweg$XDEPTH_CHECK=ifelse(Thalweg$pctcomplete<100,NA,Thalweg$XDEPTH_CHECK)
 Thalweg$CVDEPTH_CHECK=ifelse(Thalweg$pctcomplete<100,NA,Thalweg$CVDEPTH_CHECK)  
               
 #omit cases with incomplete thalweg 2014-2015
-thalweg.missing2014=sqlQuery(wrsa1314,sprintf("select Station.UID, depth.transect,StationCNT,DepthCNT from 
-                                              (select distinct UID,
-                                                            CASE 
-                                                            WHEN parameter='sub_5_7' and RESULT='5' THEN cast(RESULT*2 as numeric)
-                                                            WHEN parameter='sub_5_7' and RESULT='7' THEN cast(RESULT*2+1 as numeric)
-                                                            WHEN parameter='sub_5_7' and RESULT='14' THEN cast (RESULT*2+2 as numeric)
-                                                            ELSE 'ISSUE'
-                                                            END as StationCNT from tbltransect where parameter='SUB_5_7' and ACTIVE='true') as station
-                                                            join
-                                                            (select UID, transect, count(point) as DepthCNT from tblpoint where parameter='DEPTH' and POINT not in('CT','LC','LF','RC','RT') and ACTIVE='true' group by UID, transect) as depth
-                                                            on station.uid=depth.uid
-                                                            --where StationCNT > DepthCNT 
-                                                            order by Station.UID, depth.transect"))
+thalweg.missing2014=sqlQuery(wrsa1314,sprintf("select Station.UID, StationCNT,DepthCNT from 
+                     (select distinct UID,
+      CASE 
+         WHEN parameter='sub_5_7' and RESULT='5' THEN cast((RESULT*2)*10 as numeric)
+         WHEN parameter='sub_5_7' and RESULT='7' THEN cast((RESULT*2+1)*10 as numeric)
+         WHEN parameter='sub_5_7' and RESULT='14' THEN cast ((RESULT*2+2)*10 as numeric)
+         ELSE 'ISSUE'
+      END as StationCNT from tbltransect where parameter='SUB_5_7' and ACTIVE='true') as station
+                     join
+                     (select UID,  count(point) as DepthCNT from tblpoint where parameter='DEPTH' and SAMPLE_TYPE='THALW'  and ACTIVE='true' group by UID) as depth
+                     on station.uid=depth.uid
+                   --- where StationCNT > DepthCNT 
+                     order by Station.UID"))
 thalweg.missing2014$pctcomplete=thalweg.missing2014$DepthCNT/thalweg.missing2014$StationCNT*100
-thalweg.missing2014_2=aggregate(pctcomplete~UID, data=thalweg.missing2014,mean)
 #omit cases with incomplete thalweg 2013
 thalweg.missing2013=sqlQuery(wrsa1314,sprintf("select Station.UID, StationDUPLICATES,StationCNT,DepthCNT from 
                                               (select distinct UID,
@@ -896,10 +897,9 @@ thalweg.missing2013=sqlQuery(wrsa1314,sprintf("select Station.UID, StationDUPLIC
                                               on station.uid=depth.uid
                                               --where StationCNT > DepthCNT or stationDUPLICATES>1
                                               order by Station.UID"))
-thalweg.missing2013$pctcomplete=thalweg.missing2013$DepthCNT/thalweg.missing2013$StationCNT*100
-thalweg.missing2013_2=aggregate(pctcomplete~UID, data=thalweg.missing2013,mean)                             
-Thalweg2014=merge(Thalweg,thalweg.missing2014_2, by=c('UID'))
-Thalweg2013=merge(Thalweg,thalweg.missing2013_2, by=c('UID') ) 
+thalweg.missing2013$pctcomplete=thalweg.missing2013$DepthCNT/thalweg.missing2013$StationCNT*100                             
+Thalweg2014=merge(Thalweg,thalweg.missing2014, by=c('UID'))
+Thalweg2013=merge(Thalweg,thalweg.missing2013, by=c('UID') ) 
 Thalweg_2013_2014=merge(Thalweg2013,Thalweg2014,by=c('UID'),all=TRUE)# mannually exclude data because such a mess
 # Thalweg_2013_2014$XDEPTH_CHECK=ifelse(Thalweg2014$pctcomplete<100,NA,Thalweg2014$XDEPTH_CHECK)
 # Thalweg_2013_2014$CVDEPTH_CHECK=ifelse(Thalweg2014$pctcomplete<100,NA,Thalweg2014$CVDEPTH_CHECK)              
