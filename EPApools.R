@@ -4,6 +4,15 @@
 ###EPA aquamet code modified by Jennifer Courtwright
 #Created on April 4, 2017
 
+#still need to tweak how missing data is handled and how reach length is calculated
+#use percent missing thalweg calc from JC_IndicatorCalc to set % complete threshold
+#still need to write code to automate thalweg long profile graph and QC data
+#note that this code ignores missing data if whole transects are missing 
+#but does not ignore missing data if a few or the majority of a thalweg measurements at a transect are missing
+#this agrees with how Phil explained how to deal with missing data
+#however reach length then needs to be corrected for this missing data and number of expected thalweg stations needs to be corrected to be based off the protocol
+
+
 #successfully replicated this code by hand in excel following the methods on pg. 56(38) of Kaufmann et al. 1999
 #excel example can be found at "Z:\buglab\Research Projects\AIM\Analysis\Indicator_Scoping\IndicatorMetaData\pool calc.xlsx"
 #this was only replicated for a complete site without missing data
@@ -12,7 +21,7 @@
 #most importantly we identified a critical error in aquamet slope code which is used as an input into this residual pool code
 #aquamet calculates slope using the equation % slope = 360/2*pi *tan(rise/run)... this equation makes no sense and is an error
 
-#In general any depression in the bed is counted as a pool after correcting for the downward slope of the stream bed
+#In general, any depression in the bed is counted as a pool after correcting for the downward slope of the stream bed
 #therefore, the EPAs metrics are a true measurement of water depths if the stream is not flowing
 #This is usefull for bed hederogenity but is not useful biologically and so a depth reiquirement should be imposed for a biologically relevant metric of pools
 
