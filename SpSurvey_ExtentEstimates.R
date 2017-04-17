@@ -14,7 +14,8 @@
 # )
 #2016 Start# 
 #siteeval=read.csv('AdjustedWeights_2016TRY2.csv')
-siteeval=read.csv('AdjustedWeights_2016_Try1_Run2.csv')
+#siteeval=read.csv('AdjustedWeights_2016_Try1_Run2.csv')
+siteeval=read.csv('Z:\\buglab\\Research Projects\\AIM\\Projects\\Idaho\\Statewide\\Analysis\\Weights_ExtentEstimates\\AdjustedWeights_IdahoState2017_13April2017.csv')
 #siteeval$SITE_ID=siteeval$Sitecode
 #siteeval$Field_Office <- as.factor("Smoke Creek Watershed")
 #siteeval$STRATUM=siteeval$Field_Office
@@ -25,15 +26,26 @@ siteeval=read.csv('AdjustedWeights_2016_Try1_Run2.csv')
 # Ecoregion=SiteInfo$EcoregionIII_Name #low sample sizes (see warnings in cat.analysis)
 #EPAeco=SiteInfo$EPAhybridECO
 
-siteeval$CLIMATE <- as.factor(siteeval$CLIMATE)
+siteeval$ReportingUnit1 <- as.factor(siteeval$ReportingUnit1)
 
 
 #set up subpopulations for use in cat.analysis
 subpopCON=data.frame(siteID=siteeval$SITE_ID,
-                        Westwide=rep("Westwide", nrow(siteeval)),
-                        Climate=siteeval$CLIMATE,
-                        Strata=siteeval$STRATUM
-                        )
+                     ReportingUnit1a=rep("IdahoStatewide", nrow(siteeval)),
+                     ReportingUnit2=siteeval$ReportingUnit2,
+                     ReportingUnit3=siteeval$ReportingUnit3
+)
+
+
+# siteeval$CLIMATE <- as.factor(siteeval$CLIMATE)
+# 
+# 
+# #set up subpopulations for use in cat.analysis
+# subpopCON=data.frame(siteID=siteeval$SITE_ID,
+#                         Westwide=rep("Westwide", nrow(siteeval)),
+#                         Climate=siteeval$CLIMATE,
+#                         Strata=siteeval$STRATUM
+#                         )
 #2016 start
 #subpopCON=data.frame(siteID=siteeval$SITE_ID,
 #                     Strata=siteeval$STRATUM
@@ -145,7 +157,8 @@ designCON=data.frame(siteID=siteeval$SITE_ID,
 #                                  } else {print('There are many columns. Data is assumed to be pivoted with indicator and matching condition names as columns.')}
 
 #wrsa
-ResponseInfo=read.csv('Z:\\buglab\\Research Projects\\BLM_WRSA_Stream_Surveys\\Results and Reports\\AIM_2011_2015_results\\IndicatorsCond_29April2016.csv')
+ResponseInfo=read.csv('Z:\\buglab\\Research Projects\\AIM\\Projects\\Idaho\\Statewide\\Analysis\\Weights_ExtentEstimates\\IndicatorsCond_IDstatewidedata_13April2017.csv')
+#ResponseInfo=read.csv('Z:\\buglab\\Research Projects\\BLM_WRSA_Stream_Surveys\\Results and Reports\\AIM_2011_2015_results\\IndicatorsCond_29April2016.csv')
 #ResponseInfo=read.csv('Z:\\buglab\\Research Projects\\BLM_WRSA_Stream_Surveys\\Results and Reports\\AIM_2011_2015_results\\IndicatorsCond_revised_wq_bugs_thresh_example.csv')
 
 ##exclude QC sites---dont need to worry about it because it is filtered
@@ -153,7 +166,11 @@ ResponseInfo=read.csv('Z:\\buglab\\Research Projects\\BLM_WRSA_Stream_Surveys\\R
 ResponseInfo=IndicatorsCond
 
 #merge site info to indicator info
-SiteInfo=merge(siteeval,ResponseInfo,by=intersect(colnames(siteeval),colnames(ResponseInfo)),all.x=T)
+#merge site info to indicator info by the column heading that matches between the two files (In WRSA it was UID). 
+#If you would like to specify which columns are used to merge then use: SiteInfo=merge(siteeval,ResponseInfo,by.x="Sitecode", by.y="SiteCode",all.x=T)
+#Where merge(first file x, second file y, by.x="Column name from first file x", by.y="column name from second file y", all.x=T to keep all records from file x)
+SiteInfo=merge(siteeval,ResponseInfo, by.x="UID", by.y="UID",all.x=T)
+#SiteInfo=merge(siteeval,ResponseInfo,by=intersect(colnames(siteeval),colnames(ResponseInfo)),all.x=T)
 
 
 #add ratings if not done externally (standard process TBD, could adapt from Stats_Thresholds method in ProbSurveyDB.accdb)
@@ -167,11 +184,16 @@ SiteInfo=merge(siteeval,ResponseInfo,by=intersect(colnames(siteeval),colnames(Re
 ##potential variables:
 #str(SiteInfo)
 ##variable selection:
-#########WRSA_SFS ################
+#########2016_AIM ################
 selectVARauto='N'; selectVARchoice=ifelse(selectVARauto=='Y','AllVar','CustomVar')#automatically select all variables
-extentVAR=c('TNT','EvalStatus','EvalStatus2','VALXSITE')#Extent Estimate added here since weights the same (rather than running cat.analysis twice)
+extentVAR=c('TNT','EvalStatus','VALXSITE_CHECK')#Extent Estimate added here since weights the same (rather than running cat.analysis twice)
 responseVAR=c('OE')# Input here should be bug model
-stressorsVAR=c("OE_TN","OE_TP","OE_EC","PH_CHECK","PCT_SAFN","XFC_NAT","LINCIS_H","XCDENBK","INVASIVE_MACRO")#NOT stressorsVAR=c('MMI')   ####'PCT_SAFN','LSUB_DMM')#UTBLM final list: stressorsVAR=c('InvasivesYN','EC','TP','TN','AugST','LBFXWRat','C1WM100','XCDENMID','Stab2','PCT_SAFN')#must be Access names with a matching 'rtg' variable: to view, str(ResponseInfo)
+stressorsVAR=c("OE_TN","OE_TP","OE_EC","PH_CHECK","allPCT_SAFN2","XFC_NAT","LINCIS_H","XCDENBK","INVASIVE_MACRO","BnkCover_StabErosional","XCMG")#NOT stressorsVAR=c('MMI')   ####'PCT_SAFN','LSUB_DMM')#UTBLM final list: stressorsVAR=c('InvasivesYN','EC','TP','TN','AugST','LBFXWRat','C1WM100','XCDENMID','Stab2','PCT_SAFN')#must be Access names with a matching 'rtg' variable: to view, str(ResponseInfo)
+#########WRSA_SFS ################
+# selectVARauto='N'; selectVARchoice=ifelse(selectVARauto=='Y','AllVar','CustomVar')#automatically select all variables
+# extentVAR=c('TNT','EvalStatus','VALXSITE')#Extent Estimate added here since weights the same (rather than running cat.analysis twice)
+# responseVAR=c('OE')# Input here should be bug model
+# stressorsVAR=c("OE_TN","OE_TP","OE_EC","PH_CHECK","PCT_SAFN","XFC_NAT","LINCIS_H","XCDENBK","INVASIVE_MACRO")#NOT stressorsVAR=c('MMI')   ####'PCT_SAFN','LSUB_DMM')#UTBLM final list: stressorsVAR=c('InvasivesYN','EC','TP','TN','AugST','LBFXWRat','C1WM100','XCDENMID','Stab2','PCT_SAFN')#must be Access names with a matching 'rtg' variable: to view, str(ResponseInfo)
 #"OE_less100","OE_50_100","BnkCover_StabErosional","XEMBED","XCMG"
 #########UT BLM examples###########
 # selectVARauto='N'; selectVARchoice=ifelse(selectVARauto=='Y','AllVar','CustomVar')#automatically select all variables
@@ -235,7 +257,7 @@ stressorsVAR=setdiff(stressorsVAR,omitVAR)
 
 #WRSA SFS
 OE_TNname='Total Nitrogen';OE_TPname='Total Phosphorus';OE_ECname='Conductivity';PH_CHECKname='pH';
-BnkCover_StabErosionalname='Bank Stability';PCT_SAFN_name='% Fine Sediment';XCMGname='Riparian Complexity';XCDENBKname='Riparian Canopy Cover';
+BnkCover_StabErosionalname='Bank Stability';allPCT_SAFN2name='% Fine Sediment';XCMGname='Riparian Complexity';XCDENBKname='Riparian Canopy Cover';
 XFC_NATname='Instream Complexity';LINCIS_Hname='Floodplain Connectivity';PCT_SAFNname = 'Fines'
 XEMBEDname='Embeddedness';OEname='Biological Condition'; INVASIVE_MACROname='Benthic Invasives'
 OE_less100name='OE_less100'; OE_50_100name='OE_50_100'
@@ -265,7 +287,7 @@ catdata=subset(SiteInfo, select=c('SITE_ID',extentVAR,variablesrtg))
 # catdata=read.csv('Z:\\buglab\\Research Projects\\BLM_WRSA_Stream_Surveys\\Results and Reports\\SRM_2015\\catdata.csv')
 # rm(sitesCON,subpopCON,designCON,catdata)
 ############################################################################################################################
-
+subpopCON=subpopCON[,c(1,2)]
 results.cat <- cat.analysis(sites = sitesCON, 
                             subpop = subpopCON, 
                             design = designCON,
@@ -274,10 +296,10 @@ results.cat <- cat.analysis(sites = sitesCON,
                             #? What is the difference between Local and SRS for the vartype parameter? in warnings after running the function, it is switching to SRS anyways bc of low sample sizes in Stream Order and Ecoreg! need clarification on how this treats variables differently (EMAP used Local for Extent and SRS for condition)
                             #vartype = "Local",
                             conf = 90)
+ParameterSampleSizes=subset(results.cat,subset=Subpopulation=='IdahoStatewide' & Category=='Total');print(ParameterSampleSizes)#samplesize is NResp
+#ParameterSampleSizes=subset(results.cat,subset=Subpopulation=='Westwide' & Category=='Total');print(ParameterSampleSizes)#samplesize is NResp
 
-ParameterSampleSizes=subset(results.cat,subset=Subpopulation=='Westwide' & Category=='Total');print(ParameterSampleSizes)#samplesize is NResp
-
-write.csv(results.cat,'ExtentEstimates_Run2_15Nov2016.csv');View(results.cat)
+write.csv(results.cat,'ExtentEstimates_Run2_13April2017.csv');View(results.cat)
 
 #old code to force popsize scaling; Tony doesn't typically recommend using and was more necessary for UTBLM segments (not KM)
 #popsizeCON=list("Utah"=c("C"=1600,"G"=1100,"W"=400,"Y"=900),"Districts"=list("C"=c("C"=1600),"G"=c("G"=1100),"W"=c("W"=400),"Y"=c("Y"=900)))

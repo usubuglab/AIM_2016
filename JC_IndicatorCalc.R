@@ -40,13 +40,14 @@ library(plyr)
 ########################################################################################
 ##### Site Descriptors #####
 ########################################################################################
-listsites=tblRetrieve(Parameters=c('SITE_ID','DATE_COL','LOC_NAME','LAT_DD','LON_DD','PROJECT','PROTOCOL','VALXSITE','LAT_DD_BR','LAT_DD_TR','LON_DD_BR','LON_DD_TR'),Projects=projects,Years=years,Protocols=protocols,SiteCodes=sitecodes)
+listsites=tblRetrieve(Parameters=c('SITE_ID','DATE_COL','LOC_NAME','LAT_DD','LON_DD','PROJECT','PROTOCOL','VALXSITE','LAT_DD_BR','LAT_DD_TR','LON_DD_BR','LON_DD_TR','DEWATER','BEAVER_FLOW_MOD','BEAVER_SIGN'),Projects=projects,Years=years,Protocols=protocols,SiteCodes=sitecodes)
 #listsites=setNames(cast(listsites,'UID~PARAMETER',value='RESULT'),c("UID","DATE_COL_CHECK","LAT_DD_CHECK","LAT_DD_BR_CHECK","LAT_DD_TR_CHECK","LON_DD_CHECK","LON_DD_BR_CHECK","LON_DD_TR_CHECK","PROJECT_CHECK","PROTOCOL_CHECK","SITE_ID_CHECK",'VALXSITE_CHECK'))
 #don't run the last 2 lines for 2016 data because different # of columns...LOC_NAME not in 2016 data...should I join it back in?
-listsites=setNames(cast(listsites,'UID~PARAMETER',value='RESULT'),c("UID","DATE_COL_CHECK","LAT_DD_CHECK","LAT_DD_BR_CHECK","LAT_DD_TR_CHECK","LOC_NAME_CHECK","LON_DD_CHECK","LON_DD_BR_CHECK","LON_DD_TR_CHECK","PROJECT_CHECK","PROTOCOL_CHECK","SITE_ID_CHECK",'VALXSITE_CHECK'))
-listsites=listsites[,c(1,12,6,2,3,7,10,13,11,5,9,4,8)]
+listsites=setNames(cast(listsites,'UID~PARAMETER',value='RESULT'),c("UID","BEAVER_FLOW_MOD_CHECK","BEAVER_SIGN_CHECK","DATE_COL_CHECK","WATER_WITHDRAWAL_CHECK","LAT_DD_CHECK","LAT_DD_BR_CHECK","LAT_DD_TR_CHECK","LOC_NAME_CHECK","LON_DD_CHECK","LON_DD_BR_CHECK","LON_DD_TR_CHECK","PROJECT_CHECK","PROTOCOL_CHECK","SITE_ID_CHECK",'VALXSITE_CHECK'))
+listsites$PROTOCOL2_CHECK=ifelse(listsites$PROTOCOL=="BOAT14"|listsites$PROTOCOL=="BOAT2016","BOATABLE","WADEABLE")
+#listsites=listsites[,c(1,12,6,2,3,7,10,13,11,5,9,4,8)]
 #run list sites and TRCHLEN below to get sinuosity data
-TRCHLEN=tblRetrieve(Parameters=c('TRCHLEN','INCREMENT'),Projects=projects,Years=years,Protocols=protocols)#not using TRCHLEN
+TRCHLEN=tblRetrieve(Parameters=c('TRCHLEN','INCREMENT'),Projects=projects,Years=years,Protocols=protocols,SiteCodes=sitecodes)#not using TRCHLEN
 
 
 ##########################################################################################
@@ -63,13 +64,13 @@ densiom=tblRetrieve(Parameters='DENSIOM',Projects=projects,Years=years,Protocols
 #unique(RipALL$RESULT)
 RipXCMG=tblRetrieve(Parameters=c("CANBTRE","CANSTRE","GCNWDY","GCWDY","UNDNWDY","UNDWDY"),Projects=projects,Years=years,Protocols=protocols,SiteCodes=sitecodes)
 #unique(RipXCMG$RESULT)
-RipWW=tblRetrieve(Parameters=c("CANBTRE","CANSTRE","GCWDY","UNDWDY"),Projects=projects,Years=years,Protocols=protocols)
-RipGB=tblRetrieve(Parameters=c("BARE"),Projects=projects,Years=years,Protocols=protocols)
+RipWW=tblRetrieve(Parameters=c("CANBTRE","CANSTRE","GCWDY","UNDWDY"),Projects=projects,Years=years,Protocols=protocols,SiteCodes=sitecodes)
+RipGB=tblRetrieve(Parameters=c("BARE"),Projects=projects,Years=years,Protocols=protocols,SiteCodes=sitecodes)
 #RipAllpvt=cast(RipALL,'UID+TRANSECT+POINT~PARAMETER',value='RESULT')# check data structure to make sure no duplicates
 #unique(RipAllpvt$TRANSECT)
 
 #BLM riparian cover and frequency
-RipBLM=tblRetrieve(Parameters=c('CANRIPW','UNRIPW','GCRIP','INVASW', 'NATIVW','INVASH','NATIVH','SEGRUSH'),Projects=projects,Years=years,Protocols=protocols)
+RipBLM=tblRetrieve(Parameters=c('CANRIPW','UNRIPW','GCRIP','INVASW', 'NATIVW','INVASH','NATIVH','SEGRUSH'),Projects=projects,Years=years,Protocols=protocols,SiteCodes=sitecodes)
 #pvtRipBLM=cast(RipBLM,'UID+TRANSECT+POINT~PARAMETER',value='RESULT')
 
 #Bug data
@@ -105,7 +106,7 @@ LwdWet=addKEYS(tblRetrieve(Parameters=LwdCatWet,Projects=projects,Years=years,Pr
 LwdDry=tblRetrieve(Parameters=LwdCatDry,Projects=projects,Years=years,Protocols=protocols,SiteCodes=sitecodes)
 #pvtLwdWet=cast(LwdWet, 'UID~PARAMETER',value='RESULT',fun=sum)
 #pvtLwdDry=cast(LwdDry,'UID~PARAMETER',value='RESULT',fun=sum)
-pvtLwd=merge(pvtLwdWet,pvtLwdDry, by='UID')
+#pvtLwd=merge(pvtLwdWet,pvtLwdDry, by='UID')
 TRCHLEN=tblRetrieve(Parameters=c('TRCHLEN','INCREMENT'),Projects=projects,Years=years,Protocols=protocols,SiteCodes=sitecodes)#not using TRCHLEN
 TRCHLEN=cast(TRCHLEN,'UID~PARAMETER',value='RESULT')
 #TRCHLEN is not the same as the reachlen used in Aquamet
@@ -183,13 +184,15 @@ BankWid=tblRetrieve(Parameters=c('BANKWID'),Projects=projects, Years=years,Proto
 FloodWidth=tblRetrieve(Parameters=c('FLOODWID'), Projects=projects, Years=years,Protocols=protocols,SiteCode=sitecodes)
 
 #Slope
-Slope_height=tblRetrieve(Parameters=c('SLOPE'), Projects=projects, Years=years,Protocols=protocols,SiteCodes=sitecodes)
-SlpReachLen=tblRetrieve(Parameters=c('SLPRCHLEN'), Projects=projects, Years=years,Protocols=protocols,SiteCodes=sitecodes)
+Slope_height=tblRetrieve(Parameters=c('SLOPE'), Projects=projects, Years=c('2013','2014','2015'),Protocols=protocols,SiteCodes=sitecodes)
+SlpReachLen=tblRetrieve(Parameters=c('SLPRCHLEN'), Projects=projects, Years=c('2013','2014','2015'),Protocols=protocols,SiteCodes=sitecodes)
 #Slope_heightpvt=cast(Slope_height,'UID+TRANSECT+POINT~PARAMETER',value='RESULT')
 #SlpReachLenpvt=cast(SlpReachLen,'UID+TRANSECT+POINT~PARAMETER',value='RESULT')
-Slope=tblRetrieve(Parameters=c('AVGSLOPE','SLPRCHLEN','TRCHLEN','PARTIAL_RCHLEN','POOLRCHLEN','SLOPE_COLLECT','PCT_GRADE','VALXSITE'),Projects=projects, Years=years,Protocols=protocols,SiteCodes=sitecodes)                 
+Slope=tblRetrieve(Parameters=c('AVGSLOPE','SLPRCHLEN','PCT_GRADE'),Projects=projects, Years=c('2016'),Protocols=protocols,SiteCodes=sitecodes)                 
 
 #run site descriptors for sinuosity data
+
+
 
 ##########################################################################################################
 ##### Other metrics still being worked on or old metrics no longer used #####
@@ -546,6 +549,7 @@ Sedimentpvt=cast(Sediment,'UID~PARAMETER',value='RESULT',fun=length)# number of 
 Sedimentpvt$nbedPCT_SAFN_CHECK=(Sedimentpvt$SIZE_CLS+Sedimentpvt$XSIZE_CLS) # number of pebbles collected at all transects only 4 boating sites had less than 50
 Sedimentpvtsub=subset(Sedimentpvt,select=c(UID,nbedPCT_SAFN_CHECK))
 pctsafn_2013=merge(pctsafn,Sedimentpvtsub,by="UID")
+pctsafn_2013$bedPCT_SAFN6_CHECK<-NA
 #pctsafn_2013$nallPCT_SAFN_CHECK=pctsafn_2013$nbedPCT_SAFN_CHECK#duplicate bed data into a variable for all particles so that the data comes over in one column when combined with 2014+ data but this data should be used with caution because of protocol differences!
 #pctsafn_2013$allPCT_SAFN_CHECK=pctsafn_2013$bedPCT_SAFN_CHECK#duplicate bed data into a variable for all particles so that the data comes over in one column when combined with 2014+ data but this data should be used with caution because of protocol differences!
 
@@ -599,14 +603,16 @@ K_Sed2014=merge(J_Sed2014,Nall_Sed2014pvtsub, by="UID")
 
 # Combine the two datasets for PCT_SAFN together so that I don't have multiple files for the same thing
 #2013+
-H_Sed=rbind(pctsafn_2013,G_Sed2014)# uncomment for 2013 data
+H_Sed=rbind(pctsafn_2013,G_Sed2014)# uncomment for 2013 data #needs to be changed if uncommentout allPCT_SAFN for 2013 data
 #2013+
 PCT_SAFN_ALL=join(H_Sed,K_Sed2014,by="UID",type="left")#uncomment for 2013 data
 #2014 only?
 #PCT_SAFN_ALL=join(G_Sed2014,K_Sed2014,by="UID",type="left")
 #PCT_SAFN_sub=subset(PCT_SAFN_ALL,nallPCT_SAFN_CHECK<50)
-PCT_SAFN_ALL$allPCT_SAFN_CHECK=ifelse(PCT_SAFN_ALL$nallPCT_SAFN_CHECK<50,NA,PCT_SAFN_ALL$allPCT_SAFN_CHECK)
-PCT_SAFN_ALL$bedPCT_SAFN_CHECK=ifelse(PCT_SAFN_ALL$nbedPCT_SAFN_CHECK<50,NA,PCT_SAFN_ALL$bedPCT_SAFN_CHECK)
+PCT_SAFN_ALL$allPCT_SAFN2_CHECK=ifelse(PCT_SAFN_ALL$nallPCT_SAFN_CHECK<50,NA,PCT_SAFN_ALL$allPCT_SAFN2_CHECK)
+PCT_SAFN_ALL$bedPCT_SAFN2_CHECK=ifelse(PCT_SAFN_ALL$nbedPCT_SAFN_CHECK<50,NA,PCT_SAFN_ALL$bedPCT_SAFN2_CHECK)
+PCT_SAFN_ALL$allPCT_SAFN6_CHECK=ifelse(PCT_SAFN_ALL$nallPCT_SAFN_CHECK<50,NA,PCT_SAFN_ALL$allPCT_SAFN6_CHECK)
+PCT_SAFN_ALL$bedPCT_SAFN6_CHECK=ifelse(PCT_SAFN_ALL$nbedPCT_SAFN_CHECK<50,NA,PCT_SAFN_ALL$bedPCT_SAFN6_CHECK)
 
 
 ####### other sediment metrics ##########
@@ -916,15 +922,17 @@ PctDry$PctDry_CHECK=round(PctDry$PctDry_CHECK,digits=1)
 #                      Slope                            #
 
 ##########################################################
+#pre 2016 data
 Slope_height=cast(Slope_height, 'UID~PARAMETER',value='RESULT',fun=sum)
 SlpReachLen=cast(SlpReachLen,'UID~PARAMETER',value='RESULT')
 Slope_Per=merge(Slope_height,SlpReachLen, by=c('UID'), all=T)
 Slope_Per$PCT_GRADE=round(((Slope_Per$SLOPE/100)/(Slope_Per$SLPRCHLEN))*100,digits=2)
 Slope_Per=setNames(Slope_Per,c("UID","AVGSLOPE_CHECK","SLPRCHLEN_CHECK","PCT_GRADE_CHECK"))
 #2016+ data
-Slope_Per=cast(Slope,'UID~PARAMETER',value='RESULT')                
-Slope_Per$PCT_GRADE_CHECK=round(as.numeric(Slope_Per$PCT_GRADE),digits=2)
-Slope_Per$AVGSLOPE_CHECK=Slope_Per$AVGSLOPE
+Slope_Per1=cast(Slope,'UID~PARAMETER',value='RESULT')                
+Slope_Per1$PCT_GRADE=round(as.numeric(Slope_Per1$PCT_GRADE),digits=2)
+Slope_Per1=setNames(Slope_Per1,c("UID","AVGSLOPE_CHECK","PCT_GRADE_CHECK","SLPRCHLEN_CHECK"))
+Slope_Per=rbind(Slope_Per,Slope_Per1)
 
 ##########################################################
 
@@ -990,8 +998,8 @@ listsites=merge(TRCHLEN,listsites, by='UID', all=T)
 listsites$SINUOSITY_CHECK=round(as.numeric(listsites$TRCHLEN_CHECK)/as.numeric(listsites$straightline),digits=2)
 listsites$SINUOSITY_CHECK=ifelse(listsites$SINUOSITY_CHECK<1,NA,listsites$SINUOSITY_CHECK)
 #still need to remove data from partial sites
+listsites$SINUOSITY_CHECK=ifelse(listsites$VALXSITE_CHECK=="PARBYWADE"|listsites$VALXSITE_CHECK=="PARBYBOAT",NA,listsites$SINUOSITY_CHECK)
 
-###################################################################################################################
 ###################################################################################################################
 ###################################################################################################################
 ###################################################################################################################
@@ -1061,12 +1069,15 @@ IndicatorCheckJoin=join_all(list(listsites,WQfinal,BnkErosional,BnkAll,fishpvt2,
 #2013,2014,2015
 IndicatorCheckJoin=join_all(list(listsites,WQfinal,BnkErosional,BnkAll,fishpvt2,DensPvt,BnkDensPvt,XCMG_new1,IncBnk,BankWidFinal,WetWidFinal,ALLSED,MeanAngle,Thalweg,PctDry,Pools,FinalpvtPoolFines,LWD,Slope_Per),by="UID")
 
+#remove QC sites
+IndicatorCheckJoin=subset(IndicatorCheckJoin,!(UID %in% c('12457','12422','12714','13550','11787','13527','9779832504','13518','13539','8497901114','2772740176','3833994365','7194282454','9846034316','7977571143','4943503766','6152206654','6964535047','7746712455','2956707014','4324237804','4197418344','8537408400','4116634326','2109978745')))
+
 #To remove all of the metrics and only get the indicators subset by UID and all those columns ending in "CHECK". Hmm..not really sure what the $ is doing here, the code works without it, but all the examples I've looked at keep the $ so I kept it too... 
 IndicatorCheck=IndicatorCheckJoin[,c("UID",grep("CHECK$", colnames(IndicatorCheckJoin),value=TRUE))]
 #write.csv(IndicatorCheck,"C:\\Users\\Nicole\\Desktop\\IndicatorCheck2.csv")
 #Remove all other data files as they are no longer needed
 #IndicatorCheck=subset(IndicatorCheck,PROTOCOL_CHECK=="BOAT14")
-write.csv(IndicatorCheck,"IndicatorCheck2016data_19Jan2017.csv")
+write.csv(IndicatorCheck,"IndicatorCheckIDstatewidedata_13April2017.csv")
 rm(PHfinal,XGB_new,XGB_new1,BankStab,Banks,RipGB,EMBED,Human_Influ,W1_HALL,W1_HALL_NRSA,QR1,XEMBED,BnkDensPvt,BnkDensiom,densiom,RipXCMG,XCMG_new,XCMG_new1,RipWW,XCMGW_new,XCMGW_new1,IndicatorCheckJoin,fish,fishpvt2,
    MidDensiom,DensPvt,Incision,INCISED,BANKHT,Inc,Bnk,xIncht,xBnkht,IncBnk,Sediment,pctsafn,Sed2014,A_Sed2014,C_Sed2014,E_Sed2014,F_Sed2014,PCT_SAFN_ALL)
 

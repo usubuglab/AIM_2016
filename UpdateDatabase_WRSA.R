@@ -56,7 +56,7 @@ if(sessionInfo()$R.version$major==2){
   probsurv14=odbcConnect("ProbSurveyDB")#have to run on remote desktop (gisUser3) or machine which has 64bit R and 64bit Access
   UpdatesTBL=sqlQuery(probsurv14,'select * from Office_Updates where Update is null'
                       #!set Update field to today())
-} else {setwd('\\\\share1.bluezone.usu.edu\\miller\\buglab\\Research Projects\\BLM_WRSA_Stream_Surveys\\Field Work\\Post Sample\\iPad backup\\AccessImport')#setwd('C:\\Users\\Sarah\\Desktop\\NAMCdevelopmentLocal\\WRSA')
+} else {setwd('\\\\share1.bluezone.usu.edu\\miller\\buglab\\Research Projects\\AIM\\Analysis\\QC\\')#setwd('C:\\Users\\Sarah\\Desktop\\NAMCdevelopmentLocal\\WRSA')
         UpdatesTBL=read.csv('Office_Updates.csv')#export from ExternalData, SavedExport, Export-Office_Updates3
         UpdatesTBL=subset(UpdatesTBL,UPDATE=='')
         importUPcnt=nrow(UpdatesTBL)

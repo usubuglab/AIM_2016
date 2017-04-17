@@ -45,8 +45,14 @@ combined=read.csv("\\\\share1.bluezone.usu.edu\\miller\\buglab\\Research Project
 
 #add back in a few columns from Mass_Combination_NRSA_EMAP
 #key in combined file is SITE_ID
-Final2sub=subset(Final2,select=c(SITE_ID,XSLOPE,XSLOPE_FIELD,XSLOPE_FRDATA,XSLOPE_FRREF,XSLOPE_MAP,XWD_RAT,XWIDTH,XWXD,XBKF_W,XDEPTH,V1W_MSQ,V1WM100,V2W_MSQ,V2WM100,V4W_MSQ,V4WM100,C1TM100,C1WM100,C2TM100,C2WM100,C4TM100,C4WM100,FLOWSITE))
+#as of March 31 2017 the above code to merge NRSA and EMAP data is throwing a row.names duplicate error because REALM is duplicated in the NRSA dataset. 
+#I don't know why this wasn't an issue previously but I assume that the dataset in Mass_combination_NRSA_EMAP.csv is correct and would join needed fields back in from this csv rather than the code below.
+Final2=read.csv("\\\\share1.bluezone.usu.edu\\miller\\buglab\\Research Projects\\BLM_WRSA_Stream_Surveys\\Results and Reports\\EPA_Data\\Mass_Combination_NRSA_EMAP.csv")
+Final2sub=subset(Final2,select=c(SITE_ID,W1_HAG, W1H_CROP,W1H_WALL,PROJECT,XC,XM,XG,XSLOPE,XSLOPE_FIELD,XSLOPE_FRDATA,XSLOPE_FRREF,XSLOPE_MAP,XWD_RAT,XWIDTH,XWXD,XBKF_W,XDEPTH,V1W_MSQ,V1WM100,V2W_MSQ,V2WM100,V4W_MSQ,V4WM100,C1TM100,C1WM100,C2TM100,C2WM100,C4TM100,C4WM100,FLOWSITE))
 combined2=join(combined,Final2sub,by='SITE_ID', type="left",match="all")
+
+combined3=read.csv('trialreferencedata.csv')
+combined3=join(combined3,Final2sub,by='SITE_ID', type="left",match="all")
 
 #Use to get wadeable or boatable only, if this line isn't run both boatable and wadeable will be used. Change REALM== "" to specify 
 #combined2=subset(combined2, REALM == "WADEABLE")
@@ -64,7 +70,7 @@ levels(combined2$THRESH3) <- list( XE_SOUTH_SmallWade="XE_SOUTH_SmallWade",XE_SO
                                   MT_SROCK_SmallWade="MT_SROCK_SmallWade",MT_SROCK_LargeWade="MT_SROCK_LargeWade", 
                                   MT_NROCK_SmallWade="MT_NROCK_SmallWade", MT_NROCK_LargeWade="MT_NROCK_LargeWade",
                                   XE_NORTH_SmallWade="XE_NORTH_SmallWade",XE_NORTH_LargeWade="XE_NORTH_LargeWade",
-                                  Other=c("XE_CALIF_LargeWade","XE_CALIF_SmallWade","0_BOATABLE","XE_SOUTH_NA","MT_PNW_0","MT_NROCK_NA", "_SmallWade","_LargeWade","_BOATABLE"  ,"_NA", "MT_SROCK_NA" , "0_LargeWade" , "MT_SWEST_NA", "0_SmallWade", "XE_CALIF_BOATABLE","MT_SWEST_BOATABLE"),   
+                                  #Other=c("XE_CALIF_LargeWade","XE_CALIF_SmallWade","0_BOATABLE","XE_SOUTH_NA","MT_PNW_0","MT_NROCK_NA", "_SmallWade","_LargeWade","_BOATABLE"  ,"_NA", "MT_SROCK_NA" , "0_LargeWade" , "MT_SWEST_NA", "0_SmallWade", "XE_CALIF_BOATABLE","MT_SWEST_BOATABLE"),   
                                   MT_ROCK_BOATABLE=c("MT_NROCK_BOATABLE", "MT_SROCK_BOATABLE","XE_NORTH_BOATABLE"),  
                                   XE_SEPLAT_BOATABLE=c( "XE_EPLAT_BOATABLE" ,"XE_SOUTH_BOATABLE")
                                     )
@@ -77,7 +83,8 @@ combined2$THRESH2=ifelse(combined2$THRESH2=="PL_RANGE_BOATABLE"|combined2$THRESH
 #To subset for reference to use on RIPARIAN indicators.
 #First subset the data to only include sites with R or S designations
 RIP_RS_combined=subset(combined2, RST_FRIP_AND_RMD_PHAB == "R"|RST_FRIP_AND_RMD_PHAB == "S")
-#Now I need to remove duplicate sites, but choose the one with the most recent year. 
+#Now I need to remove duplicate sites, but choose to remove the one with the most recent year. 
+#Remove the one with the most recent year because it may not still be in reference condition when it was sampled the second time.
 ###So I order by if it was revisited, the site code, and then the year.  Check this with the view
 RIP_RS_reorder=RIP_RS_combined[order(RIP_RS_combined$REVISITED_OVERLAP,RIP_RS_combined$DUPLICATE_ID, RIP_RS_combined$YEAR, decreasing=FALSE),]
 #View(RIP_RS_reorder[1250:2041,])

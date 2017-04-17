@@ -19,7 +19,7 @@
 
 ##pull in relevant SiteInfo
 #because full design file was stored in Access I had to merge the sample status from access with SQL in excel and NN has to be assigned manually in this process as well so that the NNs are after the last TS site in each stratum-mdcaty (see above)
-siteeval=read.csv('Z:\\buglab\\Research Projects\\BLM_WRSA_Stream_Surveys\\Results and Reports\\AIM_2011_2015_results\\siteeval_Rinput.csv')
+siteeval=read.csv('\\\\share1.bluezone.usu.edu\\miller\\buglab\\Research Projects\\BLM_WRSA_Stream_Surveys\\Results and Reports\\AIM_2011_2015_results\\siteeval_Rinput.csv')
 #NC's computer is mapped differently, tourbleshooting # siteeval=read.csv('\\\\share1.bluezone.usu.edu\\miller\\buglab\\Research Projects\\BLM_WRSA_Stream_Surveys\\Results and Reports\\AIM_2011_2015_results\\siteeval_Rinput.csv')
 
 #make sure Access site status evaluation matches SQL

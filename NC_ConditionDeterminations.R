@@ -7,32 +7,39 @@
 #either use saved csv or run the JC_IndicatorCalc.R
 #Indicators=read.csv('Z:\\buglab\\Research Projects\\BLM_WRSA_Stream_Surveys\\Results and Reports\\SRM_2015\\final_updated_crosschecked_metrics.csv')
 #IndicatorCheck=read.csv('Z:\\buglab\\Research Projects\\AIM\\Projects\\Utah\\GSENM\\Aquatics\\IndicatorCheck_21Dec2016_GrandStaircase.csv')
-IndicatorCheck=read.csv('IndicatorCheck2016data_21October2016.csv')
+#IndicatorCheck=read.csv('IndicatorCheck2016data_21October2016.csv')
 #IndicatorCheck=read.csv('Z:\\buglab\\Research Projects\\BLM_WRSA_Stream_Surveys\\Results and Reports\\AIM_2011_2015_results\\IndicatorCheck_29April2016.csv')
+IndicatorCheck=read.csv('Z:\\buglab\\Research Projects\\AIM\\Projects\\Idaho\\Statewide\\Analysis\\Weights_ExtentEstimates\\IndicatorCheckIDstatewidedata_13April2017.csv')
 IndicatorCheck$BNK_THRESH=ifelse(as.numeric(IndicatorCheck$XBKF_W_CHECK)>10,"LargeWade","SmallWade")
-#2011-2015 data
-#SiteInfo=read.csv('Z:\\buglab\\Research Projects\\AIM\\Projects\\AquaticProjectSummaries\\ProjectsPtSummary\\AIM_Aquatic_Sampled_2011_2015_Rinput_into_conditions_final_report_do_not_alter.csv')
+# #2011-2015 data
+# #SiteInfo=read.csv('Z:\\buglab\\Research Projects\\AIM\\Projects\\AquaticProjectSummaries\\ProjectsPtSummary\\AIM_Aquatic_Sampled_2011_2015_Rinput_into_conditions_final_report_do_not_alter.csv')
+# 
+# #2016 data
+# listsites=tblRetrieve(Parameters=c('SITE_ID','DATE_COL','LOC_NAME','LAT_DD','LON_DD','PROJECT','PROTOCOL','VALXSITE','LAT_DD_BR','LAT_DD_TR','LON_DD_BR','LON_DD_TR','Z_DISTANCEFROMX','TRCHLEN','REPEAT_VISIT'),Projects=projects,Years=years,Protocols=protocols)
+# listsites=cast(listsites,'UID~PARAMETER',value='RESULT')
+# designs=read.csv('\\\\share1.bluezone.usu.edu\\miller\\buglab\\Research Projects\\AIM\\AIM_DataManagement\\ProjectMngtSystem\\design_table2.csv')
+# postseason=join(listsites,designs, by="SITE_ID", type="left")
+# #get ecoregional and stream size info for context for values
+# designmetadata=read.csv('\\\\share1.bluezone.usu.edu\\miller\\buglab\\Research Projects\\AIM\\GRTS_CodeGuidance\\MasterSample\\MasterSampleDraws\\Aquatic\\LoticMasterSample\\Attributed\\LoticMasterSampleAttributedPtsWithHybridEcoregions.csv')
+# SiteInfoSub=join(postseason,designmetadata, by="MS_ID", type="left")
+# SiteInfoSub$SITE_ID_CHECK=SiteInfoSub$SITE_ID
+# 
+# #2011-2015 edits
+# #SiteInfoSub=subset(SiteInfo, select=c(SITE_ID_CHECK,Project,Protocol,ECO10,State,FieldOffice,District,StreamOrder,Stratum,StreamSize,Code,Climate))
+# #SiteInfoSub$ECO10=ifelse(SiteInfoSub$ECO10=="XE_CALIF","MT_PNW",SiteInfoSub$ECO10)
+# #SiteInfoSub$ECO10=ifelse(SiteInfoSub$SITE_ID_CHECK=="OT-LS-7009","XE_SOUTH",SiteInfoSub$ECO10)
+# 
+# #Indicators=join(IndicatorCheck, SiteInfoSub, by="SITE_ID_CHECK",type="left",match="first")
 
-#2016 data
-listsites=tblRetrieve(Parameters=c('SITE_ID','DATE_COL','LOC_NAME','LAT_DD','LON_DD','PROJECT','PROTOCOL','VALXSITE','LAT_DD_BR','LAT_DD_TR','LON_DD_BR','LON_DD_TR','Z_DISTANCEFROMX','TRCHLEN','REPEAT_VISIT'),Projects=projects,Years=years,Protocols=protocols)
-listsites=cast(listsites,'UID~PARAMETER',value='RESULT')
-designs=read.csv('\\\\share1.bluezone.usu.edu\\miller\\buglab\\Research Projects\\AIM\\AIM_DataManagement\\ProjectMngtSystem\\design_table2.csv')
-postseason=join(listsites,designs, by="SITE_ID", type="left")
-#get ecoregional and stream size info for context for values
-designmetadata=read.csv('\\\\share1.bluezone.usu.edu\\miller\\buglab\\Research Projects\\AIM\\GRTS_CodeGuidance\\MasterSample\\MasterSampleDraws\\Aquatic\\LoticMasterSample\\Attributed\\LoticMasterSampleAttributedPtsWithHybridEcoregions.csv')
-SiteInfoSub=join(postseason,designmetadata, by="MS_ID", type="left")
-SiteInfoSub$SITE_ID_CHECK=SiteInfoSub$SITE_ID
+#new design database
+SiteInfo=read.csv('\\\\share1.bluezone.usu.edu\\miller\\buglab\\Research Projects\\AIM\\Design\\DesignDatabase\\GIS_table_for_Design_Database.csv')
+Indicators=join(IndicatorCheck, SiteInfo, by="SITE_ID_CHECK",type="left",match="first")
 
-#2011-2015 edits
-#SiteInfoSub=subset(SiteInfo, select=c(SITE_ID_CHECK,Project,Protocol,ECO10,State,FieldOffice,District,StreamOrder,Stratum,StreamSize,Code,Climate))
-#SiteInfoSub$ECO10=ifelse(SiteInfoSub$ECO10=="XE_CALIF","MT_PNW",SiteInfoSub$ECO10)
-#SiteInfoSub$ECO10=ifelse(SiteInfoSub$SITE_ID_CHECK=="OT-LS-7009","XE_SOUTH",SiteInfoSub$ECO10)
 
-Indicators=join(IndicatorCheck, SiteInfoSub, by="SITE_ID_CHECK",type="left",match="first")
-
-Indicators$BNK_THRESH=ifelse(Indicators$PROTOCOL_CHECK=='BOAT2016',"BOATABLE",Indicators$BNK_THRESH)
+Indicators$BNK_THRESH=ifelse(Indicators$PROTOCOL2_CHECK=='BOATABLE',"BOATABLE",Indicators$BNK_THRESH)
+#Indicators$BNK_THRESH=ifelse(Indicators$PROTOCOL_CHECK=='BOAT2016',"BOATABLE",Indicators$BNK_THRESH)
 #Indicators$BNK_THRESH=ifelse(Indicators$Protocol=="BOATABLE","BOATABLE",Indicators$BNK_THRESH)
-Indicators$THRESH=paste(Indicators$ECO10,Indicators$BNK_THRESH, sep="_")#2011-2015
+Indicators$THRESH=paste(Indicators$ECO10,Indicators$BNK_THRESH, sep="_")#2011-2015#works with new design database as well
 #Indicators$THRESH=paste(Indicators$ECO_10,Indicators$BNK_THRESH, sep="_")#2016
 Indicators$THRESH3=as.factor(Indicators$THRESH)
 levels(Indicators$THRESH3) <- list( XE_SOUTH_SmallWade="XE_SOUTH_SmallWade",XE_SOUTH_LargeWade="XE_SOUTH_LargeWade", 
@@ -58,18 +65,24 @@ Indicators$THRESH4=ifelse(Indicators$ECO10=="XE_EPLAT"|Indicators$ECO10=="XE_SOU
 ############Join bug data to all other indicator data
 #bug threholds are determined depending on the model and the thresholds can be found in Z:\buglab\OE_Modeling\OE_Model_Documentation\OE_Data_Prep_Instructions_SWJ
 #thresholds are applied in excel after running the model
-WRSABugs=read.csv("\\\\share1.bluezone.usu.edu\\miller\\buglab\\Research Projects\\BLM_WRSA_Stream_Surveys\\Results and Reports\\AIM_2011_2015_results\\final_bug_scores_R_input_join_to_all_other_metrics.csv")
-Indicators=join(Indicators,WRSABugs, by="UID",type="left")
-Indicators$OErtg=ifelse(Indicators$MODELTEST=="F",NA,Indicators$OErtg)#exclude sites that were outside the experience of the model, 9 sites and most were major rivers
-Indicators$OE_less100rtg=ifelse(Indicators$COUNT<100,NA,Indicators$OErtg)#75 sites and after consulting Chuck decided to include them for the population estimates but for sites specific flag as having low counts and interpret with caution
-Indicators$OE_50_100rtg=ifelse(Indicators$COUNT>50 & Indicators$COUNT<100,NA,Indicators$OErtg)#75 sites and after consulting Chuck decided to include them for the population estimates but for sites specific flag as having low counts and interpret with caution
-
+# WRSABugs=read.csv("\\\\share1.bluezone.usu.edu\\miller\\buglab\\Research Projects\\BLM_WRSA_Stream_Surveys\\Results and Reports\\AIM_2011_2015_results\\final_bug_scores_R_input_join_to_all_other_metrics.csv")
+# Indicators=join(Indicators,WRSABugs, by="UID",type="left")
+# Indicators$OErtg=ifelse(Indicators$MODELTEST=="F",NA,Indicators$OErtg)#exclude sites that were outside the experience of the model, 9 sites and most were major rivers
+# Indicators$OE_less100rtg=ifelse(Indicators$COUNT<100,NA,Indicators$OErtg)#75 sites and after consulting Chuck decided to include them for the population estimates but for sites specific flag as having low counts and interpret with caution
+# Indicators$OE_50_100rtg=ifelse(Indicators$COUNT>50 & Indicators$COUNT<100,NA,Indicators$OErtg)#75 sites and after consulting Chuck decided to include them for the population estimates but for sites specific flag as having low counts and interpret with caution
+Bugs=read.csv("\\\\share1.bluezone.usu.edu\\miller\\buglab\\Research Projects\\AIM\\Analysis\\WQ_Bug_Model_GIS_stats_and_results\\final_bug_scores_R_input_join_to_all_other_metrics_statebasedscores.csv")
+#subset so that only the state model or the model of interest is in the data...this is necesssary because this file has westwide as well as state based scores for a single sample
+Bugs=subset(Bugs,MODEL=="ColumbiaRiverBasin_PIBO")#Westwide, ColumbiaRiverBasin_PIBO, OR_WesternCordillera_ColumbiaPlateau, OR_MarineWesternCoastalForest, UT_DEQ_2015,CO_EDAS-Biotype1, CO_EDAS-Biotype2,CO_EDAS-Biotype3,CA_CSCI,NV_MMI
+Indicators=join(Indicators,Bugs, by="UID",type="left")
+#exclude sites that were outside the experience of the model...however we are keeping sites will low bug counts
+Indicators$OErtg=ifelse(Indicators$MODELTEST=="F",NA,Indicators$OErtg)
 
 ############ WQ modeled thresholds
 Indicators$OE_ECrtg=ifelse(Indicators$OE_EC_CHECK <=27.1,'Good',ifelse(Indicators$OE_EC_CHECK >53.7, 'Poor','Fair'))
 Indicators$OE_TNrtg=ifelse(Indicators$OE_TN_CHECK <=52.1,'Good',ifelse(Indicators$OE_TN_CHECK >114.7, 'Poor','Fair'))
 Indicators$OE_TPrtg=ifelse(Indicators$OE_TP_CHECK <=9.9,'Good',ifelse(Indicators$OE_TP_CHECK >21.3, 'Poor','Fair'))
 
+#EPA WQ Regional Reference Thresholds
 # Indicators$OE_ECrtg=ifelse(Indicators$CONDUCTIVITY_CHECK <500,'Good',ifelse(Indicators$CONDUCTIVITY_CHECK >=1000, 'Poor','Fair'))
 # 
 # Indicators$OE_TNrtg=ifelse(
@@ -133,10 +146,13 @@ IndicatorsJoin$XEMBEDrtg=ifelse(IndicatorsJoin$XEMBED_CHECK >=IndicatorsJoin$XEM
 
 IndicatorsCond=IndicatorsJoin
 
-write.csv(IndicatorsCond,'IndicatorsCond_2016data_19Jan2017.csv')     
+write.csv(IndicatorsCond,'IndicatorsCond_IDstatewidedata_13April2017.csv')     
 
 ############### continue on to the SpSurvey_DesignWeights and SPSurvey_ExtentEstimates R scripts ######################                                 
-
+####################################################################################################################
+##################################################################################################################
+##################################################################################################################
+###################################################################################################################
 # ###trial loop
 # DesiredIndicators=c('XEMBED','XFC_NAT','XCMG','XCDENBK','LINCIS_H','PCT_SAFN')
 # for (i in 1:length(DesiredIndicators)){
