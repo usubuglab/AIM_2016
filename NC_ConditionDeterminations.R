@@ -10,6 +10,7 @@
 #IndicatorCheck=read.csv('IndicatorCheck2016data_21October2016.csv')
 #IndicatorCheck=read.csv('Z:\\buglab\\Research Projects\\BLM_WRSA_Stream_Surveys\\Results and Reports\\AIM_2011_2015_results\\IndicatorCheck_29April2016.csv')
 IndicatorCheck=read.csv('Z:\\buglab\\Research Projects\\AIM\\Projects\\Idaho\\Statewide\\Analysis\\Weights_ExtentEstimates\\IndicatorCheckIDstatewidedata_13April2017.csv')
+IndicatorCheck=read.csv('Z:\\buglab\\Research Projects\\AIM\\Projects\\Utah\\GSENM\\Analysis\\Weights_ExtentEstimates\\IndicatorCheckGrandStaircase_18April2017.csv')
 IndicatorCheck$BNK_THRESH=ifelse(as.numeric(IndicatorCheck$XBKF_W_CHECK)>10,"LargeWade","SmallWade")
 # #2011-2015 data
 # #SiteInfo=read.csv('Z:\\buglab\\Research Projects\\AIM\\Projects\\AquaticProjectSummaries\\ProjectsPtSummary\\AIM_Aquatic_Sampled_2011_2015_Rinput_into_conditions_final_report_do_not_alter.csv')
@@ -73,6 +74,7 @@ Indicators$THRESH4=ifelse(Indicators$ECO10=="XE_EPLAT"|Indicators$ECO10=="XE_SOU
 Bugs=read.csv("\\\\share1.bluezone.usu.edu\\miller\\buglab\\Research Projects\\AIM\\Analysis\\WQ_Bug_Model_GIS_stats_and_results\\final_bug_scores_R_input_join_to_all_other_metrics_statebasedscores.csv")
 #subset so that only the state model or the model of interest is in the data...this is necesssary because this file has westwide as well as state based scores for a single sample
 Bugs=subset(Bugs,MODEL=="ColumbiaRiverBasin_PIBO")#Westwide, ColumbiaRiverBasin_PIBO, OR_WesternCordillera_ColumbiaPlateau, OR_MarineWesternCoastalForest, UT_DEQ_2015,CO_EDAS-Biotype1, CO_EDAS-Biotype2,CO_EDAS-Biotype3,CA_CSCI,NV_MMI
+#Indicators=read.csv('Z:\\buglab\\Research Projects\\AIM\\Projects\\Idaho\\Statewide\\Analysis\\Weights_ExtentEstimates\\IndicatorsCond_IDstatewidedata_13April2017_revisedsed.csv')
 Indicators=join(Indicators,Bugs, by="UID",type="left")
 #exclude sites that were outside the experience of the model...however we are keeping sites will low bug counts
 Indicators$OErtg=ifelse(Indicators$MODELTEST=="F",NA,Indicators$OErtg)
@@ -146,7 +148,7 @@ IndicatorsJoin$XEMBEDrtg=ifelse(IndicatorsJoin$XEMBED_CHECK >=IndicatorsJoin$XEM
 
 IndicatorsCond=IndicatorsJoin
 
-write.csv(IndicatorsCond,'IndicatorsCond_IDstatewidedata_13April2017.csv')     
+write.csv(IndicatorsCond,'IndicatorsCond_GrandStaircase_18April2017.csv')     
 
 ############### continue on to the SpSurvey_DesignWeights and SPSurvey_ExtentEstimates R scripts ######################                                 
 ####################################################################################################################

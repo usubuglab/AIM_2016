@@ -16,6 +16,8 @@
 #siteeval=read.csv('AdjustedWeights_2016TRY2.csv')
 #siteeval=read.csv('AdjustedWeights_2016_Try1_Run2.csv')
 siteeval=read.csv('Z:\\buglab\\Research Projects\\AIM\\Projects\\Idaho\\Statewide\\Analysis\\Weights_ExtentEstimates\\AdjustedWeights_IdahoState2017_13April2017.csv')
+siteeval=read.csv('Z:\\buglab\\Research Projects\\AIM\\Projects\\Utah\\GSENM\\Analysis\\Weights_ExtentEstimates\\AdjustedWeights_GSENM2016_formated.csv')
+
 #siteeval$SITE_ID=siteeval$Sitecode
 #siteeval$Field_Office <- as.factor("Smoke Creek Watershed")
 #siteeval$STRATUM=siteeval$Field_Office
@@ -31,9 +33,9 @@ siteeval$ReportingUnit1 <- as.factor(siteeval$ReportingUnit1)
 
 #set up subpopulations for use in cat.analysis
 subpopCON=data.frame(siteID=siteeval$SITE_ID,
-                     ReportingUnit1a=rep("IdahoStatewide", nrow(siteeval)),
-                     ReportingUnit2=siteeval$ReportingUnit2,
-                     ReportingUnit3=siteeval$ReportingUnit3
+                     ReportingUnit1=siteeval$ReportingUnit1#,#rep("IdahoStatewide", nrow(siteeval))
+                     #ReportingUnit2=siteeval$ReportingUnit2,
+                     #ReportingUnit3=siteeval$ReportingUnit3
 )
 
 
@@ -157,13 +159,15 @@ designCON=data.frame(siteID=siteeval$SITE_ID,
 #                                  } else {print('There are many columns. Data is assumed to be pivoted with indicator and matching condition names as columns.')}
 
 #wrsa
-ResponseInfo=read.csv('Z:\\buglab\\Research Projects\\AIM\\Projects\\Idaho\\Statewide\\Analysis\\Weights_ExtentEstimates\\IndicatorsCond_IDstatewidedata_13April2017.csv')
+ResponseInfo=read.csv('Z:\\buglab\\Research Projects\\AIM\\Projects\\Idaho\\Statewide\\Analysis\\Weights_ExtentEstimates\\IndicatorsCond_IDstatewidedata_13April2017_revisedsed.csv')
+ResponseInfo=read.csv('Z:\\buglab\\Research Projects\\AIM\\Projects\\Utah\\GSENM\\Analysis\\Weights_ExtentEstimates\\IndicatorsCond_GrandStaircase_18April2017revisedsed.csv')
 #ResponseInfo=read.csv('Z:\\buglab\\Research Projects\\BLM_WRSA_Stream_Surveys\\Results and Reports\\AIM_2011_2015_results\\IndicatorsCond_29April2016.csv')
 #ResponseInfo=read.csv('Z:\\buglab\\Research Projects\\BLM_WRSA_Stream_Surveys\\Results and Reports\\AIM_2011_2015_results\\IndicatorsCond_revised_wq_bugs_thresh_example.csv')
 
 ##exclude QC sites---dont need to worry about it because it is filtered
 #ResponseInfo=subset(ResponseInfo,UID!=12457& UID!=12422& UID!=	12714& UID!=	13550& UID!=	11787& UID!=	13527& UID!=	9779832504& UID!=	13518& UID!=	13539& UID!=	8497901114& UID!=	2772740176& UID!=	3833994365& UID!=	7194282454& UID!=	9846034316& UID!=	7977571143& UID!=	4943503766& UID!=	6152206654& UID!=	6964535047& UID!=	7746712455& UID!=	2956707014& UID!=	4324237804& UID!=	4197418344& UID!=	8537408400& UID!=	4116634326& UID!=	2109978745)
 ResponseInfo=IndicatorsCond
+#ResponseInfo=Indicators
 
 #merge site info to indicator info
 #merge site info to indicator info by the column heading that matches between the two files (In WRSA it was UID). 
@@ -187,8 +191,13 @@ SiteInfo=merge(siteeval,ResponseInfo, by.x="UID", by.y="UID",all.x=T)
 #########2016_AIM ################
 selectVARauto='N'; selectVARchoice=ifelse(selectVARauto=='Y','AllVar','CustomVar')#automatically select all variables
 extentVAR=c('TNT','EvalStatus','VALXSITE_CHECK')#Extent Estimate added here since weights the same (rather than running cat.analysis twice)
+#extentVAR=c('TNT','EvalStatus','VALXSITE2')#Extent Estimate added here since weights the same (rather than running cat.analysis twice)
 responseVAR=c('OE')# Input here should be bug model
-stressorsVAR=c("OE_TN","OE_TP","OE_EC","PH_CHECK","allPCT_SAFN2","XFC_NAT","LINCIS_H","XCDENBK","INVASIVE_MACRO","BnkCover_StabErosional","XCMG")#NOT stressorsVAR=c('MMI')   ####'PCT_SAFN','LSUB_DMM')#UTBLM final list: stressorsVAR=c('InvasivesYN','EC','TP','TN','AugST','LBFXWRat','C1WM100','XCDENMID','Stab2','PCT_SAFN')#must be Access names with a matching 'rtg' variable: to view, str(ResponseInfo)
+#GrandStaircase
+stressorsVAR=c("OE_TN","OE_TP","OE_EC","PH_CHECK","allPCT_SAFN2","LINCIS_H","XCDENBK","XFC_NAT","INVASIVE_MACRO","BnkCover_StabErosional","XCMG")#NOT stressorsVAR=c('MMI')   ####'C1WM100','PCT_SAFN','LSUB_DMM')#UTBLM final list: stressorsVAR=c('InvasivesYN','EC','TP','TN','AugST','LBFXWRat','C1WM100','XCDENMID','Stab2','PCT_SAFN')#must be Access names with a matching 'rtg' variable: to view, str(ResponseInfo)
+#Idaho
+#stressorsVAR=c("OE_TN","OE_TP","OE_EC","PH_CHECK","allPCT_SAFN2","LINCIS_H","XCDENBK","INVASIVE_MACRO","BnkCover_StabErosional","XCMG")#NOT stressorsVAR=c('MMI')  "XFC_NAT" ####'PCT_SAFN','LSUB_DMM')#UTBLM final list: stressorsVAR=c('InvasivesYN','EC','TP','TN','AugST','LBFXWRat','C1WM100','XCDENMID','Stab2','PCT_SAFN')#must be Access names with a matching 'rtg' variable: to view, str(ResponseInfo)
+
 #########WRSA_SFS ################
 # selectVARauto='N'; selectVARchoice=ifelse(selectVARauto=='Y','AllVar','CustomVar')#automatically select all variables
 # extentVAR=c('TNT','EvalStatus','VALXSITE')#Extent Estimate added here since weights the same (rather than running cat.analysis twice)
@@ -255,12 +264,20 @@ stressorsVAR=setdiff(stressorsVAR,omitVAR)
 
 #XEMBED_CHECKname='Embeddedness';OEname='Biological Condition'; Invasivesname='Benthic Invasives;#SRM
 
-#WRSA SFS
-OE_TNname='Total Nitrogen';OE_TPname='Total Phosphorus';OE_ECname='Conductivity';PH_CHECKname='pH';
-BnkCover_StabErosionalname='Bank Stability';allPCT_SAFN2name='% Fine Sediment';XCMGname='Riparian Complexity';XCDENBKname='Riparian Canopy Cover';
-XFC_NATname='Instream Complexity';LINCIS_Hname='Floodplain Connectivity';PCT_SAFNname = 'Fines'
+#AIM 2016
+OE_TNname='Total Nitrogen';OE_TPname='Total Phosphorus';OE_ECname='Specific Conductance';PH_CHECKname='pH';
+BnkCover_StabErosionalname='Bank Stability and Cover';allPCT_SAFN2name='% Fine Sediment';XCMGname='Vegetative Complexity';XCDENBKname='% Bank Overhead Cover';
+XFC_NATname='Instream Complexity';LINCIS_Hname='Floodplain Connectivity';
 XEMBEDname='Embeddedness';OEname='Biological Condition'; INVASIVE_MACROname='Benthic Invasives'
 OE_less100name='OE_less100'; OE_50_100name='OE_50_100'
+
+
+# #WRSA SFS
+# OE_TNname='Total Nitrogen';OE_TPname='Total Phosphorus';OE_ECname='Conductivity';PH_CHECKname='pH';
+# BnkCover_StabErosionalname='Bank Stability';allPCT_SAFN2name='% Fine Sediment';XCMGname='Riparian Complexity';XCDENBKname='Riparian Canopy Cover';
+# XFC_NATname='Instream Complexity';LINCIS_Hname='Floodplain Connectivity';PCT_SAFNname = 'Fines'
+# XEMBEDname='Embeddedness';OEname='Biological Condition'; INVASIVE_MACROname='Benthic Invasives'
+# OE_less100name='OE_less100'; OE_50_100name='OE_50_100'
 
 #Old
 TotalHAname='Habitat'; RIPARIANname='Riparian Alt.'; AugSTname= 'Stream Temp.'; SummerSTname= 'Stream Temp (Sum)';
@@ -299,7 +316,7 @@ results.cat <- cat.analysis(sites = sitesCON,
 ParameterSampleSizes=subset(results.cat,subset=Subpopulation=='IdahoStatewide' & Category=='Total');print(ParameterSampleSizes)#samplesize is NResp
 #ParameterSampleSizes=subset(results.cat,subset=Subpopulation=='Westwide' & Category=='Total');print(ParameterSampleSizes)#samplesize is NResp
 
-write.csv(results.cat,'ExtentEstimates_Run2_13April2017.csv');View(results.cat)
+write.csv(results.cat,'ExtentEstimates_Idaho_14June2017.csv');View(results.cat)
 
 #old code to force popsize scaling; Tony doesn't typically recommend using and was more necessary for UTBLM segments (not KM)
 #popsizeCON=list("Utah"=c("C"=1600,"G"=1100,"W"=400,"Y"=900),"Districts"=list("C"=c("C"=1600),"G"=c("G"=1100),"W"=c("W"=400),"Y"=c("Y"=900)))

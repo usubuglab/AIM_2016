@@ -75,7 +75,7 @@ RipALL=tblRetrieve(Parameters=c("BARE","CANBTRE","CANSTRE","CANVEG","GCNWDY","GC
 unique(RipALL$RESULT)
 RipAllpvt=cast(RipALL,'UID+TRANSECT+POINT~PARAMETER',value='RESULT')# check data structure to make sure no duplicates
 unique(RipAllpvt$TRANSECT)
-RipBLM=tblRetrieve(Parameters=c('CANRIPW','UNRIPW','GCRIP','INVASW', 'NATIVW','INVASH','NATIVH','SEGRUSH'),Projects=projects,Years=years,Protocols=protocols)
+RipBLM=tblRetrieve(Parameters=c('CANRIPW','UNRIPW','GCRIP','INVASW', 'NATIVW','INVASH','NATIVH','SEGRUSH'),Projects=projects,Years=years,Protocols=protocols, SiteCodes=sitecodes)
 pvtRipBLM=addKEYS(cast(RipBLM,'UID+TRANSECT+POINT~PARAMETER',value='RESULT'),c('SITE_ID'))
 pvtRiparian=merge(RipAllpvt,pvtRipBLM, by=c('UID','TRANSECT','POINT'))
 

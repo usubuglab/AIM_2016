@@ -48,7 +48,7 @@ combined=read.csv("\\\\share1.bluezone.usu.edu\\miller\\buglab\\Research Project
 #as of March 31 2017 the above code to merge NRSA and EMAP data is throwing a row.names duplicate error because REALM is duplicated in the NRSA dataset. 
 #I don't know why this wasn't an issue previously but I assume that the dataset in Mass_combination_NRSA_EMAP.csv is correct and would join needed fields back in from this csv rather than the code below.
 Final2=read.csv("\\\\share1.bluezone.usu.edu\\miller\\buglab\\Research Projects\\BLM_WRSA_Stream_Surveys\\Results and Reports\\EPA_Data\\Mass_Combination_NRSA_EMAP.csv")
-Final2sub=subset(Final2,select=c(SITE_ID,W1_HAG, W1H_CROP,W1H_WALL,PROJECT,XC,XM,XG,XSLOPE,XSLOPE_FIELD,XSLOPE_FRDATA,XSLOPE_FRREF,XSLOPE_MAP,XWD_RAT,XWIDTH,XWXD,XBKF_W,XDEPTH,V1W_MSQ,V1WM100,V2W_MSQ,V2WM100,V4W_MSQ,V4WM100,C1TM100,C1WM100,C2TM100,C2WM100,C4TM100,C4WM100,FLOWSITE))
+Final2sub=subset(Final2,select=c(SITE_ID,XBKF_H,W1_HAG, W1H_CROP,W1H_WALL,PROJECT,XC,XM,XG,XSLOPE,XSLOPE_FIELD,XSLOPE_FRDATA,XSLOPE_FRREF,XSLOPE_MAP,XWD_RAT,XWIDTH,XWXD,XBKF_W,XDEPTH,V1W_MSQ,V1WM100,V2W_MSQ,V2WM100,V4W_MSQ,V4WM100,C1TM100,C1WM100,C2TM100,C2WM100,C4TM100,C4WM100,FLOWSITE))
 combined2=join(combined,Final2sub,by='SITE_ID', type="left",match="all")
 
 combined3=read.csv('trialreferencedata.csv')

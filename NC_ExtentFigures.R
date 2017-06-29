@@ -22,6 +22,7 @@
 #Global Figure parameters#
 axissize=2#cex
 GFPcol=c('firebrick','gold','lightgreen')#c('red','yellow','green')#fix to be global (category can be fed into to only generate relevant colors), needs to be in this order for current code to color good, fair, poor correctly
+results.cat=read.csv('\\\\share1.bluezone.usu.edu\\miller\\buglab\\Research Projects\\AIM\\Projects\\Idaho\\Statewide\\Analysis\\Weights_ExtentEstimates\\ExtentEstimates_Idaho_14June2017.csv')
 
 ##################  NorCal Specific Code: Start ##################
 # Redo on 20 Oct 2015
@@ -33,7 +34,7 @@ results.cat=read.csv('\\\\share1.bluezone.usu.edu\\miller\\buglab\\Research Proj
 GFPcol=c('dimgray','firebrick','steelblue4')
 #GFPcol=c('snow3','firebrick1','steelblue3')
 #Grayscale colors
-GFPcol=c('gray86','gray33','gray66')
+#GFPcol=c('gray86','gray33','gray66')
 CatOrd = c('Fair','Poor','Good')
 axissize=2#cex
 #So that I could still speak to total # of sampled stream km, but remove 3 sites from the MMI results I created a fake condition class as "N"
@@ -81,7 +82,7 @@ for (s in 1:length(SubpopTypes)){#Temporary! only all and district - length(Subp
                      xlab=ScaleTYPE,
                      names.arg= BarDataPoor$names,horiz=T,
 #To use gray instead of a rainbow color just comment out the next line
-                     col=BarDataPoor$color,
+                     #col=BarDataPoor$color,
                      las=1) #Temporary! make color global and assign specfically to variables
     #title(sprintf('Extent Poor\n%s: %s',SubpopTypes[[s]],SubpopStrata[[t]])
           #,cex=.1) # can comment this out to make it disappear from poor extent figures
@@ -169,16 +170,30 @@ colnames(samplesUSEDprep)[which(names(samplesUSEDprep) == "SITE_ID")] = "siteID"
 sitesUSEDprep=sitesUSEDprep[sitesUSEDprep$wgt>0,]
 
 sitesUSEDprep=join(sitesUSEDprep,subpopCON,by='siteID')#JC added
-#ecoregions
-sitesUSEDprep$stratum=sitesUSEDprep$Strata
-districts=c('MT_NROCK','MT_PNW','MT_SROCK','Other','XE_EPLAT','XE_NORTH','XE_SOUTH')
-#climate
-sitesUSEDprep$stratum=sitesUSEDprep$Climate
-districts=c('Mountains','Xeric','Plains')
-#westwide
-sitesUSEDprep$stratum=sitesUSEDprep$Westwide
-districts=c('Westwide')
 
+#AIM 2016 code
+#ReportingUnit3
+sitesUSEDprep$stratum=sitesUSEDprep$ReportingUnit3
+districts=c('MT_NROCK','MT_PNW','MT_SROCK','Other','XE_EPLAT','XE_NORTH','XE_SOUTH')
+#ReportingUnit2
+sitesUSEDprep$stratum=sitesUSEDprep$ReportingUnit2
+districts=c('Mountains','Xeric','Plains')
+#ReportingUnit1
+sitesUSEDprep$stratum=sitesUSEDprep$ReportingUnit1
+districts=c('IdahoStatewide')
+
+
+##WRSA code
+# #ecoregions
+# sitesUSEDprep$stratum=sitesUSEDprep$Strata
+# districts=c('MT_NROCK','MT_PNW','MT_SROCK','Other','XE_EPLAT','XE_NORTH','XE_SOUTH')
+# #climate
+# sitesUSEDprep$stratum=sitesUSEDprep$Climate
+# districts=c('Mountains','Xeric','Plains')
+# #westwide
+# sitesUSEDprep$stratum=sitesUSEDprep$Westwide
+# districts=c('Westwide')
+# 
 
 ###These need to be run individually. EX: Run code for allotment strata then run the RR figures code. THEN run the next code for all field offices, and then the RR figures. 
 ###Cannot be run all at once because it uses the same column "stratum" 
@@ -250,6 +265,7 @@ for (r in 1:length(responseVAR)){
         PoorSTRESSORonly=results.relrisk$CellProportions[[2,1]]
         percentVALUES=c(GoodMATCH,PoorMATCH, PoorRESPONSEonly,PoorSTRESSORonly)
         colorVALUES=c('green','red','yellow','orange') #setup like FGD (control BW vs. color globally)
+        
         png(sprintf('%s_%s_%s.png',responseVAR[[r]],stressorsVAR[[v]],RelRiskSuffix),width=800,height=600)
         par(mar = c(1.5, 1,3 ,1 ),cex=axissize)
         #modelled after: RelRisk Pie: http://www.epa.gov/nheerl/arm/orpages/strmorchembiol.htm
@@ -257,7 +273,7 @@ for (r in 1:length(responseVAR)){
             labels=sprintf('%s%s', round(100*percentVALUES,2),'%')
             , main=sprintf('%s : %s\n%s\nRelRisk: %s',responseVAR[[r]],stressorsVAR[[v]],districts[[d]],round(RelRisk,2))
             ,clockwise=T
-            ,col=colorVALUES 
+           ,col=colorVALUES 
         )
         legend(x="bottomright",cex=.5,legend=c('Agreement: Not Impaired','Agreement: Impaired','Response Impaired','Stressor Impaired'),fill=colorVALUES)
         #legend placement is fickle! x=-.5 also works for bottom right and is unrelated to png width
@@ -278,7 +294,8 @@ for (r in 1:length(responseVAR)){
         #modeled after Fig 23 - http://www.epa.gov/owow/streamsurvey/pdf/WSA_Assessment_May2007.pdf
         BarRR=barplot( RelRiskCHART$RelRisk,xlim=c(0,max(RelRiskCHART$UConf)+1),#?should scale be the same between all graphs?
                        names.arg=RelRiskCHART$names,horiz=T,main=sprintf('Relative Risk: %s\n%s',responseVAR[[r]],districts[[d]])
-                       ,col=as.character(RelRiskCHART$color),las=1) #Temporary! make color global and assign specfically to variables
+                       #,col=as.character(RelRiskCHART$color) #comment out this line to get gray bar chart
+                       ,las=1) #Temporary! make color global and assign specfically to variables
         mtext('Relative Risk',side=1,line=2,cex=axissize)#not sure why xlab is not working in barplot
         text(y=BarRR,x=RelRiskCHART$UConf, cex=.5,labels=round(RelRiskCHART$RelRisk,1),pos=4,srt=360,xpd=NA)
         arrows(x0=RelRiskCHART$LConf,x1=RelRiskCHART$UConf,length=.1,y0=BarRR,angle=90,code=3)#use Conf or StErr? why are upper limits so much higher?
@@ -287,6 +304,32 @@ for (r in 1:length(responseVAR)){
         graphics.off()
       }
     }}}
+
+###-----------------------boxplots---------------------------------------------------------###
+library(ggplot2)
+png(file="turbidityplot.png",width=1200,height=800,res=400,pointsize=4)
+#png(file="OilGasplot2.png",width=1200,height=800,res=400,pointsize=4)
+#par(mfrow=c(2,2),oma=c(1,.5,0,0), mar= c(0,4,2,2))
+par(mfrow=c(1,2),oma=c(2,.5,0,0), mar= c(2,5,2,2))
+#par(mfrow=c(1,4),oma=c(2,10,0,10), mar= c(2,10,2,10))
+boxplot(ResponseInfo$OE,xlab='O/E Biological Index',lwd=2, cex.lab=2, cex.axis=2, horizontal=TRUE)
+boxplot(ResponseInfo$PH_CHECK,xlab='pH',lwd=2, cex.lab=2, cex.axis=2, horizontal=TRUE)
+boxplot(ResponseInfo$CONDUCTIVITY_CHECK,xlab='Specific Conductance (uS/cm)',lwd=2, cex.lab=2, cex.axis=2,horizontal=TRUE)
+boxplot(ResponseInfo$NTL_CHECK,xlab='Total Nitrogen (ug/L)',lwd=2, cex.lab=2, cex.axis=2,horizontal=TRUE)
+boxplot(ResponseInfo$PTL_CHECK,xlab='Total Phosphorus (ug/L)',lwd=2, cex.lab=2, cex.axis=2,horizontal=TRUE)
+boxplot(ResponseInfo$allPCT_SAFN2_CHECK,xlab='% Fine Sediment',lwd=2, cex.lab=2, cex.axis=2,horizontal=TRUE)
+boxplot(ResponseInfo$BnkStability_Erosional_CHECK,xlab='% Banks Stable and Covered',lwd=2, cex.lab=2, cex.axis=2,horizontal=TRUE)
+boxplot(ResponseInfo$LINCIS_H_CHECK,xlab='Floodplain Connectivity (unitless)',lwd=2, cex.lab=2, cex.axis=2,horizontal=TRUE)
+boxplot(ResponseInfo$XCDENBK_CHECK,xlab='% Bank Overhead Cover',lwd=2, cex.lab=2, cex.axis=2,horizontal=TRUE)
+boxplot(ResponseInfo$XCMG_CHECK,xlab='Vegetative Complexity (unitless)',lwd=2, cex.lab=2, cex.axis=2,horizontal=TRUE)
+
+
+
+
+
+
+
+
 
 ###-------------------Final Panelled figures (maps + extent + groups)-----------------------###
 #implemented for UTBLM, not adapted for WRSA yet
