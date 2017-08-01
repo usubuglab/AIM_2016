@@ -318,7 +318,7 @@ boxplot(ResponseInfo$CONDUCTIVITY_CHECK,xlab='Specific Conductance (uS/cm)',lwd=
 boxplot(ResponseInfo$NTL_CHECK,xlab='Total Nitrogen (ug/L)',lwd=2, cex.lab=2, cex.axis=2,horizontal=TRUE)
 boxplot(ResponseInfo$PTL_CHECK,xlab='Total Phosphorus (ug/L)',lwd=2, cex.lab=2, cex.axis=2,horizontal=TRUE)
 boxplot(ResponseInfo$allPCT_SAFN2_CHECK,xlab='% Fine Sediment',lwd=2, cex.lab=2, cex.axis=2,horizontal=TRUE)
-boxplot(ResponseInfo$BnkStability_Erosional_CHECK,xlab='% Banks Stable and Covered',lwd=2, cex.lab=2, cex.axis=2,horizontal=TRUE)
+boxplot(ResponseInfo$BnkCover_StabErosional_CHECK,xlab='% Banks Stable and Covered',lwd=2, cex.lab=2, cex.axis=2,horizontal=TRUE)
 boxplot(ResponseInfo$LINCIS_H_CHECK,xlab='Floodplain Connectivity (unitless)',lwd=2, cex.lab=2, cex.axis=2,horizontal=TRUE)
 boxplot(ResponseInfo$XCDENBK_CHECK,xlab='% Bank Overhead Cover',lwd=2, cex.lab=2, cex.axis=2,horizontal=TRUE)
 boxplot(ResponseInfo$XCMG_CHECK,xlab='Vegetative Complexity (unitless)',lwd=2, cex.lab=2, cex.axis=2,horizontal=TRUE)
