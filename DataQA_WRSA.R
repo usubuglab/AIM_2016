@@ -448,7 +448,7 @@ listsites=tblRetrieve(Parameters=c('SITE_ID','DATE_COL','LOC_NAME','LAT_DD','LON
 listsites=cast(listsites,'UID~PARAMETER',value='RESULT')
 
 #Check all Z_DISTANCEFROMX to verify within 250 or 500m or allowable distance to be slid
-SlideIssues=subset(listsites,as.numeric(Z_DISTANCEFROMX)>0.25)# not working because of "?"
+SlideIssues=subset(listsites,as.numeric(Z_DISTANCEFROMX)>250)# not working because of "?"
 write.csv(SlideIssues,'SlideIssues.csv')
 
 #Check for merged sites
@@ -467,7 +467,8 @@ write.csv(listsites,'postseason_site_coordinates.csv')
 
 #get other useful information associated with sites
 #eventually read in design table from SQL but for now the table should be read in from the path below to compare original coordinates with those that were collected
-designs=read.csv('\\\\share1.bluezone.usu.edu\\miller\\buglab\\Research Projects\\AIM\\AIM_DataManagement\\ProjectMngtSystem\\design_table2.csv')
+#designs=read.csv('\\\\share1.bluezone.usu.edu\\miller\\buglab\\Research Projects\\AIM\\AIM_DataManagement\\ProjectMngtSystem\\design_table2.csv')
+designs=read.csv('\\\\share1.bluezone.usu.edu\\miller\\buglab\\Research Projects\\AIM\\Design\\DesignDatabase\\design_coordinates_QC_Rinput.csv')
 postseasonmetadata=join(listsites,designs, by="SITE_ID", type="left")
 #get ecoregional and stream size info for context for values
 #designmetadata=read.csv('\\\\share1.bluezone.usu.edu\\miller\\buglab\\Research Projects\\AIM\\GRTS_CodeGuidance\\MasterSample\\MasterSampleDraws\\Aquatic\\LoticMasterSample\\Attributed\\LoticMasterSampleAttributedPtsWithHybridEcoregions.csv')
@@ -768,8 +769,12 @@ IndividualSlope=tblRetrieve(Parameters=c('SLOPE','STARTHEIGHT','ENDHEIGHT'),Proj
 pvtIndividualSlope=addKEYS(cast(IndividualSlope,'UID+TRANSECT~PARAMETER',value='RESULT', fun=sum),c('SITE_ID','CREW_LEADER'))#note Transect=Pass
 #pvtIndividualSlope=addKEYS(cast(IndividualSlope,'UID+TRANSECT+POINT~PARAMETER',value='RESULT'),c('SITE_ID','CREW_LEADER'))#note Transect=Pass
 #still need to check a site with 3 passes to make sure Reid averaged slope properly
+write.csv(pvtSlope,'pvtSlope.csv')
+write.csv(SlopeCheck,'SlopeCheck.csv')
+write.csv(SlopeCheck1,'SlopeCheck1.csv')
+write.csv(SlopeCheck2,'SlopeCheck2.csv')
+write.csv(NOT10PER,'NOT10PER.csv')
 
-                 
 #########  pools   ################                                           
 #getting all pool data for a specfic set of sites---not collecting one of the parameters below anymore
 pools<-addKEYS(tblRetrieve(Parameters=c('HABTYPE','FORMATION','PTAILDEP','MAXDEPTH','LENGTH'),Projects=projects,Years=years,Protocols=protocols,SiteCodes=sitecodes, Comments='Y'),c('SITE_ID'))
