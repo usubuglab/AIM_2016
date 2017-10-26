@@ -322,6 +322,7 @@ boxplot(ResponseInfo$BnkCover_StabErosional_CHECK,xlab='% Banks Stable and Cover
 boxplot(ResponseInfo$LINCIS_H_CHECK,xlab='Floodplain Connectivity (unitless)',lwd=2, cex.lab=2, cex.axis=2,horizontal=TRUE)
 boxplot(ResponseInfo$XCDENBK_CHECK,xlab='% Bank Overhead Cover',lwd=2, cex.lab=2, cex.axis=2,horizontal=TRUE)
 boxplot(ResponseInfo$XCMG_CHECK,xlab='Vegetative Complexity (unitless)',lwd=2, cex.lab=2, cex.axis=2,horizontal=TRUE)
+boxplot(ResponseInfo$XFC_NAT_CHECK,xlab='Instream Habitat Complexity (unitless)',lwd=2, cex.lab=2, cex.axis=2,horizontal=TRUE)
 
 
 
