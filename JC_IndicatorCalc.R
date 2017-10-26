@@ -41,14 +41,17 @@ library(plyr)
 ##### Site Descriptors #####
 ########################################################################################
 listsites=tblRetrieve(Parameters=c('SITE_ID','DATE_COL','LOC_NAME','LAT_DD','LON_DD','PROJECT','PROTOCOL','VALXSITE','LAT_DD_BR','LAT_DD_TR','LON_DD_BR','LON_DD_TR','DEWATER','BEAVER_FLOW_MOD','BEAVER_SIGN'),Projects=projects,Years=years,Protocols=protocols,SiteCodes=sitecodes)
-#listsites=setNames(cast(listsites,'UID~PARAMETER',value='RESULT'),c("UID","DATE_COL_CHECK","LAT_DD_CHECK","LAT_DD_BR_CHECK","LAT_DD_TR_CHECK","LON_DD_CHECK","LON_DD_BR_CHECK","LON_DD_TR_CHECK","PROJECT_CHECK","PROTOCOL_CHECK","SITE_ID_CHECK",'VALXSITE_CHECK'))
-#don't run the last 2 lines for 2016 data because different # of columns...LOC_NAME not in 2016 data...should I join it back in?
-listsites=setNames(cast(listsites,'UID~PARAMETER',value='RESULT'),c("UID","BEAVER_FLOW_MOD_CHECK","BEAVER_SIGN_CHECK","DATE_COL_CHECK","LAT_DD_CHECK","LAT_DD_BR_CHECK","LAT_DD_TR_CHECK","LOC_NAME_CHECK","LON_DD_CHECK","LON_DD_BR_CHECK","LON_DD_TR_CHECK","PROJECT_CHECK","PROTOCOL_CHECK","SITE_ID_CHECK",'VALXSITE_CHECK'))
-#any data with 2016
+#2017
 listsites=setNames(cast(listsites,'UID~PARAMETER',value='RESULT'),c("UID","BEAVER_FLOW_MOD_CHECK","BEAVER_SIGN_CHECK","DATE_COL_CHECK","WATER_WITHDRAWAL_CHECK","LAT_DD_CHECK","LAT_DD_BR_CHECK","LAT_DD_TR_CHECK","LOC_NAME_CHECK","LON_DD_CHECK","LON_DD_BR_CHECK","LON_DD_TR_CHECK","PROJECT_CHECK","PROTOCOL_CHECK","SITE_ID_CHECK",'VALXSITE_CHECK'))
-listsites$PROTOCOL2_CHECK=ifelse(listsites$PROTOCOL=="BOAT14"|listsites$PROTOCOL=="BOAT2016","BOATABLE","WADEABLE")
-#listsites=listsites[,c(1,12,6,2,3,7,10,13,11,5,9,4,8)]
-#run list sites and TRCHLEN below to get sinuosity data
+listsites=listsites[,c(15,9,1,4,6,10,13,14,16,7,11,8,12,2,3,5)]
+# #listsites=setNames(cast(listsites,'UID~PARAMETER',value='RESULT'),c("UID","DATE_COL_CHECK","LAT_DD_CHECK","LAT_DD_BR_CHECK","LAT_DD_TR_CHECK","LON_DD_CHECK","LON_DD_BR_CHECK","LON_DD_TR_CHECK","PROJECT_CHECK","PROTOCOL_CHECK","SITE_ID_CHECK",'VALXSITE_CHECK'))
+# #don't run the last 2 lines for 2016 data because different # of columns...LOC_NAME not in 2016 data...should I join it back in?
+# listsites=setNames(cast(listsites,'UID~PARAMETER',value='RESULT'),c("UID","BEAVER_FLOW_MOD_CHECK","BEAVER_SIGN_CHECK","DATE_COL_CHECK","LAT_DD_CHECK","LAT_DD_BR_CHECK","LAT_DD_TR_CHECK","LOC_NAME_CHECK","LON_DD_CHECK","LON_DD_BR_CHECK","LON_DD_TR_CHECK","PROJECT_CHECK","PROTOCOL_CHECK","SITE_ID_CHECK",'VALXSITE_CHECK'))
+# #any data with 2016
+# listsites=setNames(cast(listsites,'UID~PARAMETER',value='RESULT'),c("UID","BEAVER_FLOW_MOD_CHECK","BEAVER_SIGN_CHECK","DATE_COL_CHECK","WATER_WITHDRAWAL_CHECK","LAT_DD_CHECK","LAT_DD_BR_CHECK","LAT_DD_TR_CHECK","LOC_NAME_CHECK","LON_DD_CHECK","LON_DD_BR_CHECK","LON_DD_TR_CHECK","PROJECT_CHECK","PROTOCOL_CHECK","SITE_ID_CHECK",'VALXSITE_CHECK'))
+# listsites$PROTOCOL2_CHECK=ifelse(listsites$PROTOCOL=="BOAT14"|listsites$PROTOCOL=="BOAT2016","BOATABLE","WADEABLE")
+# #listsites=listsites[,c(1,12,6,2,3,7,10,13,11,5,9,4,8)]
+# #run list sites and TRCHLEN below to get sinuosity data
 TRCHLEN=tblRetrieve(Parameters=c('TRCHLEN','INCREMENT'),Projects=projects,Years=years,Protocols=protocols,SiteCodes=sitecodes)#not using TRCHLEN
 
 
@@ -186,11 +189,14 @@ BankWid=tblRetrieve(Parameters=c('BANKWID'),Projects=projects, Years=years,Proto
 FloodWidth=tblRetrieve(Parameters=c('FLOODWID'), Projects=projects, Years=years,Protocols=protocols,SiteCode=sitecodes)
 
 #Slope
-Slope_height=tblRetrieve(Parameters=c('SLOPE'), Projects=projects, Years=c('2013','2014','2015'),Protocols=protocols,SiteCodes=sitecodes)
-SlpReachLen=tblRetrieve(Parameters=c('SLPRCHLEN'), Projects=projects, Years=c('2013','2014','2015'),Protocols=protocols,SiteCodes=sitecodes)
-#Slope_heightpvt=cast(Slope_height,'UID+TRANSECT+POINT~PARAMETER',value='RESULT')
-#SlpReachLenpvt=cast(SlpReachLen,'UID+TRANSECT+POINT~PARAMETER',value='RESULT')
-Slope=tblRetrieve(Parameters=c('AVGSLOPE','SLPRCHLEN','PCT_GRADE'),Projects=projects, Years=c('2016'),Protocols=protocols,SiteCodes=sitecodes)                 
+#2017
+Slope=tblRetrieve(Parameters=c('AVGSLOPE','SLPRCHLEN','PCT_GRADE'),Projects=projects,Protocols=protocols,SiteCodes=sitecodes)                 
+
+# Slope_height=tblRetrieve(Parameters=c('SLOPE'), Projects=projects, Years=c('2013','2014','2015'),Protocols=protocols,SiteCodes=sitecodes)
+# SlpReachLen=tblRetrieve(Parameters=c('SLPRCHLEN'), Projects=projects, Years=c('2013','2014','2015'),Protocols=protocols,SiteCodes=sitecodes)
+# #Slope_heightpvt=cast(Slope_height,'UID+TRANSECT+POINT~PARAMETER',value='RESULT')
+# #SlpReachLenpvt=cast(SlpReachLen,'UID+TRANSECT+POINT~PARAMETER',value='RESULT')
+# Slope=tblRetrieve(Parameters=c('AVGSLOPE','SLPRCHLEN','PCT_GRADE'),Projects=projects, Years=c('2016'),Protocols=protocols,SiteCodes=sitecodes)                 
 
 #run site descriptors for sinuosity data
 
@@ -269,30 +275,30 @@ XCMG_new=setNames(cast(RipXCMG,'UID+TRANSECT+POINT~ACTIVE', value='ResultsPer',f
 XCMG_new1=setNames(aggregate(VALUE~UID,data=XCMG_new,FUN=mean),list("UID","XCMG_CHECK"))
 XCMG_new1$XCMG_CHECK=round(XCMG_new1$XCMG_CHECK,digits=2)
 #sample sizes
-nXCMG_new=setNames(count(RipXCMG,"UID"),c("UID","nXCMG_CHECK"))#6 strata *2 banks*11 transects=132 so half data = 6*2* 5 transects=60
+nXCMG_new=setNames(count(RipXCMG,"UID"),c("UID","nXCMG_CHECK"))#6 strata(canopy-big trees, small trees,understory- woody, nonwoody,groundcove- woody, nonwoody) *2 banks*11 transects=132 so half data = 6*2* 5 transects=60
 XCMG_new1=merge(nXCMG_new,XCMG_new1, by="UID")
 XCMG_new1$XCMG_CHECK=ifelse(XCMG_new1$nXCMG_CHECK<60,NA,XCMG_new1$XCMG_CHECK)#5 sites 3 WRSA 54-60
 
 
 ######## other EPA veg complexity variations ###########
-#RipGB
-RipGB$ResultsPer=ifelse(RipGB$RESULT == 1, 0.05,ifelse(RipGB$RESULT == 2, 0.25,ifelse(RipGB$RESULT == 3, 0.575,ifelse(RipGB$RESULT == 4, 0.875,ifelse(RipGB$RESULT ==0, 0, NA)))))
-XGB_new=setNames(cast(RipGB,'UID+TRANSECT+POINT~ACTIVE', value='ResultsPer',fun='sum'),list('UID',  'TRANSECT',  'POINT',  'VALUE'))
-XGB_new1=setNames(aggregate(VALUE~UID,data=XGB_new,FUN=mean),list("UID","XGB_CHECK"))
-
-#xcmgw
-#xcmgw=XC+XMW+XGW: However, this is not how aquamet is calculating it, the order of operation would give different results if XC was caluclated and then added to XMW and XMG
-#More true to aquamet calculation: XCMG=XCL+XCS+XMW+XGW 
-#Need to just calculate it by transect side first then average at an entire site. 
-##XC=XCL+XCS (Small Canopy trees (CANSTRE) + Large Canopy trees(CANBTRE))  
-##XMW=Understory woody aka UNDWDY
-##MGW= ground cover woody GCWDY
-RipWW$ResultsPer=ifelse(RipWW$RESULT == 1, 0.05,ifelse(RipWW$RESULT == 2, 0.25,ifelse(RipWW$RESULT == 3, 0.575,ifelse(RipWW$RESULT == 4, 0.875,ifelse(RipWW$RESULT ==0, 0, NA)))))
-XCMGW_new=setNames(cast(RipWW,'UID+TRANSECT+POINT~ACTIVE', value='ResultsPer',fun='sum'),list('UID',  'TRANSECT',  'POINT',  'VALUE'))
-XCMGW_new1=setNames(aggregate(VALUE~UID,data=XCMGW_new,FUN=mean),list("UID","XCMGW_CHECK"))
-
-#L_XCMGW
-XCMGW_new1$L_XCMGW_CHECK=log10(XCMGW_new1$XCMGW_CHECK)
+# #RipGB
+# RipGB$ResultsPer=ifelse(RipGB$RESULT == 1, 0.05,ifelse(RipGB$RESULT == 2, 0.25,ifelse(RipGB$RESULT == 3, 0.575,ifelse(RipGB$RESULT == 4, 0.875,ifelse(RipGB$RESULT ==0, 0, NA)))))
+# XGB_new=setNames(cast(RipGB,'UID+TRANSECT+POINT~ACTIVE', value='ResultsPer',fun='sum'),list('UID',  'TRANSECT',  'POINT',  'VALUE'))
+# XGB_new1=setNames(aggregate(VALUE~UID,data=XGB_new,FUN=mean),list("UID","XGB_CHECK"))
+# 
+# #xcmgw
+# #xcmgw=XC+XMW+XGW: However, this is not how aquamet is calculating it, the order of operation would give different results if XC was caluclated and then added to XMW and XMG
+# #More true to aquamet calculation: XCMG=XCL+XCS+XMW+XGW 
+# #Need to just calculate it by transect side first then average at an entire site. 
+# ##XC=XCL+XCS (Small Canopy trees (CANSTRE) + Large Canopy trees(CANBTRE))  
+# ##XMW=Understory woody aka UNDWDY
+# ##MGW= ground cover woody GCWDY
+# RipWW$ResultsPer=ifelse(RipWW$RESULT == 1, 0.05,ifelse(RipWW$RESULT == 2, 0.25,ifelse(RipWW$RESULT == 3, 0.575,ifelse(RipWW$RESULT == 4, 0.875,ifelse(RipWW$RESULT ==0, 0, NA)))))
+# XCMGW_new=setNames(cast(RipWW,'UID+TRANSECT+POINT~ACTIVE', value='ResultsPer',fun='sum'),list('UID',  'TRANSECT',  'POINT',  'VALUE'))
+# XCMGW_new1=setNames(aggregate(VALUE~UID,data=XCMGW_new,FUN=mean),list("UID","XCMGW_CHECK"))
+# 
+# #L_XCMGW
+# XCMGW_new1$L_XCMGW_CHECK=log10(XCMGW_new1$XCMGW_CHECK)
 #########################################################
 
 ##BLM riparian cover and frequency##
@@ -934,8 +940,8 @@ Slope_Per=setNames(Slope_Per,c("UID","AVGSLOPE_CHECK","SLPRCHLEN_CHECK","PCT_GRA
 Slope_Per1=cast(Slope,'UID~PARAMETER',value='RESULT')                
 Slope_Per1$PCT_GRADE=round(as.numeric(Slope_Per1$PCT_GRADE),digits=2)
 Slope_Per1=setNames(Slope_Per1,c("UID","AVGSLOPE_CHECK","PCT_GRADE_CHECK","SLPRCHLEN_CHECK"))
-Slope_Per=rbind(Slope_Per,Slope_Per1)
-
+#Slope_Per=rbind(Slope_Per,Slope_Per1)
+Slope_Per=Slope_Per1
 ##########################################################
 
 #                Channel Dimensions                     #
@@ -996,7 +1002,7 @@ avgFloodWidth$ENTRENCH_CHECK=ifelse(avgFloodWidth$ENTRENCH_CHECK<1,1,ifelse(avgF
 #Data from site descriptors 
 listsites$straightline=acos(sin(as.numeric(listsites$LAT_DD_BR_CHECK)*3.141593/180)*sin(as.numeric(listsites$LAT_DD_TR_CHECK)*3.141593/180) + cos(as.numeric(listsites$LAT_DD_BR_CHECK)*3.141593/180)*cos(as.numeric(listsites$LAT_DD_TR_CHECK)*3.141593/180)*cos(as.numeric(listsites$LON_DD_TR_CHECK)*3.141593/180-as.numeric(listsites$LON_DD_BR_CHECK)*3.141593/180)) * 6371000
 TRCHLEN=setNames(cast(TRCHLEN,'UID~PARAMETER',value='RESULT'),c('UID','INCREMENT','TRCHLEN_CHECK'))
-listsites=merge(TRCHLEN,listsites, by='UID', all=T)
+listsites=merge(listsites,TRCHLEN, by='UID', all=T)
 listsites$SINUOSITY_CHECK=round(as.numeric(listsites$TRCHLEN_CHECK)/as.numeric(listsites$straightline),digits=2)
 listsites$SINUOSITY_CHECK=ifelse(listsites$SINUOSITY_CHECK<1,NA,listsites$SINUOSITY_CHECK)
 #still need to remove data from partial sites
@@ -1066,8 +1072,8 @@ QR1$QR1_CHECK=(QR1$QRveg1*QR1$QRVeg2*QR1$QRDIST1)^0.333
 IndicatorCheckJoin=join_all(list(listsites,WQfinal,BnkErosional,BnkAll,fishpvt2,DensPvt,BnkDensPvt,XCMG_new1,IncBnk,BankWidFinal,WetWidFinal,XEMBED,PCT_SAFN_ALL,MeanAngle,Slope_Per,Thalweg,Pools,LWD),by="UID")
 IndicatorCheckJoin=join_all(list(listsites,WQfinal,BnkErosional,BnkAll,DensPvt,BnkDensPvt,XCMG_new1,IncBnk,BankWidFinal,WetWidFinal,PCT_SAFN_ALL,MeanAngle,Thalweg,Pools,LWD,avgFloodWidth),by="UID")
 IndicatorCheckJoin=join_all(list(listsites,BnkErosional,BnkAll,fishpvt2,DensPvt,BnkDensPvt,XCMG_new1,IncBnk,BankWidFinal,WetWidFinal,XEMBED,PCT_SAFN_ALL,MeanAngle,Slope_Per,Thalweg,LWD),by="UID")
-#2016
-IndicatorCheckJoin=join_all(list(listsites,WQfinal,BnkErosional,BnkAll,fishpvt2,meanBankStabCoverClass,DensPvt,BnkDensPvt,RIP_VEG, FQCY_VEG,XCMG_new1,IncBnk,BankWidFinal,WetWidFinal,ALLSED,MeanAngle,Thalweg,PctDry,Pools,FinalpvtPoolFines,LWD, avgFloodWidth,Slope_Per),by="UID")
+#2016,2017
+IndicatorCheckJoin=join_all(list(listsites,DensPvt,BnkDensPvt,XCMG_new1, RIP_VEG,FQCY_VEG,WQfinal,Pools,LWD,ALLSED,FinalpvtPoolFines,BnkErosional,BnkAll,meanBankStabCoverClass,IncBnk,fishpvt2,MeanAngle,Thalweg,PctDry,BankWidFinal,WetWidFinal,avgFloodWidth,Slope_Per),by="UID")
 #2013,2014,2015
 IndicatorCheckJoin=join_all(list(listsites,WQfinal,BnkErosional,BnkAll,fishpvt2,DensPvt,BnkDensPvt,XCMG_new1,IncBnk,BankWidFinal,WetWidFinal,ALLSED,MeanAngle,Thalweg,PctDry,Pools,FinalpvtPoolFines,LWD,Slope_Per),by="UID")
 IndicatorCheckJoin=join_all(list(listsites,WQfinal,BnkErosional,BnkAll,fishpvt2,DensPvt,BnkDensPvt,XCMG_new1,IncBnk,BankWidFinal,WetWidFinal,ALLSED,MeanAngle,Thalweg,PctDry,Pools,LWD,Slope_Per),by="UID")
@@ -1080,7 +1086,7 @@ IndicatorCheck=IndicatorCheckJoin[,c("UID",grep("CHECK$", colnames(IndicatorChec
 #write.csv(IndicatorCheck,"C:\\Users\\Nicole\\Desktop\\IndicatorCheck2.csv")
 #Remove all other data files as they are no longer needed
 #IndicatorCheck=subset(IndicatorCheck,PROTOCOL_CHECK=="BOAT14")
-write.csv(IndicatorCheck,"IndicatorCheckGrandStaircase_18April2017.csv")
+write.csv(IndicatorCheck,"IndicatorCheck7Sept2017.csv")
 rm(PHfinal,XGB_new,XGB_new1,BankStab,Banks,RipGB,EMBED,Human_Influ,W1_HALL,W1_HALL_NRSA,QR1,XEMBED,BnkDensPvt,BnkDensiom,densiom,RipXCMG,XCMG_new,XCMG_new1,RipWW,XCMGW_new,XCMGW_new1,IndicatorCheckJoin,fish,fishpvt2,
    MidDensiom,DensPvt,Incision,INCISED,BANKHT,Inc,Bnk,xIncht,xBnkht,IncBnk,Sediment,pctsafn,Sed2014,A_Sed2014,C_Sed2014,E_Sed2014,F_Sed2014,PCT_SAFN_ALL)
 
