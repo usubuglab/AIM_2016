@@ -164,6 +164,7 @@ ResponseInfo=read.csv('Z:\\buglab\\Research Projects\\AIM\\Projects\\Utah\\GSENM
 #ResponseInfo=read.csv('Z:\\buglab\\Research Projects\\BLM_WRSA_Stream_Surveys\\Results and Reports\\AIM_2011_2015_results\\IndicatorsCond_29April2016.csv')
 #ResponseInfo=read.csv('Z:\\buglab\\Research Projects\\BLM_WRSA_Stream_Surveys\\Results and Reports\\AIM_2011_2015_results\\IndicatorsCond_revised_wq_bugs_thresh_example.csv')
 
+ResponseInfo$OEtrg=ifelse(ResponseInfo$COUNT<200,NA,ResponseInfo$OErtg)
 ##exclude QC sites---dont need to worry about it because it is filtered
 #ResponseInfo=subset(ResponseInfo,UID!=12457& UID!=12422& UID!=	12714& UID!=	13550& UID!=	11787& UID!=	13527& UID!=	9779832504& UID!=	13518& UID!=	13539& UID!=	8497901114& UID!=	2772740176& UID!=	3833994365& UID!=	7194282454& UID!=	9846034316& UID!=	7977571143& UID!=	4943503766& UID!=	6152206654& UID!=	6964535047& UID!=	7746712455& UID!=	2956707014& UID!=	4324237804& UID!=	4197418344& UID!=	8537408400& UID!=	4116634326& UID!=	2109978745)
 ResponseInfo=IndicatorsCond
@@ -267,7 +268,7 @@ stressorsVAR=setdiff(stressorsVAR,omitVAR)
 #AIM 2016
 OE_TNname='Total Nitrogen';OE_TPname='Total Phosphorus';OE_ECname='Specific Conductance';PH_CHECKname='pH';
 BnkCover_StabErosionalname='Bank Stability and Cover';allPCT_SAFN2name='% Fine Sediment';XCMGname='Vegetative Complexity';XCDENBKname='% Bank Overhead Cover';
-XFC_NATname='Instream Complexity';LINCIS_Hname='Floodplain Connectivity';
+XFC_NATname='Instream Habitat Complexity';LINCIS_Hname='Floodplain Connectivity';
 XEMBEDname='Embeddedness';OEname='Biological Condition'; INVASIVE_MACROname='Benthic Invasives'
 OE_less100name='OE_less100'; OE_50_100name='OE_50_100'
 
@@ -316,7 +317,7 @@ results.cat <- cat.analysis(sites = sitesCON,
 ParameterSampleSizes=subset(results.cat,subset=Subpopulation=='IdahoStatewide' & Category=='Total');print(ParameterSampleSizes)#samplesize is NResp
 #ParameterSampleSizes=subset(results.cat,subset=Subpopulation=='Westwide' & Category=='Total');print(ParameterSampleSizes)#samplesize is NResp
 
-write.csv(results.cat,'ExtentEstimates_Idaho_14June2017.csv');View(results.cat)
+write.csv(results.cat,'ExtentEstimates_GSENM_17Oct2017_withoutlowcounts.csv');View(results.cat)
 
 #old code to force popsize scaling; Tony doesn't typically recommend using and was more necessary for UTBLM segments (not KM)
 #popsizeCON=list("Utah"=c("C"=1600,"G"=1100,"W"=400,"Y"=900),"Districts"=list("C"=c("C"=1600),"G"=c("G"=1100),"W"=c("W"=400),"Y"=c("Y"=900)))
