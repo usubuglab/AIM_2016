@@ -20,7 +20,7 @@ listsites=cast(listsites,'UID~PARAMETER',value='RESULT')
 #read in sites from final designations and do a left join to determine if any sampled sites are missing or if sample statuses need to be changed
 #if sites are missing check error logs on server or emails and check last modfied date
 
-#do all sites have correct project?
+#do all sites have correct final designation?
 #check all partial sites by running missing data checks below
 
 ######################################################################################
@@ -173,7 +173,7 @@ if (MissingXwalk==''){
 } else{MissingTotals4=unique(rbind(MissingTotals2,MissingTotals3)  )
 #! need to fix the revisions to MissingTotals4 before this will work
 MissingTotals4=MissingTotals4[,!(names(MissingTotals4) %in% c('POINT'))]
-MissingTotalsOUT= addKEYS(cast(subset(MissingTotals4,is.na(UID)==FALSE ), 'UID + TRANSECT  ~ SAMPLE_TYPE',value='MissingPCT' ),Columns=c('SITE_ID','DATE_COL','Protocol')) 
+MissingTotalsOUT= addKEYS(cast(subset(MissingTotals4,is.na(UID)==FALSE ), 'UID + TRANSECT  ~ SAMPLE_TYPE',value='MissingPCT' ),Columns=c('SITE_ID','DATE_COL','Protocol','Project')) 
 MissingTotalsREACH=subset(MissingTotalsOUT,TRANSECT=='ReachTotal');write.xlsx(MissingTotalsREACH,"MissingDataQCrch_nocom.xlsx")
 MissingTotalsTRAN=subset(MissingTotalsOUT,TRANSECT!='ReachTotal');write.xlsx(MissingTotalsTRAN,"MissingDataQCttran_nocom.xlsx")
 write.xlsx(MissingCounts,"MissingCounts.xlsx")
@@ -444,17 +444,22 @@ for (t in 1:length(QUANTtbls)){
 
 ######## GPS ##########
 #get all coordinates and site metadata
-listsites=tblRetrieve(Parameters=c('SITE_ID','DATE_COL','LOC_NAME','LAT_DD','LON_DD','PROJECT','PROTOCOL','VALXSITE','LAT_DD_BR','LAT_DD_TR','LON_DD_BR','LON_DD_TR','Z_DISTANCEFROMX','TRCHLEN','REPEAT_VISIT','SLIDE_YN'),Projects=projects,Years=years,Protocols=protocols,SiteCodes=sitecodes)
+listsites=tblRetrieve(Parameters=c('SITE_ID','DATE_COL','LOC_NAME','LAT_DD','LON_DD','PROJECT','PROTOCOL','VALXSITE','LAT_DD_BR','LAT_DD_TR','LON_DD_BR','LON_DD_TR','Z_DISTANCEFROMX','TRCHLEN','REPEAT_VISIT','SLIDE_YN','MERGE'),Projects=projects,Years=years,Protocols=protocols,SiteCodes=sitecodes)
 listsites=cast(listsites,'UID~PARAMETER',value='RESULT')
 
-#Check all Z_DISTANCEFROMX to verify within 250 or 500m or allowable distance to be slid
-SlideIssues=subset(listsites,as.numeric(Z_DISTANCEFROMX)>250)# not working because of "?"
-write.csv(SlideIssues,'SlideIssues.csv')
+# #Check all Z_DISTANCEFROMX to verify within 250 or 500m or allowable distance to be slid
+# # this field is not always accurate..so the calculated "CAL_DISTFROMX" field should be used below...THis field is writen out in the coordinateQC file
+# SlideIssues=subset(listsites,as.numeric(Z_DISTANCEFROMX)>250)# not working because of "?"
+# write.csv(SlideIssues,'SlideIssues.csv')
 
 #Check for merged sites
-Merge=subset(listsites,REPEAT_VISIT!='N')
+Merge=subset(listsites,MERGE!='N')
 write.csv(Merge,'Merge.csv')
 #look at FieldTracking or ScoutTracking spreadsheets on the google drive and fill in as needed
+
+#Pull QC sites
+RepeatVisits=subset(listsites,REPEAT_VISIT!='N')
+write.csv(RepeatVisits,'QC_sites.csv')
 
 #Check that the straight-line distance between BR and TR does not exceed the total reach length (i.e. sinuosity <1 should never happen)
 listsites$straightline=acos(sin(as.numeric(listsites$LAT_DD_BR)*3.141593/180)*sin(as.numeric(listsites$LAT_DD_TR)*3.141593/180) + cos(as.numeric(listsites$LAT_DD_BR)*3.141593/180)*cos(as.numeric(listsites$LAT_DD_TR)*3.141593/180)*cos(as.numeric(listsites$LON_DD_TR)*3.141593/180-as.numeric(listsites$LON_DD_BR)*3.141593/180)) * 6371000
@@ -475,7 +480,7 @@ postseasonmetadata=join(listsites,designs, by="SITE_ID", type="left")
 #postseasonmetadata=join(postseason,designmetadata, by="MS_ID", type="left")
 #eventually need to edit the read in csv above to reflect the sampled coordinates for future sample draws at the end of the season
 postseasonmetadata$CALC_DISTFROMX=acos(sin(as.numeric(postseasonmetadata$LAT_DD)*3.141593/180)*sin(as.numeric(postseasonmetadata$DESIGN_LAT)*3.141593/180) + cos(as.numeric(postseasonmetadata$LAT_DD)*3.141593/180)*cos(as.numeric(postseasonmetadata$DESIGN_LAT)*3.141593/180)*cos(as.numeric(postseasonmetadata$DESIGN_LON)*3.141593/180-as.numeric(postseasonmetadata$LON_DD)*3.141593/180)) * 6371000
-
+write.csv(postseasonmetadata,'coordinateQC.csv')
 
 
 ####### Bugs #########
@@ -491,6 +496,7 @@ AreaCheck3=subset(Bugspvt,(as.numeric(BERW_AREA_SAMP)!=0.093 & BERW_SAMPLER=='KC
 write.csv(AreaCheck1,'AreaCheck1.csv')
 write.csv(AreaCheck2,'AreaCheck2.csv')
 write.csv(AreaCheck3,'AreaCheck3.csv')
+write.csv(Bugspvt,'Bugspvt.csv')
 
 
 #check to make sure 8 or 11 TRAN_NUM at all sites
@@ -518,7 +524,7 @@ WQ1=cast(WQ2,'UID~PARAMETER',value='RESULT')
 WQind=cast(WQ2,'UID~PARAMETER',value='IND')
 WQ3=addKEYS(merge(WQ1,WQind,by=c('UID'),all=T) ,c('SITE_ID','DATE_COL','CREW_LEADER'))
 WQ3.sub=subset(WQ3,CORRECTED.x!='Y')
-#write.csv(WQ3.sub,'not_temp_corrected_conduct.csv')
+write.csv(WQ3.sub,'not_temp_corrected_conduct.csv')
 
 #Chem check the hours prior to freezing
 WQtbl=tblRetrieve(Parameters=c('NTL','PTL','TN_PRED','TP_PRED','TIME_UNFROZEN'),Projects=projects,Years=years,Protocols=protocols,SiteCodes=sitecodes)
@@ -575,7 +581,7 @@ write.csv(Depths,'Depths.csv')
 Widths=tblRetrieve(Parameters=c('WETWID','BANKWID','TRANDRY'),Years=years, Projects=projects,SiteCodes=sitecodes)                      
 pvtWidths=cast(Widths,'UID+TRANSECT~PARAMETER',value='RESULT')
 Widths=subset(Widths,RESULT==0)# query the corresponding thalweg depths in SQL if present and the VALXSITE to make sure it is INTWADE                      
-write.csv(Widths,'Widths.csv')#something is wrong because this is aggregating things to counts
+write.csv(Widths,'Widths.csv')
 #dry transects
 DryCheck=subset(pvtWidths,(WETWID!=0 & TRANDRY=='Y')|(WETWID==0 & TRANDRY=='N')|(WETWID==0 & is.na(TRANDRY)=='TRUE'))#likely needs tweaking                      
 write.csv(DryCheck,'DryCheck.csv')   
@@ -636,6 +642,7 @@ riparian1PVT=cast(riparian1,'UID+TRANSECT+POINT~PARAMETER',value='RESULT')
 riparian1PVT_IND=cast(riparian1,'UID+TRANSECT+POINT~PARAMETER',value='IND')
 riparian1pvt=merge(riparian1PVT,riparian1PVT_IND,by=c('UID','TRANSECT','POINT'),all=T)
 riparian1PVTsub=subset(riparian1pvt,(CANBTRE.x==4 & CANSTRE.x>2) | (CANSTRE.x==4 & CANBTRE.x>2))
+write.csv(riparian1PVTsub,'rip1.csv')
 
 #middlestory >100% check
 riparian2=tblRetrieve(Parameters=c('UNDNWDY','UNDWDY'),Years=years, Projects=projects,SiteCodes=sitecodes)
@@ -643,6 +650,7 @@ riparian2PVT=cast(riparian2,'UID+TRANSECT+POINT~PARAMETER',value='RESULT')
 riparian2PVT_IND=cast(riparian2,'UID+TRANSECT+POINT~PARAMETER',value='IND')
 riparian2pvt=merge(riparian2PVT,riparian2PVT_IND,by=c('UID','TRANSECT','POINT'),all=T)
 riparian2PVTsub=subset(riparian2pvt,(UNDNWDY.x==4 & UNDWDY.x>2) | (UNDWDY.x==4 & UNDNWDY.x>2))
+write.csv(riparian2PVTsub,'rip2.csv')
 
 #understory >100% check
 riparian3=tblRetrieve(Parameters=c('GCNWDY','GCWDY','BARE'),Years=years, Projects=projects,SiteCodes=sitecodes)
@@ -650,23 +658,30 @@ riparian3PVT=cast(riparian3,'UID+TRANSECT+POINT~PARAMETER',value='RESULT')
 riparian3PVT_IND=cast(riparian3,'UID+TRANSECT+POINT~PARAMETER',value='IND')
 riparian3pvt=merge(riparian3PVT,riparian3PVT_IND,by=c('UID','TRANSECT','POINT'),all=T)
 riparian3PVTsub=subset(riparian3pvt,(GCNWDY.x==4 & GCWDY.x>2) | (GCWDY.x==4 & GCNWDY.x>2) | (GCNWDY.x==4 & BARE.x>2) | (BARE.x==4 & GCNWDY.x>2) | (BARE.x==4 & GCWDY.x>2) | (GCWDY.x==4 & BARE.x>2))
+write.csv(riparian3PVTsub,'rip3.csv')
 
 #veg type missing check
 #canopy
 riparian4=tblRetrieve(Parameters=c('CANVEG','CANBTRE','CANSTRE'),Years=years, Projects=projects,SiteCodes=sitecodes)
 riparian4PVT=cast(riparian4,'UID+TRANSECT+POINT~PARAMETER',value='RESULT')
 riparian4pvtsub=subset(riparian4PVT,CANVEG=='N' & CANBTRE>0 & CANSTRE>0)
+write.csv(riparian4pvtsub,'rip4.csv')
 
 riparian4PVT_IND=cast(riparian4,'UID+TRANSECT+POINT~PARAMETER',value='IND')
 riparian4pvt=merge(riparian4PVT,riparian4PVT_IND,by=c('UID','TRANSECT','POINT'),all=T)
 riparian4pvtsub2=subset(riparian4pvt,CANVEG.x!='N' & CANBTRE.x==0 & CANSTRE.x==0)
+write.csv(riparian4sub2,'rip42.csv')
 
 #middle
 riparian5=tblRetrieve(Parameters=c('UNDERVEG','UNDNWDY','UNDWDY'),Years=years, Projects=projects,SiteCodes=sitecodes)
 riparian5PVT=cast(riparian5,'UID+TRANSECT+POINT~PARAMETER',value='RESULT')
 riparian5pvtsub=subset(riparian5PVT,UNDERVEG=='N' & UNDNWDY>0 & UNDWDY>0)
-                      
-                      
+write.csv(riparian5pvtsub,'rip5.csv')                      
+
+riparian5=tblRetrieve(Parameters=c('UNDERVEG','UNDNWDY','UNDWDY'),Years=years, Projects=projects,SiteCodes=sitecodes)
+riparian5PVT=cast(riparian5,'UID+TRANSECT+POINT~PARAMETER',value='RESULT')
+riparian5pvtsub2=subset(riparian5PVT,UNDERVEG!='N' & UNDNWDY==0 & UNDWDY==0)
+write.csv(riparian5pvtsub2,'rip52.csv') 
                       
 ###### Thalweg   #########
 
@@ -757,23 +772,25 @@ odd_ratio=subset(check,RESULT/(DEPTH)>50|RESULT/(DEPTH)<1)
 #########  slope   ################                    
 Slope=tblRetrieve(Parameters=c('AVGSLOPE','SLPRCHLEN','TRCHLEN','PARTIAL_RCHLEN','POOLRCHLEN','SLOPE_COLLECT','PCT_GRADE','VALXSITE'),Projects=projects, Years=years,Protocols=protocols,SiteCodes=sitecodes)                 
 pvtSlope=addKEYS(cast(Slope,'UID~PARAMETER',value='RESULT'), c('SITE_ID','CREW_LEADER'))                
-SlopeCheck1=subset(pvtSlope,as.numeric(PCT_GRADE)>14|as.numeric(PCT_GRADE)<1)
-SlopeCheck2=subset(pvtSlope,SLOPE_COLLECT=='PARTIAL'|SLOPE_COLLECT=='NO SLOPE')
+SlopeCheck_typicalvalues=subset(pvtSlope,as.numeric(PCT_GRADE)>14|as.numeric(PCT_GRADE)<1)
+SlopeCheck_partialno=subset(pvtSlope,SLOPE_COLLECT=='PARTIAL'|SLOPE_COLLECT=='NO SLOPE')
 Pass=tblRetrieve(Parameters=c('ENDTRAN'),Projects=projects, Years=years,Protocols=protocols,SiteCodes=sitecodes)                 
-SlopeCheck=subset(Pass,TRANSECT>2)# if more than 2 passes need to manually check which ones to average
+SlopeCheck_more2passes=subset(Pass,TRANSECT>2)# if more than 2 passes need to manually check which ones to average
 #avgslope does not get computed in the app if the passes are not within 10%.... for those passes manually average and flag as not within 10%?                
 # sites with pct_grade==0 are not within 10%
 NOT10PER=subset(pvtSlope,PCT_GRADE=='0')
 # for any sites that failed the within 10% check, see idividual passes below
 IndividualSlope=tblRetrieve(Parameters=c('SLOPE','STARTHEIGHT','ENDHEIGHT'),Projects=projects, Years=years,Protocols=protocols,SiteCodes=sitecodes)
-pvtIndividualSlope=addKEYS(cast(IndividualSlope,'UID+TRANSECT~PARAMETER',value='RESULT', fun=sum),c('SITE_ID','CREW_LEADER'))#note Transect=Pass
-#pvtIndividualSlope=addKEYS(cast(IndividualSlope,'UID+TRANSECT+POINT~PARAMETER',value='RESULT'),c('SITE_ID','CREW_LEADER'))#note Transect=Pass
+pvtIndividualSlopeSum=addKEYS(cast(IndividualSlope,'UID+TRANSECT~PARAMETER',value='RESULT', fun=sum),c('SITE_ID','CREW_LEADER'))#note Transect=Pass
+pvtIndividualSlopeRaw=addKEYS(cast(IndividualSlope,'UID+TRANSECT+POINT~PARAMETER',value='RESULT'),c('SITE_ID','CREW_LEADER'))#note Transect=Pass
 #still need to check a site with 3 passes to make sure Reid averaged slope properly
 write.csv(pvtSlope,'pvtSlope.csv')
-write.csv(SlopeCheck,'SlopeCheck.csv')
-write.csv(SlopeCheck1,'SlopeCheck1.csv')
-write.csv(SlopeCheck2,'SlopeCheck2.csv')
+write.csv(SlopeCheck_more2passes,'SlopeCheck_more2passes.csv')
+write.csv(SlopeCheck_typicalvalues,'SlopeCheck_typicalvalues.csv')
+write.csv(SlopeCheck_partialno,'SlopeCheck_partialno.csv')
 write.csv(NOT10PER,'NOT10PER.csv')
+write.csv(pvtIndividualSlopeSum,'pvtIndividualSlopeSum.csv')
+write.csv(pvtIndividualSlopeRaw,'pvtIndividualSlopeRaw.csv')
 
 #########  pools   ################                                           
 #getting all pool data for a specfic set of sites---not collecting one of the parameters below anymore
@@ -795,6 +812,27 @@ reach_length=tblRetrieve(Parameters=c('POOLRCHLEN'),Projects=projects,SiteCodes=
 pvtpools2=cast(reach_length,'UID~PARAMETER',value='RESULT') 
 poolsmerge<-merge(pvtpools1,pvtpools2,by=c('UID'),all=T)
 pool_great_100<-subset(poolsmerge,LENGTH>POOLRCHLEN)
+
+
+#pool tail fines
+PoolFines=tblRetrieve(Parameters=c('POOLFINES2','POOLFINES6','POOLNOMEAS'),Projects=projects, Years=years,Protocols=protocols,SiteCode=sitecodes)
+pvtPoolFines=cast(PoolFines,'UID+TRANSECT+POINT~PARAMETER',value='RESULT')#need to pivot to create the pctPoolFInes variable
+pvtPoolFines$PctPoolFines2_CHECK=pvtPoolFines$POOLFINES2/(50-pvtPoolFines$POOLNOMEAS)*100
+pvtPoolFines$PctPoolFines6_CHECK=pvtPoolFines$POOLFINES6/(50-pvtPoolFines$POOLNOMEAS)*100
+aggpvt1PoolFines=aggregate(PctPoolFines2_CHECK~UID+TRANSECT,data=pvtPoolFines, FUN='mean')#average pool fines at a pool first # note these exclude NAs
+aggpvt2PoolFines=aggregate(PctPoolFines6_CHECK~UID+TRANSECT,data=pvtPoolFines, FUN='mean')#average pool fines at a pool first # note these exclude NAs
+aggpvt3PoolFines=aggregate(PctPoolFines2_CHECK~UID,data=aggpvt1PoolFines, FUN='mean')#average pool fines at a pool first # note these exclude NAs
+aggpvt4PoolFines=aggregate(PctPoolFines6_CHECK~UID,data=aggpvt2PoolFines, FUN='mean')#average pool fines at a pool first # note these exclude NAs
+aggpvt5PoolFines=setNames(aggregate(PctPoolFines2_CHECK~UID,data=aggpvt1PoolFines, FUN='sd'),c("UID","PctPoolFines2SD"))#average pool fines at a pool first # note these exclude NAs
+aggpvt6PoolFines=setNames(aggregate(PctPoolFines6_CHECK~UID,data=aggpvt2PoolFines, FUN='sd'),c("UID","PctPoolFines6SD"))#average pool fines at a pool first # note these exclude NAs
+FinalpvtPoolFines=join_all(list(aggpvt3PoolFines,aggpvt4PoolFines,aggpvt5PoolFines,aggpvt6PoolFines),by=c('UID'))
+#FinalpvtPoolFines=join_all(list(aggpvt3PoolFines,aggpvt5PoolFines),by=c('UID'))
+FinalpvtPoolFines$PctPoolFines2_CHECK=round(FinalpvtPoolFines$PctPoolFines2_CHECK,digits=0)
+FinalpvtPoolFines$PctPoolFines6_CHECK=round(FinalpvtPoolFines$PctPoolFines6_CHECK,digits=0)
+#calc CV for PIBO QC check
+FinalpvtPoolFines$PctPoolFines2CV=FinalpvtPoolFines$PctPoolFines2SD/FinalpvtPoolFines$PctPoolFines2_CHECK#sites with CV >1.414 should be QCed 
+FinalpvtPoolFines$PctPoolFines6CV=FinalpvtPoolFines$PctPoolFines6SD/FinalpvtPoolFines$PctPoolFines6_CHECK#sites with CV >1.414 should be QCed 
+subQC=subset(FinalpvtPoolFines,FinalpvtPoolFines$PctPoolFines6CV>=1.41|FinalpvtPoolFines$PctPoolFines2CV>=1.41)#sites with CV >1.414 should be QCed 
 
 
 #########  photos  ###################
