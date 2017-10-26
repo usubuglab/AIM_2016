@@ -74,6 +74,9 @@
 
 library(aquamet)#need R 2... version, not 3.0 (available on remote desktop)
 
+readEXTERNAL='N'#set to 'Y' to read in EPA or other provided files (i.e. when using remote desktop), otherwise set to 'N' and it will query directly from WRSAdb.SQL based on defaults specified in "DataConsumption_WRSAdb.R"
+writeEXTERNAL='Y'#set to 'Y' to produce csv files of inputs, metrics, and 2nd tier calcs; useful if have to run in other version of R on remote desktop
+
 #Get thalweg, channelgeometry, visits objects with raw thalweg data for input into function metsResidualPools
 #copied from NRSA metrics_SWJ.R this can eventually be paired down to only include data needed for these functions
 files <- c("tblBANKGEOMETRY2", "tblCHANCOV2", "tblCHANDEPTH2",##SWJ: none of these tables are in the 2013 output, can cross walk if given corresponding tables
