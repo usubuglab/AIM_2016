@@ -474,6 +474,7 @@ write.csv(listsites,'postseason_site_coordinates.csv')
 #eventually read in design table from SQL but for now the table should be read in from the path below to compare original coordinates with those that were collected
 #designs=read.csv('\\\\share1.bluezone.usu.edu\\miller\\buglab\\Research Projects\\AIM\\AIM_DataManagement\\ProjectMngtSystem\\design_table2.csv')
 designs=read.csv('\\\\share1.bluezone.usu.edu\\miller\\buglab\\Research Projects\\AIM\\Design\\DesignDatabase\\design_coordinates_QC_Rinput.csv')
+designs=read.csv('\\\\share1.bluezone.usu.edu\\miller\\buglab\\Research Projects\\AIM\\Design\\DesignDatabase\\GIS_table_for_Design_Database.csv')
 postseasonmetadata=join(listsites,designs, by="SITE_ID", type="left")
 #get ecoregional and stream size info for context for values
 #designmetadata=read.csv('\\\\share1.bluezone.usu.edu\\miller\\buglab\\Research Projects\\AIM\\GRTS_CodeGuidance\\MasterSample\\MasterSampleDraws\\Aquatic\\LoticMasterSample\\Attributed\\LoticMasterSampleAttributedPtsWithHybridEcoregions.csv')
@@ -507,13 +508,14 @@ write.csv(SamplingCheck2,'SamplingCheck2.csv')
 
 #get data ready to submit via http://www.usu.edu/buglab/SampleProcessing/SampleSubmission/
 postseasonmetadata=subset(postseasonmetadata,PROTOCOL!='FAILED')
-SubMetadata=c('UID','SITE_ID', 'COUNTY','STREAM_NAME','LAT_DD','LON_DD','PROJECT','STRATUM')
+SubMetadata=c('UID','SITE_ID', 'STATE','COUNTY','LOC_NAME','LAT_DD','LON_DD','PROJECT')###'STRATUM')
 Metadata=postseasonmetadata[SubMetadata]
-Bugspvtsub=c('SITE_ID','BERW_JAR_NO','BERW_ACTUAL_DATE','BERW_AREA','BERW_SAMPLER','BERW_BUG_METHOD')
+Bugspvtsub=c('UID','BERW_JAR_NO','BERW_ACTUAL_DATE','BERW_AREA','BERW_SAMPLER','BERW_BUG_METHOD')
 Bugspvt2=Bugspvt[Bugspvtsub]
-BugsSubmit=join(Bugspvt2,Metadata, by="SITE_ID")
+BugsSubmit=join(Bugspvt2,Metadata, by="UID")
 BugsSubmit$BERW_SAMPLER=ifelse(BugsSubmit$BERW_SAMPLER=='SU'|BugsSubmit$BERW_SAMPLER=='MI',"Surber net",ifelse(BugsSubmit$BERW_SAMPLER=='KC',"Kick net",BugsSubmit$BERW_SAMPLER))
-BugsSubmit=BugsSubmit[,c(12,13,1,2,9,10,11,3,5,6,4,7,8)]#fill in desired columns
+BugsSubmit$BERW_BUG_METHOD=ifelse(BugsSubmit$BERW_BUG_METHOD=='TARGETED RIFFLE',"Targeted Riffle",ifelse(BugsSubmit$BERW_BUG_METHOD=='REACH WIDE',"Reachwide",BugsSubmit$BERW_BUG_METHOD))
+BugsSubmit=BugsSubmit[,c(13,7,1,2,10,8,9,11,12,3,5,6,4)]#fill in desired columns
 write.csv(BugsSubmit,'BugsSubmit.csv')
                       
                       
@@ -819,6 +821,7 @@ PoolFines=tblRetrieve(Parameters=c('POOLFINES2','POOLFINES6','POOLNOMEAS'),Proje
 pvtPoolFines=cast(PoolFines,'UID+TRANSECT+POINT~PARAMETER',value='RESULT')#need to pivot to create the pctPoolFInes variable
 pvtPoolFines$PctPoolFines2_CHECK=pvtPoolFines$POOLFINES2/(50-pvtPoolFines$POOLNOMEAS)*100
 pvtPoolFines$PctPoolFines6_CHECK=pvtPoolFines$POOLFINES6/(50-pvtPoolFines$POOLNOMEAS)*100
+write.csv(pvtPoolFines,'pvtPoolFines.csv')
 aggpvt1PoolFines=aggregate(PctPoolFines2_CHECK~UID+TRANSECT,data=pvtPoolFines, FUN='mean')#average pool fines at a pool first # note these exclude NAs
 aggpvt2PoolFines=aggregate(PctPoolFines6_CHECK~UID+TRANSECT,data=pvtPoolFines, FUN='mean')#average pool fines at a pool first # note these exclude NAs
 aggpvt3PoolFines=aggregate(PctPoolFines2_CHECK~UID,data=aggpvt1PoolFines, FUN='mean')#average pool fines at a pool first # note these exclude NAs
@@ -833,7 +836,7 @@ FinalpvtPoolFines$PctPoolFines6_CHECK=round(FinalpvtPoolFines$PctPoolFines6_CHEC
 FinalpvtPoolFines$PctPoolFines2CV=FinalpvtPoolFines$PctPoolFines2SD/FinalpvtPoolFines$PctPoolFines2_CHECK#sites with CV >1.414 should be QCed 
 FinalpvtPoolFines$PctPoolFines6CV=FinalpvtPoolFines$PctPoolFines6SD/FinalpvtPoolFines$PctPoolFines6_CHECK#sites with CV >1.414 should be QCed 
 subQC=subset(FinalpvtPoolFines,FinalpvtPoolFines$PctPoolFines6CV>=1.41|FinalpvtPoolFines$PctPoolFines2CV>=1.41)#sites with CV >1.414 should be QCed 
-
+write.csv(subQC,'pooltailfines_highvariance.csv')
 
 #########  photos  ###################
 #use to check any questionable values such as bankfull widths and heights                      
