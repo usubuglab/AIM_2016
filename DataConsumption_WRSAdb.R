@@ -44,7 +44,7 @@ library(plyr)
 source('FNC_tblRetrievePVT_new.R')
 #common sQL strings that need to be incorporated:
 ##(select * from tblVERIFICATION where PARAMETER='site_id') v on v.UID=tblPOINT.uid
-
+source('indicatorXwalk.R')
 
 
 #------------------------------------------------------DEFAULTS-----------------------------------------------
@@ -82,6 +82,9 @@ protocols=c('NRSA13','WRSA14','BOAT14','AK14')#for separating differences in ove
 protocols=c('WADE2016','BOAT2016')
 #all protocols
 protocols=c('NRSA13','WRSA14','BOAT14','AK14','WADE2016','BOAT2016')
+
+#2017 priority projects
+projects=c('UT_GR_STANDARD_2016','UT_WD_STANDARD_2016','WY_RA_STANDARD_2016','UT_WD_SHEEPROCK_2017','ID_SA_STANDARD_2016')
 
 #2017 projects
 projects=c('NPRA15','AK_AN_BSWI_2017','AK_CY_PLANUNIT_2017','AK_CY_UTILITYCORRIDOR_2016','AK_GL_STANDARD_2016','WA_SP_STANDARD_2016','CO_FR_STANDARD_2016','CO_SW_STANDARD_2016','CO_NW_STANDARD_2016','ID_SA_STANDARD_2016','ID_CH_STANDARD_2017','ID_US_STANDARD_2017','NM_FMD_STANDARD_2016','OR_PR_PERENNIAL_2016','OR_PR_INTERMITTENT_2016','UT_GR_STANDARD_2016','UT_WD_STANDARD_2016','WY_RA_STANDARD_2016','UT_CY_STANDARD_2017','UT_WD_SHEEPROCK_2017','WY_HD_STANDARD_2017')

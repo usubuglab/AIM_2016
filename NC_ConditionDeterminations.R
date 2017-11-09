@@ -9,9 +9,10 @@
 #IndicatorCheck=read.csv('Z:\\buglab\\Research Projects\\AIM\\Projects\\Utah\\GSENM\\Aquatics\\IndicatorCheck_21Dec2016_GrandStaircase.csv')
 #IndicatorCheck=read.csv('IndicatorCheck2016data_21October2016.csv')
 #IndicatorCheck=read.csv('Z:\\buglab\\Research Projects\\BLM_WRSA_Stream_Surveys\\Results and Reports\\AIM_2011_2015_results\\IndicatorCheck_29April2016.csv')
+IndicatorCheck=read.csv('Z:\\buglab\\Research Projects\\AIM\\Analysis\\QC\\2017\\priority projects\\IndicatorCheck7Nov2017.csv')
 IndicatorCheck=read.csv('Z:\\buglab\\Research Projects\\AIM\\Projects\\Idaho\\Statewide\\Analysis\\Weights_ExtentEstimates\\IndicatorCheckIDstatewidedata_13April2017.csv')
 IndicatorCheck=read.csv('Z:\\buglab\\Research Projects\\AIM\\Projects\\Utah\\GSENM\\Analysis\\Weights_ExtentEstimates\\IndicatorCheckGrandStaircase_18April2017.csv')
-IndicatorCheck$BNK_THRESH=ifelse(as.numeric(IndicatorCheck$XBKF_W_CHECK)>10,"LargeWade","SmallWade")
+IndicatorCheck$BNK_THRESH=ifelse(as.numeric(IndicatorCheck$XBKF_W_CHECK)>10,"LargeWadeable","SmallWadeable")
 # #2011-2015 data
 # #SiteInfo=read.csv('Z:\\buglab\\Research Projects\\AIM\\Projects\\AquaticProjectSummaries\\ProjectsPtSummary\\AIM_Aquatic_Sampled_2011_2015_Rinput_into_conditions_final_report_do_not_alter.csv')
 # 
@@ -33,9 +34,11 @@ IndicatorCheck$BNK_THRESH=ifelse(as.numeric(IndicatorCheck$XBKF_W_CHECK)>10,"Lar
 # #Indicators=join(IndicatorCheck, SiteInfoSub, by="SITE_ID_CHECK",type="left",match="first")
 
 #new design database
-SiteInfo=read.csv('\\\\share1.bluezone.usu.edu\\miller\\buglab\\Research Projects\\AIM\\Design\\DesignDatabase\\GIS_table_for_Design_Database.csv')
+GISInfo=read.csv('\\\\share1.bluezone.usu.edu\\miller\\buglab\\Research Projects\\AIM\\Design\\DesignDatabase\\GIS_table_for_Design_Database.csv')
+DesignInfo=read.csv('\\\\share1.bluezone.usu.edu\\miller\\buglab\\Research Projects\\AIM\\Design\\DesignDatabase\\site_table_for_Design_Database.csv')
+SiteInfo=join(GISInfo,DesignInfo,by="MS_ID")
 Indicators=join(IndicatorCheck, SiteInfo, by="SITE_ID_CHECK",type="left",match="first")
-
+Indicators$NAMC_Benchmark=paste(Indicators$Ecoregion_spelledout,Indicators$BNK_THRESH, sep="_")
 
 Indicators$BNK_THRESH=ifelse(Indicators$PROTOCOL2_CHECK=='BOATABLE',"BOATABLE",Indicators$BNK_THRESH)
 #Indicators$BNK_THRESH=ifelse(Indicators$PROTOCOL_CHECK=='BOAT2016',"BOATABLE",Indicators$BNK_THRESH)
@@ -43,16 +46,16 @@ Indicators$BNK_THRESH=ifelse(Indicators$PROTOCOL2_CHECK=='BOATABLE',"BOATABLE",I
 Indicators$THRESH=paste(Indicators$ECO10,Indicators$BNK_THRESH, sep="_")#2011-2015#works with new design database as well
 #Indicators$THRESH=paste(Indicators$ECO_10,Indicators$BNK_THRESH, sep="_")#2016
 Indicators$THRESH3=as.factor(Indicators$THRESH)
-levels(Indicators$THRESH3) <- list( XE_SOUTH_SmallWade="XE_SOUTH_SmallWade",XE_SOUTH_LargeWade="XE_SOUTH_LargeWade", 
-                                    MT_SWEST_SmallWade="MT_SWEST_SmallWade",MT_SWEST_LargeWade="MT_SWEST_LargeWade", 
-                                    XE_EPLAT_SmallWade="XE_EPLAT_SmallWade",XE_EPLAT_LargeWade="XE_EPLAT_LargeWade", 
-                                    MT_PNW_SmallWade="MT_PNW_SmallWade", MT_PNW_LargeWade="MT_PNW_LargeWade",MT_PNW_BOATABLE="MT_PNW_BOATABLE",  
-                                    PL_NCULT_SmallWade="PLN_CULT_SmallWade", PL_NCULT_LargeWade="PLN_CULT_LargeWade",PL_NCULT_BOATABLE="PLN_CULT_BOATABLE", 
-                                    PL_RANGE_SmallWade="PL_RANGE_SmallWade",PL_RANGE_LargeWade="PL_RANGE_LargeWade", PL_RANGE_BOATABLE="PL_RANGE_BOATABLE",
-                                    MT_SROCK_SmallWade="MT_SROCK_SmallWade",MT_SROCK_LargeWade="MT_SROCK_LargeWade", 
-                                    MT_NROCK_SmallWade="MT_NROCK_SmallWade", MT_NROCK_LargeWade="MT_NROCK_LargeWade",
-                                    XE_NORTH_SmallWade="XE_NORTH_SmallWade",XE_NORTH_LargeWade="XE_NORTH_LargeWade",
-                                    Other=c( "AK_SmallWade","AK_LargeWade"),   
+levels(Indicators$THRESH3) <- list( XE_SOUTH_SmallWadeable="XE_SOUTH_SmallWadeable",XE_SOUTH_LargeWadeable="XE_SOUTH_LargeWadeable", 
+                                    MT_SWEST_SmallWadeable="MT_SWEST_SmallWadeable",MT_SWEST_LargeWadeable="MT_SWEST_LargeWadeable", 
+                                    XE_EPLAT_SmallWadeable="XE_EPLAT_SmallWadeable",XE_EPLAT_LargeWadeable="XE_EPLAT_LargeWadeable", 
+                                    MT_PNW_SmallWadeable="MT_PNW_SmallWadeable", MT_PNW_LargeWadeable="MT_PNW_LargeWadeable",MT_PNW_BOATABLE="MT_PNW_BOATABLE",  
+                                    PL_NCULT_SmallWadeable="PLN_CULT_SmallWadeable", PL_NCULT_LargeWadeable="PLN_CULT_LargeWadeable",PL_NCULT_BOATABLE="PLN_CULT_BOATABLE", 
+                                    PL_RANGE_SmallWadeable="PL_RANGE_SmallWadeable",PL_RANGE_LargeWadeable="PL_RANGE_LargeWadeable", PL_RANGE_BOATABLE="PL_RANGE_BOATABLE",
+                                    MT_SROCK_SmallWadeable="MT_SROCK_SmallWadeable",MT_SROCK_LargeWadeable="MT_SROCK_LargeWadeable", 
+                                    MT_NROCK_SmallWadeable="MT_NROCK_SmallWadeable", MT_NROCK_LargeWadeable="MT_NROCK_LargeWadeable",
+                                    XE_NORTH_SmallWadeable="XE_NORTH_SmallWadeable",XE_NORTH_LargeWadeable="XE_NORTH_LargeWadeable",
+                                    Other=c( "AK_SmallWadeable","AK_LargeWadeable"),   
                                     MT_ROCK_BOATABLE=c("MT_NROCK_BOATABLE", "MT_SROCK_BOATABLE","XE_NORTH_BOATABLE"),  
                                     XE_SEPLAT_BOATABLE=c( "XE_EPLAT_BOATABLE" ,"XE_SOUTH_BOATABLE")
 )
@@ -80,14 +83,19 @@ Indicators=join(Indicators,Bugs, by="UID",type="left")
 Indicators$OErtg=ifelse(Indicators$MODELTEST=="F",NA,Indicators$OErtg)
 
 ############ WQ modeled thresholds
-# 70th and 90th percentiles
-Indicators$OE_ECrtg=ifelse(Indicators$OE_EC_CHECK <22.4,'Good',ifelse(Indicators$OE_EC_CHECK >53.7, 'Poor','Fair'))
-Indicators$OE_TNrtg=ifelse(Indicators$OE_TN_CHECK <43.9,'Good',ifelse(Indicators$OE_TN_CHECK >87.7, 'Poor','Fair'))
-Indicators$OE_TPrtg=ifelse(Indicators$OE_TP_CHECK <8.6,'Good',ifelse(Indicators$OE_TP_CHECK >16.0, 'Poor','Fair'))
-# #75th and 95th percentiles
-# Indicators$OE_ECrtg=ifelse(Indicators$OE_EC_CHECK <27.1,'Good',ifelse(Indicators$OE_EC_CHECK >74.5, 'Poor','Fair'))
-# Indicators$OE_TNrtg=ifelse(Indicators$OE_TN_CHECK <52.1,'Good',ifelse(Indicators$OE_TN_CHECK >114.7, 'Poor','Fair'))
-# Indicators$OE_TPrtg=ifelse(Indicators$OE_TP_CHECK <9.9,'Good',ifelse(Indicators$OE_TP_CHECK >21.3, 'Poor','Fair'))
+Indicators$OE_EC_CHECK=round(Indicators$CONDUCTIVITY-Indicators$EC_PRED,digits=2)
+Indicators$OE_TN_CHECK=round(Indicators$NTL-Indicators$TN_PRED,digits=1)
+Indicators$OE_TP_CHECK=round(Indicators$PTL-Indicators$TP_PRED,digits=1)
+
+
+# # 70th and 90th percentiles
+# Indicators$OE_ECrtg=ifelse(Indicators$OE_EC_CHECK <22.4,'Good',ifelse(Indicators$OE_EC_CHECK >53.7, 'Poor','Fair'))
+# Indicators$OE_TNrtg=ifelse(Indicators$OE_TN_CHECK <43.9,'Good',ifelse(Indicators$OE_TN_CHECK >87.7, 'Poor','Fair'))
+# Indicators$OE_TPrtg=ifelse(Indicators$OE_TP_CHECK <8.6,'Good',ifelse(Indicators$OE_TP_CHECK >16.0, 'Poor','Fair'))
+#75th and 95th percentiles
+Indicators$OE_ECrtg=ifelse(Indicators$OE_EC_CHECK <27.1,'Good',ifelse(Indicators$OE_EC_CHECK >74.5, 'Poor','Fair'))
+Indicators$OE_TNrtg=ifelse(Indicators$OE_TN_CHECK <52.1,'Good',ifelse(Indicators$OE_TN_CHECK >114.7, 'Poor','Fair'))
+Indicators$OE_TPrtg=ifelse(Indicators$OE_TP_CHECK <9.9,'Good',ifelse(Indicators$OE_TP_CHECK >21.3, 'Poor','Fair'))
 
 
 #EPA WQ Regional Reference Thresholds
@@ -148,13 +156,24 @@ IndicatorsJoin$XCDENBKrtg=ifelse(IndicatorsJoin$XCDENBK_CHECK <IndicatorsJoin$XC
 IndicatorsJoin$LINCIS_Hrtg=ifelse(IndicatorsJoin$LINCIS_H_CHECK >IndicatorsJoin$LINCIS_H_0.90,"Poor",ifelse(IndicatorsJoin$LINCIS_H_CHECK <IndicatorsJoin$LINCIS_H_0.70,"Good","Fair"))
 IndicatorsJoin$LINCIS_Hrtg=ifelse(IndicatorsJoin$THRESH2=="ALL_BOATING"& IndicatorsJoin$LINCIS_H_CHECK >0.3986,"Poor",
                                          ifelse(IndicatorsJoin$THRESH2=="ALL_BOATING"& IndicatorsJoin$LINCIS_H_CHECK< 0.2222,"Good",
-                                                ifelse(IndicatorsJoin$THRESH2=="ALL_BOATING"& IndicatorsJoin$LINCIS_H_CHECK =<0.3986 & IndicatorsJoin$LINCIS_H_CHECK>= 0.2222,"Fair",IndicatorsJoin$LINCIS_Hrtg)))
+                                                ifelse(IndicatorsJoin$THRESH2=="ALL_BOATING"& IndicatorsJoin$LINCIS_H_CHECK <=0.3986 & IndicatorsJoin$LINCIS_H_CHECK>= 0.2222,"Fair",IndicatorsJoin$LINCIS_Hrtg)))
 IndicatorsJoin$allPCT_SAFN2rtg=ifelse(IndicatorsJoin$allPCT_SAFN2_CHECK >IndicatorsJoin$PCT_SAFN_0.90,"Poor",ifelse(IndicatorsJoin$allPCT_SAFN2_CHECK <IndicatorsJoin$PCT_SAFN_0.70,"Good","Fair"))
 IndicatorsJoin$XEMBEDrtg=ifelse(IndicatorsJoin$XEMBED_CHECK >IndicatorsJoin$XEMBED_0.90,"Poor",ifelse(IndicatorsJoin$XEMBED_CHECK <IndicatorsJoin$XEMBED_0.70,"Good","Fair"))
 
-IndicatorsCond=IndicatorsJoin
 
-write.csv(IndicatorsCond,'IndicatorsCond_GSENMOct2017.csv')     
+########Do additional formating to get it in the right format for AquADat############
+
+IndicatorsCond=IndicatorsJoin
+IndicatorsCond$PROTOCOL2_CHECK=ifelse(IndicatorsCond$PROTOCOL_CHECK=="BOAT14"|IndicatorsCond$PROTOCOL_CHECK=="BOAT2016","BOATABLE","WADEABLE")
+IndicatorsCond$
+#master
+data.xwalk=read.csv('\\\\share1.bluezone.usu.edu\\miller\\buglab\\Research Projects\\AIM\\Database_Development\\AquaDat\\InterfaceToServeOutComputedMetrics\\indicatorXwalkMaster.csv')
+#local
+data.xwalk=read.csv('\\\\share1.bluezone.usu.edu\\miller\\buglab\\Research Projects\\AIM\\Database_Development\\AquaDat\\InterfaceToServeOutComputedMetrics\\indicatorXwalkLocal.csv')
+data.input=IndicatorsCond
+IndicatorsCond=indicatorXwalk(data.input,data.xwalk)
+
+write.csv(IndicatorsCond,'priority_projectQC.csv')     
 
 ############### continue on to the SpSurvey_DesignWeights and SPSurvey_ExtentEstimates R scripts ######################                                 
 ####################################################################################################################
