@@ -165,7 +165,9 @@ IndicatorsJoin$XEMBEDrtg=ifelse(IndicatorsJoin$XEMBED_CHECK >IndicatorsJoin$XEMB
 
 IndicatorsCond=IndicatorsJoin
 IndicatorsCond$PROTOCOL2_CHECK=ifelse(IndicatorsCond$PROTOCOL_CHECK=="BOAT14"|IndicatorsCond$PROTOCOL_CHECK=="BOAT2016","BOATABLE","WADEABLE")
-IndicatorsCond$
+IndicatorsCond$FieldStatus=ifelse(IndicatorsCond$VALXSITE_CHECK=="WADEABLE"|IndicatorsCond$VALXSITE_CHECK=="BOATABLE","Sampled - Full Reach",
+                              ifelse(IndicatorsCond$VALXSITE_CHECK=="PARBYWADE"|IndicatorsCond$VALXSITE_CHECK=="PARBYBOAT","Sampled - Partial Reach",
+                                 ifelse(IndicatorsCond$VALXSITE_CHECK=="INTWADE","Sampled Interrupted Flow",IndicatorsCond$VALXSITE_CHECK)))
 #master
 data.xwalk=read.csv('\\\\share1.bluezone.usu.edu\\miller\\buglab\\Research Projects\\AIM\\Database_Development\\AquaDat\\InterfaceToServeOutComputedMetrics\\indicatorXwalkMaster.csv')
 #local
