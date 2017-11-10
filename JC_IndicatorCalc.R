@@ -139,13 +139,13 @@ Sed2014=tblRetrieve(Parameters=c('SIZE_NUM','LOC'),Projects=projects,Years=years
 PoolFines=tblRetrieve(Parameters=c('POOLFINES2','POOLFINES6','POOLNOMEAS'),Projects=projects, Years=years,Protocols=protocols,SiteCode=sitecodes)
 
 #Bank Stability
-BankStab=tblRetrieve(Parameters=c('STABLE','EROSION','COVER'), Projects=projects,Years=years,Protocols=protocols,SiteCodes=sitecodes)
+BankStab=tblRetrieve(Parameters=c('STABLE','EROSION','COVER','BNK_VEG','BNK_COBBLE','BNK_LWD','BNK_BEDROCK'), Projects=projects,Years=years,Protocols=protocols,SiteCodes=sitecodes)
 SideBank=tblRetrieve(Parameters=c('SIDCHN_BNK'),Projects=projects,Years=years,Protocols=protocols,SiteCodes=sitecodes)
 #unique(BankStab$RESULT)
 #BankStabpvt=addKEYS(cast(BankStab,'UID+TRANSECT+POINT~PARAMETER',value='RESULT'),c('SITE_ID'))
 #unique(BankStab$POINT)
 #unique(BankStab$TRANSECT)
-BankStabCoverClass=tblRetrieve(Parameters=c('BNK_VEG','BNK_COBBLE','BNK_LWD','BNK_BEDROCK'),Projects=projects,Years=years,Protocols=protocols,SiteCodes=sitecodes)
+#BankStabCoverClass=tblRetrieve(Parameters=c('BNK_VEG','BNK_COBBLE','BNK_LWD','BNK_BEDROCK'),Projects=projects,Years=years,Protocols=protocols,SiteCodes=sitecodes)
 #pvtBankStabCoverClass=addKEYS(cast(BankStabCoverClass,'UID+TRANSECT+POINT~PARAMETER',value='RESULT'),c('SITE_ID'))
 
 #LINCIS_H - floodplain connectivity
@@ -703,6 +703,12 @@ BanksErosional=subset(Banks, EROSION=='EL')
 BnkCvrErosional=setNames(aggregate(CoverValue~UID,data=BanksErosional, FUN=mean), c('UID','BnkCover_Erosional_CHECK'))
 BnkStbErosional=setNames(aggregate(StableValue~UID,data=BanksErosional, FUN=mean), c('UID','BnkStability_Erosional_CHECK'))
 BnkCover_StabErosional=setNames(aggregate(BnkCover_Stab~UID,data=BanksErosional, FUN=mean), c('UID','BnkCover_StabErosional_CHECK'))
+BNK_BEDROCK=setNames(aggregate(as.numeric(BNK_BEDROCK)~UID,data=BanksErosional, FUN=mean),c('UID','BNK_BEDROCK_CHECK'))
+BNK_COBBLE=setNames(aggregate(as.numeric(BNK_COBBLE)~UID,data=BanksErosional, FUN=mean),c('UID','BNK_COBBLE_CHECK'))
+BNK_LWD=setNames(aggregate(as.numeric(BNK_LWD)~UID,data=BanksErosional, FUN=mean),c('UID','BNK_LWD_CHECK'))
+BNK_VEG=setNames(aggregate(as.numeric(BNK_VEG)~UID,data=BanksErosional, FUN=mean),c('UID','BNK_VEG_CHECK'))
+
+
 
 #samplesize
 nBnkCover_StabErosional=setNames(aggregate(BnkCover_Stab~UID,data=BanksErosional, FUN=length), c('UID','nBnkCover_StabErosional_CHECK'))
@@ -717,12 +723,16 @@ BnkCover_StabAll=setNames(aggregate(BnkCover_Stab~UID,data=BanksAll, FUN=mean), 
 nBnkCover_StabAll=setNames(aggregate(BnkCover_Stab~UID,data=BanksAll, FUN=length), c('UID','nBnkCover_StabAll_CHECK'))# 2 banks at 21 transects should not be less than 21 except boatable----which could be 11
 
 #merge all bank files
-BnkErosional=join_all(list(BnkCover_StabErosional,BnkCvrErosional,BnkStbErosional,nBnkCover_StabErosional), by="UID")
+BnkErosional=join_all(list(BnkCover_StabErosional,BnkCvrErosional,BnkStbErosional,nBnkCover_StabErosional,BNK_BEDROCK,BNK_COBBLE,BNK_LWD,BNK_VEG), by="UID")
 BnkAll=join_all(list(BnkCover_StabAll,BnkCvrAll,BnkStbAll,nBnkCover_StabAll,nBnkCover_StabAll), by="UID")
 #convert to percent
 BnkErosional$BnkCover_Erosional_CHECK=round(BnkErosional$BnkCover_Erosional_CHECK*100,digits=0)
 BnkErosional$BnkStability_Erosional_CHECK=round(BnkErosional$BnkStability_Erosional_CHECK*100,digits=0)
 BnkErosional$BnkCover_StabErosional_CHECK=round(BnkErosional$BnkCover_StabErosional_CHECK*100,digits=0)
+BnkErosional$BNK_BEDROCK_CHECK=round(BnkErosional$BNK_BEDROCK_CHECK,digits=0)
+BnkErosional$BNK_COBBLE_CHECK=round(BnkErosional$BNK_COBBLE_CHECK,digits=0)
+BnkErosional$BNK_LWD_CHECK=round(BnkErosional$BNK_LWD_CHECK,digits=0)
+BnkErosional$BNK_VEG_CHECK=round(BnkErosional$BNK_VEG_CHECK,digits=0)
 BnkAll$BnkCover_All_CHECK=round(BnkAll$BnkCover_All_CHECK*100,digits=0)
 BnkAll$BnkStability_All_CHECK=round(BnkAll$BnkStability_All_CHECK*100,digits=0)
 BnkAll$BnkCover_StabAll_CHECK=round(BnkAll$BnkCover_StabAll_CHECK*100,digits=0)
@@ -732,19 +742,23 @@ BnkAll$BnkCover_StabAll_CHECK=round(BnkAll$BnkCover_StabAll_CHECK*100,digits=0)
 BnkErosional$BnkCover_StabErosional_CHECK=ifelse(BnkErosional$nBnkCover_StabErosional_CHECK<11,NA,BnkErosional$BnkCover_StabErosional_CHECK) 
 BnkErosional$BnkCover_Erosional_CHECK=ifelse(BnkErosional$nBnkCover_StabErosional_CHECK<11,NA,BnkErosional$BnkCover_Erosional_CHECK)  
 BnkErosional$BnkStability_Erosional_CHECK=ifelse(BnkErosional$nBnkCover_StabErosional_CHECK<11,NA,BnkErosional$BnkStability_Erosional_CHECK) 
+BnkErosional$BNK_BEDROCK_CHECK=ifelse(BnkErosional$nBnkCover_StabErosional_CHECK<11,NA,BnkErosional$BNK_BEDROCK_CHECK)
+BnkErosional$BNK_COBBLE_CHECK=ifelse(BnkErosional$nBnkCover_StabErosional_CHECK<11,NA,BnkErosional$BNK_COBBLE_CHECK)
+BnkErosional$BNK_LWD_CHECK=ifelse(BnkErosional$nBnkCover_StabErosional_CHECK<11,NA,BnkErosional$BNK_LWD_CHECK)
+BnkErosional$BNK_VEG_CHECK=ifelse(BnkErosional$nBnkCover_StabErosional_CHECK<11,NA,BnkErosional$BNK_VEG_CHECK)
 
 BnkAll$BnkCover_StabAll_CHECK=ifelse(BnkAll$nBnkCover_StabAll_CHECK<11,NA,BnkAll$BnkCover_StabAll_CHECK)
 BnkAll$BnkCover_All_CHECK=ifelse(BnkAll$nBnkCover_StabAll_CHECK<11,NA,BnkAll$BnkCover_All_CHECK)  
 BnkAll$BnkStability_All_CHECK=ifelse(BnkAll$nBnkCover_StabAll_CHECK<11,NA,BnkAll$BnkStability_All_CHECK) 
 
 
-#new Bank Stability Cover Classes
-BankStabCoverClass$RESULT=as.numeric(BankStabCoverClass$RESULT)
-meanBankStabCoverClass=setNames(cast(BankStabCoverClass,'UID~PARAMETER',value='RESULT',fun=mean),c('UID','BNK_BEDROCK_CHECK','BNK_COBBLE_CHECK','BNK_LWD_CHECK','BNK_VEG_CHECK'))
-meanBankStabCoverClass$BNK_BEDROCK_CHECK=round(meanBankStabCoverClass$BNK_BEDROCK_CHECK,digits=0)
-meanBankStabCoverClass$BNK_COBBLE_CHECK=round(meanBankStabCoverClass$BNK_COBBLE_CHECK,digits=0)
-meanBankStabCoverClass$BNK_LWD_CHECK=round(meanBankStabCoverClass$BNK_LWD_CHECK,digits=0)
-meanBankStabCoverClass$BNK_VEG_CHECK=round(meanBankStabCoverClass$BNK_VEG_CHECK,digits=0)
+# #new Bank Stability Cover Classes
+# BankStabCoverClass$RESULT=as.numeric(BankStabCoverClass$RESULT)
+# meanBankStabCoverClass=setNames(cast(BankStabCoverClass,'UID~PARAMETER',value='RESULT',fun=mean),c('UID','BNK_BEDROCK_CHECK','BNK_COBBLE_CHECK','BNK_LWD_CHECK','BNK_VEG_CHECK'))
+# meanBankStabCoverClass$BNK_BEDROCK_CHECK=round(meanBankStabCoverClass$BNK_BEDROCK_CHECK,digits=0)
+# meanBankStabCoverClass$BNK_COBBLE_CHECK=round(meanBankStabCoverClass$BNK_COBBLE_CHECK,digits=0)
+# meanBankStabCoverClass$BNK_LWD_CHECK=round(meanBankStabCoverClass$BNK_LWD_CHECK,digits=0)
+# meanBankStabCoverClass$BNK_VEG_CHECK=round(meanBankStabCoverClass$BNK_VEG_CHECK,digits=0)
 
 
 ##########################################################
@@ -1074,7 +1088,7 @@ IndicatorCheckJoin=join_all(list(listsites,WQfinal,BnkErosional,BnkAll,fishpvt2,
 IndicatorCheckJoin=join_all(list(listsites,WQfinal,BnkErosional,BnkAll,DensPvt,BnkDensPvt,XCMG_new1,IncBnk,BankWidFinal,WetWidFinal,PCT_SAFN_ALL,MeanAngle,Thalweg,Pools,LWD,avgFloodWidth),by="UID")
 IndicatorCheckJoin=join_all(list(listsites,BnkErosional,BnkAll,fishpvt2,DensPvt,BnkDensPvt,XCMG_new1,IncBnk,BankWidFinal,WetWidFinal,XEMBED,PCT_SAFN_ALL,MeanAngle,Slope_Per,Thalweg,LWD),by="UID")
 #2016,2017
-IndicatorCheckJoin=join_all(list(listsites,DensPvt,BnkDensPvt,XCMG_new1, RIP_VEG,FQCY_VEG,WQfinal,Pools,LWD,ALLSED,FinalpvtPoolFines,BnkErosional,BnkAll,meanBankStabCoverClass,IncBnk,fishpvt2,MeanAngle,Thalweg,PctDry,BankWidFinal,WetWidFinal,avgFloodWidth,Slope_Per),by="UID")
+IndicatorCheckJoin=join_all(list(listsites,DensPvt,BnkDensPvt,XCMG_new1, RIP_VEG,FQCY_VEG,WQfinal,Pools,LWD,ALLSED,FinalpvtPoolFines,BnkErosional,BnkAll,IncBnk,fishpvt2,MeanAngle,Thalweg,PctDry,BankWidFinal,WetWidFinal,avgFloodWidth,Slope_Per),by="UID")
 #2013,2014,2015
 IndicatorCheckJoin=join_all(list(listsites,WQfinal,BnkErosional,BnkAll,fishpvt2,DensPvt,BnkDensPvt,XCMG_new1,IncBnk,BankWidFinal,WetWidFinal,ALLSED,MeanAngle,Thalweg,PctDry,Pools,FinalpvtPoolFines,LWD,Slope_Per),by="UID")
 IndicatorCheckJoin=join_all(list(listsites,WQfinal,BnkErosional,BnkAll,fishpvt2,DensPvt,BnkDensPvt,XCMG_new1,IncBnk,BankWidFinal,WetWidFinal,ALLSED,MeanAngle,Thalweg,PctDry,Pools,LWD,Slope_Per),by="UID")
