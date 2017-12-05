@@ -12,6 +12,7 @@
 IndicatorCheck=read.csv('Z:\\buglab\\Research Projects\\AIM\\Analysis\\QC\\2017\\priority projects\\IndicatorCheck7Nov2017.csv')
 IndicatorCheck=read.csv('Z:\\buglab\\Research Projects\\AIM\\Projects\\Idaho\\Statewide\\Analysis\\Weights_ExtentEstimates\\IndicatorCheckIDstatewidedata_13April2017.csv')
 IndicatorCheck=read.csv('Z:\\buglab\\Research Projects\\AIM\\Projects\\Utah\\GSENM\\Analysis\\Weights_ExtentEstimates\\IndicatorCheckGrandStaircase_18April2017.csv')
+#size class info
 IndicatorCheck$BNK_THRESH=ifelse(as.numeric(IndicatorCheck$XBKF_W_CHECK)>10,"LargeWadeable","SmallWadeable")
 # #2011-2015 data
 # #SiteInfo=read.csv('Z:\\buglab\\Research Projects\\AIM\\Projects\\AquaticProjectSummaries\\ProjectsPtSummary\\AIM_Aquatic_Sampled_2011_2015_Rinput_into_conditions_final_report_do_not_alter.csv')
@@ -158,7 +159,7 @@ IndicatorsJoin$LINCIS_Hrtg=ifelse(IndicatorsJoin$THRESH2=="ALL_BOATING"& Indicat
                                          ifelse(IndicatorsJoin$THRESH2=="ALL_BOATING"& IndicatorsJoin$LINCIS_H_CHECK< 0.2222,"Good",
                                                 ifelse(IndicatorsJoin$THRESH2=="ALL_BOATING"& IndicatorsJoin$LINCIS_H_CHECK <=0.3986 & IndicatorsJoin$LINCIS_H_CHECK>= 0.2222,"Fair",IndicatorsJoin$LINCIS_Hrtg)))
 IndicatorsJoin$allPCT_SAFN2rtg=ifelse(IndicatorsJoin$allPCT_SAFN2_CHECK >IndicatorsJoin$PCT_SAFN_0.90,"Poor",ifelse(IndicatorsJoin$allPCT_SAFN2_CHECK <IndicatorsJoin$PCT_SAFN_0.70,"Good","Fair"))
-IndicatorsJoin$XEMBEDrtg=ifelse(IndicatorsJoin$XEMBED_CHECK >IndicatorsJoin$XEMBED_0.90,"Poor",ifelse(IndicatorsJoin$XEMBED_CHECK <IndicatorsJoin$XEMBED_0.70,"Good","Fair"))
+#IndicatorsJoin$XEMBEDrtg=ifelse(IndicatorsJoin$XEMBED_CHECK >IndicatorsJoin$XEMBED_0.90,"Poor",ifelse(IndicatorsJoin$XEMBED_CHECK <IndicatorsJoin$XEMBED_0.70,"Good","Fair"))
 
 
 ########Do additional formating to get it in the right format for AquADat############
@@ -171,11 +172,11 @@ IndicatorsCond$FieldStatus=ifelse(IndicatorsCond$VALXSITE_CHECK=="WADEABLE"|Indi
 #master
 data.xwalk=read.csv('\\\\share1.bluezone.usu.edu\\miller\\buglab\\Research Projects\\AIM\\Database_Development\\AquaDat\\InterfaceToServeOutComputedMetrics\\indicatorXwalkMaster.csv')
 #local
-data.xwalk=read.csv('\\\\share1.bluezone.usu.edu\\miller\\buglab\\Research Projects\\AIM\\Database_Development\\AquaDat\\InterfaceToServeOutComputedMetrics\\indicatorXwalkLocal.csv')
+#data.xwalk=read.csv('\\\\share1.bluezone.usu.edu\\miller\\buglab\\Research Projects\\AIM\\Database_Development\\AquaDat\\InterfaceToServeOutComputedMetrics\\indicatorXwalkLocal.csv')
 data.input=IndicatorsCond
 IndicatorsCond=indicatorXwalk(data.input,data.xwalk)
 
-write.csv(IndicatorsCond,'priority_projectQC.csv')     
+write.csv(IndicatorsCond,'priority_projectQC.csv',na="")     
 
 ############### continue on to the SpSurvey_DesignWeights and SPSurvey_ExtentEstimates R scripts ######################                                 
 ####################################################################################################################
