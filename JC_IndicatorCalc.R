@@ -186,7 +186,10 @@ BankWid=tblRetrieve(Parameters=c('BANKWID'),Projects=projects, Years=years,Proto
 #BankWidpvt=cast(BankWid,'UID+TRANSECT~PARAMETER',value='RESULT')
 
 #Floodprone width
-FloodWidth=tblRetrieve(Parameters=c('FLOOD_WID'), Projects=projects, Years=years,Protocols=protocols,SiteCode=sitecodes)
+#pre2017
+#FloodWidth=tblRetrieve(Parameters=c('FLOOD_WID'), Projects=projects, Years=years,Protocols=protocols,SiteCode=sitecodes)
+#2017 plus
+FloodWidth=tblRetrieve(Parameters=c('FLOOD_WID','FLOOD_BFWIDTH'), Projects=projects, Years=years,Protocols=protocols,SiteCode=sitecodes)
 
 #Slope
 #2017
@@ -999,14 +1002,19 @@ BankWidFinal$XBKF_W_CHECK=round(BankWidFinal$XBKF_W_CHECK,digits=2)
 
 ##########################################################
 #Flood Prone Width
-avgFloodWidth=setNames(cast(FloodWidth,'UID~PARAMETER',value='RESULT', fun=mean),c("UID","FLD_WT_CHECK"))
+avgFloodWidth=setNames(cast(FloodWidth,'UID~PARAMETER',value='RESULT', fun=mean),c("UID","BNK_WT_CHECK","FLD_WT_CHECK"))
 avgFloodWidth$FLD_WT_CHECK=round(avgFloodWidth$FLD_WT_CHECK,digits=2)
 FloodWidthCount=setNames(count(FloodWidth,"UID"),c('UID','nFloodWidth_CHECK'))
 avgFloodWidth=merge(avgFloodWidth,FloodWidthCount,by=c('UID'))
 
+
+
 #Entrenchment
-avgFloodWidth=merge(avgFloodWidth,BankWidFinal,by=c('UID'))
-avgFloodWidth$ENTRENCH_CHECK=round(avgFloodWidth$FLD_WT_CHECK/avgFloodWidth$XBKF_W_CHECK,digits=2)
+#pre2017
+#avgFloodWidth=merge(avgFloodWidth,BankWidFinal,by=c('UID'))
+#avgFloodWidth$ENTRENCH_CHECK=round(avgFloodWidth$FLD_WT_CHECK/avgFloodWidth$XBKF_W_CHECK,digits=2)
+#2017+
+avgFloodWidth$ENTRENCH_CHECK=round(avgFloodWidth$FLD_WT_CHECK/avgFloodWidth$BNK_WT_CHECK,digits=2)
 avgFloodWidth$ENTRENCH_CHECK=ifelse(avgFloodWidth$ENTRENCH_CHECK<1,1,ifelse(avgFloodWidth$ENTRENCH_CHECK>3,3,avgFloodWidth$ENTRENCH_CHECK))
 
 ##########################################################
