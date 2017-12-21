@@ -12,6 +12,8 @@
 IndicatorCheck=read.csv('Z:\\buglab\\Research Projects\\AIM\\Analysis\\QC\\2017\\priority projects\\IndicatorCheck7Nov2017.csv')
 IndicatorCheck=read.csv('Z:\\buglab\\Research Projects\\AIM\\Projects\\Idaho\\Statewide\\Analysis\\Weights_ExtentEstimates\\IndicatorCheckIDstatewidedata_13April2017.csv')
 IndicatorCheck=read.csv('Z:\\buglab\\Research Projects\\AIM\\Projects\\Utah\\GSENM\\Analysis\\Weights_ExtentEstimates\\IndicatorCheckGrandStaircase_18April2017.csv')
+IndicatorCheck=read.csv('Z:\\buglab\\Research Projects\\AIM\\Analysis\\QC\\2017\\priority projects\\IndicatorCheckSalmon19Dec2017.csv')
+
 #size class info
 IndicatorCheck$BNK_THRESH=ifelse(as.numeric(IndicatorCheck$XBKF_W_CHECK)>10,"LargeWadeable","SmallWadeable")
 # #2011-2015 data
@@ -163,12 +165,12 @@ IndicatorsJoin$allPCT_SAFN2rtg=ifelse(IndicatorsJoin$allPCT_SAFN2_CHECK >Indicat
 
 
 ########Do additional formating to get it in the right format for AquADat############
-
+#IndicatorsCond=Indicators
 IndicatorsCond=IndicatorsJoin
 IndicatorsCond$PROTOCOL2_CHECK=ifelse(IndicatorsCond$PROTOCOL_CHECK=="BOAT14"|IndicatorsCond$PROTOCOL_CHECK=="BOAT2016","BOATABLE","WADEABLE")
 IndicatorsCond$FieldStatus=ifelse(IndicatorsCond$VALXSITE_CHECK=="WADEABLE"|IndicatorsCond$VALXSITE_CHECK=="BOATABLE","Sampled - Full Reach",
                               ifelse(IndicatorsCond$VALXSITE_CHECK=="PARBYWADE"|IndicatorsCond$VALXSITE_CHECK=="PARBYBOAT","Sampled - Partial Reach",
-                                 ifelse(IndicatorsCond$VALXSITE_CHECK=="INTWADE","Sampled Interrupted Flow",IndicatorsCond$VALXSITE_CHECK)))
+                                 ifelse(IndicatorsCond$VALXSITE_CHECK=="INTWADE","Sampled - Interrupted Flow",IndicatorsCond$VALXSITE_CHECK)))
 #master
 data.xwalk=read.csv('\\\\share1.bluezone.usu.edu\\miller\\buglab\\Research Projects\\AIM\\Database_Development\\AquaDat\\InterfaceToServeOutComputedMetrics\\indicatorXwalkMaster.csv')
 #local

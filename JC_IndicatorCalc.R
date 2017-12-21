@@ -190,7 +190,8 @@ BankWid=tblRetrieve(Parameters=c('BANKWID'),Projects=projects, Years=years,Proto
 #FloodWidth=tblRetrieve(Parameters=c('FLOOD_WID'), Projects=projects, Years=years,Protocols=protocols,SiteCode=sitecodes)
 #2017 plus
 FloodWidth=tblRetrieve(Parameters=c('FLOOD_WID','FLOOD_BFWIDTH'), Projects=projects, Years=years,Protocols=protocols,SiteCode=sitecodes)
-
+FloodWidth$RESULT=as.numeric(FloodWidth$RESULT)
+#FloodWidthpvt=cast(FloodWidth,'UID+TRANSECT~PARAMETER',value='RESULT')
 #Slope
 #2017
 Slope=tblRetrieve(Parameters=c('AVGSLOPE','SLPRCHLEN','PCT_GRADE'),Projects=projects,Protocols=protocols,SiteCodes=sitecodes)                 
@@ -256,9 +257,9 @@ DensPvt=merge(nDensPvt,DensPvt,by="UID")
 DensPvt$XCDENMID_CHECK=ifelse(DensPvt$nXCDENMID_CHECK<20,NA,DensPvt$XCDENMID_CHECK)
 DensPvt$XCDENMID_CHECK=round(DensPvt$XCDENMID_CHECK,digits=1)
 
-#xcdenbk -bank overhead cover ######need to check if all 4 boating values are supposed to be included...currently arent
+#xcdenbk -bank overhead cover ######changed calculation of boating sites in 2017 to include all 4 measurements taken at a bank
 ##just averages across sidechannels
-BnkDensiom = subset(densiom, POINT == "LF"|POINT =="RT")
+BnkDensiom = subset(densiom, POINT == "LF"|POINT =="RT"|POINT=="UP"|POINT=="DN")
 BnkDensPvt=cast(BnkDensiom,'UID~PARAMETER',value='RESULT',fun=mean)
 BnkDensPvt$XCDENBK_CHECK=round((BnkDensPvt$DENSIOM/17)*100,digits=2)
 nBnkDensPvt=setNames(count(BnkDensiom,"UID"),c("UID","nXCDENBK_CHECK"))# should be 2 locations at 11 transects=22 so half is 2 * 5 transects
@@ -637,6 +638,10 @@ pvtSed2014_D$D16_CHECK=round(pvtSed2014_D$D16_CHECK,digit=0)
 pvtSed2014_D$D84_CHECK=round(pvtSed2014_D$D84_CHECK,digit=0)
 pvtSed2014_GM$GEOMEAN_CHECK=round(pvtSed2014_GM$GEOMEAN_CHECK,digit=0)
 ALLSED=join_all(list(PCT_SAFN_ALL,pvtSed2014_D,pvtSed2014_GM),by='UID')
+ALLSED$GEOMEAN_CHECK=ifelse(ALLSED$nallPCT_SAFN_CHECK<50,NA,ALLSED$GEOMEAN_CHECK)
+ALLSED$D50_CHECK=ifelse(ALLSED$nallPCT_SAFN_CHECK<50,NA,ALLSED$D50_CHECK)
+ALLSED$D16_CHECK=ifelse(ALLSED$nallPCT_SAFN_CHECK<50,NA,ALLSED$D16_CHECK)
+ALLSED$D84_CHECK=ifelse(ALLSED$nallPCT_SAFN_CHECK<50,NA,ALLSED$D84_CHECK)
 
 
 #########################################################
@@ -1002,6 +1007,7 @@ BankWidFinal$XBKF_W_CHECK=round(BankWidFinal$XBKF_W_CHECK,digits=2)
 
 ##########################################################
 #Flood Prone Width
+
 avgFloodWidth=setNames(cast(FloodWidth,'UID~PARAMETER',value='RESULT', fun=mean),c("UID","BNK_WT_CHECK","FLD_WT_CHECK"))
 avgFloodWidth$FLD_WT_CHECK=round(avgFloodWidth$FLD_WT_CHECK,digits=2)
 FloodWidthCount=setNames(count(FloodWidth,"UID"),c('UID','nFloodWidth_CHECK'))
@@ -1014,8 +1020,12 @@ avgFloodWidth=merge(avgFloodWidth,FloodWidthCount,by=c('UID'))
 #avgFloodWidth=merge(avgFloodWidth,BankWidFinal,by=c('UID'))
 #avgFloodWidth$ENTRENCH_CHECK=round(avgFloodWidth$FLD_WT_CHECK/avgFloodWidth$XBKF_W_CHECK,digits=2)
 #2017+
-avgFloodWidth$ENTRENCH_CHECK=round(avgFloodWidth$FLD_WT_CHECK/avgFloodWidth$BNK_WT_CHECK,digits=2)
-avgFloodWidth$ENTRENCH_CHECK=ifelse(avgFloodWidth$ENTRENCH_CHECK<1,1,ifelse(avgFloodWidth$ENTRENCH_CHECK>3,3,avgFloodWidth$ENTRENCH_CHECK))
+FloodWidthpvt=cast(FloodWidth,'UID+TRANSECT~PARAMETER',value='RESULT')
+FloodWidthpvt$ENTRENCHpvt=FloodWidthpvt$FLOOD_WID/FloodWidthpvt$FLOOD_BFWIDTH
+entrench=setNames(aggregate(as.numeric(ENTRENCHpvt)~UID,data=FloodWidthpvt,FUN=mean),c("UID","ENTRENCH_CHECK"))
+entrench$ENTRENCH_CHECK=round(entrench$ENTRENCH_CHECK,digits=2)
+entrench$ENTRENCH_CHECK=ifelse(entrench$ENTRENCH_CHECK<1,1,ifelse(entrench$ENTRENCH_CHECK>3,3,entrench$ENTRENCH_CHECK))
+
 
 ##########################################################
 
@@ -1096,7 +1106,9 @@ IndicatorCheckJoin=join_all(list(listsites,WQfinal,BnkErosional,BnkAll,fishpvt2,
 IndicatorCheckJoin=join_all(list(listsites,WQfinal,BnkErosional,BnkAll,DensPvt,BnkDensPvt,XCMG_new1,IncBnk,BankWidFinal,WetWidFinal,PCT_SAFN_ALL,MeanAngle,Thalweg,Pools,LWD,avgFloodWidth),by="UID")
 IndicatorCheckJoin=join_all(list(listsites,BnkErosional,BnkAll,fishpvt2,DensPvt,BnkDensPvt,XCMG_new1,IncBnk,BankWidFinal,WetWidFinal,XEMBED,PCT_SAFN_ALL,MeanAngle,Slope_Per,Thalweg,LWD),by="UID")
 #2016,2017
-IndicatorCheckJoin=join_all(list(listsites,DensPvt,BnkDensPvt,XCMG_new1, RIP_VEG,FQCY_VEG,WQfinal,Pools,LWD,ALLSED,FinalpvtPoolFines,BnkErosional,BnkAll,IncBnk,fishpvt2,MeanAngle,Thalweg,PctDry,BankWidFinal,WetWidFinal,avgFloodWidth,Slope_Per),by="UID")
+IndicatorCheckJoin=join_all(list(listsites,DensPvt,BnkDensPvt,XCMG_new1, RIP_VEG,FQCY_VEG,WQfinal,Pools,LWD,ALLSED,FinalpvtPoolFines,BnkErosional,BnkAll,IncBnk,fishpvt2,MeanAngle,Thalweg,PctDry,BankWidFinal,WetWidFinal,avgFloodWidth,entrench,Slope_Per),by="UID")
+IndicatorCheckJoin=join_all(list(listsites,DensPvt,BnkDensPvt,XCMG_new1, RIP_VEG,FQCY_VEG,WQfinal,Pools,LWD,ALLSED,BnkErosional,BnkAll,IncBnk,fishpvt2,MeanAngle,Thalweg,PctDry,BankWidFinal,WetWidFinal,avgFloodWidth,entrench,Slope_Per),by="UID")
+
 #2013,2014,2015
 IndicatorCheckJoin=join_all(list(listsites,WQfinal,BnkErosional,BnkAll,fishpvt2,DensPvt,BnkDensPvt,XCMG_new1,IncBnk,BankWidFinal,WetWidFinal,ALLSED,MeanAngle,Thalweg,PctDry,Pools,FinalpvtPoolFines,LWD,Slope_Per),by="UID")
 IndicatorCheckJoin=join_all(list(listsites,WQfinal,BnkErosional,BnkAll,fishpvt2,DensPvt,BnkDensPvt,XCMG_new1,IncBnk,BankWidFinal,WetWidFinal,ALLSED,MeanAngle,Thalweg,PctDry,Pools,LWD,Slope_Per),by="UID")
@@ -1109,7 +1121,7 @@ IndicatorCheck=IndicatorCheckJoin[,c("UID",grep("CHECK$", colnames(IndicatorChec
 #write.csv(IndicatorCheck,"C:\\Users\\Nicole\\Desktop\\IndicatorCheck2.csv")
 #Remove all other data files as they are no longer needed
 #IndicatorCheck=subset(IndicatorCheck,PROTOCOL_CHECK=="BOAT14")
-write.csv(IndicatorCheck,"IndicatorCheckQCsites.csv")
+write.csv(IndicatorCheck,"IndicatorCheckSalmon19Dec2017.csv")
 rm(PHfinal,XGB_new,XGB_new1,BankStab,Banks,RipGB,EMBED,Human_Influ,W1_HALL,W1_HALL_NRSA,QR1,XEMBED,BnkDensPvt,BnkDensiom,densiom,RipXCMG,XCMG_new,XCMG_new1,RipWW,XCMGW_new,XCMGW_new1,IndicatorCheckJoin,fish,fishpvt2,
    MidDensiom,DensPvt,Incision,INCISED,BANKHT,Inc,Bnk,xIncht,xBnkht,IncBnk,Sediment,pctsafn,Sed2014,A_Sed2014,C_Sed2014,E_Sed2014,F_Sed2014,PCT_SAFN_ALL)
 
