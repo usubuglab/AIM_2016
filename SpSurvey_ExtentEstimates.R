@@ -74,7 +74,8 @@ siteeval$ycoord <- tmp[,'y']
 #! NorCal - why do sites 8487 and 8503 have the same coordinates?! they don't in the design file, but do in GRTS_SITEINFO and WRSAdb
 
 ##TNT designation
-siteeval$TNT <-siteeval$EvalStatus
+siteeval$TNT <-AnalysisDesignation
+#siteeval$TNT <-siteeval$EvalStatus
 levels(siteeval$TNT ) <- list(Target=c("TS", "UNK", "IA"),
                               NonTarget="NT",
                               NotNeeded=c("NN"))
@@ -87,7 +88,7 @@ levels(siteeval$TNT ) <- list(Target=c("TS", "UNK", "IA"),
 # siteeval$VALXSITE=siteeval$FinalDes
 
 sitesCON=data.frame(siteID=siteeval$SITE_ID,
-                    Use=(siteeval$EvalStatus !="NN")# revision approved via email with Tony Olsen Feb 2014#old pre-2014 version:# Use=(SiteInfo$EvalStatus_Target=="TS")# 
+                    Use=(siteeval$AnalysisDesignation !="NN")# revision approved via email with Tony Olsen Feb 2014#old pre-2014 version:# Use=(SiteInfo$EvalStatus_Target=="TS")# 
                     #Use=(SiteInfo$SampleDate!='' &
                     #format( as.Date(SiteInfo$SampleDate, format="%m/%d/%Y"),'%Y')==2011)#Temporary! Until 2012 bugs and WQ complete
 )
@@ -165,10 +166,12 @@ designCON=data.frame(siteID=siteeval$SITE_ID,
 #                                  } else {print('There are many columns. Data is assumed to be pivoted with indicator and matching condition names as columns.')}
 
 #wrsa
-ResponseInfo=read.csv('Z:\\buglab\\Research Projects\\AIM\\Projects\\Idaho\\Statewide\\Analysis\\Weights_ExtentEstimates\\IndicatorsCond_IDstatewidedata_13April2017_revisedsed.csv')
-ResponseInfo=read.csv('Z:\\buglab\\Research Projects\\AIM\\Projects\\Utah\\GSENM\\Analysis\\Weights_ExtentEstimates\\IndicatorsCond_GrandStaircase_18April2017revisedsed.csv')
+#ResponseInfo=read.csv('Z:\\buglab\\Research Projects\\AIM\\Projects\\Idaho\\Statewide\\Analysis\\Weights_ExtentEstimates\\IndicatorsCond_IDstatewidedata_13April2017_revisedsed.csv')
+#ResponseInfo=read.csv('Z:\\buglab\\Research Projects\\AIM\\Projects\\Utah\\GSENM\\Analysis\\Weights_ExtentEstimates\\IndicatorsCond_GrandStaircase_18April2017revisedsed.csv')
 #ResponseInfo=read.csv('Z:\\buglab\\Research Projects\\BLM_WRSA_Stream_Surveys\\Results and Reports\\AIM_2011_2015_results\\IndicatorsCond_29April2016.csv')
 #ResponseInfo=read.csv('Z:\\buglab\\Research Projects\\BLM_WRSA_Stream_Surveys\\Results and Reports\\AIM_2011_2015_results\\IndicatorsCond_revised_wq_bugs_thresh_example.csv')
+ResponseInfo=read.csv('Z:\\buglab\\Research Projects\\AIM\\Projects\\Wyoming\\Rawlins\\Analysis\\Condition_Rinput.csv')
+
 
 ResponseInfo$OEtrg=ifelse(ResponseInfo$COUNT<200,NA,ResponseInfo$OErtg)
 ##exclude QC sites---dont need to worry about it because it is filtered
