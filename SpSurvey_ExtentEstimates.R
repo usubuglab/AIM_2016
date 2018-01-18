@@ -17,6 +17,7 @@
 #siteeval=read.csv('AdjustedWeights_2016_Try1_Run2.csv')
 siteeval=read.csv('Z:\\buglab\\Research Projects\\AIM\\Projects\\Idaho\\Statewide\\Analysis\\Weights_ExtentEstimates\\AdjustedWeights_IdahoState2017_13April2017.csv')
 siteeval=read.csv('Z:\\buglab\\Research Projects\\AIM\\Projects\\Utah\\GSENM\\Analysis\\Weights_ExtentEstimates\\AdjustedWeights_GSENM2016_formated.csv')
+siteeval=read.csv('Z:\\buglab\\Research Projects\\AIM\\Projects\\Wyoming\\Rawlins\\Analysis\\Weights\\AdjustedWeights_Rawlins_NHD_18Dec2018.csv')
 
 #siteeval$SITE_ID=siteeval$Sitecode
 #siteeval$Field_Office <- as.factor("Smoke Creek Watershed")
@@ -28,7 +29,9 @@ siteeval=read.csv('Z:\\buglab\\Research Projects\\AIM\\Projects\\Utah\\GSENM\\An
 # Ecoregion=SiteInfo$EcoregionIII_Name #low sample sizes (see warnings in cat.analysis)
 #EPAeco=SiteInfo$EPAhybridECO
 
-siteeval$ReportingUnit1 <- as.factor(siteeval$ReportingUnit1)
+#siteeval$ReportingUnit1 <- as.factor(siteeval$ReportingUnit1)
+
+siteeval$ReportingUnit1 <- as.factor(siteeval$FieldOffice)
 
 
 #set up subpopulations for use in cat.analysis
@@ -58,9 +61,12 @@ subpopCON=data.frame(siteID=siteeval$SITE_ID,
 ## Need equal area coordinates for variance estimation 
 #! as of Sept 2014, coordinates have NOT been QA'd besides a quick comparison to original GRTS!!!
 #  (uses x-site coords when available, design coords otherwise) --> SWJ: I still don't understand why coordinates are important for getting variance estimates
-
-siteeval$LAT_DD=ifelse(is.na(siteeval$LAT_DD)==TRUE,siteeval$LAT_DD_DESIGN,siteeval$LAT_DD)
-siteeval$LON_DD=ifelse(is.na(siteeval$LON_DD)==TRUE,siteeval$LON_DD_DESIGN,siteeval$LON_DD)
+UIDs=siteeval$UID
+SQLsiteeval=tblRetrieve(Parameters=c('LAT_DD','LON_DD'),UIDS=UIDs)
+SQLsiteeval=setNames(cast(SQLsiteeval,'UID~PARAMETER',value='RESULT'),c("UID","LAT_DD","LON_DD"))
+siteeval=join(siteeval,SQLsiteeval, by="UID",type="left",match="first")
+siteeval$LAT_DD=ifelse(is.na(siteeval$AnalysisDesignation)!="TS",siteeval$LAT_DD_DESIGN,siteeval$LAT_DD)# changed on 1-18-18 from using eval lat long to design lat long for NT or IA sites
+siteeval$LON_DD=ifelse(is.na(siteeval$AnalysisDesignation)!="TS",siteeval$LON_DD_DESIGN,siteeval$LON_DD)# changed on 1-18-18 from using eval lat long to design lat long for NT or IA sites
 
 tmp <- marinus(as.numeric(siteeval$LAT_DD), as.numeric(siteeval$LON_DD))
 siteeval$xcoord <- tmp[,'x']
