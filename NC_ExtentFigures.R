@@ -41,7 +41,7 @@ axissize=2#cex
 #This code below removes the condition class of "N" so that the figures could be made properly
 results.cat=results.cat[!results.cat$Category=='N',];View(results.cat)
 ##################  NorCal Specific Code: Start ##################
-
+results.cat=results.cat[!results.cat$Category=='NoData',];View(results.cat)
 
 #Export='PNL'#options: 'PNG' (exported png); 'PNL' (saved to workspace for later panelling) ## not working as anticipated
 ScaleTYPE='Percent'#options: Percent, Absolute (meaning Percentage (Segments or StreamKM same) or StreamKM ) # set to absolute by default if an extent variable
@@ -307,24 +307,63 @@ for (r in 1:length(responseVAR)){
 
 ###-----------------------boxplots---------------------------------------------------------###
 library(ggplot2)
-png(file="turbidityplot.png",width=1200,height=800,res=400,pointsize=4)
+#png(file="turbidityplot.png",width=1200,height=800,res=400,pointsize=4)
 #png(file="OilGasplot2.png",width=1200,height=800,res=400,pointsize=4)
 #par(mfrow=c(2,2),oma=c(1,.5,0,0), mar= c(0,4,2,2))
-par(mfrow=c(1,2),oma=c(2,.5,0,0), mar= c(2,5,2,2))
+#par(mfrow=c(1,2),oma=c(2,.5,0,0), mar= c(2,5,2,2))
 #par(mfrow=c(1,4),oma=c(2,10,0,10), mar= c(2,10,2,10))
-boxplot(ResponseInfo$OE,xlab='O/E Biological Index',lwd=2, cex.lab=2, cex.axis=2, horizontal=TRUE)
-boxplot(ResponseInfo$PH_CHECK,xlab='pH',lwd=2, cex.lab=2, cex.axis=2, horizontal=TRUE)
-boxplot(ResponseInfo$CONDUCTIVITY_CHECK,xlab='Specific Conductance (uS/cm)',lwd=2, cex.lab=2, cex.axis=2,horizontal=TRUE)
-boxplot(ResponseInfo$NTL_CHECK,xlab='Total Nitrogen (ug/L)',lwd=2, cex.lab=2, cex.axis=2,horizontal=TRUE)
-boxplot(ResponseInfo$PTL_CHECK,xlab='Total Phosphorus (ug/L)',lwd=2, cex.lab=2, cex.axis=2,horizontal=TRUE)
-boxplot(ResponseInfo$allPCT_SAFN2_CHECK,xlab='% Fine Sediment',lwd=2, cex.lab=2, cex.axis=2,horizontal=TRUE)
-boxplot(ResponseInfo$BnkCover_StabErosional_CHECK,xlab='% Banks Stable and Covered',lwd=2, cex.lab=2, cex.axis=2,horizontal=TRUE)
-boxplot(ResponseInfo$LINCIS_H_CHECK,xlab='Floodplain Connectivity (unitless)',lwd=2, cex.lab=2, cex.axis=2,horizontal=TRUE)
-boxplot(ResponseInfo$XCDENBK_CHECK,xlab='% Bank Overhead Cover',lwd=2, cex.lab=2, cex.axis=2,horizontal=TRUE)
-boxplot(ResponseInfo$XCMG_CHECK,xlab='Vegetative Complexity (unitless)',lwd=2, cex.lab=2, cex.axis=2,horizontal=TRUE)
-boxplot(ResponseInfo$XFC_NAT_CHECK,xlab='Instream Habitat Complexity (unitless)',lwd=2, cex.lab=2, cex.axis=2,horizontal=TRUE)
+#par(mar = c(1.5, 1,3 ,1 )  ,oma = c(2, 3, 2, 2),cex=axissize)
 
 
+
+stressorsVAR2=c("OE", "NTL_CHECK","PTL_CHECK","CONDUCTIVITY_CHECK","PH_CHECK","allPCT_SAFN2_CHECK","LINCIS_H_CHECK","XCDENBK_CHECK","XFC_NAT_CHECK","BnkCover_StabErosional_CHECK","XCMG_CHECK")
+axislabels=c('O/E Biological Index','Total Nitrogen (ug/L)','Total Phosphorus (ug/L)','Specific Conductance (uS/cm)','pH','% Fine Sediment','Floodplain Connectivity (unitless)','% Bank Overhead Cover','Instream Habitat Complexity (unitless)','% Banks Stable and Covered','Vegetative Complexity (unitless)')
+stressorsvar5=sub(stressorsVAR)
+
+ResponseInfo2=ResponseInfo[,c(stressorsVAR2)]
+str(ResponseInfo2)
+for (f in 1:length(ResponseInfo2)){
+  png(file=paste("boxplot",stressorsVAR2[f],".png"), width=1000,height=700,pointsize=24)
+  boxplot(ResponseInfo2[,f],xlab=paste(axislabels[f]),lwd=3,cex.lab=2,horizontal=TRUE)
+  dev.off()
+}
+
+
+     
+# png(file="OEboxplot3.png",width=1000,height=700,pointsize=24)
+# boxplot(ResponseInfo$OE,xlab='O/E Biological Index',lwd=3, cex.lab=2, cex.axis=2, horizontal=TRUE)
+# dev.off()
+# png(file="pHboxplot.png",width=1000,height=700)
+# boxplot(ResponseInfo$PH_CHECK,xlab='pH',lwd=2, cex.lab=2, cex.axis=2, horizontal=TRUE)
+# dev.off()
+# png(file="CONDUCTIVITY.png",width=1000,height=700)
+# boxplot(ResponseInfo$CONDUCTIVITY_CHECK,xlab='Specific Conductance (uS/cm)',lwd=2, cex.lab=2, cex.axis=2,horizontal=TRUE)
+# dev.off()
+# png(file="TNboxplot.png",width=1000,height=700)
+# boxplot(ResponseInfo$NTL_CHECK,xlab='Total Nitrogen (ug/L)',lwd=2, cex.lab=2, cex.axis=2,horizontal=TRUE)
+# dev.off()
+# png(file="TP.png",width=1000,height=700)
+# boxplot(ResponseInfo$PTL_CHECK,xlab='Total Phosphorus (ug/L)',lwd=2, cex.lab=2, cex.axis=2,horizontal=TRUE)
+# dev.off()
+# png(file="PCTfines2.png",width=1000,height=700)
+# boxplot(ResponseInfo$allPCT_SAFN2_CHECK,xlab='% Fine Sediment',lwd=2, cex.lab=2, cex.axis=2,horizontal=TRUE)
+# dev.off()
+# png(file="BnkCoverStab.png",width=1000,height=700)
+# boxplot(ResponseInfo$BnkCover_StabErosional_CHECK,xlab='% Banks Stable and Covered',lwd=2, cex.lab=2, cex.axis=2,horizontal=TRUE)
+# dev.off()
+# png(file="Incision.png",width=1000,height=700)
+# boxplot(ResponseInfo$LINCIS_H_CHECK,xlab='Floodplain Connectivity (unitless)',lwd=2, cex.lab=2, cex.axis=2,horizontal=TRUE)
+# dev.off()
+# png(file="XCDENBK.png",width=1000,height=700)
+# boxplot(ResponseInfo$XCDENBK_CHECK,xlab='% Bank Overhead Cover',lwd=2, cex.lab=2, cex.axis=2,horizontal=TRUE)
+# dev.off()
+# png(file="XCMG.png",width=1000,height=700)
+# boxplot(ResponseInfo$XCMG_CHECK,xlab='Vegetative Complexity (unitless)',lwd=2, cex.lab=2, cex.axis=2,horizontal=TRUE)
+# dev.off()
+# png(file="XFC_NAT.png",width=1000,height=700)
+# boxplot(ResponseInfo$XFC_NAT_CHECK,xlab='Instream Habitat Complexity (unitless)',lwd=2, cex.lab=2, cex.axis=2,horizontal=TRUE)
+# dev.off()
+# 
 
 
 
