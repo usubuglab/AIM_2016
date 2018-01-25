@@ -23,6 +23,8 @@ X4<-seq(30,0, by =-3) # counts down by 3
 X5<-c(5,4,2) # concatenate
 x6<-scan() # hit return after entering each number and return twice to stop
 is.na(x)
+%in% #used like a match with a output of TRUE or FALSE
+match()
 
 ?datasets # package called datasets
 data() # see list of all built in datasets
@@ -43,6 +45,9 @@ prop.table() #proportions
 round() # rounds
 scale() # M=0, SD=1
 ggplot(vegLengths, aes(length, fill = veg)) + geom_density(alpha = 0.2)
+sub()
+sprintf('ExtentBAR_%s_%s.png', varNAME,ExtentSuffix)
+paste
 
 par(mfrow=c(2,2))
 plot(Year,Max7day,type="n",bty='n',xlab="",ylab="Max 7-day mean discharge (cfs)")
@@ -97,3 +102,38 @@ for (i in 2:length(boxplotdata)) {
   boxplot(boxplotdata[,i]~boxplotdata$Type, main=names(boxplotdata[i]))
 }
 boxplot()
+
+###more sofisticated option
+
+stressorsVAR2=c("OE", "NTL_CHECK","PTL_CHECK","CONDUCTIVITY_CHECK","PH_CHECK","allPCT_SAFN2_CHECK","LINCIS_H_CHECK","XCDENBK_CHECK","XFC_NAT_CHECK","BnkCover_StabErosional_CHECK","XCMG_CHECK")
+axislabels=c('O/E Biological Index','Total Nitrogen (ug/L)','Total Phosphorus (ug/L)','Specific Conductance (uS/cm)','pH','% Fine Sediment','Floodplain Connectivity (unitless)','% Bank Overhead Cover','Instream Habitat Complexity (unitless)','% Banks Stable and Covered','Vegetative Complexity (unitless)')
+
+ResponseInfo2=ResponseInfo[,c(stressorsVAR2)]
+str(ResponseInfo2)
+for (f in 1:length(ResponseInfo2)){
+  png(file=paste("boxplot",stressorsVAR2[f],".png"), width=1000,height=700,pointsize=24)
+  boxplot(ResponseInfo2[,f],xlab=paste(axislabels[f]),lwd=3,cex.lab=2,horizontal=TRUE)
+  dev.off()
+}
+
+#nested loop
+library(ggplot2)
+EPA_referencedata=read.csv('Z:\\buglab\\Research Projects\\BLM_WRSA_Stream_Surveys\\Results and Reports\\EPA_Data\\withoutdup_first_visit_for_boxplots.csv')
+str(EPA_referencedata)
+unique(EPA_referencedata$Instream)
+
+RiparianVariables=c("NAMC_Benchmark","EcoregionHybrid10","InstreamHabitatComplexity","Pctfines","FloodplainConnectivity","LWD_Freq")
+#SedimentVariables=c("PctOverheadCover","BankOverheadCover","RiparianVegComplexity")
+
+ecoregions=unique(unlist(EPA_referencedata1$EcoregionHybrid10))
+
+for (s in 1:length(ecoregions)) {
+  EPAsubset=subset(EPA_referencedata,EcoregionHybrid10==ecoregions[s])
+  EPA_referencedata1=EPAsubset[,RiparianVariables] 
+  for (f in 3:length(EPA_referencedata1)) { 
+    png(file=paste("boxplot",ecoregions[s],colnames(EPA_referencedata1[f]),".png"), width=1000,height=700,pointsize=24)
+    boxplot(EPA_referencedata1[,f]~NAMC_Benchmark,data=EPAsubset)
+    dev.off()
+  }
+}
+
