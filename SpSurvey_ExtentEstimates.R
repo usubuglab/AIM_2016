@@ -17,7 +17,7 @@
 #siteeval=read.csv('AdjustedWeights_2016_Try1_Run2.csv')
 siteeval=read.csv('Z:\\buglab\\Research Projects\\AIM\\Projects\\Idaho\\Statewide\\Analysis\\Weights_ExtentEstimates\\AdjustedWeights_IdahoState2017_13April2017.csv')
 siteeval=read.csv('Z:\\buglab\\Research Projects\\AIM\\Projects\\Utah\\GSENM\\Analysis\\Weights_ExtentEstimates\\AdjustedWeights_GSENM2016_formated.csv')
-siteeval=read.csv('Z:\\buglab\\Research Projects\\AIM\\Projects\\Wyoming\\Rawlins\\Analysis\\Weights\\AdjustedWeights_Rawlins_NHD_18Dec2018.csv')
+siteeval=read.csv('Z:\\buglab\\Research Projects\\AIM\\Projects\\Wyoming\\Rawlins\\Analysis\\Weights\\AdjustedWeights_Rawlins_NHD_19Jan2018.csv')
 
 #siteeval$SITE_ID=siteeval$Sitecode
 #siteeval$Field_Office <- as.factor("Smoke Creek Watershed")
@@ -65,8 +65,8 @@ UIDs=siteeval$UID
 SQLsiteeval=tblRetrieve(Parameters=c('LAT_DD','LON_DD'),UIDS=UIDs)
 SQLsiteeval=setNames(cast(SQLsiteeval,'UID~PARAMETER',value='RESULT'),c("UID","LAT_DD","LON_DD"))
 siteeval=join(siteeval,SQLsiteeval, by="UID",type="left",match="first")
-siteeval$LAT_DD=ifelse(is.na(siteeval$AnalysisDesignation)!="TS",siteeval$LAT_DD_DESIGN,siteeval$LAT_DD)# changed on 1-18-18 from using eval lat long to design lat long for NT or IA sites
-siteeval$LON_DD=ifelse(is.na(siteeval$AnalysisDesignation)!="TS",siteeval$LON_DD_DESIGN,siteeval$LON_DD)# changed on 1-18-18 from using eval lat long to design lat long for NT or IA sites
+siteeval$LAT_DD=ifelse(is.na(siteeval$AnalysisDesignation)!="TS",siteeval$DESIGN_LAT,siteeval$LAT_DD)# changed on 1-18-18 from using eval lat long to design lat long for NT or IA sites
+siteeval$LON_DD=ifelse(is.na(siteeval$AnalysisDesignation)!="TS",siteeval$DESIGN_LON,siteeval$LON_DD)# changed on 1-18-18 from using eval lat long to design lat long for NT or IA sites
 
 tmp <- marinus(as.numeric(siteeval$LAT_DD), as.numeric(siteeval$LON_DD))
 siteeval$xcoord <- tmp[,'x']
@@ -74,7 +74,7 @@ siteeval$ycoord <- tmp[,'y']
 #! NorCal - why do sites 8487 and 8503 have the same coordinates?! they don't in the design file, but do in GRTS_SITEINFO and WRSAdb
 
 ##TNT designation
-siteeval$TNT <-AnalysisDesignation
+siteeval$TNT <-siteeval$AnalysisDesignation
 #siteeval$TNT <-siteeval$EvalStatus
 levels(siteeval$TNT ) <- list(Target=c("TS", "UNK", "IA"),
                               NonTarget="NT",
@@ -173,7 +173,7 @@ designCON=data.frame(siteID=siteeval$SITE_ID,
 ResponseInfo=read.csv('Z:\\buglab\\Research Projects\\AIM\\Projects\\Wyoming\\Rawlins\\Analysis\\Condition_Rinput.csv')
 
 
-ResponseInfo$OEtrg=ifelse(ResponseInfo$COUNT<200,NA,ResponseInfo$OErtg)
+ResponseInfo$OErtg=ifelse(ResponseInfo$COUNT<200 & ResponseInfo$OErtg!="Good","NoData",ResponseInfo$OErtg)
 ##exclude QC sites---dont need to worry about it because it is filtered
 #ResponseInfo=subset(ResponseInfo,UID!=12457& UID!=12422& UID!=	12714& UID!=	13550& UID!=	11787& UID!=	13527& UID!=	9779832504& UID!=	13518& UID!=	13539& UID!=	8497901114& UID!=	2772740176& UID!=	3833994365& UID!=	7194282454& UID!=	9846034316& UID!=	7977571143& UID!=	4943503766& UID!=	6152206654& UID!=	6964535047& UID!=	7746712455& UID!=	2956707014& UID!=	4324237804& UID!=	4197418344& UID!=	8537408400& UID!=	4116634326& UID!=	2109978745)
 ResponseInfo=IndicatorsCond
@@ -200,9 +200,12 @@ SiteInfo=merge(siteeval,ResponseInfo, by.x="UID", by.y="UID",all.x=T)
 ##variable selection:
 #########2016_AIM ################
 selectVARauto='N'; selectVARchoice=ifelse(selectVARauto=='Y','AllVar','CustomVar')#automatically select all variables
-extentVAR=c('TNT','EvalStatus','VALXSITE_CHECK')#Extent Estimate added here since weights the same (rather than running cat.analysis twice)
+extentVAR=c('TNT','VALXSITE2')#Extent Estimate added here since weights the same (rather than running cat.analysis twice)
+#extentVAR=c('TNT','EvalStatus','VALXSITE_CHECK')#Extent Estimate added here since weights the same (rather than running cat.analysis twice)
 #extentVAR=c('TNT','EvalStatus','VALXSITE2')#Extent Estimate added here since weights the same (rather than running cat.analysis twice)
 responseVAR=c('OE')# Input here should be bug model
+#WY
+stressorsVAR=c("OE_TN","OE_TP","OE_EC","PH_CHECK","allPCT_SAFN2","LINCIS_H","XCDENBK","XFC_NAT","BnkCover_StabErosional","XCMG")#NOT stressorsVAR=c('MMI')   ####'C1WM100','PCT_SAFN','LSUB_DMM')#UTBLM final list: stressorsVAR=c('InvasivesYN','EC','TP','TN','AugST','LBFXWRat','C1WM100','XCDENMID','Stab2','PCT_SAFN')#must be Access names with a matching 'rtg' variable: to view, str(ResponseInfo)
 #GrandStaircase
 stressorsVAR=c("OE_TN","OE_TP","OE_EC","PH_CHECK","allPCT_SAFN2","LINCIS_H","XCDENBK","XFC_NAT","INVASIVE_MACRO","BnkCover_StabErosional","XCMG")#NOT stressorsVAR=c('MMI')   ####'C1WM100','PCT_SAFN','LSUB_DMM')#UTBLM final list: stressorsVAR=c('InvasivesYN','EC','TP','TN','AugST','LBFXWRat','C1WM100','XCDENMID','Stab2','PCT_SAFN')#must be Access names with a matching 'rtg' variable: to view, str(ResponseInfo)
 #Idaho
@@ -326,7 +329,7 @@ results.cat <- cat.analysis(sites = sitesCON,
 ParameterSampleSizes=subset(results.cat,subset=Subpopulation=='IdahoStatewide' & Category=='Total');print(ParameterSampleSizes)#samplesize is NResp
 #ParameterSampleSizes=subset(results.cat,subset=Subpopulation=='Westwide' & Category=='Total');print(ParameterSampleSizes)#samplesize is NResp
 
-write.csv(results.cat,'ExtentEstimates_GSENM_17Oct2017_withoutlowcounts.csv');View(results.cat)
+write.csv(results.cat,'ExtentEstimates_WY_Rawlins19Jan2018.csv');View(results.cat)
 
 #old code to force popsize scaling; Tony doesn't typically recommend using and was more necessary for UTBLM segments (not KM)
 #popsizeCON=list("Utah"=c("C"=1600,"G"=1100,"W"=400,"Y"=900),"Districts"=list("C"=c("C"=1600),"G"=c("G"=1100),"W"=c("W"=400),"Y"=c("Y"=900)))
