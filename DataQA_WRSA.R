@@ -13,7 +13,7 @@ library(plyr)
 #########                          Site Check                                #########
 ######################################################################################
 ##First step-do you have all the sites you should?
-listsites=tblRetrieve(Parameters=c('SITE_ID','DATE_COL','LOC_NAME','LAT_DD','LON_DD','PROJECT','PROTOCOL','VALXSITE','LAT_DD_BR','LAT_DD_TR','LON_DD_BR','LON_DD_TR'),Projects=projects,Years=years,Protocols=protocols)
+listsites=tblRetrieve(Parameters=c('SITE_ID','DATE_COL','LOC_NAME','LAT_DD','LON_DD','PROJECT','PROTOCOL','VALXSITE','LAT_DD_BR','LAT_DD_TR','LON_DD_BR','LON_DD_TR'),Projects=projects,Years=years,Protocols=protocols,SiteCodes=sitecodes,Insertion=insertion)
 listsites=cast(listsites,'UID~PARAMETER',value='RESULT')
 
 
@@ -44,7 +44,7 @@ listsites=cast(listsites,'UID~PARAMETER',value='RESULT')
 # A preliminary check to make sure all paper field forms were entered, partial sites are flagged and no egregious protocol errors with more than a few indicators with >50% data missing
 
 ##missing data parameters
-UnionTBL=tblRetrieve(Table='', Years=years, Projects=projects,Protocols=protocols,SiteCodes=sitecodes)
+UnionTBL=tblRetrieve(Table='', Years=years, Projects=projects,Protocols=protocols,SiteCodes=sitecodes,Insertion=insertion)
 #ALLp=AllParam,UIDS=UIDs,ALL=AllData,Filter=filter,SiteCodes=sitecodes,Dates=dates,Years='years',Protocols='protocols')#Protocols='' brings in failed sites as well
 
 CheckAll='N'#options: 'Y' = Check All Parameters for the protocol; 'N' = Check only Parameters in UnionTBL (i.e. if subsetting UnionTBL to single Table and don't want clutter from parameters not interested in)....this is not done automatically because missing data checks are meant to look for parameters that have ZERO readings for a particular dataset, only use in testing and known scenarios (usually where AllParams='Y')
@@ -444,7 +444,7 @@ for (t in 1:length(QUANTtbls)){
 
 ######## GPS ##########
 #get all coordinates and site metadata
-listsites=tblRetrieve(Parameters=c('SITE_ID','DATE_COL','LOC_NAME','LAT_DD','LON_DD','PROJECT','PROTOCOL','VALXSITE','LAT_DD_BR','LAT_DD_TR','LON_DD_BR','LON_DD_TR','Z_DISTANCEFROMX','TRCHLEN','REPEAT_VISIT','SLIDE_YN','MERGE'),Projects=projects,Years=years,Protocols=protocols,SiteCodes=sitecodes)
+listsites=tblRetrieve(Parameters=c('SITE_ID','DATE_COL','LOC_NAME','LAT_DD','LON_DD','PROJECT','PROTOCOL','VALXSITE','LAT_DD_BR','LAT_DD_TR','LON_DD_BR','LON_DD_TR','Z_DISTANCEFROMX','TRCHLEN','REPEAT_VISIT','SLIDE_YN','MERGE'),Projects=projects,Years=years,Protocols=protocols,SiteCodes=sitecodes,Insertion=insertion)
 listsites=cast(listsites,'UID~PARAMETER',value='RESULT')
 
 # #Check all Z_DISTANCEFROMX to verify within 250 or 500m or allowable distance to be slid
@@ -486,7 +486,7 @@ write.csv(postseasonmetadata,'coordinateQC.csv')
 
 ####### Bugs #########
 #get all bug data
-Bugs=tblRetrieve(Parameters=c('JAR_NO','ACTUAL_DATE','AREA_SAMP','TRAN_NUM','SAMPLER','AREA','BUG_METHOD','VALXSITE','PROTOCOL','PROJECT'),Years=years, Projects=projects,Protocol=protocols,SiteCodes=sitecodes)
+Bugs=tblRetrieve(Parameters=c('JAR_NO','ACTUAL_DATE','AREA_SAMP','TRAN_NUM','SAMPLER','AREA','BUG_METHOD','VALXSITE','PROTOCOL','PROJECT'),Years=years, Projects=projects,Protocol=protocols,SiteCodes=sitecodes,Insertion=insertion)
 Bugspvt=addKEYS(cast(Bugs,'UID~SAMPLE_TYPE+PARAMETER',value='RESULT'),c('SITE_ID','DATE_COL'))
 
 
@@ -521,7 +521,7 @@ write.csv(BugsSubmit,'BugsSubmit.csv')
                       
 ######## WQ checks ########
 #corrected for temperature check
-WQ2=tblRetrieve(Parameters=c('CONDUCTIVITY','CORRECTED','TEMPERATURE'), Comments='Y', Years=years, Projects=projects,SiteCodes=sitecodes)
+WQ2=tblRetrieve(Parameters=c('CONDUCTIVITY','CORRECTED','TEMPERATURE'), Comments='Y', Years=years, Projects=projects,SiteCodes=sitecodes,Insertion=insertion)
 WQ1=cast(WQ2,'UID~PARAMETER',value='RESULT')
 WQind=cast(WQ2,'UID~PARAMETER',value='IND')
 WQ3=addKEYS(merge(WQ1,WQind,by=c('UID'),all=T) ,c('SITE_ID','DATE_COL','CREW_LEADER'))
@@ -529,7 +529,7 @@ WQ3.sub=subset(WQ3,CORRECTED.x!='Y')
 write.csv(WQ3.sub,'not_temp_corrected_conduct.csv')
 
 #Chem check the hours prior to freezing
-WQtbl=tblRetrieve(Parameters=c('NTL','PTL','TN_PRED','TP_PRED','TIME_UNFROZEN'),Projects=projects,Years=years,Protocols=protocols,SiteCodes=sitecodes)
+WQtbl=tblRetrieve(Parameters=c('NTL','PTL','TN_PRED','TP_PRED','TIME_UNFROZEN'),Projects=projects,Years=years,Protocols=protocols,SiteCodes=sitecodes,Insertion=insertion)
 WQpvt=addKEYS(cast(WQtbl,'UID~PARAMETER',value='RESULT'),c('SITE_ID','CREW_LEADER'))
 WQpvt$OE_TN=WQpvt$NTL-WQpvt$TN_PRED
 WQpvt$OE_TP=WQpvt$PTL-WQpvt$TP_PRED
@@ -544,12 +544,12 @@ ConditionCheck1=aggregate(TIME_UNFROZEN~OE_TNrtg, data=WQpvt, FUN=mean)
 ConditionCheck2=aggregate(TIME_UNFROZEN~OE_TPrtg, data=WQpvt, FUN=mean) 
                       
 #view any typical values violations for Conductivity and PH
-Conduct=addKEYS(tblRetrieve(Comments='Y',Parameters=c('CONDUCTIVITY'),Projects=projects,Years=years,Protocols=protocols,SiteCodes=sitecodes),c('SITE_ID'))
+Conduct=addKEYS(tblRetrieve(Comments='Y',Parameters=c('CONDUCTIVITY'),Projects=projects,Years=years,Protocols=protocols,SiteCodes=sitecodes,Insertion=insertion),c('SITE_ID'))
 ConductQuestions=subset(Conduct,RESULT<100 | RESULT>600)# review comments for any sites flagged here 
 postseasonmetadata_ecoregion=postseasonmetadata[,c('UID','ECO_10')]
 ConductQuestions=join(ConductQuestions,postseasonmetadata_ecoregion, by="UID",type="left")
 write.csv(ConductQuestions,'ConductQuestions.csv')
-PH=addKEYS(tblRetrieve(Comments='Y',Parameters=c('PH'),Projects=projects,Years=years,Protocols=protocols,SiteCodes=sitecodes),c('SITE_ID'))
+PH=addKEYS(tblRetrieve(Comments='Y',Parameters=c('PH'),Projects=projects,Years=years,Protocols=protocols,SiteCodes=sitecodes,Insertion=insertion),c('SITE_ID'))
 PHQuestions=subset(PH,RESULT<6 | RESULT>9)# review comments for any sites flagged here
 PHQuestions=join(PHQuestions,postseasonmetadata_ecoregion, by="UID",type="left")
 write.csv(PHQuestions,'PHQuestions.csv')
@@ -561,14 +561,14 @@ read.csv('\\\\share1.bluezone.usu.edu\\miller\\buglab\\Research Projects\\BLM_WR
 
 #instrument check
 #pull all data for instrument if values still not resolved after looking at ecoregional values # not as pertinent this year and in the future because the same instrument will be used for any given proejct and confounded with ecoregional differences
-WQ2=tblRetrieve(Parameters=c('CONDUCTIVITY','PH','CAL_INST_ID'), Comments='Y', Years=years, Projects=projects)
+WQ2=tblRetrieve(Parameters=c('CONDUCTIVITY','PH','CAL_INST_ID'), Comments='Y', Years=years, Projects=projects,Protocols=protocols,SiteCodes=sitecodes,Insertion=insertion)
 WQ1=addKEYS(cast(WQ2,'UID~PARAMETER',value='RESULT')  ,c('SITE_ID','DATE_COL','CREW_LEADER'))
 WQ1=subset(WQ1,CAL_INST_ID=='')# fill in data of interest here
 
                       
 ####### incision and bank height ############
 #cross checks implemented in app so just check extreme values, outliers (above), and for unit issues
-heights=addKEYS(tblRetrieve(Parameters=c('INCISED','BANKHT'),Years=years, Projects=projects,SiteCodes=sitecodes),c('SITE_ID','DATE_COL','CREW_LEADER'))
+heights=addKEYS(tblRetrieve(Parameters=c('INCISED','BANKHT'),Years=years, Projects=projects,SiteCodes=sitecodes,Insertion=insertion),c('SITE_ID','DATE_COL','CREW_LEADER'))
 HeightCheck1=subset(heights,RESULT>1.5|RESULT<0.1)
 View(HeightCheck1)
 write.csv(HeightCheck1,'HeightCheck1.csv')
@@ -576,11 +576,11 @@ write.csv(HeightCheck1,'HeightCheck1.csv')
                       
 #######   width  #########
 #cross checks implemented in app and extreme values hard to catch/ not so important so just check for outliers(above), and for protocol issues related to dry sites                       
-Depths=tblRetrieve(Parameters=c('DEPTH'),Years=years, Projects=projects,SiteCodes=sitecodes)
+Depths=tblRetrieve(Parameters=c('DEPTH'),Years=years, Projects=projects,SiteCodes=sitecodes,Insertion=insertion)
 Depths=subset(Depths,RESULT==0 & POINT==1)# query wetted width for these transects and UIDs in SQL and check if it is 0 and TRANDRY='Y' 
 write.csv(Depths,'Depths.csv')
 #do the opposite query
-Widths=tblRetrieve(Parameters=c('WETWID','BANKWID','TRANDRY'),Years=years, Projects=projects,SiteCodes=sitecodes)                      
+Widths=tblRetrieve(Parameters=c('WETWID','BANKWID','TRANDRY'),Years=years, Projects=projects,SiteCodes=sitecodes,Insertion=insertion)                      
 pvtWidths=cast(Widths,'UID+TRANSECT~PARAMETER',value='RESULT')
 Widths=subset(Widths,RESULT==0)# query the corresponding thalweg depths in SQL if present and the VALXSITE to make sure it is INTWADE                      
 write.csv(Widths,'Widths.csv')
@@ -597,8 +597,8 @@ write.csv(DryCheck,'DryCheck.csv')
                       
 ####### substrate #######
 #get sediment data
-Sediment=tblRetrieve(Parameters=c('SIZE_CLS','XSIZE_CLS'),Projects=projects,Years=years,Protocols=protocols,SiteCodes=sitecodes)
-Sed2014=tblRetrieve(Parameters=c('SIZE_NUM','LOC'),Projects=projects,Years=years,Protocols=protocols,SiteCodes=sitecodes)
+Sediment=tblRetrieve(Parameters=c('SIZE_CLS','XSIZE_CLS'),Projects=projects,Years=years,Protocols=protocols,SiteCodes=sitecodes,Insertion=insertion)
+Sed2014=tblRetrieve(Parameters=c('SIZE_NUM','LOC'),Projects=projects,Years=years,Protocols=protocols,SiteCodes=sitecodes,Insertion=insertion)
 A_Sed2014=cast(Sed2014,'UID+TRANSECT+POINT~PARAMETER', value='RESULT')
 
 ##check % of paricles that were "other" categories
@@ -630,7 +630,7 @@ write.csv(sample_size,'sed_sample_size.csv')
 
 ###### Angle  ########                      
 #outlier checks (above) and check for missing SLANT to check if angle was being calculated in app properly
-Angle=tblRetrieve(Parameters=c('ANGLE180','SLANT'),Years=years, Projects=projects,SiteCodes=sitecodes)
+Angle=tblRetrieve(Parameters=c('ANGLE180','SLANT'),Years=years, Projects=projects,SiteCodes=sitecodes,Insertion=insertion)
 pvtAngle=addKEYS(cast(Angle,'UID+TRANSECT+POINT~PARAMETER',value='RESULT'), c('SITE_ID','DATE_COL','CREW_LEADER'))                     
 AngleCheck1=subset(pvtAngle, is.na(SLANT=='TRUE'))                      
 AngleCheck2=subset(pvtAngle, SLANT=='OB' & as.numeric(ANGLE180)<90)  
@@ -639,7 +639,7 @@ write.csv(AngleCheck2,'AngleCheck2.csv')
                  
 #######  Riparian Veg  ########
 #overstory >100% check
-riparian1=tblRetrieve(Parameters=c('CANBTRE','CANSTRE'),Years=years, Projects=projects,SiteCodes=sitecodes)
+riparian1=tblRetrieve(Parameters=c('CANBTRE','CANSTRE'),Years=years, Projects=projects,SiteCodes=sitecodes,Insertion=insertion)
 riparian1PVT=cast(riparian1,'UID+TRANSECT+POINT~PARAMETER',value='RESULT')
 riparian1PVT_IND=cast(riparian1,'UID+TRANSECT+POINT~PARAMETER',value='IND')
 riparian1pvt=merge(riparian1PVT,riparian1PVT_IND,by=c('UID','TRANSECT','POINT'),all=T)
@@ -647,7 +647,7 @@ riparian1PVTsub=subset(riparian1pvt,(CANBTRE.x==4 & CANSTRE.x>2) | (CANSTRE.x==4
 write.csv(riparian1PVTsub,'rip1.csv')
 
 #middlestory >100% check
-riparian2=tblRetrieve(Parameters=c('UNDNWDY','UNDWDY'),Years=years, Projects=projects,SiteCodes=sitecodes)
+riparian2=tblRetrieve(Parameters=c('UNDNWDY','UNDWDY'),Years=years, Projects=projects,SiteCodes=sitecodes,Insertion=insertion)
 riparian2PVT=cast(riparian2,'UID+TRANSECT+POINT~PARAMETER',value='RESULT')
 riparian2PVT_IND=cast(riparian2,'UID+TRANSECT+POINT~PARAMETER',value='IND')
 riparian2pvt=merge(riparian2PVT,riparian2PVT_IND,by=c('UID','TRANSECT','POINT'),all=T)
@@ -655,7 +655,7 @@ riparian2PVTsub=subset(riparian2pvt,(UNDNWDY.x==4 & UNDWDY.x>2) | (UNDWDY.x==4 &
 write.csv(riparian2PVTsub,'rip2.csv')
 
 #understory >100% check
-riparian3=tblRetrieve(Parameters=c('GCNWDY','GCWDY','BARE'),Years=years, Projects=projects,SiteCodes=sitecodes)
+riparian3=tblRetrieve(Parameters=c('GCNWDY','GCWDY','BARE'),Years=years, Projects=projects,SiteCodes=sitecodes,Insertion=insertion)
 riparian3PVT=cast(riparian3,'UID+TRANSECT+POINT~PARAMETER',value='RESULT')
 riparian3PVT_IND=cast(riparian3,'UID+TRANSECT+POINT~PARAMETER',value='IND')
 riparian3pvt=merge(riparian3PVT,riparian3PVT_IND,by=c('UID','TRANSECT','POINT'),all=T)
@@ -664,7 +664,7 @@ write.csv(riparian3PVTsub,'rip3.csv')
 
 #veg type missing check
 #canopy
-riparian4=tblRetrieve(Parameters=c('CANVEG','CANBTRE','CANSTRE'),Years=years, Projects=projects,SiteCodes=sitecodes)
+riparian4=tblRetrieve(Parameters=c('CANVEG','CANBTRE','CANSTRE'),Years=years, Projects=projects,SiteCodes=sitecodes,Insertion=insertion)
 riparian4PVT=cast(riparian4,'UID+TRANSECT+POINT~PARAMETER',value='RESULT')
 riparian4pvtsub=subset(riparian4PVT,CANVEG=='N' & CANBTRE>0 & CANSTRE>0)
 write.csv(riparian4pvtsub,'rip4.csv')
@@ -675,12 +675,12 @@ riparian4pvtsub2=subset(riparian4pvt,CANVEG.x!='N' & CANBTRE.x==0 & CANSTRE.x==0
 write.csv(riparian4sub2,'rip42.csv')
 
 #middle
-riparian5=tblRetrieve(Parameters=c('UNDERVEG','UNDNWDY','UNDWDY'),Years=years, Projects=projects,SiteCodes=sitecodes)
+riparian5=tblRetrieve(Parameters=c('UNDERVEG','UNDNWDY','UNDWDY'),Years=years, Projects=projects,SiteCodes=sitecodes,Insertion=insertion)
 riparian5PVT=cast(riparian5,'UID+TRANSECT+POINT~PARAMETER',value='RESULT')
 riparian5pvtsub=subset(riparian5PVT,UNDERVEG=='N' & UNDNWDY>0 & UNDWDY>0)
 write.csv(riparian5pvtsub,'rip5.csv')                      
 
-riparian5=tblRetrieve(Parameters=c('UNDERVEG','UNDNWDY','UNDWDY'),Years=years, Projects=projects,SiteCodes=sitecodes)
+riparian5=tblRetrieve(Parameters=c('UNDERVEG','UNDNWDY','UNDWDY'),Years=years, Projects=projects,SiteCodes=sitecodes,Insertion=insertion)
 riparian5PVT=cast(riparian5,'UID+TRANSECT+POINT~PARAMETER',value='RESULT')
 riparian5pvtsub2=subset(riparian5PVT,UNDERVEG!='N' & UNDNWDY==0 & UNDWDY==0)
 write.csv(riparian5pvtsub2,'rip52.csv') 
@@ -689,8 +689,8 @@ write.csv(riparian5pvtsub2,'rip52.csv')
 
 #Custom thalweg missing data because number of station is dynamic
 #run thalweg_completion_check SQL query currently under JC Projects folder locally but want to migrate to R or to a view in SQL
-tbl=tblRetrieve(Parameters=c('DEPTH'),Project=projects, Years=years,Protocols=protocols,SiteCodes=sitecodes)
-tbl.2=tblRetrieve(Parameters=c('NUM_THALWEG'),Project=projects, Years=years,Protocols=protocols,SiteCodes=sitecodes)
+tbl=tblRetrieve(Parameters=c('DEPTH'),Project=projects, Years=years,Protocols=protocols,SiteCodes=sitecodes,Insertion=insertion)
+tbl.2=tblRetrieve(Parameters=c('NUM_THALWEG'),Project=projects, Years=years,Protocols=protocols,SiteCodes=sitecodes,Insertion=insertion)
 tbl3=cast(tbl.2,'UID~PARAMETER',value='RESULT',mean)
 tbl.PVT=addKEYS(cast(tbl,'UID~PARAMETER',value='RESULT'),c('SITE_ID'))# count is default
 thalweg.missing=merge(tbl.PVT,tbl3, by='UID')
@@ -735,7 +735,7 @@ thalweg.missing2013$pctcomplete=thalweg.missing2013$DepthCNT/thalweg.missing2013
 thalweg.missing2013_2=aggregate(pctcomplete~UID, data=thalweg.missing2013,mean)                             
 
 #Increment cross-validation WRSA checks
-incrementcheck=tblRetrieve(Parameters=c('TRCHLEN','INCREMENT','RCHWIDTH'), Projects=projects, Years=years,Protocols=protocols,SiteCodes=sitecodes)
+incrementcheck=tblRetrieve(Parameters=c('TRCHLEN','INCREMENT','RCHWIDTH'), Projects=projects, Years=years,Protocols=protocols,SiteCodes=sitecodes,Insertion=insertion)
 incrsub=subset(incrementcheck,UID!='1500BC4F-C9B3-4FFC-9639-B5054B0FCD62')#UID:10383  IND 4849393 needs to be deactivated for this to work
 incrementPVT=cast(incrsub,'UID~PARAMETER',value='RESULT')
 incrementsub=subset(incrementPVT,TRCHLEN/0.01!=INCREMENT)#couldn't get this to work so checked this manually in excel and also checked to make sure that RCHWIDTH*40=TRCHLEN and for RCHWIDTH<2.5 INCREMENT=1 and for RCHWIDTH>2.5<4 INCREMENT=1.5
@@ -743,46 +743,46 @@ write.csv(incrementPVT,'incrementPVT.csv')
 #weridinc=tblRetrieve(Parameters=c('INCREMENT'),UIDS='11852')
                       
 #thalweg checks####couldn't get this to work so did cell referencing in excel to interpolate between values with 1 missing value inbetween
-thalweg<-tblRetrieve(Parameters='DEPTH',Projects=projects,Years=years, Protocols=protocols)
+thalweg<-tblRetrieve(Parameters='DEPTH',Projects=projects,Years=years, Protocols=protocols,SiteCodes=sitecodes,Insertion=insertion)
 thalweg_depth<-subset(thalweg,SAMPLE_TYPE!='CROSSSECW')
 thalweg_depth_pvt<-cast(thalweg_depth,'UID+TRANSECT~POINT', value='RESULT')
 thalweg_depth_pvt_order<-thalweg_depth_pvt[with(thalweg_depth_pvt, order(1,29))]
 thaleg_depth_NA<-thalweg_depth_pvt [is.na(thalweg_depth_pvt$'1')==TRUE,c(1:2,4)]
 
 #check too deep variable for any depths that need trig 
-toodeep=tblRetrieve(Comments='Y',Parameters=c('TOODEEP','DEPTH_ANGLE','DEPTH'),Projects=projects,Years=years, Protocols=protocols,SiteCodes=sitecodes)
+toodeep=tblRetrieve(Comments='Y',Parameters=c('TOODEEP','DEPTH_ANGLE','DEPTH'),Projects=projects,Years=years, Protocols=protocols,SiteCodes=sitecodes,Insertion=insertion)
 pvttoodeep=cast(toodeep,'UID+TRANSECT+POINT~PARAMETER',value='RESULT')
 TooDeepCheck=subset(pvttoodeep,TOODEEP=='Y')
 toodeepcomments=join(TooDeepCheck)
 
 #thalweg depth/ width EPA check
 #wading sites-----------not curenly working depths not being joined properly
-depthcheck=tblRetrieve(Parameters=c('DEPTH'), Projects=projects, Years=years,Protocols=protocols,SiteCodes=sitecodes)
+depthcheck=tblRetrieve(Parameters=c('DEPTH'), Projects=projects, Years=years,Protocols=protocols,SiteCodes=sitecodes,Insertion=insertions)
 depthcheck.sub=subset(depthcheck,SAMPLE_TYPE!='CROSSSECW')
 pvtdepthcheck=cast(depthcheck.sub,'UID+TRANSECT+POINT~PARAMETER',value='RESULT')
 pvtdepthcheck.sub=subset(pvtdepthcheck,POINT=='1')#1 for 2016 and 0 for pre-2016
-width=tblRetrieve(Parameters=c('WETWID'),Projects=projects, Years=years,Protocols=protocols)
+width=tblRetrieve(Parameters=c('WETWID'),Projects=projects, Years=years,Protocols=protocols,SiteCodes-sitecodes,Insertion=insertion)
 check=join_all(list(pvtdepthcheck.sub,width),by=c('UID','TRANSECT'))
 check$RESULT=as.numeric(check$RESULT)
 check$DEPTH=as.numeric(check$DEPTH)
 odd_ratio=addKEYS(subset(check,RESULT/(DEPTH/100)>50|RESULT/(DEPTH/100)<1),c('SITE_ID'))
 #boating sites
 odd_ratio=subset(check,RESULT/(DEPTH)>50|RESULT/(DEPTH)<1)
-
+write.csv(odd_ratio,'odd_ratio.csv')
                  
                  
 #########  slope   ################                    
-Slope=tblRetrieve(Parameters=c('AVGSLOPE','SLPRCHLEN','TRCHLEN','PARTIAL_RCHLEN','POOLRCHLEN','SLOPE_COLLECT','PCT_GRADE','VALXSITE'),Projects=projects, Years=years,Protocols=protocols,SiteCodes=sitecodes)                 
+Slope=tblRetrieve(Parameters=c('AVGSLOPE','SLPRCHLEN','TRCHLEN','PARTIAL_RCHLEN','POOLRCHLEN','SLOPE_COLLECT','PCT_GRADE','VALXSITE'),Projects=projects, Years=years,Protocols=protocols,SiteCodes=sitecodes,Insertion=insertion)                 
 pvtSlope=addKEYS(cast(Slope,'UID~PARAMETER',value='RESULT'), c('SITE_ID','CREW_LEADER'))                
 SlopeCheck_typicalvalues=subset(pvtSlope,as.numeric(PCT_GRADE)>14|as.numeric(PCT_GRADE)<1)
 SlopeCheck_partialno=subset(pvtSlope,SLOPE_COLLECT=='PARTIAL'|SLOPE_COLLECT=='NO SLOPE')
-Pass=tblRetrieve(Parameters=c('ENDTRAN'),Projects=projects, Years=years,Protocols=protocols,SiteCodes=sitecodes)                 
+Pass=tblRetrieve(Parameters=c('ENDTRAN'),Projects=projects, Years=years,Protocols=protocols,SiteCodes=sitecodes,Insertion=insertion)                 
 SlopeCheck_more2passes=subset(Pass,TRANSECT>2)# if more than 2 passes need to manually check which ones to average
 #avgslope does not get computed in the app if the passes are not within 10%.... for those passes manually average and flag as not within 10%?                
 # sites with pct_grade==0 are not within 10%
 NOT10PER=subset(pvtSlope,PCT_GRADE=='0')
 # for any sites that failed the within 10% check, see idividual passes below
-IndividualSlope=tblRetrieve(Parameters=c('SLOPE','STARTHEIGHT','ENDHEIGHT'),Projects=projects, Years=years,Protocols=protocols,SiteCodes=sitecodes)
+IndividualSlope=tblRetrieve(Parameters=c('SLOPE','STARTHEIGHT','ENDHEIGHT'),Projects=projects, Years=years,Protocols=protocols,SiteCodes=sitecodes,Insertion=insertion)
 pvtIndividualSlopeSum=addKEYS(cast(IndividualSlope,'UID+TRANSECT~PARAMETER',value='RESULT', fun=sum),c('SITE_ID','CREW_LEADER'))#note Transect=Pass
 pvtIndividualSlopeRaw=addKEYS(cast(IndividualSlope,'UID+TRANSECT+POINT~PARAMETER',value='RESULT'),c('SITE_ID','CREW_LEADER'))#note Transect=Pass
 #still need to check a site with 3 passes to make sure Reid averaged slope properly
@@ -796,29 +796,29 @@ write.csv(pvtIndividualSlopeRaw,'pvtIndividualSlopeRaw.csv')
 
 #########  pools   ################                                           
 #getting all pool data for a specfic set of sites---not collecting one of the parameters below anymore
-pools<-addKEYS(tblRetrieve(Parameters=c('HABTYPE','FORMATION','PTAILDEP','MAXDEPTH','LENGTH'),Projects=projects,Years=years,Protocols=protocols,SiteCodes=sitecodes, Comments='Y'),c('SITE_ID'))
+pools<-addKEYS(tblRetrieve(Parameters=c('HABTYPE','FORMATION','PTAILDEP','MAXDEPTH','LENGTH'),Projects=projects,Years=years,Protocols=protocols,SiteCodes=sitecodes,Insertion=insertion, Comments='Y'),c('SITE_ID'))
 pvtpools=cast(pools,'UID+TRANSECT+POINT~PARAMETER',value='RESULT')
 write.csv(pvtpools,'pvtpools.csv')#short and look for min and max and 0 data or unit issues
 
 # flow and collected checks
-PoolCollect<-tblRetrieve(Parameters=c('POOL_COLLECT','VALXSITE','POOLRCHLEN','TRCHLEN','SLOPE_COLLECT','SLPRCHLEN'),Projects=projects,Years=years,Protocols=protocols,SiteCodes=sitecodes, Comments='Y')
+PoolCollect<-tblRetrieve(Parameters=c('POOL_COLLECT','VALXSITE','POOLRCHLEN','TRCHLEN','SLOPE_COLLECT','SLPRCHLEN'),Projects=projects,Years=years,Protocols=protocols,SiteCodes=sitecodes,Insertion=insertion, Comments='Y')
 pvtPoolCollect=addKEYS(cast(PoolCollect,'UID~PARAMETER',value='RESULT'),c('SITE_ID','CREW_LEADER'))
 write.csv(pvtPoolCollect,'poolcollect.csv')
 pvtPoolCheck=subset(pvtPoolCollect,VALXSITE=='INTWADE'|POOL_COLLECT=='NF'|POOL_COLLECT=='NC')#needs tweaking
 write.csv(pvtPoolCheck,'poolNCNFCheck.csv')
 
 #check sum of lengths not > than total reach length  
-pool_length<-tblRetrieve(Parameters=c('LENGTH'),Projects=projects,Years=years,Protocols=protocols,SiteCodes=sitecodes, Comments='Y')
+pool_length<-tblRetrieve(Parameters=c('LENGTH'),Projects=projects,Years=years,Protocols=protocols,SiteCodes=sitecodes,Insertion=insertion, Comments='Y')
 pool_length$RESULT=as.numeric(pool_length$RESULT)
 pvtpools1=cast(pool_length,'UID~PARAMETER',value='RESULT',fun=sum) 
-reach_length=tblRetrieve(Parameters=c('POOLRCHLEN'),Projects=projects,SiteCodes=sitecodes)
+reach_length=tblRetrieve(Parameters=c('POOLRCHLEN'),Projects=projects,Years=years,Protocols=protocols,SiteCodes=sitecodes,Insertion=insertion)
 pvtpools2=cast(reach_length,'UID~PARAMETER',value='RESULT') 
 poolsmerge<-merge(pvtpools1,pvtpools2,by=c('UID'),all=T)
 pool_great_100<-subset(poolsmerge,LENGTH>POOLRCHLEN)
-
+write.csv(pool_great_100,'pool_great_100.csv')
 
 #pool tail fines
-PoolFines=tblRetrieve(Parameters=c('POOLFINES2','POOLFINES6','POOLNOMEAS'),Projects=projects, Years=years,Protocols=protocols,SiteCode=sitecodes)
+PoolFines=tblRetrieve(Parameters=c('POOLFINES2','POOLFINES6','POOLNOMEAS'),Projects=projects, Years=years,Protocols=protocols,SiteCode=sitecodes,Insertion=insertion)
 pvtPoolFines=addKEYS(cast(PoolFines,'UID+TRANSECT+POINT~PARAMETER',value='RESULT'),c('SITE_ID'))#need to pivot to create the pctPoolFInes variable
 pvtPoolFines$PctPoolFines2_CHECK=pvtPoolFines$POOLFINES2/(50)*100
 pvtPoolFines$PctPoolFines6_CHECK=pvtPoolFines$POOLFINES6/(50)*100
@@ -842,7 +842,7 @@ write.csv(subQC,'pooltailfines_highvariance.csv')
 
 #########  photos  ###################
 #use to check any questionable values such as bankfull widths and heights                      
-Photo=tblRetrieve(Parameters=c('PHOTO_ID','PHOTO_DESCRIP','PHOTO_TYPE','ROD','DIRECTION','COMMENT'),Projects=projects,Years=years,SiteCodes=sitecodes)                   
+Photo=tblRetrieve(Parameters=c('PHOTO_ID','PHOTO_DESCRIP','PHOTO_TYPE','ROD','DIRECTION','COMMENT'),Projects=projects,Years=years,SiteCodes=sitecodes,Insertion=insertion)                   
 pvtPhotos=cast(Photo,'UID+POINT~PARAMETER',value='RESULT')
 
 
@@ -991,8 +991,8 @@ print(ThalwegCheck)
 ###########################################################################################################                      
 #####Additional QC Checks
 #bank cross-validation WRSA checks
-widhgt=tblRetrieve(Parameters=c('BANKHT','INCISED','WETWID','BANKWID','BARWID'), Projects=c('NORCAL','2015ProtocolOverlap','AKEFO'),Years=c('2013','2014','2015'))
-widhgt2=tblRetrieve(Parameters=c('BANKHT','INCISED','WETWID','WETWIDTH','BANKWID','BARWID','BARWIDTH'),Projects=c('NORCAL','2015ProtocolOverlap','AKEFO'),Years=c('2013','2014','2015'))
+widhgt=tblRetrieve(Parameters=c('BANKHT','INCISED','WETWID','BANKWID','BARWID'), Projects=projects,Years=years,Protocols=protocols,SiteCodes=sitecodes)
+widhgt2=tblRetrieve(Parameters=c('BANKHT','INCISED','WETWID','WETWIDTH','BANKWID','BARWID','BARWIDTH'),Projects=projects,Years=years,Protocols=protocols,SiteCodes=sitecodes)
 #widhgt=tblRetrieve(Parameters=c('BANKHT','INCISED','WETWID','BANKWID','BARWID'), Projects=c('WRSA','NV','GSENM','COPLT'),Years=c('2015'))
 #widhgt2=tblRetrieve(Parameters=c('BANKHT','INCISED','WETWID','WETWIDTH','BANKWID','BARWID','BARWIDTH'), Projects=c('WRSA','NV','GSENM','COPLT'),Years=c('2015'))
 widhgt=subset(widhgt,nchar(TRANSECT)==1 | substr(TRANSECT,1,1)=='X')
@@ -1010,8 +1010,8 @@ write.csv(wetwidthchecks,'wetwidthchecks_31Aug2015.csv')
 write.csv(rbind(widhgt2,banks),'WidthHeightRaw_31Aug2015.csv')#need raw output to get IND values
 
 #getting raw bank data for a few problem sites
-widhgt=tblRetrieve(Parameters=c('BANKHT','INCISED','WETWID','BANKWID','BARWID'), Projects='AKEFO',Years=c('2015'),SiteCodes=c('AF-LS3-9172','AF-SS1-9146','AA-STR-0013'))
-widhgt2=tblRetrieve(Parameters=c('BANKHT','INCISED','WETWID','WETWIDTH','BANKWID','BARWID','BARWIDTH'), Projects='AKEFO',Years=c('2015'),SiteCodes=c('AF-LS3-9172','AF-SS1-9146','AA-STR-0013'))
+widhgt=tblRetrieve(Parameters=c('BANKHT','INCISED','WETWID','BANKWID','BARWID'), Projects=projects,Years=years,Protocols=protocols,SiteCodes=sitecodes)
+widhgt2=tblRetrieve(Parameters=c('BANKHT','INCISED','WETWID','WETWIDTH','BANKWID','BARWID','BARWIDTH'),Projects=projects,Years=years,Protocols=protocols,SiteCodes=sitecodes)
 #widhgt=tblRetrieve(Parameters=c('BANKHT','INCISED','WETWID','BANKWID','BARWID'), Projects='WRSA',Years=c('2013','2014'),SiteCodes=c('MN-SS-1133','MP-SS-2091','MS-SS-3126','XE-RO-5081','XE-SS-5105','XS-SS-6135', 'OT-LS-7001',  'OT-LS-7012',  'MP-SS-2080',	'XE-SS-5150',	'MS-LS-3026',	'OT-LS-7019',	'OT-SS-7133'))
 #widhgt2=tblRetrieve(Parameters=c('BANKHT','INCISED','WETWID','WETWIDTH','BANKWID','BARWID','BARWIDTH'), Projects='WRSA',Years=c('2013','2014'),SiteCodes=c('MN-SS-1133','MP-SS-2091','MS-SS-3126','XE-RO-5081','XE-SS-5105','XS-SS-6135', 'OT-LS-7001',  'OT-LS-7012',	'MP-SS-2080',	'XE-SS-5150',	'MS-LS-3026',	'OT-LS-7019',	'OT-SS-7133'))
 widhgt=subset(widhgt,nchar(TRANSECT)==1 | substr(TRANSECT,1,1)=='X')

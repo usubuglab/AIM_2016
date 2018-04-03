@@ -40,7 +40,7 @@ library(plyr)
 ########################################################################################
 ##### Site Descriptors #####
 ########################################################################################
-listsites=tblRetrieve(Parameters=c('SITE_ID','DATE_COL','LOC_NAME','LAT_DD','LON_DD','PROJECT','PROTOCOL','VALXSITE','LAT_DD_BR','LAT_DD_TR','LON_DD_BR','LON_DD_TR','DEWATER','BEAVER_FLOW_MOD','BEAVER_SIGN'),Projects=projects,Years=years,Protocols=protocols,SiteCodes=sitecodes)
+listsites=tblRetrieve(Parameters=c('SITE_ID','DATE_COL','LOC_NAME','LAT_DD','LON_DD','PROJECT','PROTOCOL','VALXSITE','LAT_DD_BR','LAT_DD_TR','LON_DD_BR','LON_DD_TR','DEWATER','BEAVER_FLOW_MOD','BEAVER_SIGN'),Projects=projects,Years=years,Protocols=protocols,SiteCodes=sitecodes,Insertion=insertion)
 #2017
 listsites=setNames(cast(listsites,'UID~PARAMETER',value='RESULT'),c("UID","BEAVER_FLOW_MOD_CHECK","BEAVER_SIGN_CHECK","DATE_COL_CHECK","WATER_WITHDRAWAL_CHECK","LAT_DD_CHECK","LAT_DD_BR_CHECK","LAT_DD_TR_CHECK","LOC_NAME_CHECK","LON_DD_CHECK","LON_DD_BR_CHECK","LON_DD_TR_CHECK","PROJECT_CHECK","PROTOCOL_CHECK","SITE_ID_CHECK",'VALXSITE_CHECK'))
 listsites=listsites[,c(15,9,1,4,6,10,13,14,16,7,11,8,12,2,3,5)]
@@ -55,30 +55,30 @@ listsites$FieldStatus_CHECK=ifelse(listsites$VALXSITE_CHECK=="WADEABLE"|listsite
                                     ifelse(listsites$VALXSITE_CHECK=="INTWADE","Sampled - Interrupted Flow",listsites$VALXSITE_CHECK)))
 # #listsites=listsites[,c(1,12,6,2,3,7,10,13,11,5,9,4,8)]
 # #run list sites and TRCHLEN below to get sinuosity data
-TRCHLEN1=tblRetrieve(Parameters=c('TRCHLEN','INCREMENT'),Projects=projects,Years=years,Protocols=protocols,SiteCodes=sitecodes)#not using TRCHLEN
+TRCHLEN1=tblRetrieve(Parameters=c('TRCHLEN','INCREMENT'),Projects=projects,Years=years,Protocols=protocols,SiteCodes=sitecodes,Insertion=insertion)#not using TRCHLEN
 
 
 ##########################################################################################
 ###### Biodiversity and Riparian Habitat Quality ######
 ##########################################################################################
 #xcdenmid and xcdenbk - canopy cover
-densiom=tblRetrieve(Parameters='DENSIOM',Projects=projects,Years=years,Protocols=protocols,SiteCodes=sitecodes)
+densiom=tblRetrieve(Parameters='DENSIOM',Projects=projects,Years=years,Protocols=protocols,SiteCodes=sitecodes,Insertion=insertion)
 #unique(densiom$RESULT)
 #densiompvt=cast(densiom,'UID+TRANSECT+POINT~PARAMETER',value='RESULT')# check data structure to make sure no duplicates
 #unique(densiom$POINT)
 
 #XCMG - vegetative complexity
-#RipALL=tblRetrieve(Parameters=c("BARE","CANBTRE","CANSTRE","CANVEG","GCNWDY","GCWDY","UNDERVEG","UNDNWDY","UNDWDY"),Projects=projects,Years=years,Protocols=protocols,SiteCodes=sitecodes)
+#RipALL=tblRetrieve(Parameters=c("BARE","CANBTRE","CANSTRE","CANVEG","GCNWDY","GCWDY","UNDERVEG","UNDNWDY","UNDWDY"),Projects=projects,Years=years,Protocols=protocols,SiteCodes=sitecodes,Insertion=insertion)
 #unique(RipALL$RESULT)
-RipXCMG=tblRetrieve(Parameters=c("CANBTRE","CANSTRE","GCNWDY","GCWDY","UNDNWDY","UNDWDY"),Projects=projects,Years=years,Protocols=protocols,SiteCodes=sitecodes)
+RipXCMG=tblRetrieve(Parameters=c("CANBTRE","CANSTRE","GCNWDY","GCWDY","UNDNWDY","UNDWDY"),Projects=projects,Years=years,Protocols=protocols,SiteCodes=sitecodes,Insertion=insertion)
 #unique(RipXCMG$RESULT)
-RipWW=tblRetrieve(Parameters=c("CANBTRE","CANSTRE","GCWDY","UNDWDY"),Projects=projects,Years=years,Protocols=protocols,SiteCodes=sitecodes)
-RipGB=tblRetrieve(Parameters=c("BARE"),Projects=projects,Years=years,Protocols=protocols,SiteCodes=sitecodes)
+RipWW=tblRetrieve(Parameters=c("CANBTRE","CANSTRE","GCWDY","UNDWDY"),Projects=projects,Years=years,Protocols=protocols,SiteCodes=sitecodes,Insertion=insertion)
+RipGB=tblRetrieve(Parameters=c("BARE"),Projects=projects,Years=years,Protocols=protocols,SiteCodes=sitecodes,Insertion=insertion)
 #RipAllpvt=cast(RipALL,'UID+TRANSECT+POINT~PARAMETER',value='RESULT')# check data structure to make sure no duplicates
 #unique(RipAllpvt$TRANSECT)
 
 #BLM riparian cover and frequency
-RipBLM=tblRetrieve(Parameters=c('CANRIPW','UNRIPW','GCRIP','INVASW', 'NATIVW','INVASH','NATIVH','SEGRUSH'),Projects=projects,Years=years,Protocols=protocols,SiteCodes=sitecodes)
+RipBLM=tblRetrieve(Parameters=c('CANRIPW','UNRIPW','GCRIP','INVASW', 'NATIVW','INVASH','NATIVH','SEGRUSH'),Projects=projects,Years=years,Protocols=protocols,SiteCodes=sitecodes,Insertion=insertion)
 #pvtRipBLM=cast(RipBLM,'UID+TRANSECT+POINT~PARAMETER',value='RESULT')
 
 #Bug data
@@ -92,7 +92,7 @@ RipBLM=tblRetrieve(Parameters=c('CANRIPW','UNRIPW','GCRIP','INVASW', 'NATIVW','I
 ###### Water Quality ######
 ###############################################################################################
 #All WQ data
-WQtbl=tblRetrieve(Parameters=c('CONDUCTIVITY','PH','NTL','PTL','TURBIDITY','TEMPERATURE','EC_PRED','TN_PRED','TP_PRED'),Projects=projects,Years=years,Protocols=protocols,SiteCodes=sitecodes)
+WQtbl=tblRetrieve(Parameters=c('CONDUCTIVITY','PH','NTL','PTL','TURBIDITY','TEMPERATURE','EC_PRED','TN_PRED','TP_PRED'),Projects=projects,Years=years,Protocols=protocols,SiteCodes=sitecodes,Insertion=insertion)
 WQpvt=cast(WQtbl,'UID~PARAMETER',value='RESULT')
 #WQfinal=WQpvt
 
@@ -102,20 +102,20 @@ WQpvt=cast(WQtbl,'UID~PARAMETER',value='RESULT')
 ##### Watershed Function and Instream Habitat Quality ######
 ###############################################################################################
 #Pools
-pool_length=tblRetrieve(Parameters=c('LENGTH'),Projects=projects, Years=years,Protocols=protocols,SiteCode=sitecodes)
-reach_length=tblRetrieve(Parameters=c('POOLRCHLEN'),Projects=projects, Years=years,Protocols=protocols,SiteCode=sitecodes)
-PoolDepth=tblRetrieve(Parameters=c('PTAILDEP','MAXDEPTH'), Projects=projects, Years=years,Protocols=protocols,SiteCode=sitecodes)
-poolcollect=tblRetrieve(Parameters='POOL_COLLECT',Projects=projects, Years=years,Protocols=protocols,SiteCode=sitecodes)
+pool_length=tblRetrieve(Parameters=c('LENGTH'),Projects=projects, Years=years,Protocols=protocols,SiteCode=sitecodes,Insertion=insertion)
+reach_length=tblRetrieve(Parameters=c('POOLRCHLEN'),Projects=projects, Years=years,Protocols=protocols,SiteCode=sitecodes,Insertion=insertion)
+PoolDepth=tblRetrieve(Parameters=c('PTAILDEP','MAXDEPTH'), Projects=projects, Years=years,Protocols=protocols,SiteCode=sitecodes,Insertion=insertion)
+poolcollect=tblRetrieve(Parameters='POOL_COLLECT',Projects=projects, Years=years,Protocols=protocols,SiteCode=sitecodes,Insertion=insertion)
 
 #LWD- should query wadeable and boatable wood because boatable wood stored under wadeable?
 LwdCatWet=unclass(sqlQuery(wrsa1314,"select SAMPLE_TYPE,PARAMETER from tblMetadata where Sample_TYPE like 'LWDW%' and PARAMETER like 'W%'"))$PARAMETER
 LwdCatDry=unclass(sqlQuery(wrsa1314,"select SAMPLE_TYPE,PARAMETER from tblMetadata where Sample_TYPE like 'LWDW%' and PARAMETER like 'D%'"))$PARAMETER
-LwdWet=addKEYS(tblRetrieve(Parameters=LwdCatWet,Projects=projects,Years=years,Protocols=protocols,SiteCodes=sitecodes),c('SITE_ID','DATE_COL'))
-LwdDry=tblRetrieve(Parameters=LwdCatDry,Projects=projects,Years=years,Protocols=protocols,SiteCodes=sitecodes)
-#pvtLwdWet=cast(LwdWet, 'UID~PARAMETER',value='RESULT',fun=sum)
-#pvtLwdDry=cast(LwdDry,'UID~PARAMETER',value='RESULT',fun=sum)
+LwdWet=addKEYS(tblRetrieve(Parameters=LwdCatWet,Projects=projects,Years=years,Protocols=protocols,SiteCodes=sitecodes,Insertion=insertion),c('SITE_ID','DATE_COL'))
+LwdDry=tblRetrieve(Parameters=LwdCatDry,Projects=projects,Years=years,Protocols=protocols,SiteCodes=sitecodes,Insertion=insertion)
+#pvtLwdWet=cast(LwdWet, 'UID~TRANSECT+PARAMETER',value='RESULT')
+#pvtLwdDry=cast(LwdDry,'UID~TRANSECT+PARAMETER',value='RESULT')
 #pvtLwd=merge(pvtLwdWet,pvtLwdDry, by='UID')
-TRCHLEN=tblRetrieve(Parameters=c('TRCHLEN','INCREMENT'),Projects=projects,Years=years,Protocols=protocols,SiteCodes=sitecodes)#not using TRCHLEN
+TRCHLEN=tblRetrieve(Parameters=c('TRCHLEN','INCREMENT'),Projects=projects,Years=years,Protocols=protocols,SiteCodes=sitecodes,Insertion=insertion)#not using TRCHLEN
 TRCHLEN1=cast(TRCHLEN,'UID~PARAMETER',value='RESULT')
 #TRCHLEN is not the same as the reachlen used in Aquamet
 #The reachlen is calc from mulitplying INCREMENT by the thalweg stations
@@ -127,8 +127,8 @@ TRCHLEN1=cast(TRCHLEN,'UID~PARAMETER',value='RESULT')
 #stations (i.e. station mode) occuring at that site. 
 
 #pct_safn and other sediment metrics
-Sediment=tblRetrieve(Parameters=c('SIZE_CLS','XSIZE_CLS'),Projects=projects,Years=years,Protocols=protocols,SiteCodes=sitecodes)
-Sed2014=tblRetrieve(Parameters=c('SIZE_NUM','LOC'),Projects=projects,Years=years,Protocols=protocols,SiteCodes=sitecodes)
+Sediment=tblRetrieve(Parameters=c('SIZE_CLS','XSIZE_CLS'),Projects=projects,Years=years,Protocols=protocols,SiteCodes=sitecodes,Insertion=insertion)
+Sed2014=tblRetrieve(Parameters=c('SIZE_NUM','LOC'),Projects=projects,Years=years,Protocols=protocols,SiteCodes=sitecodes,Insertion=insertion)
 #unique(Sediment$RESULT)
 #Sedimentpvt=cast(Sediment,'UID+TRANSECT+POINT~PARAMETER',value='RESULT')# check data structure to make sure no duplicates
 #unique(Sedimentpvt$TRANSECT)# check data structure
@@ -139,36 +139,36 @@ Sed2014=tblRetrieve(Parameters=c('SIZE_NUM','LOC'),Projects=projects,Years=years
 #WR_Sed2014=tblRetrieve(Parameters=c('SIZE_NUM'),Projects=projects,Years=years,Protocols=protocols)
 
 #Pool Tail Fines
-PoolFines=tblRetrieve(Parameters=c('POOLFINES2','POOLFINES6','POOLNOMEAS'),Projects=projects, Years=years,Protocols=protocols,SiteCode=sitecodes)
+PoolFines=tblRetrieve(Parameters=c('POOLFINES2','POOLFINES6','POOLNOMEAS'),Projects=projects, Years=years,Protocols=protocols,SiteCode=sitecodes,Insertion=insertion)
 
 #Bank Stability
-BankStab=tblRetrieve(Parameters=c('STABLE','EROSION','COVER','BNK_VEG','BNK_COBBLE','BNK_LWD','BNK_BEDROCK'), Projects=projects,Years=years,Protocols=protocols,SiteCodes=sitecodes)
-SideBank=tblRetrieve(Parameters=c('SIDCHN_BNK'),Projects=projects,Years=years,Protocols=protocols,SiteCodes=sitecodes)
+BankStab=tblRetrieve(Parameters=c('STABLE','EROSION','COVER','BNK_VEG','BNK_COBBLE','BNK_LWD','BNK_BEDROCK'), Projects=projects,Years=years,Protocols=protocols,SiteCodes=sitecodes,Insertion=insertion)
+SideBank=tblRetrieve(Parameters=c('SIDCHN_BNK'),Projects=projects,Years=years,Protocols=protocols,SiteCodes=sitecodes,Insertion=insertion)
 #unique(BankStab$RESULT)
 #BankStabpvt=addKEYS(cast(BankStab,'UID+TRANSECT+POINT~PARAMETER',value='RESULT'),c('SITE_ID'))
 #unique(BankStab$POINT)
 #unique(BankStab$TRANSECT)
-#BankStabCoverClass=tblRetrieve(Parameters=c('BNK_VEG','BNK_COBBLE','BNK_LWD','BNK_BEDROCK'),Projects=projects,Years=years,Protocols=protocols,SiteCodes=sitecodes)
+#BankStabCoverClass=tblRetrieve(Parameters=c('BNK_VEG','BNK_COBBLE','BNK_LWD','BNK_BEDROCK'),Projects=projects,Years=years,Protocols=protocols,SiteCodes=sitecodes,Insertion=insertion)
 #pvtBankStabCoverClass=addKEYS(cast(BankStabCoverClass,'UID+TRANSECT+POINT~PARAMETER',value='RESULT'),c('SITE_ID'))
 
 #LINCIS_H - floodplain connectivity
-Incision=tblRetrieve(Parameters=c('INCISED','BANKHT'),Projects=projects,Years=years,Protocols=protocols,SiteCodes=sitecodes)
+Incision=tblRetrieve(Parameters=c('INCISED','BANKHT'),Projects=projects,Years=years,Protocols=protocols,SiteCodes=sitecodes,Insertion=insertion)
 #min(Incision$RESULT);max(Incision$RESULT)
 #incisionpvt=cast(Incision,'UID+TRANSECT~PARAMETER',value='RESULT')# check data structure to make sure no duplicates
 
 #XFC_NAT- fish cover
-fish=tblRetrieve(Parameters=c('BOULDR','BRUSH','LVTREE','OVRHNG','UNDCUT','WOODY'),Projects=projects,Years=years,Protocols=protocols,SiteCodes=sitecodes)
+fish=tblRetrieve(Parameters=c('BOULDR','BRUSH','LVTREE','OVRHNG','UNDCUT','WOODY'),Projects=projects,Years=years,Protocols=protocols,SiteCodes=sitecodes,Insertion=insertion)
 #unique(fish$RESULT)# check data structure
 #fishpvt=cast(fish,'UID+TRANSECT~PARAMETER',value='RESULT')# check data structure to make sure no duplicates
 
 #Angle-PIBO method only
-Angle=tblRetrieve(Parameters=c('ANGLE180'),Projects=projects, Years=years,Protocols=protocols,SiteCodes=sitecodes)
+Angle=tblRetrieve(Parameters=c('ANGLE180'),Projects=projects, Years=years,Protocols=protocols,SiteCodes=sitecodes,Insertion=insertion)
 #Anglepvt=cast(Angle,'UID+TRANSECT+POINT~PARAMETER',value='RESULT')
 #unique(Anglepvt$TRANSECT)
 #min(Angle$RESULT);max(Angle$RESULT)
 
 #Thalweg mean , CV, and pct dry
-thalweg=addKEYS(tblRetrieve(Parameters=c('DEPTH'), Projects=projects, Years=years,Protocols=protocols,SiteCodes=sitecodes),c('PROTOCOL'))
+thalweg=addKEYS(tblRetrieve(Parameters=c('DEPTH'), Projects=projects, Years=years,Protocols=protocols,SiteCodes=sitecodes,Insertion=insertion),c('PROTOCOL'))
 thalweg=subset(thalweg,SAMPLE_TYPE!='CROSSSECW')
 #thalwegpvt=cast(thalweg,'UID+TRANSECT+POINT~PARAMETER',value='RESULT')
 #unique(thalwegpvt$POINT)
@@ -181,28 +181,28 @@ thalweg=subset(thalweg,SAMPLE_TYPE!='CROSSSECW')
 ###### Covariates/ Other ######
 #########################################################################################################
 #Channel Dimensions
-WetWid=tblRetrieve(Parameters=c('WETWIDTH'),Projects=projects, Years=years,Protocols=protocols,SiteCode=sitecodes)#Wetted widths from thalweg
-WetWid2=tblRetrieve(Parameters=c('WETWID'),Projects=projects, Years=years,Protocols=protocols,SiteCode=sitecodes)#Wetted widths from main transects
-BankWid=tblRetrieve(Parameters=c('BANKWID'),Projects=projects, Years=years,Protocols=protocols,SiteCode=sitecodes)
+WetWid=tblRetrieve(Parameters=c('WETWIDTH'),Projects=projects, Years=years,Protocols=protocols,SiteCode=sitecodes,Insertion=insertion)#Wetted widths from thalweg
+WetWid2=tblRetrieve(Parameters=c('WETWID'),Projects=projects, Years=years,Protocols=protocols,SiteCode=sitecodes,Insertion=insertion)#Wetted widths from main transects
+BankWid=tblRetrieve(Parameters=c('BANKWID'),Projects=projects, Years=years,Protocols=protocols,SiteCode=sitecodes,Insertion=insertion)
 #WetWidpvt=cast(WetWid,'UID+TRANSECT+POINT~PARAMETER',value='RESULT')
 #WetWid2pvt=cast(WetWid2,'UID+TRANSECT~PARAMETER',value='RESULT')
 #BankWidpvt=cast(BankWid,'UID+TRANSECT~PARAMETER',value='RESULT')
 
 #Floodprone width
 #pre2017
-#FloodWidth=tblRetrieve(Parameters=c('FLOOD_WID'), Projects=projects, Years=years,Protocols=protocols,SiteCode=sitecodes)
+#FloodWidth=tblRetrieve(Parameters=c('FLOOD_WID'), Projects=projects, Years=years,Protocols=protocols,SiteCode=sitecodes,Insertion=insertion)
 #2017 plus
-FloodWidth=tblRetrieve(Parameters=c('FLOOD_WID','FLOOD_BFWIDTH'), Projects=projects, Years=years,Protocols=protocols,SiteCode=sitecodes)
+FloodWidth=tblRetrieve(Parameters=c('FLOOD_WID','FLOOD_BFWIDTH'), Projects=projects, Years=years,Protocols=protocols,SiteCode=sitecodes,Insertion=insertion)
 #FloodWidthpvt=cast(FloodWidth,'UID+TRANSECT~PARAMETER',value='RESULT')
 #Slope
 #2017
-Slope=tblRetrieve(Parameters=c('AVGSLOPE','SLPRCHLEN','PCT_GRADE'),Projects=projects,Protocols=protocols,SiteCodes=sitecodes)                 
+Slope=tblRetrieve(Parameters=c('AVGSLOPE','SLPRCHLEN','PCT_GRADE'),Projects=projects,Years=years,Protocols=protocols,SiteCodes=sitecodes,Insertion=insertion)                 
 
-# Slope_height=tblRetrieve(Parameters=c('SLOPE'), Projects=projects, Years=c('2013','2014','2015'),Protocols=protocols,SiteCodes=sitecodes)
-# SlpReachLen=tblRetrieve(Parameters=c('SLPRCHLEN'), Projects=projects, Years=c('2013','2014','2015'),Protocols=protocols,SiteCodes=sitecodes)
+# Slope_height=tblRetrieve(Parameters=c('SLOPE'), Projects=projects, Years=c('2013','2014','2015'),Protocols=protocols,SiteCodes=sitecodes,Insertion=insertion)
+# SlpReachLen=tblRetrieve(Parameters=c('SLPRCHLEN'), Projects=projects, Years=c('2013','2014','2015'),Protocols=protocols,SiteCodes=sitecodes,Insertion=insertion)
 # #Slope_heightpvt=cast(Slope_height,'UID+TRANSECT+POINT~PARAMETER',value='RESULT')
 # #SlpReachLenpvt=cast(SlpReachLen,'UID+TRANSECT+POINT~PARAMETER',value='RESULT')
-# Slope=tblRetrieve(Parameters=c('AVGSLOPE','SLPRCHLEN','PCT_GRADE'),Projects=projects, Years=c('2016'),Protocols=protocols,SiteCodes=sitecodes)                 
+# Slope=tblRetrieve(Parameters=c('AVGSLOPE','SLPRCHLEN','PCT_GRADE'),Projects=projects, Years=c('2016'),Protocols=protocols,SiteCodes=sitecodes,Insertion=insertion)                 
 
 #run site descriptors for sinuosity data
 
@@ -621,6 +621,7 @@ K_Sed2014=merge(J_Sed2014,Nall_Sed2014pvtsub, by="UID")
 H_Sed=rbind(pctsafn_2013,G_Sed2014)# uncomment for 2013 data #needs to be changed if uncommentout allPCT_SAFN for 2013 data
 #2013+
 PCT_SAFN_ALL=join(H_Sed,K_Sed2014,by="UID",type="left")#uncomment for 2013 data
+
 #2014 only?
 #PCT_SAFN_ALL=join(G_Sed2014,K_Sed2014,by="UID",type="left")
 #PCT_SAFN_sub=subset(PCT_SAFN_ALL,nallPCT_SAFN_CHECK<50)
@@ -1111,19 +1112,29 @@ IndicatorCheckJoin=join_all(list(listsites,BnkErosional,BnkAll,fishpvt2,DensPvt,
 IndicatorCheckJoin=join_all(list(listsites,DensPvt,BnkDensPvt,XCMG_new1, RIP_VEG,FQCY_VEG,WQfinal,Pools,LWD,ALLSED,FinalpvtPoolFines,BnkErosional,BnkAll,IncBnk,fishpvt2,MeanAngle,Thalweg,PctDry,BankWidFinal,WetWidFinal,avgFloodWidth,entrench,Slope_Per),by="UID")
 IndicatorCheckJoin=join_all(list(listsites,DensPvt,BnkDensPvt,XCMG_new1, RIP_VEG,FQCY_VEG,WQfinal,Pools,LWD,ALLSED,BnkErosional,BnkAll,IncBnk,fishpvt2,MeanAngle,Thalweg,PctDry,BankWidFinal,WetWidFinal,avgFloodWidth,entrench,Slope_Per),by="UID")
 
+exists("DensPvt")
+
+IndicatorList=objects()
+IndicatorList=exists(c("DensPvt","BnkDensPvt","XCMG_new1", "RIP_VEG","FQCY_VEG","WQfinal","Pools","LWD","ALLSED","FinalpvtPoolFines","BnkErosional","BnkAll","IncBnk","fishpvt2","MeanAngle","Thalweg","PctDry","BankWidFinal","WetWidFinal","avgFloodWidth","entrench","Slope_Per"))
+for (s in 1:length(IndicatorList)) {
+IndicatorCheckJoin=listsites
+IndicatorCheckJoin=join_all(IndicatorCheckJoin,as.name(s))
+}
+
+
 #2013,2014,2015
 IndicatorCheckJoin=join_all(list(listsites,WQfinal,BnkErosional,BnkAll,fishpvt2,DensPvt,BnkDensPvt,XCMG_new1,IncBnk,BankWidFinal,WetWidFinal,ALLSED,MeanAngle,Thalweg,PctDry,Pools,FinalpvtPoolFines,LWD,Slope_Per),by="UID")
 IndicatorCheckJoin=join_all(list(listsites,WQfinal,BnkErosional,BnkAll,fishpvt2,DensPvt,BnkDensPvt,XCMG_new1,IncBnk,BankWidFinal,WetWidFinal,ALLSED,MeanAngle,Thalweg,PctDry,Pools,LWD,Slope_Per),by="UID")
 
 #remove QC sites
-IndicatorCheckJoin=subset(IndicatorCheckJoin,!(UID %in% c('12457','12422','12714','13550','11787','13527','9779832504','13518','13539','8497901114','2772740176','3833994365','7194282454','9846034316','7977571143','4943503766','6152206654','6964535047','7746712455','2956707014','4324237804','4197418344','8537408400','4116634326','2109978745','41CD7AF9-B7EF-40AE-AF4E-5B28F77F7819','BC23CBBE-CA03-4AB8-985D-567DCFA49FA6','82EB06AD-705F-40B5-87F0-6EBFE4220D92','437DF621-C56F-4647-A5AB-A23A35DB726B','B0DB3C45-2D14-42F4-9722-7A5F3E66F355','C88896E2-FA3F-4D7D-AAD2-21C11E698C9B','A3378CF0-EA53-4C46-B858-4B580D001E9A','2D41FBB7-398F-43DD-A22A-93569E76493A','D0DF3643-D231-4925-9A99-9317EA79A785','FEC8303F-9604-46F8-BBC0-DDD151D5B597','39DFF320-179A-43C7-AEC1-677F4EC871F7','1E4A0F45-3584-4C48-9FD0-1AC2D156CB1A','33A60797-0B44-4A10-8030-3AFC75F027BC','2E3E82A1-CC26-4F50-ACD2-10B7C6157CED','ADFD9643-3ADE-482A-936F-B938A9C70DB5','5210AEB7-AEE9-43D8-876E-5A71F74E0C4E','9F83617B-5192-4AC6-99A4-9126AADE0699','942B415A-BD49-41EB-A9DD-2D7F8D59E87D','30846500-7DB4-4A35-B00B-764193AD1A83','8134492B-CE67-43D3-AB69-DB0C2EC47DDF','59D2716A-91E1-41F9-930F-4FE5B7DFBA8F','1730B528-5317-47E3-B83D-FFE5EB0C0D38','00C5DDB3-BC6B-43BD-AA27-EAAD160A1F3F','CD1D4C49-FBE5-4A34-BE4B-EB85218D5E10','21985428-7940-457A-82F4-74D82923FD1C','EC330DD5-C092-427F-9AC9-42C5C44F4179','C79C0FF8-E461-4C21-B9D6-150FBEE01C5A','1371C53E-AE90-41E8-9FB7-620424D79CF7','7B46F302-0E19-45E0-8658-230D6FA1EADB','E5B057BC-9219-49A8-A801-555C3CD2BCCA','D1E43428-901C-401E-81A8-29857CFD521F','1185793A-3DA2-4812-BC91-F68C1E5C4298','3743C97A-F5F0-4F33-880A-414DA4FA46D5','6B275A46-FE74-4078-A9E0-37B8C607DF9D','9E20708F-6303-4CDA-A7C4-A37B81201A9E','31B9E787-E769-4C2D-B348-4032D8B40925')))
+IndicatorCheckJoin=subset(IndicatorCheckJoin,!(UID %in% c('12457','12422','12714','13550','11787','13527','9779832504','13518','13539','8497901114','2772740176','3833994365','7194282454','9846034316','7977571143','4943503766','6152206654','6964535047','7746712455','2956707014','4324237804','4197418344','8537408400','4116634326','2109978745','41CD7AF9-B7EF-40AE-AF4E-5B28F77F7819','BC23CBBE-CA03-4AB8-985D-567DCFA49FA6','82EB06AD-705F-40B5-87F0-6EBFE4220D92','437DF621-C56F-4647-A5AB-A23A35DB726B','B0DB3C45-2D14-42F4-9722-7A5F3E66F355','C88896E2-FA3F-4D7D-AAD2-21C11E698C9B','A3378CF0-EA53-4C46-B858-4B580D001E9A','2D41FBB7-398F-43DD-A22A-93569E76493A','D0DF3643-D231-4925-9A99-9317EA79A785','FEC8303F-9604-46F8-BBC0-DDD151D5B597','39DFF320-179A-43C7-AEC1-677F4EC871F7','1E4A0F45-3584-4C48-9FD0-1AC2D156CB1A','33A60797-0B44-4A10-8030-3AFC75F027BC','2E3E82A1-CC26-4F50-ACD2-10B7C6157CED','ADFD9643-3ADE-482A-936F-B938A9C70DB5','5210AEB7-AEE9-43D8-876E-5A71F74E0C4E','9F83617B-5192-4AC6-99A4-9126AADE0699','942B415A-BD49-41EB-A9DD-2D7F8D59E87D','30846500-7DB4-4A35-B00B-764193AD1A83','8134492B-CE67-43D3-AB69-DB0C2EC47DDF','59D2716A-91E1-41F9-930F-4FE5B7DFBA8F','1730B528-5317-47E3-B83D-FFE5EB0C0D38','00C5DDB3-BC6B-43BD-AA27-EAAD160A1F3F','CD1D4C49-FBE5-4A34-BE4B-EB85218D5E10','21985428-7940-457A-82F4-74D82923FD1C','EC330DD5-C092-427F-9AC9-42C5C44F4179','C79C0FF8-E461-4C21-B9D6-150FBEE01C5A','1371C53E-AE90-41E8-9FB7-620424D79CF7','7B46F302-0E19-45E0-8658-230D6FA1EADB','E5B057BC-9219-49A8-A801-555C3CD2BCCA','D1E43428-901C-401E-81A8-29857CFD521F','1185793A-3DA2-4812-BC91-F68C1E5C4298','3743C97A-F5F0-4F33-880A-414DA4FA46D5','6B275A46-FE74-4078-A9E0-37B8C607DF9D','9E20708F-6303-4CDA-A7C4-A37B81201A9E','31B9E787-E769-4C2D-B348-4032D8B40925','38D0FEAF-1201-4E0C-A58C-0355B40D5260')))
 
 #To remove all of the metrics and only get the indicators subset by UID and all those columns ending in "CHECK". Hmm..not really sure what the $ is doing here, the code works without it, but all the examples I've looked at keep the $ so I kept it too... 
 IndicatorCheck=IndicatorCheckJoin[,c("UID",grep("CHECK$", colnames(IndicatorCheckJoin),value=TRUE))]
 #write.csv(IndicatorCheck,"C:\\Users\\Nicole\\Desktop\\IndicatorCheck2.csv")
 #Remove all other data files as they are no longer needed
 #IndicatorCheck=subset(IndicatorCheck,PROTOCOL_CHECK=="BOAT14")
-write.csv(IndicatorCheck,"IndicatorCheckSalmon19Dec2017.csv")
+write.csv(IndicatorCheck,"IndicatorCheckAll14march2018_CO.csv")
 rm(PHfinal,XGB_new,XGB_new1,BankStab,Banks,RipGB,EMBED,Human_Influ,W1_HALL,W1_HALL_NRSA,QR1,XEMBED,BnkDensPvt,BnkDensiom,densiom,RipXCMG,XCMG_new,XCMG_new1,RipWW,XCMGW_new,XCMGW_new1,IndicatorCheckJoin,fish,fishpvt2,
    MidDensiom,DensPvt,Incision,INCISED,BANKHT,Inc,Bnk,xIncht,xBnkht,IncBnk,Sediment,pctsafn,Sed2014,A_Sed2014,C_Sed2014,E_Sed2014,F_Sed2014,PCT_SAFN_ALL)
 

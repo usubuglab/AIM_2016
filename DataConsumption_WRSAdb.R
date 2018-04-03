@@ -104,8 +104,13 @@ projects=c('OR_PR_PERENNIAL_2016','OR_PR_INTERMITTENT_2016')
 projects=c('AKEFO','NPRA15','AK_AN_BSWI_2017','AK_CY_PLANUNIT_2017','AK_GL_STANDARD_2016','AK_CY_UTILITYCORRIDOR_2016','WA_SP_STANDARD_2016','CO_FR_STANDARD_2016','CO_SW_STANDARD_2016','CO_NW_STANDARD_2016','ID_SA_STANDARD_2016','ID_STATE_STANDARD_2016','ID_CH_STANDARD_2017','ID_US_STANDARD_2017','NM_FMD_STANDARD_2016','OR_PR_PERENNIAL_2016','OR_PR_INTERMITTENT_2016','UT_GR_STANDARD_2016','UT_CY_STANDARD_2017','WY_HD_STANDARD_2017','UT_WD_STANDARD_2016','WY_RA_STANDARD_2016','WRSA','NV','GSENM','COPLT','2015ProtocolOverlap','AKEFO','NORCAL')# most useful for separating NorCal and WRSA, note that abbreviations differ between Access and SQL/FM
 projects=c('Training')
 
-filter='month(insertion)=6'
 
+# the number of the week starting on Monday(because monday was the 1st) for 2018
+#the last week in May is week 22
+insertion=c('')
+insertion=c('3')
+
+filter="PARAMETER='SITE_ID'and month(INSERTION) in('3')"
 dates=''##example:c('05/05/2005')
 hitchs=c('')#NOT WORKING YET, hitch and crew level generally maintained by Access not SQL
 crews=c('R1')#NOT WORKING YET, hitch and crew level generally maintained by Access not SQL#see crewKC in customrequests for possible method

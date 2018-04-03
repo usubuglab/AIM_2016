@@ -98,7 +98,7 @@ WHERE ACTIVE='TRUE' and %s
 
 
 #UID select
-UIDselect=function(ALL='N',Filter='',UIDS='BLANK',SiteCodes='',Dates='',Years='',Projects='',Protocols=''){#UIDS default is "Blank" so it isn't subject to the replacement (gsub) and can still have the UNION...want the user to be able to use UID and FILTER to ADD samples to the main request (i.e. because those assume they have working knowledge of the database/SQL), not INTERSECT like others
+UIDselect=function(ALL='N',Filter='',UIDS='BLANK',SiteCodes='',Dates='',Years='',Projects='',Protocols='',Insertion=''){#UIDS default is "Blank" so it isn't subject to the replacement (gsub) and can still have the UNION...want the user to be able to use UID and FILTER to ADD samples to the main request (i.e. because those assume they have working knowledge of the database/SQL), not INTERSECT like others
   if(UIDS[1]!='BLANK'){UIDsubstr=sprintf(" left(cast(UID as nvarchar),10) in (%s) ",inLOOP(substr(UIDS,1,10)))} else{UIDsubstr="(cast(UID as nvarchar) in ('BLANK'))" }
   if(Filter==''){FilterSTR=''} else{FilterSTR=sprintf("UNION
     select UID, Active  from tblVERIFICATION where 
@@ -127,6 +127,9 @@ INTERSECT
 INTERSECT
 	select UID, Active  from tblVERIFICATION where 
 		PARAMETER='DATE_COL' and RIGHT(result,4) in (%s)
+INTERSECT
+  select UID, Active from tblVERIFICATION where
+  PARAMETER='SITE_ID'and DATEPART(WK,INSERTION) in (%s)
 UNION
 	select UID, Active  from tblVERIFICATION where 
 		%s
@@ -135,10 +138,10 @@ UNION
 where (active='TRUE') "
                  ,inLOOP(Projects),inLOOP(Protocols),
                  inLOOP(SiteCodes),
-                 inLOOP(Dates),inLOOP(Years),
+                 inLOOP(Dates),inLOOP(Years),inLOOP(Insertion),
                  UIDsubstr,FilterSTR)
   UIDstr=gsub("in \\(''\\)","like '%'",UIDstr)#if(ALL=='Y' | paste(Filter,UIDS,SiteCodes,Dates,Years,Projects,Protocols,sep='')==''){UIDstr=gsub("in \\(''\\)","like '%'",UIDstr)}
-  if((UIDS[1]=='BLANK' &  Filter=='') ==FALSE|paste(SiteCodes,Dates,Years,Projects,Protocols,sep='')==''){UIDstr=gsub("like '%'","like ''",UIDstr)}#not including UID and Filter, similar to setting UID to "BLANK", this also helps the INTERSECTS and UNION to be implement properly
+  if((UIDS[1]=='BLANK' &  Filter=='') ==FALSE|paste(SiteCodes,Dates,Years,Projects,Protocols,Insertion,sep='')==''){UIDstr=gsub("like '%'","like ''",UIDstr)}#not including UID and Filter, similar to setting UID to "BLANK", this also helps the INTERSECTS and UNION to be implement properly
   qryRSLT=sqlQuery(wrsa1314, UIDstr)
   if(class(qryRSLT)=="character"){  print('Unable to interpret the provided parameters. No table retrieved.')}#not running query because could cause overload
   return(qryRSLT)
@@ -165,8 +168,8 @@ removeDUP=function(Table,QAdup='N'){
 }
 
 #UNIONTBL/tblRetrieve
-tblRetrieve=function(Table='',ALL='N',Comments='N',Filter='',UIDS='BLANK',SiteCodes='',Dates='',Years='',Projects='',Protocols='',Parameters='',ALLp='N'){
-  UIDselected=UIDselect(ALL=ALL,Filter=Filter,UIDS=UIDS,SiteCodes=SiteCodes,Dates=Dates,Years=Years,Projects=Projects,Protocols=Protocols)
+tblRetrieve=function(Table='',ALL='N',Comments='N',Filter='',UIDS='BLANK',SiteCodes='',Dates='',Years='',Projects='',Protocols='',Parameters='',Insertion='',ALLp='N'){
+  UIDselected=UIDselect(ALL=ALL,Filter=Filter,UIDS=UIDS,SiteCodes=SiteCodes,Dates=Dates,Years=Years,Projects=Projects,Protocols=Protocols,Insertion=Insertion)
   UIDstr=sprintf(" left(cast(UID as nvarchar),10) in (%s) ",inLOOP(substr(UIDselected$UID,1,10)))#! if want to add tblMetadata, etc, need to make UIDstr blank
   if(Table==''){#previously empty tran and point set to cast(Null as nvarchar(5)) but '' used to facilitate tblComments join, not sure if it will work with comments when Table specified, but in most cases it's better to specify a list of parameters and let the union figure out where they are
     TableSTR=sprintf("(select  UID, SAMPLE_TYPE, TRANSECT, POINT,PARAMETER,RESULT,FLAG,IND,ACTIVE,OPERATION,INSERTION,DEPRECATION,REASON 
