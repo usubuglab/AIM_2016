@@ -56,29 +56,29 @@ combined3=join(combined3,Final2sub,by='SITE_ID', type="left",match="all")
 
 #Use to get wadeable or boatable only, if this line isn't run both boatable and wadeable will be used. Change REALM== "" to specify 
 #combined2=subset(combined2, REALM == "WADEABLE")
-combined2$BNK_THRESH=ifelse(as.numeric(combined2$XBKF_W)>10,"LargeWade","SmallWade")
+combined2$BNK_THRESH=ifelse(as.numeric(combined2$XBKF_W)>10,"LargeWadeable","SmallWadeable")
 combined2$BNK_THRESH=ifelse(combined2$REALM=="WADEABLE",combined2$BNK_THRESH,combined2$REALM)
 combined2$THRESH=paste(combined2$ECO10,combined2$BNK_THRESH, sep="_")
 
 combined2$THRESH3=as.factor(combined2$THRESH)
-levels(combined2$THRESH3) <- list( XE_SOUTH_SmallWade="XE_SOUTH_SmallWade",XE_SOUTH_LargeWade="XE_SOUTH_LargeWade", 
-                                  MT_SWEST_SmallWade="MT_SWEST_SmallWade",MT_SWEST_LargeWade="MT_SWEST_LargeWade", 
-                                  XE_EPLAT_SmallWade="XE_EPLAT_SmallWade",XE_EPLAT_LargeWade="XE_EPLAT_LargeWade", 
-                                  MT_PNW_SmallWade="MT_PNW_SmallWade", MT_PNW_LargeWade="MT_PNW_LargeWade",MT_PNW_BOATABLE="MT_PNW_BOATABLE",  
-                                  PL_NCULT_SmallWade="PL_NCULT_SmallWade", PL_NCULT_LargeWade="PL_NCULT_LargeWade",PL_NCULT_BOATABLE="PL_NCULT_BOATABLE", 
-                                  PL_RANGE_SmallWade="PL_RANGE_SmallWade",PL_RANGE_LargeWade="PL_RANGE_LargeWade", PL_RANGE_BOATABLE="PL_RANGE_BOATABLE",
-                                  MT_SROCK_SmallWade="MT_SROCK_SmallWade",MT_SROCK_LargeWade="MT_SROCK_LargeWade", 
-                                  MT_NROCK_SmallWade="MT_NROCK_SmallWade", MT_NROCK_LargeWade="MT_NROCK_LargeWade",
-                                  XE_NORTH_SmallWade="XE_NORTH_SmallWade",XE_NORTH_LargeWade="XE_NORTH_LargeWade",
-                                  #Other=c("XE_CALIF_LargeWade","XE_CALIF_SmallWade","0_BOATABLE","XE_SOUTH_NA","MT_PNW_0","MT_NROCK_NA", "_SmallWade","_LargeWade","_BOATABLE"  ,"_NA", "MT_SROCK_NA" , "0_LargeWade" , "MT_SWEST_NA", "0_SmallWade", "XE_CALIF_BOATABLE","MT_SWEST_BOATABLE"),   
+levels(combined2$THRESH3) <- list( XE_SOUTH_SmallWadeable="XE_SOUTH_SmallWadeable",XE_SOUTH_LargeWadeable="XE_SOUTH_LargeWadeable", 
+                                  MT_SWEST_SmallWadeable="MT_SWEST_SmallWadeable",MT_SWEST_LargeWadeable="MT_SWEST_LargeWadeable", 
+                                  XE_EPLAT_SmallWadeable="XE_EPLAT_SmallWadeable",XE_EPLAT_LargeWadeable="XE_EPLAT_LargeWadeable", 
+                                  MT_PNW_SmallWadeable="MT_PNW_SmallWadeable", MT_PNW_LargeWadeable="MT_PNW_LargeWadeable",MT_PNW_BOATABLE="MT_PNW_BOATABLE",  
+                                  PL_NCULT_SmallWadeable="PL_NCULT_SmallWadeable", PL_NCULT_LargeWadeable="PL_NCULT_LargeWadeable",PL_NCULT_BOATABLE="PL_NCULT_BOATABLE", 
+                                  PL_RANGE_SmallWadeable="PL_RANGE_SmallWadeable",PL_RANGE_LargeWadeable="PL_RANGE_LargeWadeable", PL_RANGE_BOATABLE="PL_RANGE_BOATABLE",
+                                  MT_SROCK_SmallWadeable="MT_SROCK_SmallWadeable",MT_SROCK_LargeWadeable="MT_SROCK_LargeWadeable", 
+                                  MT_NROCK_SmallWadeable="MT_NROCK_SmallWadeable", MT_NROCK_LargeWadeable="MT_NROCK_LargeWadeable",
+                                  XE_NORTH_SmallWadeable="XE_NORTH_SmallWadeable",XE_NORTH_LargeWadeable="XE_NORTH_LargeWadeable",
+                                  #Other=c("XE_CALIF_LargeWadeable","XE_CALIF_SmallWadeable","0_BOATABLE","XE_SOUTH_NA","MT_PNW_0","MT_NROCK_NA", "_SmallWadeable","_LargeWadeable","_BOATABLE"  ,"_NA", "MT_SROCK_NA" , "0_LargeWadeable" , "MT_SWEST_NA", "0_SmallWadeable", "XE_CALIF_BOATABLE","MT_SWEST_BOATABLE"),   
                                   MT_ROCK_BOATABLE=c("MT_NROCK_BOATABLE", "MT_SROCK_BOATABLE","XE_NORTH_BOATABLE"),  
                                   XE_SEPLAT_BOATABLE=c( "XE_EPLAT_BOATABLE" ,"XE_SOUTH_BOATABLE")
                                     )
 combined2$THRESH2=combined2$THRESH
 combined2$THRESH2=ifelse(combined2$THRESH2=="PL_RANGE_BOATABLE"|combined2$THRESH2=="PL_NCULT_BOATABLE"|combined2$THRESH2=="MT_PNW_BOATABLE"|combined2$THRESH2=="MT_NROCK_BOATABLE"|combined2$THRESH2=="MT_SROCK_BOATABLE"|combined2$THRESH2=="XE_NORTH_BOATABLE"|combined2$THRESH2=="XE_EPLAT_BOATABLE"|combined2$THRESH2=="XE_SOUTH_BOATABLE","ALL_BOATING",combined2$THRESH2)
 
-#combined2=subset(combined2,BNK_THRESH=="LargeWade")
-#combined2=subset(combined2,BNK_THRESH=="SmallWade")
+#combined2=subset(combined2,BNK_THRESH=="LargeWadeable")
+#combined2=subset(combined2,BNK_THRESH=="SmallWadeable")
 #combined2=subset(combined2, REALM == "BOATABLE")
 #To subset for reference to use on RIPARIAN indicators.
 #First subset the data to only include sites with R or S designations
