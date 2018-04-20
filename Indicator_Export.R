@@ -78,12 +78,12 @@ Indicators=join(Indicators,Bugs, by="UID",type="left")
 
 ##########Finally format file for AquADat or benchmark tool
 #Format for benchmark tool
-data.xwalk=read.csv('\\\\share1.bluezone.usu.edu\\miller\\buglab\\Research Projects\\AIM\\Database_Development\\AquaDat\\InterfaceToServeOutComputedMetrics\\indicatorXwalkLocal.csv')
+data.xwalk=read.csv('\\\\share1.bluezone.usu.edu\\miller\\buglab\\Research Projects\\AIM\\Database_Development\\AquaDat_computed_metrics\\indicatorXwalkLocal.csv')
 
 #Format for AquADat inital import
-data.xwalk=read.csv('\\\\share1.bluezone.usu.edu\\miller\\buglab\\Research Projects\\AIM\\Database_Development\\AquaDat\\InterfaceToServeOutComputedMetrics\\indicatorXwalkMaster2.csv')
+data.xwalk=read.csv('\\\\share1.bluezone.usu.edu\\miller\\buglab\\Research Projects\\AIM\\Database_Development\\AquaDat_computed_metrics\\indicatorXwalkMaster2.csv')
 
-#To Format data for editing AquADat, download latest data from ArcGISOnline and paste it into the edit worksheet of the following excel file "Z:\buglab\Research Projects\AIM\Database_Development\AquaDat\InterfaceToServeOutComputedMetrics\2017 updates\2017 updates.xlsx"
+#To Format data for editing AquADat, download latest data from ArcGISOnline and paste it into the edit worksheet of the following excel file "Z:\buglab\Research Projects\AIM\Database_Development\AquaDat_computed_metrics\2017 updates\2017 updates.xlsx"
 #this worksheet had the correct column headings.
 #Then delete all columns except the UID and the column (s) you want to change.
 #If making edits to different columns depending on the UID then a seperate file will need to be provided for each set of UIDs.
