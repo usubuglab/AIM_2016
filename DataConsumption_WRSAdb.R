@@ -57,7 +57,7 @@ AllData='N'#set to 'Y' (meaning 'yes') if you want to query all sites (note this
 sitecodes=c('MN-LS-1005','MN-LS-1017','MN-SS-1121','MN-SS-1142','MN-LS-1003','MN-LS-1004','MN-LS-1014','MN-LS-1019','MN-RO-1086','IF-RV-10266','MN-SS-1104','MN-SS-1123','MN-SS-1129','MN-SS-1147','IF-SS-10310','IF-SS-10314','IF-SS-10438','IF-SS-10458','IF-SS-10570','MN-LS-1020','SA-LS-11386','SA-LS-12318','SA-LS-13342','MN-SS-1099','MN-SS-1143','SA-SS-10014','SA-SS-10250','SA-SS-10362','SA-SS-10442','SA-SS-10506','SA-SS-10554','SA-SS-10590','SA-SS-10810','SA-SS-11038','SA-SS-11078','SA-SS-11130','TF-SS-10638','XN-LS-4003','XN-LS-4010','XN-LS-4014','XN-LS-4016','XN-LS-4019','XN-LS-4026','XN-LS-4028','XN-RO-4082','XN-RO-4085','XN-RO-4086','BO-RV-10024','XN-SS-4097','XN-SS-4101','XN-SS-4113','XN-SS-4124','XN-SS-4135','XN-SS-4145','BO-SS-10140','BO-SS-10238','BO-SS-10248','XN-LS-4029','XN-LS-4006','XN-LS-4012','XN-LS-4018','TF-LS-10152','XN-SS-4143','TF-SS-10126','TF-SS-10385','TF-SS-10536')
 #GrandStaircase site codes
 sitecodes=c('CO-LS-9432','CO-RO-9416','CO-SS-9415','GS-LS-9009','GS-LS-9010','GS-LS-9016','GS-LS-9025','GS-LS-9026','GS-LS-9027','GS-LS-9032','GS-LS-9036','GS-RO-9001','GS-RO-9003','GS-RO-9007','GS-RO-9008','GS-RO-9013','GS-RO-9014','GS-RO-9017','GS-SS-9004','GS-SS-9005','GS-SS-9006','GS-SS-9012','GS-SS-9020','GS-SS-9022','GS-SS-9024','XE-LS-5005','XE-LS-5025','XE-SS-5143')
-sitecodes=c('CY-LS-1010','CY-LS-1046','CY-LS-1014')
+sitecodes=c('W3012','W308O2')
 #cassie data request
 #sitecodes=c('WD-TR-004', 'BO-SS-10238', 'GN-SS-10434', 'CR-SS-10621')
 #sitecodes=c('FI-SS-11761', 'FI-SS-10737', 'FI-SS-12529', 'W202O2', 'WD-TR-011', 'XS-SS-6111')
@@ -110,7 +110,9 @@ projects=c('Training')
 insertion=c('')
 insertion=c('3')
 
-filter="PARAMETER='SITE_ID'and month(INSERTION) in('3')"
+
+
+filter="PARAMETER='SITE_ID'and month(INSERTION) in('3')" # the problem with this filter is it does a union of this with all other filters used (project ect.) so you can't use this to get everything in a given project AND apply this filter. Can't figure out how to edit that in the table retreive function...that could be really useful
 dates=''##example:c('05/05/2005')
 hitchs=c('')#NOT WORKING YET, hitch and crew level generally maintained by Access not SQL
 crews=c('R1')#NOT WORKING YET, hitch and crew level generally maintained by Access not SQL#see crewKC in customrequests for possible method
