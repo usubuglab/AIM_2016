@@ -13,7 +13,7 @@ library(plyr)
 #########                          Site Check                                #########
 ######################################################################################
 ##First step-do you have all the sites you should?
-listsites=tblRetrieve(Parameters=c('SITE_ID','DATE_COL','LOC_NAME','LAT_DD','LON_DD','PROJECT','PROTOCOL','VALXSITE','LAT_DD_BR','LAT_DD_TR','LON_DD_BR','LON_DD_TR'),Projects=projects,Years=years,Protocols=protocols,SiteCodes=sitecodes,Insertion=insertion)
+listsites=tblRetrieve(Parameters=c('SITE_ID','DATE_COL','LOC_NAME','LAT_DD','LON_DD','PROJECT','PROTOCOL','VALXSITE','LAT_DD_BR','LAT_DD_TR','LON_DD_BR','LON_DD_TR'),Projects=projects,Years=years,Protocols=protocols,SiteCodes=sitecodes)
 listsites=cast(listsites,'UID~PARAMETER',value='RESULT')
 
 
@@ -44,7 +44,7 @@ listsites=cast(listsites,'UID~PARAMETER',value='RESULT')
 # A preliminary check to make sure all paper field forms were entered, partial sites are flagged and no egregious protocol errors with more than a few indicators with >50% data missing
 
 ##missing data parameters
-UnionTBL=tblRetrieve(Table='', Years=years, Projects=projects,Protocols=protocols,SiteCodes=sitecodes,Insertion=insertion)
+UnionTBL=tblRetrieve(Table='', Years=years, Projects=projects,Protocols=protocols,SiteCodes=sitecodes)
 #ALLp=AllParam,UIDS=UIDs,ALL=AllData,Filter=filter,SiteCodes=sitecodes,Dates=dates,Years='years',Protocols='protocols')#Protocols='' brings in failed sites as well
 
 CheckAll='N'#options: 'Y' = Check All Parameters for the protocol; 'N' = Check only Parameters in UnionTBL (i.e. if subsetting UnionTBL to single Table and don't want clutter from parameters not interested in)....this is not done automatically because missing data checks are meant to look for parameters that have ZERO readings for a particular dataset, only use in testing and known scenarios (usually where AllParams='Y')
@@ -130,8 +130,10 @@ MissingTotals=sqldf('select UID,count(*) ParamCNT from MissingCounts group by UI
 if (MissingXwalk==''){
   MissingCounts$TABLE=''#;MissingGrouping='SAMPLE_TYPE'
 } else{
-  MissingCounts=Xwalk(Source='R',XwalkName=MissingXwalk,XwalkDirection='',Table='MissingCounts',COL=colnames(MissingCounts))#,Filter='',UIDS='BLANK',SiteCodes='',Dates='',Years='',Projects='',Protocols='',Parameters='',ALLp='N'){
-  emptyFulldataset=Xwalk(Source='R',XwalkName=MissingXwalk,XwalkDirection='',Table='emptyFulldataset',COL=colnames(emptyFulldataset))
+  colnames(MissingCounts)[which(colnames(MissingCounts) %in% "Insertion")] = "INSERTION"
+   MissingCounts=Xwalk(Source='R',XwalkName=MissingXwalk,XwalkDirection='',Table='MissingCounts',COL=colnames(MissingCounts))#,Filter='',UIDS='BLANK',SiteCodes='',Dates='',Years='',Projects='',Protocols='',Parameters='',ALLp='N'){
+   colnames(emptyFulldataset)[which(colnames(emptyFulldataset) %in% "Insertion")] = "INSERTION"
+   emptyFulldataset=Xwalk(Source='R',XwalkName=MissingXwalk,XwalkDirection='',Table='emptyFulldataset',COL=colnames(emptyFulldataset))
   if(MetricType=='Y' & MissingXwalk=='MissingBackend'){
     MissingCounts$SAMPLE_TYPE=sprintf('%s:%s',MissingCounts$SAMPLE_TYPE,MissingCounts$TABLE)
     emptyFulldataset$SAMPLE_TYPE=sprintf('%s:%s',emptyFulldataset$SAMPLE_TYPE,emptyFulldataset$TABLE)
