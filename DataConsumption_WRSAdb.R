@@ -75,7 +75,7 @@ sitecodes=c('')
 years=c('2013','2014','2015')#as character, not number
 #all years
 years=c('2013','2014','2015','2016','2017')#as character, not number
-years=c('2017')
+years=c('2018')
 years=c('')
 #pre 2016 protocols
 protocols=c('NRSA13','WRSA14','BOAT14','AK14')#for separating differences in overall protocol, may not be relevant for some parameters
