@@ -13,7 +13,7 @@ library(plyr)
 #########                          Site Check                                #########
 ######################################################################################
 ##First step-do you have all the sites you should?
-listsites=tblRetrieve(Parameters=c('SITE_ID','DATE_COL','LOC_NAME','LAT_DD','LON_DD','PROJECT','PROTOCOL','VALXSITE','LAT_DD_BR','LAT_DD_TR','LON_DD_BR','LON_DD_TR'),Projects=projects,Years=years,Protocols=protocols,SiteCodes=sitecodes)
+listsites=tblRetrieve(Parameters=c('SITE_ID','DATE_COL','LOC_NAME','LAT_DD','LON_DD','PROJECT','PROTOCOL','VALXSITE','LAT_DD_BR','LAT_DD_TR','LON_DD_BR','LON_DD_TR'),Projects=projects,Years=years,Protocols=protocols,SiteCodes=sitecodes,Insertion=insertion)
 listsites=cast(listsites,'UID~PARAMETER',value='RESULT')
 
 
@@ -44,7 +44,7 @@ listsites=cast(listsites,'UID~PARAMETER',value='RESULT')
 # A preliminary check to make sure all paper field forms were entered, partial sites are flagged and no egregious protocol errors with more than a few indicators with >50% data missing
 
 ##missing data parameters
-UnionTBL=tblRetrieve(Table='', Years=years, Projects=projects,Protocols=protocols,SiteCodes=sitecodes)
+UnionTBL=tblRetrieve(Table='', Years=years, Projects=projects,Protocols=protocols,SiteCodes=sitecodes,Insertion=insertion)
 #ALLp=AllParam,UIDS=UIDs,ALL=AllData,Filter=filter,SiteCodes=sitecodes,Dates=dates,Years='years',Protocols='protocols')#Protocols='' brings in failed sites as well
 
 CheckAll='N'#options: 'Y' = Check All Parameters for the protocol; 'N' = Check only Parameters in UnionTBL (i.e. if subsetting UnionTBL to single Table and don't want clutter from parameters not interested in)....this is not done automatically because missing data checks are meant to look for parameters that have ZERO readings for a particular dataset, only use in testing and known scenarios (usually where AllParams='Y')
@@ -634,7 +634,7 @@ write.csv(sample_size,'sed_sample_size.csv')
 #outlier checks (above) and check for missing SLANT to check if angle was being calculated in app properly
 Angle=tblRetrieve(Parameters=c('ANGLE180','SLANT'),Years=years, Projects=projects,SiteCodes=sitecodes,Insertion=insertion)
 pvtAngle=addKEYS(cast(Angle,'UID+TRANSECT+POINT~PARAMETER',value='RESULT'), c('SITE_ID','DATE_COL','CREW_LEADER'))                     
-AngleCheck1=subset(pvtAngle, is.na(SLANT=='TRUE'))                      
+AngleCheck1=subset(pvtAngle, is.na(pvtAngle$SLANT)=='TRUE')                      
 AngleCheck2=subset(pvtAngle, SLANT=='OB' & as.numeric(ANGLE180)<90)  
 write.csv(AngleCheck1,'AngleCheck1.csv')
 write.csv(AngleCheck2,'AngleCheck2.csv')
@@ -774,16 +774,15 @@ write.csv(odd_ratio,'odd_ratio.csv')
                  
                  
 #########  slope   ################                    
-Slope=tblRetrieve(Parameters=c('AVGSLOPE','SLPRCHLEN','TRCHLEN','PARTIAL_RCHLEN','POOLRCHLEN','SLOPE_COLLECT','PCT_GRADE','VALXSITE'),Projects=projects, Years=years,Protocols=protocols,SiteCodes=sitecodes,Insertion=insertion)                 
+Slope=tblRetrieve(Parameters=c('AVGSLOPE','SLPRCHLEN','TRCHLEN','PARTIAL_RCHLEN','POOLRCHLEN','SLOPE_COLLECT','PCT_GRADE','VALXSITE','Z_SLOPEPASSQA'),Projects=projects, Years=years,Protocols=protocols,SiteCodes=sitecodes,Insertion=insertion)                 
 pvtSlope=addKEYS(cast(Slope,'UID~PARAMETER',value='RESULT'), c('SITE_ID','CREW_LEADER'))                
+# sites with pct_grade==0 likely had some app quirk and slope reach length or avg slope didn't get calculated for some reason
 SlopeCheck_typicalvalues=subset(pvtSlope,as.numeric(PCT_GRADE)>14|as.numeric(PCT_GRADE)<1)
 SlopeCheck_partialno=subset(pvtSlope,SLOPE_COLLECT=='PARTIAL'|SLOPE_COLLECT=='NO SLOPE')
 Pass=tblRetrieve(Parameters=c('ENDTRAN'),Projects=projects, Years=years,Protocols=protocols,SiteCodes=sitecodes,Insertion=insertion)                 
 SlopeCheck_more2passes=subset(Pass,TRANSECT>2)# if more than 2 passes need to manually check which ones to average
-#avgslope does not get computed in the app if the passes are not within 10%.... for those passes manually average and flag as not within 10%?                
-# sites with pct_grade==0 are not within 10%
-NOT10PER=subset(pvtSlope,PCT_GRADE=='0')
-# for any sites that failed the within 10% check, see idividual passes below
+NOT10PER=subset(pvtSlope,Z_SLOPEPASSQA=='N')
+# for any sites that failed one of the above checks, see idividual passes below
 IndividualSlope=tblRetrieve(Parameters=c('SLOPE','STARTHEIGHT','ENDHEIGHT'),Projects=projects, Years=years,Protocols=protocols,SiteCodes=sitecodes,Insertion=insertion)
 pvtIndividualSlopeSum=addKEYS(cast(IndividualSlope,'UID+TRANSECT~PARAMETER',value='RESULT', fun=sum),c('SITE_ID','CREW_LEADER'))#note Transect=Pass
 pvtIndividualSlopeRaw=addKEYS(cast(IndividualSlope,'UID+TRANSECT+POINT~PARAMETER',value='RESULT'),c('SITE_ID','CREW_LEADER'))#note Transect=Pass
