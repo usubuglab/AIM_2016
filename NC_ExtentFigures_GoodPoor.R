@@ -22,6 +22,7 @@
 #Global Figure parameters#
 axissize=2#cex
 GFPcol=c('firebrick','lightgreen')#c('red','yellow','green')#fix to be global (category can be fed into to only generate relevant colors), needs to be in this order for current code to color good, fair, poor correctly
+#GFPcol=c('firebrick','gold','lightgreen')#c('red','yellow','green')#fix to be global (category can be fed into to only generate relevant colors), needs to be in this order for current code to color good, fair, poor correctly
 results.cat=read.csv('\\\\share1.bluezone.usu.edu\\miller\\buglab\\Research Projects\\AIM\\Projects\\Idaho\\Statewide\\Analysis\\Weights_ExtentEstimates\\ExtentEstimates_Idaho_14June2017.csv')
 
 ##################  NorCal Specific Code: Start ##################
@@ -102,19 +103,21 @@ for (s in 1:length(SubpopTypes)){#Temporary! only all and district - length(Subp
       #ToDO! add in non assessed from Total before removing total
       if(variablesUSE[[i]]!=extentVAR){
       CATcheck=nrow(BarData)
-     # #   if(CATcheck<3){#if category missing
-     # #     for(f in 1:(3-CATcheck)) {
-      ##       BarData=rbind(BarData,0)
-     # #       BarData$Category[[(CATcheck+f)]]=ifelse('Fair' %in% BarData$Category==F,'Fair', ifelse('Good' %in% BarData$Category==F,"Good",'Poor'))
-     # #     }}
+#Uncomment this section to run for 3 categories
+    ##   if(CATcheck<3){#if category missing
+     ##     for(f in 1:(3-CATcheck)) {
+    ##       BarData=rbind(BarData,0)
+     ##       BarData$Category[[(CATcheck+f)]]=ifelse('Fair' %in% BarData$Category==F,'Fair', ifelse('Good' %in% BarData$Category==F,"Good",'Poor'))
+     ##     }}
+##############################################
 #NorCal# Create graphs with Good, Poor, and then Fair, for NV MMI. technically reference, degraded, and undetermined. 
 #NorCal# Uncomment out next two lines of code, comment out next 3 lines of original code. Make sure to run the correct CatOrg and GFP colors at the very top/beginning of this code!  
 #NorCal# BarData=BarData[order(match(BarData$Category,CatOrd)),]# NorCal Specific, This line should be commented out, Line above, and two lines below, should be run as original code.
 #NorCal# WARNsort=ifelse(BarData$Indicator %in% extentVAR | (BarData$Category[[1]]=='Fair' & BarData$Category[[3]]=='Good'),'',print(sprintSf('ORT incorrect-%s-%s-%s',varNAME,SubpopTypes[[s]],SubpopStrata[[t]])))#I think this is corrected with the double sort, but left in just to be safe
        BarData=BarData[with(BarData,order(Category)),]
-      ## BarData=BarData[with(BarData,order(Category <- c('Good','Fair','Poor'),decreasing=T)),] #sort (very fickle, hence below warning)
-       
-             BarData=BarData[with(BarData,order(Category <- c('Good','Poor'),decreasing=T)),] #sort (very fickle, hence below warning)
+#uncomment this section to run for 3 categories and comment out the row below
+       ## BarData=BarData[with(BarData,order(Category <- c('Good','Fair','Poor'),decreasing=T)),] #sort (very fickle, hence below warning)
+      BarData=BarData[with(BarData,order(Category <- c('Good','Poor'),decreasing=T)),] #sort (very fickle, hence below warning)
        WARNsort=ifelse(BarData$Indicator %in% extentVAR | (BarData$Category[[1]]=='Poor' & BarData$Category[[2]]=='Good'),'',print(sprintf('SORT incorrect-%s-%s-%s',varNAME,SubpopTypes[[s]],SubpopStrata[[t]])))#I think this is corrected with the double sort, but left in just to be safe      
          }
       
