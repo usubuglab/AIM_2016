@@ -10,18 +10,16 @@ Data import scripts are not included on GitHub and can be found at Z:\buglab\Res
 
 All subsequent scripts pull from this SQL database. The database structure is adapted from EPA NRSA. It is a flat key-value structure. The main advantage of this structure is the flexibility to support protocol changes and multiple projects. The main disadvantage is that the data is difficult to visual for the beginning user (hence R scripts that have been setup to perform queries and pivot manipulation). Data could be pivoted in SQL and made into views that would act like tables however my understanding is that in order to do this we would need to use min and max functions which might miss duplicated data. Currently all R scripts use the “cast” function to pivot data, which warns the user if multiple values exist for a given parameter, UID, transect, or point. 
 
-To pull data from this database, QC it, and compute indicators and subsequent condition and extent estimates run scripts in the following order:
+To pull data from this database, QC it, and compute indicators and subsequent condition and extent estimates, run scripts in the following order:
 
 1. DBpasswordJC_doNOTgit- individual file (not on GitHub) contains passwords for accessing SQL database
 2. Data Consumption_WRSAdb
   -creates a ODBC connection to SQL database
   -installs and calls important packages that are needed in all other scripts
-  -Calls FNC_tblRetrievePVT_new, which sets up important xwalk and table retrieve functions. xwalk function is criticial for data import,          missing data QC, and updatedatabase scripts. Table retrieve function pulls data from database using filters without having to         
-      understand database structure
+  -Calls FNC_tblRetrievePVT_new, which sets up important xwalk and table retrieve functions. xwalk function is criticial for data import, missing data QC, and updatedatabase scripts. Table retrieve function pulls data from database using filters without having to understand database structure
   -Calls indicatorXwalk, which translates indicators from EPA or R code names to final AquADat names.
 3. DataQA_WRSA- spits out questionable data in a series of csv files for further review
-4. UpdateDatabase_WRSA- edits data in SQL database using edits in "Z:\buglab\Research Projects\AIM\Analysis\QC\Office_Updates.csv", which 
-      have been exported from "Z:\buglab\Research Projects\DatabaseDoNOTmove\ProbSurvey_DB_v28Aug14recover.accdb"
+4. UpdateDatabase_WRSA- edits data in SQL database using edits in "Z:\buglab\Research Projects\AIM\Analysis\QC\Office_Updates.csv", which have been exported from "Z:\buglab\Research Projects\DatabaseDoNOTmove\ProbSurvey_DB_v28Aug14recover.accdb"
 5. JC_IndicatorCalc- computes all Aquatic AIM indicators and combines them into one file
 6. Indicator_Export
   -joins Aquatic AIM indicators with bug data and site information from design database
