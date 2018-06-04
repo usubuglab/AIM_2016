@@ -1,0 +1,33 @@
+USE WRSAdb
+GO
+
+CREATE VIEW data_import as
+
+select pvt3.*, tblcomments.Comment ACCESSCOMMENT
+
+from tblcomments
+join
+
+(Select pvt2.*, tblCOMMENTS.COMMENT SAMPLECOMMENT
+from tblcomments
+join 
+ (
+SELECT     SITE_ID, pvt.UID, LOC_NAME, PROJECT,PROTOCOL,VALXSITE,XSTATUS, DATE_COL,CREW_LEADER,REPEAT_VISIT,LAT_DD,LON_DD,NAME1, NAME2, Z_INDICATORS,Z_FINALQA_COMMENT,SLIDE_YN,Z_DISTANCEFROMX,DEWATER, TRCHLEN,PARTIAL_RCHLEN
+
+FROM         (SELECT       UID, SAMPLE_TYPE, PARAMETER, Result
+                       FROM          tblverification where ACTIVE='TRUE') p PIVOT (min(Result) FOR Parameter IN (CREW_LEADER,LOC_NAME, DATE_COL,ELEVATION,LAT_DD,LON_DD,NAME1,NAME2, PROJECT,PROTOCOL, RCHWIDTH,REPEAT_VISIT,SITE_ID,TRCHLEN, PARTIAL_RCHLEN, VALXSITE,XSTATUS, Z_INDICATORS, Z_FINALQA_COMMENT,SLIDE_YN,Z_DISTANCEFROMX,DEWATER)) AS pvt
+  
+               
+ where year(DATE_COL)=2017 --and protocol !='Failed' 
+
+ ) pvt2
+ On tblcomments.UID=pvt2.UID
+ 
+ where ACTIVE='TRUE' and FLAG='sample'
+
+ ) pvt3
+ 
+ on tblCOMMENTS.UID=pvt3.UID
+ 
+ where ACTIVE='TRUE' and FLAG='access'
+  order by PROJECT, SITE_ID
