@@ -1112,6 +1112,11 @@ IndicatorCheckJoin=join_all(list(listsites,BnkErosional,BnkAll,fishpvt2,DensPvt,
 IndicatorCheckJoin=join_all(list(listsites,DensPvt,BnkDensPvt,XCMG_new1, RIP_VEG,FQCY_VEG,WQfinal,Pools,LWD,ALLSED,FinalpvtPoolFines,BnkErosional,BnkAll,IncBnk,fishpvt2,MeanAngle,Thalweg,PctDry,BankWidFinal,WetWidFinal,avgFloodWidth,entrench,Slope_Per),by="UID")
 IndicatorCheckJoin=join_all(list(listsites,DensPvt,BnkDensPvt,XCMG_new1, RIP_VEG,FQCY_VEG,WQfinal,Pools,LWD,ALLSED,BnkErosional,BnkAll,IncBnk,fishpvt2,MeanAngle,Thalweg,PctDry,BankWidFinal,WetWidFinal,avgFloodWidth,entrench,Slope_Per),by="UID")
 
+#2013,2014,2015
+IndicatorCheckJoin=join_all(list(listsites,WQfinal,BnkErosional,BnkAll,fishpvt2,DensPvt,BnkDensPvt,XCMG_new1,IncBnk,BankWidFinal,WetWidFinal,ALLSED,MeanAngle,Thalweg,PctDry,Pools,FinalpvtPoolFines,LWD,Slope_Per),by="UID")
+IndicatorCheckJoin=join_all(list(listsites,WQfinal,BnkErosional,BnkAll,fishpvt2,DensPvt,BnkDensPvt,XCMG_new1,IncBnk,BankWidFinal,WetWidFinal,ALLSED,MeanAngle,Thalweg,PctDry,Pools,LWD,Slope_Per),by="UID")
+
+###trying to figure out how to combine only files that exist in workspace###### 
 exists("DensPvt")
 
 IndicatorList=objects()
@@ -1119,12 +1124,9 @@ IndicatorList=exists(c("DensPvt","BnkDensPvt","XCMG_new1", "RIP_VEG","FQCY_VEG",
 for (s in 1:length(IndicatorList)) {
 IndicatorCheckJoin=listsites
 IndicatorCheckJoin=join_all(IndicatorCheckJoin,as.name(s))
-}
+}#doesn't currently work
+################################################################################
 
-
-#2013,2014,2015
-IndicatorCheckJoin=join_all(list(listsites,WQfinal,BnkErosional,BnkAll,fishpvt2,DensPvt,BnkDensPvt,XCMG_new1,IncBnk,BankWidFinal,WetWidFinal,ALLSED,MeanAngle,Thalweg,PctDry,Pools,FinalpvtPoolFines,LWD,Slope_Per),by="UID")
-IndicatorCheckJoin=join_all(list(listsites,WQfinal,BnkErosional,BnkAll,fishpvt2,DensPvt,BnkDensPvt,XCMG_new1,IncBnk,BankWidFinal,WetWidFinal,ALLSED,MeanAngle,Thalweg,PctDry,Pools,LWD,Slope_Per),by="UID")
 
 #remove QC sites
 IndicatorCheckJoin=subset(IndicatorCheckJoin,!(UID %in% c('12457','12422','12714','13550','11787','13527','9779832504','13518','13539','8497901114','2772740176','3833994365','7194282454','9846034316','7977571143','4943503766','6152206654','6964535047','7746712455','2956707014','4324237804','4197418344','8537408400','4116634326','2109978745','41CD7AF9-B7EF-40AE-AF4E-5B28F77F7819','BC23CBBE-CA03-4AB8-985D-567DCFA49FA6','82EB06AD-705F-40B5-87F0-6EBFE4220D92','437DF621-C56F-4647-A5AB-A23A35DB726B','B0DB3C45-2D14-42F4-9722-7A5F3E66F355','C88896E2-FA3F-4D7D-AAD2-21C11E698C9B','A3378CF0-EA53-4C46-B858-4B580D001E9A','2D41FBB7-398F-43DD-A22A-93569E76493A','D0DF3643-D231-4925-9A99-9317EA79A785','FEC8303F-9604-46F8-BBC0-DDD151D5B597','39DFF320-179A-43C7-AEC1-677F4EC871F7','1E4A0F45-3584-4C48-9FD0-1AC2D156CB1A','33A60797-0B44-4A10-8030-3AFC75F027BC','2E3E82A1-CC26-4F50-ACD2-10B7C6157CED','ADFD9643-3ADE-482A-936F-B938A9C70DB5','5210AEB7-AEE9-43D8-876E-5A71F74E0C4E','9F83617B-5192-4AC6-99A4-9126AADE0699','942B415A-BD49-41EB-A9DD-2D7F8D59E87D','30846500-7DB4-4A35-B00B-764193AD1A83','8134492B-CE67-43D3-AB69-DB0C2EC47DDF','59D2716A-91E1-41F9-930F-4FE5B7DFBA8F','1730B528-5317-47E3-B83D-FFE5EB0C0D38','00C5DDB3-BC6B-43BD-AA27-EAAD160A1F3F','CD1D4C49-FBE5-4A34-BE4B-EB85218D5E10','21985428-7940-457A-82F4-74D82923FD1C','EC330DD5-C092-427F-9AC9-42C5C44F4179','C79C0FF8-E461-4C21-B9D6-150FBEE01C5A','1371C53E-AE90-41E8-9FB7-620424D79CF7','7B46F302-0E19-45E0-8658-230D6FA1EADB','E5B057BC-9219-49A8-A801-555C3CD2BCCA','D1E43428-901C-401E-81A8-29857CFD521F','1185793A-3DA2-4812-BC91-F68C1E5C4298','3743C97A-F5F0-4F33-880A-414DA4FA46D5','6B275A46-FE74-4078-A9E0-37B8C607DF9D','9E20708F-6303-4CDA-A7C4-A37B81201A9E','31B9E787-E769-4C2D-B348-4032D8B40925','38D0FEAF-1201-4E0C-A58C-0355B40D5260')))
