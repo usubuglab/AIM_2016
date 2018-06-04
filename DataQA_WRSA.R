@@ -597,6 +597,12 @@ write.csv(DryCheck,'DryCheck.csv')
 # Interrupt_CHECK=join(Interrupt,DryTran, by=c('UID'))
 # DryTran=subset(DryTran,RESULT=='Y')
                       
+######   bank stability and cover ######
+#gut check values coming out of the app quickly, for real indicator values go to indicator script
+Bank=tblRetrieve(Parameters=c('Z_PCTEROSIONALBANKS_COVERED', 'Z_PCTEROSIONALBANKS_STABLE','Z_PCTEROSIONALBANKS_TOTAL'),Years=years, Projects=projects,SiteCodes=sitecodes,Insertion=insertion)
+Bankpvt=cast(Bank,'UID~PARAMETER',value='RESULT')
+
+
 ####### substrate #######
 #get sediment data
 Sediment=tblRetrieve(Parameters=c('SIZE_CLS','XSIZE_CLS'),Projects=projects,Years=years,Protocols=protocols,SiteCodes=sitecodes,Insertion=insertion)
@@ -819,7 +825,7 @@ pool_great_100<-subset(poolsmerge,LENGTH>POOLRCHLEN)
 write.csv(pool_great_100,'pool_great_100.csv')
 
 #pool tail fines
-PoolFines=tblRetrieve(Parameters=c('POOLFINES2','POOLFINES6','POOLNOMEAS'),Projects=projects, Years=years,Protocols=protocols,SiteCode=sitecodes,Insertion=insertion)
+PoolFines=tblRetrieve(Parameters=c('POOLFINES2','POOLFINES6','POOLNOMEAS','POOLFINES6_512'),Projects=projects, Years=years,Protocols=protocols,SiteCode=sitecodes,Insertion=insertion)
 pvtPoolFines=addKEYS(cast(PoolFines,'UID+TRANSECT+POINT~PARAMETER',value='RESULT'),c('SITE_ID'))#need to pivot to create the pctPoolFInes variable
 pvtPoolFines$PctPoolFines2_CHECK=pvtPoolFines$POOLFINES2/(50)*100
 pvtPoolFines$PctPoolFines6_CHECK=pvtPoolFines$POOLFINES6/(50)*100
