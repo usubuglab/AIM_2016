@@ -2,5 +2,5 @@ SELECT     UID, SITE_ID,LOC_NAME, PROJECT,PROTOCOL,VALXSITE,XSTATUS, DATE_COL,CR
 
 FROM         (SELECT       UID, SAMPLE_TYPE, PARAMETER, Result
                        FROM          tblverification where ACTIVE='TRUE') p PIVOT (min(Result) FOR Parameter IN (CREW_LEADER,LOC_NAME, DATE_COL,ELEVATION,LAT_DD,LON_DD,NAME1,PROJECT,PROTOCOL, RCHWIDTH,REPEAT_VISIT,SITE_ID,TRCHLEN,VALXSITE,XSTATUS)) AS pvt
-                       where year(DATE_COL)=2017 and protocol !='Failed' 
+                       where year(DATE_COL)=2018 and protocol !='Failed' 
                         order by PROJECT, SITE_ID

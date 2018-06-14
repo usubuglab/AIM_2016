@@ -175,11 +175,16 @@ if (MissingXwalk==''){
 } else{MissingTotals4=unique(rbind(MissingTotals2,MissingTotals3)  )
 #! need to fix the revisions to MissingTotals4 before this will work
 MissingTotals4=MissingTotals4[,!(names(MissingTotals4) %in% c('POINT'))]
-MissingTotalsOUT= addKEYS(cast(subset(MissingTotals4,is.na(UID)==FALSE ), 'UID + TRANSECT  ~ SAMPLE_TYPE',value='MissingPCT' ),Columns=c('SITE_ID','DATE_COL','Protocol','Project')) 
-MissingTotalsREACH=subset(MissingTotalsOUT,TRANSECT=='ReachTotal');write.xlsx(MissingTotalsREACH,"MissingDataQCrch_nocom.xlsx")
-MissingTotalsTRAN=subset(MissingTotalsOUT,TRANSECT!='ReachTotal');write.xlsx(MissingTotalsTRAN,"MissingDataQCttran_nocom.xlsx")
-write.xlsx(MissingCounts,"MissingCounts.xlsx")
+MissingTotalsOUT= addKEYS(cast(subset(MissingTotals4,is.na(UID)==FALSE ), 'UID + TRANSECT  ~ SAMPLE_TYPE',value='MissingPCT' ),Columns=c('SITE_ID','DATE_COL','Protocol','Project','VALXSITE')) 
+MissingTotalsREACH=subset(MissingTotalsOUT,TRANSECT=='ReachTotal')
+MissingTotalsREACH=MissingTotalsREACH[,c(47,48,49,50,1,46,24,12,16,22,29,13,25,14,10,11,20,30,19,21,28,27,23,26,15,17,18,9,31:45,3:8)]
+names=gsub("^INDICATOR:","",colnames(MissingTotalsREACH))
+MissingTotalsREACH=setNames(MissingTotalsREACH,names)
+write.csv(MissingTotalsREACH,"MissingDataQCrch_nocom.csv")
+#MissingTotalsTRAN=subset(MissingTotalsOUT,TRANSECT!='ReachTotal');write.csv(MissingTotalsTRAN,"MissingDataQCttran_nocom.csv")
+#write.csv(MissingCounts,"MissingCounts.csv")
 }
+
 #combine reach totals
 #!revision to MissingTotals4 (once complete, comment out MissingTotals4 and 6 above)
 # MissingTotals4=unique(rbind(melt(MissingTotals2,id=c('SAMPLE_TYPE','TRANSECT','UID')),melt(MissingTotals3,id=c('SAMPLE_TYPE','TRANSECT','UID')),melt(MissingTotals5,id=c('SAMPLE_TYPE','TRANSECT','UID'))))
@@ -434,11 +439,14 @@ tblNAME='UnionTBLnum'
       }
     }
 
-#export results
-QUANTtbls=c(grep('pvtQUANTmean',ls(),value=T),setdiff(grep('pvtSUMMARYn',ls(),value=T),"pvtSUMMARYn"))
-for (t in 1:length(QUANTtbls)){
-  write.csv(eval(parse(text=QUANTtbls[t])),sprintf('%s.csv',QUANTtbls[t]))#could merge-pvtQUANTmean_, but I like them grouped by categories
-}
+# #export results
+# QUANTtbls=c(grep('pvtQUANTmean',ls(),value=T),setdiff(grep('pvtSUMMARYn',ls(),value=T),"pvtSUMMARYn"))
+# for (t in 1:length(QUANTtbls)){
+#   write.csv(eval(parse(text=QUANTtbls[t])),sprintf('%s.csv',QUANTtbls[t]))#could merge-pvtQUANTmean_, but I like them grouped by categories
+# }
+
+write.csv(UnionTBLnum_pvtSUMMARYn_Site,'UnionTBLnum_pvtSUMMARYn_Site.csv')
+
 
 #####################################################################################################
 #########                             Parameter Specific Checks                             #########
@@ -456,26 +464,26 @@ listsites=cast(listsites,'UID~PARAMETER',value='RESULT')
 
 #Check for merged sites
 Merge=subset(listsites,MERGE!='N')
-write.csv(Merge,'Merge.csv')
+#write.csv(Merge,'Merge.csv')
 #look at FieldTracking or ScoutTracking spreadsheets on the google drive and fill in as needed
 
 #Pull QC sites
 RepeatVisits=subset(listsites,REPEAT_VISIT!='N')
-write.csv(RepeatVisits,'QC_sites.csv')
+#write.csv(RepeatVisits,'QC_sites.csv') #CHECK IN coordinate_design_QC instead
 
 #Check that the straight-line distance between BR and TR does not exceed the total reach length (i.e. sinuosity <1 should never happen)
 listsites$straightline=acos(sin(as.numeric(listsites$LAT_DD_BR)*3.141593/180)*sin(as.numeric(listsites$LAT_DD_TR)*3.141593/180) + cos(as.numeric(listsites$LAT_DD_BR)*3.141593/180)*cos(as.numeric(listsites$LAT_DD_TR)*3.141593/180)*cos(as.numeric(listsites$LON_DD_TR)*3.141593/180-as.numeric(listsites$LON_DD_BR)*3.141593/180)) * 6371000
 listsites$SINUOSITY=as.numeric(listsites$TRCHLEN)/as.numeric(listsites$straightline)
 SinuosityCheck=subset(listsites,SINUOSITY<1)
-write.csv(SinuosityCheck,'SinuosityCheck.csv')
+#write.csv(SinuosityCheck,'SinuosityCheck.csv')
 
 #After all GPS coordinates check out export coordinates for Ryan Lokteff or GIS tech to compute WestWide bug OE model and EC,TN,TP models
-write.csv(listsites,'postseason_site_coordinates.csv')
+#write.csv(listsites,'postseason_site_coordinates.csv')
 
 #get other useful information associated with sites
 #eventually read in design table from SQL but for now the table should be read in from the path below to compare original coordinates with those that were collected
 #designs=read.csv('\\\\share1.bluezone.usu.edu\\miller\\buglab\\Research Projects\\AIM\\AIM_DataManagement\\ProjectMngtSystem\\design_table2.csv')
-designs=read.csv('\\\\share1.bluezone.usu.edu\\miller\\buglab\\Research Projects\\AIM\\Design\\DesignDatabase\\design_coordinates_QC_Rinput.csv')
+#designs=read.csv('\\\\share1.bluezone.usu.edu\\miller\\buglab\\Research Projects\\AIM\\Design\\DesignDatabase\\design_coordinates_QC_Rinput.csv')
 designs=read.csv('\\\\share1.bluezone.usu.edu\\miller\\buglab\\Research Projects\\AIM\\Design\\DesignDatabase\\GIS_table_for_Design_Database.csv')
 postseasonmetadata=join(listsites,designs, by="SITE_ID", type="left")
 #get ecoregional and stream size info for context for values
@@ -483,7 +491,14 @@ postseasonmetadata=join(listsites,designs, by="SITE_ID", type="left")
 #postseasonmetadata=join(postseason,designmetadata, by="MS_ID", type="left")
 #eventually need to edit the read in csv above to reflect the sampled coordinates for future sample draws at the end of the season
 postseasonmetadata$CALC_DISTFROMX=acos(sin(as.numeric(postseasonmetadata$LAT_DD)*3.141593/180)*sin(as.numeric(postseasonmetadata$DESIGN_LAT)*3.141593/180) + cos(as.numeric(postseasonmetadata$LAT_DD)*3.141593/180)*cos(as.numeric(postseasonmetadata$DESIGN_LAT)*3.141593/180)*cos(as.numeric(postseasonmetadata$DESIGN_LON)*3.141593/180-as.numeric(postseasonmetadata$LON_DD)*3.141593/180)) * 6371000
-write.csv(postseasonmetadata,'coordinateQC.csv')
+coordinate_design_QC=postseasonmetadata[,c('PROJECT','PROTOCOL','SITE_ID','LOC_NAME','DATE_COL','UID','LAT_DD','LON_DD','LAT_DD_TR','LON_DD_TR','LAT_DD_BR','LON_DD_BR','Z_DISTANCEFROMX','CALC_DISTFROMX','SLIDE_YN','SINUOSITY','TRCHLEN','straightline','MERGE','REPEAT_VISIT','StreamOr_1','District','FieldOffice','STATE','COUNTY','Ecoregion_spelledout','Climate_spelledout')]
+write.csv(coordinate_design_QC,'coordinate_design_QC.csv')
+
+
+
+#elevation
+elev=tblRetrieve(Parameters=c('ELEVATION','ELEVATION_UNITS'),Years=years, Projects=projects,Protocol=protocols,SiteCodes=sitecodes,Insertion=insertion)
+pvtelev=cast(elev,'UID~SAMPLE_TYPE+PARAMETER', value='RESULT')
 
 
 ####### Bugs #########
@@ -496,17 +511,17 @@ Bugspvt=addKEYS(cast(Bugs,'UID~SAMPLE_TYPE+PARAMETER',value='RESULT'),c('SITE_ID
 AreaCheck1=subset(Bugspvt,(as.numeric(BERW_AREA_SAMP)!=0.093 & BERW_SAMPLER=='SU'))
 AreaCheck2=subset(Bugspvt,(as.numeric(BERW_AREA_SAMP)!=0.0413 & BERW_SAMPLER=='MI'))
 AreaCheck3=subset(Bugspvt,(as.numeric(BERW_AREA_SAMP)!=0.093 & BERW_SAMPLER=='KC'))
-write.csv(AreaCheck1,'AreaCheck1.csv')
-write.csv(AreaCheck2,'AreaCheck2.csv')
-write.csv(AreaCheck3,'AreaCheck3.csv')
+#write.csv(AreaCheck1,'AreaCheck1.csv')
+#write.csv(AreaCheck2,'AreaCheck2.csv')
+#write.csv(AreaCheck3,'AreaCheck3.csv')
 write.csv(Bugspvt,'Bugspvt.csv')
 
 
 #check to make sure 8 or 11 TRAN_NUM at all sites
 SamplingCheck1=subset(Bugspvt,(BERW_TRAN_NUM<8 & BERW_BUG_METHOD=='TARGETED RIFFLE'))
 SamplingCheck2=subset(Bugspvt,(BERW_TRAN_NUM<11 & BERW_BUG_METHOD=='REACH WIDE'))
-write.csv(SamplingCheck1,'SamplingCheck1.csv')
-write.csv(SamplingCheck2,'SamplingCheck2.csv')
+write.csv(SamplingCheck1,'TargetedRiffleTranNumCheck.csv')
+write.csv(SamplingCheck2,'ReachWideTranNumCheck.csv')
 
 #get data ready to submit via http://www.usu.edu/buglab/SampleProcessing/SampleSubmission/
 postseasonmetadata=subset(postseasonmetadata,PROTOCOL!='FAILED')
@@ -523,44 +538,44 @@ write.csv(BugsSubmit,'BugsSubmit.csv')
                       
 ######## WQ checks ########
 #corrected for temperature check
-WQ2=tblRetrieve(Parameters=c('CONDUCTIVITY','CORRECTED','TEMPERATURE'), Comments='Y', Years=years, Projects=projects,SiteCodes=sitecodes,Insertion=insertion)
+WQ2=tblRetrieve(Parameters=c('CONDUCTIVITY','CORRECTED','TEMPERATURE'), Comments='Y', Years=years, Projects=projects,Protocols=protocols,SiteCodes=sitecodes,Insertion=insertion)
 WQ1=cast(WQ2,'UID~PARAMETER',value='RESULT')
 WQind=cast(WQ2,'UID~PARAMETER',value='IND')
 WQ3=addKEYS(merge(WQ1,WQind,by=c('UID'),all=T) ,c('SITE_ID','DATE_COL','CREW_LEADER'))
 WQ3.sub=subset(WQ3,CORRECTED.x!='Y')
 write.csv(WQ3.sub,'not_temp_corrected_conduct.csv')
 
-#Chem check the hours prior to freezing
-WQtbl=tblRetrieve(Parameters=c('NTL','PTL','TN_PRED','TP_PRED','TIME_UNFROZEN'),Projects=projects,Years=years,Protocols=protocols,SiteCodes=sitecodes,Insertion=insertion)
-WQpvt=addKEYS(cast(WQtbl,'UID~PARAMETER',value='RESULT'),c('SITE_ID','CREW_LEADER'))
-WQpvt$OE_TN=WQpvt$NTL-WQpvt$TN_PRED
-WQpvt$OE_TP=WQpvt$PTL-WQpvt$TP_PRED
-#graph time_unfrozen with raw values and OE values
-plot(WQpvt$TIME_UNFROZEN,WQpvt$OE_TN)
-plot(WQpvt$TIME_UNFROZEN,WQpvt$OE_TP) 
-                      
-#make condition determination and average time_unfrozen in each condition
-WQpvt$OE_TNrtg=ifelse(WQpvt$OE_TN <=52.1,'Good',ifelse(WQpvt$OE_TN >114.7, 'Poor','Fair'))
-WQpvt$OE_TPrtg=ifelse(WQpvt$OE_TP <=9.9,'Good',ifelse(WQpvt$OE_TP >21.3, 'Poor','Fair'))
-ConditionCheck1=aggregate(TIME_UNFROZEN~OE_TNrtg, data=WQpvt, FUN=mean)
-ConditionCheck2=aggregate(TIME_UNFROZEN~OE_TPrtg, data=WQpvt, FUN=mean) 
-                      
+# #Chem check the hours prior to freezing
+# WQtbl=tblRetrieve(Parameters=c('NTL','PTL','TN_PRED','TP_PRED','TIME_UNFROZEN'),Projects=projects,Years=years,Protocols=protocols,SiteCodes=sitecodes,Insertion=insertion)
+# WQpvt=addKEYS(cast(WQtbl,'UID~PARAMETER',value='RESULT'),c('SITE_ID','CREW_LEADER'))
+# WQpvt$OE_TN=WQpvt$NTL-WQpvt$TN_PRED
+# WQpvt$OE_TP=WQpvt$PTL-WQpvt$TP_PRED
+# #graph time_unfrozen with raw values and OE values
+# plot(WQpvt$TIME_UNFROZEN,WQpvt$OE_TN)
+# plot(WQpvt$TIME_UNFROZEN,WQpvt$OE_TP) 
+#                       
+# #make condition determination and average time_unfrozen in each condition
+# WQpvt$OE_TNrtg=ifelse(WQpvt$OE_TN <=52.1,'Good',ifelse(WQpvt$OE_TN >114.7, 'Poor','Fair'))
+# WQpvt$OE_TPrtg=ifelse(WQpvt$OE_TP <=9.9,'Good',ifelse(WQpvt$OE_TP >21.3, 'Poor','Fair'))
+# ConditionCheck1=aggregate(TIME_UNFROZEN~OE_TNrtg, data=WQpvt, FUN=mean)
+# ConditionCheck2=aggregate(TIME_UNFROZEN~OE_TPrtg, data=WQpvt, FUN=mean) 
+#                       
 #view any typical values violations for Conductivity and PH
 Conduct=addKEYS(tblRetrieve(Comments='Y',Parameters=c('CONDUCTIVITY'),Projects=projects,Years=years,Protocols=protocols,SiteCodes=sitecodes,Insertion=insertion),c('SITE_ID'))
 ConductQuestions=subset(Conduct,RESULT<100 | RESULT>600)# review comments for any sites flagged here 
-postseasonmetadata_ecoregion=postseasonmetadata[,c('UID','ECO_10')]
-ConductQuestions=join(ConductQuestions,postseasonmetadata_ecoregion, by="UID",type="left")
+#postseasonmetadata_ecoregion=postseasonmetadata[,c('UID','ECO_10')]
+#ConductQuestions=join(ConductQuestions,postseasonmetadata_ecoregion, by="UID",type="left")
 write.csv(ConductQuestions,'ConductQuestions.csv')
 PH=addKEYS(tblRetrieve(Comments='Y',Parameters=c('PH'),Projects=projects,Years=years,Protocols=protocols,SiteCodes=sitecodes,Insertion=insertion),c('SITE_ID'))
 PHQuestions=subset(PH,RESULT<6 | RESULT>9)# review comments for any sites flagged here
-PHQuestions=join(PHQuestions,postseasonmetadata_ecoregion, by="UID",type="left")
+#PHQuestions=join(PHQuestions,postseasonmetadata_ecoregion, by="UID",type="left")
 write.csv(PHQuestions,'PHQuestions.csv')
 
-#compare any questionable values to ecoregional EPA data
-#should automate this process so that only values that fall outside this range get flagged ---need to join the ecoregion data to the design table; can't remember where all that site metadata from the master sample ended up
-  #could pull code from condition determinations to do that but this code will be pretty complex....for now just leave as a manual task
-read.csv('\\\\share1.bluezone.usu.edu\\miller\\buglab\\Research Projects\\BLM_WRSA_Stream_Surveys\\Results and Reports\\EPA_Data\\EPA_WQ_typical_values.csv')
-
+# #compare any questionable values to ecoregional EPA data
+# #should automate this process so that only values that fall outside this range get flagged ---need to join the ecoregion data to the design table; can't remember where all that site metadata from the master sample ended up
+#   #could pull code from condition determinations to do that but this code will be pretty complex....for now just leave as a manual task
+# read.csv('\\\\share1.bluezone.usu.edu\\miller\\buglab\\Research Projects\\BLM_WRSA_Stream_Surveys\\Results and Reports\\EPA_Data\\EPA_WQ_typical_values.csv')
+# 
 #instrument check
 #pull all data for instrument if values still not resolved after looking at ecoregional values # not as pertinent this year and in the future because the same instrument will be used for any given proejct and confounded with ecoregional differences
 WQ2=tblRetrieve(Parameters=c('CONDUCTIVITY','PH','CAL_INST_ID'), Comments='Y', Years=years, Projects=projects,Protocols=protocols,SiteCodes=sitecodes,Insertion=insertion)
@@ -570,7 +585,7 @@ WQ1=subset(WQ1,CAL_INST_ID=='')# fill in data of interest here
                       
 ####### incision and bank height ############
 #cross checks implemented in app so just check extreme values, outliers (above), and for unit issues
-heights=addKEYS(tblRetrieve(Parameters=c('INCISED','BANKHT'),Years=years, Projects=projects,SiteCodes=sitecodes,Insertion=insertion),c('SITE_ID','DATE_COL','CREW_LEADER'))
+heights=addKEYS(tblRetrieve(Parameters=c('INCISED','BANKHT'),Years=years, Projects=projects,Protocols=protocols,SiteCodes=sitecodes,Insertion=insertion),c('SITE_ID','DATE_COL','CREW_LEADER'))
 HeightCheck1=subset(heights,RESULT>1.5|RESULT<0.1)
 View(HeightCheck1)
 write.csv(HeightCheck1,'HeightCheck1.csv')
@@ -578,11 +593,11 @@ write.csv(HeightCheck1,'HeightCheck1.csv')
                       
 #######   width  #########
 #cross checks implemented in app and extreme values hard to catch/ not so important so just check for outliers(above), and for protocol issues related to dry sites                       
-Depths=tblRetrieve(Parameters=c('DEPTH'),Years=years, Projects=projects,SiteCodes=sitecodes,Insertion=insertion)
+Depths=tblRetrieve(Parameters=c('DEPTH'),Years=years, Projects=projects,Protocols=protocols,SiteCodes=sitecodes,Insertion=insertion)
 Depths=subset(Depths,RESULT==0 & POINT==1)# query wetted width for these transects and UIDs in SQL and check if it is 0 and TRANDRY='Y' 
 write.csv(Depths,'Depths.csv')
 #do the opposite query
-Widths=tblRetrieve(Parameters=c('WETWID','BANKWID','TRANDRY'),Years=years, Projects=projects,SiteCodes=sitecodes,Insertion=insertion)                      
+Widths=tblRetrieve(Parameters=c('WETWID','BANKWID','TRANDRY'),Years=years, Projects=projects,Protocols=protocols,SiteCodes=sitecodes,Insertion=insertion)                      
 pvtWidths=cast(Widths,'UID+TRANSECT~PARAMETER',value='RESULT')
 Widths=subset(Widths,RESULT==0)# query the corresponding thalweg depths in SQL if present and the VALXSITE to make sure it is INTWADE                      
 write.csv(Widths,'Widths.csv')
@@ -599,9 +614,9 @@ write.csv(DryCheck,'DryCheck.csv')
                       
 ######   bank stability and cover ######
 #gut check values coming out of the app quickly, for real indicator values go to indicator script
-Bank=tblRetrieve(Parameters=c('Z_PCTEROSIONALBANKS_COVERED', 'Z_PCTEROSIONALBANKS_STABLE','Z_PCTEROSIONALBANKS_TOTAL'),Years=years, Projects=projects,SiteCodes=sitecodes,Insertion=insertion)
-Bankpvt=cast(Bank,'UID~PARAMETER',value='RESULT')
-
+Bank=tblRetrieve(Parameters=c('Z_PCTEROSIONALBANKS_COVERED', 'Z_PCTEROSIONALBANKS_STABLE','Z_PCTEROSIONALBANKS_TOTAL'),Years=years, Projects=projects,Protocols=protocols,SiteCodes=sitecodes,Insertion=insertion)
+Bankpvt=addKEYS(cast(Bank,'UID~PARAMETER',value='RESULT'),c('PROJECT','SITE_ID','DATE_COL','VALXSITE'))
+write.csv(Bankpvt,'Bankpvt.csv')
 
 ####### substrate #######
 #get sediment data
@@ -704,43 +719,43 @@ tbl.PVT=addKEYS(cast(tbl,'UID~PARAMETER',value='RESULT'),c('SITE_ID'))# count is
 thalweg.missing=merge(tbl.PVT,tbl3, by='UID')
 thalweg.missing$pctcomplete=thalweg.missing$DEPTH/(thalweg.missing$NUM_THALWEG*10)*100
 write.csv(thalweg.missing,'thalweg.missing.csv')
-
-#2014-2015
-thalweg.missing2014=sqlQuery(wrsa1314,sprintf("select Station.UID, depth.transect,StationCNT,DepthCNT from 
-                                              (select distinct UID,
-                                               CASE 
-                                               WHEN parameter='sub_5_7' and RESULT='5' THEN cast(RESULT*2 as numeric)
-                                               WHEN parameter='sub_5_7' and RESULT='7' THEN cast(RESULT*2+1 as numeric)
-                                               WHEN parameter='sub_5_7' and RESULT='14' THEN cast (RESULT*2+2 as numeric)
-                                               ELSE 'ISSUE'
-                                               END as StationCNT from tbltransect where parameter='SUB_5_7' and ACTIVE='true') as station
-                                              join
-                                              (select UID, transect, count(point) as DepthCNT from tblpoint where parameter='DEPTH' and POINT not in('CT','LC','LF','RC','RT') and ACTIVE='true' group by UID, transect) as depth
-                                              on station.uid=depth.uid
-                                              --where StationCNT > DepthCNT 
-                                              order by Station.UID, depth.transect"))
-thalweg.missing2014$pctcomplete=thalweg.missing2014$DepthCNT/thalweg.missing2014$StationCNT*100
-thalweg.missing2014_2=aggregate(pctcomplete~UID, data=thalweg.missing2014,mean)
-
-#2013
-thalweg.missing2013=sqlQuery(wrsa1314,sprintf("select Station.UID, StationDUPLICATES,StationCNT,DepthCNT from 
-                                              (select distinct UID,
-                                               CASE 
-                                               WHEN RESULT='5' THEN cast(RESULT*20 as numeric)
-                                               WHEN RESULT='7' THEN cast(RESULT*20+10 as numeric)
-                                               WHEN RESULT='14' THEN cast (RESULT*20+20 as numeric)
-                                               ELSE 'ISSUE'
-                                               END as StationCNT from tblpoint where parameter='SUB_5_7' and ACTIVE='true') as station
-                                              join
-                                              (select UID,count(result) as StationDUPLICATES from (select distinct UID, result from tblpoint where parameter='SUB_5_7' and ACTIVE='true') as stcnt group by UID) as stationcount
-                                              on station.uid=stationcount.uid
-                                              join 
-                                              (select UID, count(point) as DepthCNT from tblpoint where parameter='DEPTH' and POINT not in('CT','LC','LF','RC','RT') and ACTIVE='true' group by UID) as depth
-                                              on station.uid=depth.uid
-                                              --where StationCNT > DepthCNT or stationDUPLICATES>1
-                                              order by Station.UID"))
-thalweg.missing2013$pctcomplete=thalweg.missing2013$DepthCNT/thalweg.missing2013$StationCNT*100
-thalweg.missing2013_2=aggregate(pctcomplete~UID, data=thalweg.missing2013,mean)                             
+# 
+# #2014-2015
+# thalweg.missing2014=sqlQuery(wrsa1314,sprintf("select Station.UID, depth.transect,StationCNT,DepthCNT from 
+#                                               (select distinct UID,
+#                                                CASE 
+#                                                WHEN parameter='sub_5_7' and RESULT='5' THEN cast(RESULT*2 as numeric)
+#                                                WHEN parameter='sub_5_7' and RESULT='7' THEN cast(RESULT*2+1 as numeric)
+#                                                WHEN parameter='sub_5_7' and RESULT='14' THEN cast (RESULT*2+2 as numeric)
+#                                                ELSE 'ISSUE'
+#                                                END as StationCNT from tbltransect where parameter='SUB_5_7' and ACTIVE='true') as station
+#                                               join
+#                                               (select UID, transect, count(point) as DepthCNT from tblpoint where parameter='DEPTH' and POINT not in('CT','LC','LF','RC','RT') and ACTIVE='true' group by UID, transect) as depth
+#                                               on station.uid=depth.uid
+#                                               --where StationCNT > DepthCNT 
+#                                               order by Station.UID, depth.transect"))
+# thalweg.missing2014$pctcomplete=thalweg.missing2014$DepthCNT/thalweg.missing2014$StationCNT*100
+# thalweg.missing2014_2=aggregate(pctcomplete~UID, data=thalweg.missing2014,mean)
+# 
+# #2013
+# thalweg.missing2013=sqlQuery(wrsa1314,sprintf("select Station.UID, StationDUPLICATES,StationCNT,DepthCNT from 
+#                                               (select distinct UID,
+#                                                CASE 
+#                                                WHEN RESULT='5' THEN cast(RESULT*20 as numeric)
+#                                                WHEN RESULT='7' THEN cast(RESULT*20+10 as numeric)
+#                                                WHEN RESULT='14' THEN cast (RESULT*20+20 as numeric)
+#                                                ELSE 'ISSUE'
+#                                                END as StationCNT from tblpoint where parameter='SUB_5_7' and ACTIVE='true') as station
+#                                               join
+#                                               (select UID,count(result) as StationDUPLICATES from (select distinct UID, result from tblpoint where parameter='SUB_5_7' and ACTIVE='true') as stcnt group by UID) as stationcount
+#                                               on station.uid=stationcount.uid
+#                                               join 
+#                                               (select UID, count(point) as DepthCNT from tblpoint where parameter='DEPTH' and POINT not in('CT','LC','LF','RC','RT') and ACTIVE='true' group by UID) as depth
+#                                               on station.uid=depth.uid
+#                                               --where StationCNT > DepthCNT or stationDUPLICATES>1
+#                                               order by Station.UID"))
+# thalweg.missing2013$pctcomplete=thalweg.missing2013$DepthCNT/thalweg.missing2013$StationCNT*100
+# thalweg.missing2013_2=aggregate(pctcomplete~UID, data=thalweg.missing2013,mean)                             
 
 #Increment cross-validation WRSA checks
 incrementcheck=tblRetrieve(Parameters=c('TRCHLEN','INCREMENT','RCHWIDTH'), Projects=projects, Years=years,Protocols=protocols,SiteCodes=sitecodes,Insertion=insertion)

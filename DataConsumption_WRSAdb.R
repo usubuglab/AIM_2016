@@ -12,7 +12,7 @@ DBname=''#ditto as with DBpassword
 
 #--------------------------------------------------------SETUP--------------------------------------------------------#
 #LOAD required packages#
-requiredPACKAGES=c('reshape', 'RODBC','ggplot2','grid','gridExtra','xlsx','sqldf','jpeg','spsurvey','tcltk')
+requiredPACKAGES=c('reshape', 'RODBC','ggplot2','grid','gridExtra','xlsx','sqldf','jpeg','spsurvey','tcltk','plyr')
 for (r in 1:length(requiredPACKAGES)){
   if ((requiredPACKAGES[r] %in% installed.packages()[,1])==FALSE){install.packages(requiredPACKAGES[r])}#auto-install if not present
   library(requiredPACKAGES[r],character.only = TRUE)
@@ -37,7 +37,7 @@ wrsa1314=odbcDriverConnect(connection = wrsaConnectSTR)
 #SWJ to do: throw the function into a separate referenced script because multiple files are using this
 
 options(stringsAsFactors=F,"scipen"=50)#general option, otherwise default read is as factors which assigns arbitrary number behind the scenes to most columns
-library(plyr)
+
 
 #SQL assistance functions
 #loaded from a separate R script
@@ -85,6 +85,11 @@ protocols=c('WADE2016','BOAT2016')
 protocols=c('NRSA13','WRSA14','BOAT14','AK14','WADE2016','BOAT2016')
 #all boating
 protocols=c('BOAT14','BOAT2016')
+
+#2018 projects
+projects=c('AKEFO','AK_AN_BSWI_2017','AK_CY_PLANUNIT_2017','AK_CY_UTILITYCORRIDOR_2016','AK_GL_STANDARD_2016','CO_FR_STANDARD_2016','CO_SW_STANDARD_2016','CO_NW_STANDARD_2016','NM_SONM_STANDARD_2018','OR_PR_WSR_2018','UT_GR_WSP_2018','WY_RA_STANDARD_2016','UT_CY_STANDARD_2017','UT_WD_SHEEPROCK_2017','WY_HD_STANDARD_2017')
+
+
 #2017 priority projects
 projects=c('UT_GR_STANDARD_2016','UT_WD_STANDARD_2016','WY_RA_STANDARD_2016','UT_WD_SHEEPROCK_2017','ID_SA_STANDARD_2016')
 projects=c('WY_RA_STANDARD_2016','AKEFO')
@@ -108,7 +113,7 @@ projects=c('Training')
 # the number of the week starting on Monday(because monday was the 1st) for 2018
 #the last week in May is week 22
 insertion=c('')
-insertion=c('3')
+insertion=c('22','23','24')
 
 
 
