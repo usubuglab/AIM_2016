@@ -7,7 +7,7 @@
 #Jennifer will then copy and paste the edits into the ProbSurvey Access database run the stored export to export a csv. Then run the UpdateDatabase_WRSA.R script and follow its subsequent instructions
 
 #need to run the code below for joins to work
-library(plyr)
+#library(plyr)
 
 ######################################################################################
 #########                          Site Check                                #########
@@ -97,9 +97,11 @@ for (p in 1:length(ProtocolsP)){
 emptytmp=emptyFulldataset#;empty14Jul14=emptyFulldataset
 
 #!method/checking oddities (not sure if these should be handled in emptyFulldataset or MissingCounts)
-UnionTBL$TRANSECT=ifelse(UnionTBL$SAMPLE_TYPE %in% c('SLOPEW', 'HABITAT') 
-                         & addKEYS(UnionTBL,c('PROTOCOL'))$PROTOCOL %in% c('WRSA14','AK14'),
+UnionTBL$TRANSECT=ifelse(UnionTBL$SAMPLE_TYPE %in% c('SLOPEW', 'HABITAT','PHOTO') 
+                         & addKEYS(UnionTBL,c('PROTOCOL'))$PROTOCOL %in% c('WRSA14','AK14','WADE2016','BOAT2016'),
                          NA,UnionTBL$TRANSECT)#instances where only care if have at least one, but it's recorded as multiple so TRANSECT unable to join in MissingCounts if different
+UnionTBL$TRANSECT=ifelse(UnionTBL$PARAMETER %in% c('FLOOD_WID', 'FLOOD_BFWIDTH'),
+                         NA,UnionTBL$TRANSECT)
 #!posible issues with INCREMENT, but likely warrants database cleanup
 
 #only reporting values with missing counts
@@ -177,7 +179,7 @@ if (MissingXwalk==''){
 MissingTotals4=MissingTotals4[,!(names(MissingTotals4) %in% c('POINT'))]
 MissingTotalsOUT= addKEYS(cast(subset(MissingTotals4,is.na(UID)==FALSE ), 'UID + TRANSECT  ~ SAMPLE_TYPE',value='MissingPCT' ),Columns=c('SITE_ID','DATE_COL','Protocol','Project','VALXSITE')) 
 MissingTotalsREACH=subset(MissingTotalsOUT,TRANSECT=='ReachTotal')
-MissingTotalsREACH=MissingTotalsREACH[,c(47,48,49,50,1,46,24,12,16,22,29,13,25,14,10,11,20,30,19,21,28,27,23,26,15,17,18,9,31:45,3:8)]
+MissingTotalsREACH=MissingTotalsREACH[,c(48,49,50,51,1,47,26,12,16,23,31,13,27,14,10,11,33,21,19,29,30,20,22,28,25,24,15,17,18,9,32,34:46,3:8)]
 names=gsub("^INDICATOR:","",colnames(MissingTotalsREACH))
 MissingTotalsREACH=setNames(MissingTotalsREACH,names)
 write.csv(MissingTotalsREACH,"MissingDataQCrch_nocom.csv")
