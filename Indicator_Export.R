@@ -94,6 +94,6 @@ data.xwalk=read.csv('\\\\share1.bluezone.usu.edu\\miller\\buglab\\Research Proje
 data.input=Indicators
 IndicatorsFinal=indicatorXwalk(data.input,data.xwalk)
 
-write.csv(IndicatorsFinal,'IndicatorsFinalExport15March2018.csv',na="")     
+write.csv(IndicatorsFinal,'IndicatorsFinalExport15June2018.csv',na="")     
 
 

@@ -8,24 +8,19 @@
 #tblMETADATA= sqlQuery(wrsa1314, "select * from tblMETADATA")
 #############################################################################
 # FIRST Run the settup section of DataConsumption_WRSAdb.R
-# SECOND Run filters for appropriate project, years, and protocols.
+# SECOND Run filters for appropriate project, years, and protocols.For all filter options from all years see DataConsumption_WRSAdb.R
 ####
-#Pre-2016 master list # projects=c('WRSA','NV','GSENM','COPLT','2015ProtocolOverlap','AKEFO','NORCAL')# most useful for separating NorCal and WRSA, note that abbreviations differ between Access and SQL/FM
-#2016 master list# 
-projects=c('AKEFO','NPRA15','AK_GL_STANDARD_2016','AK_CY_UTILITYCORRIDOR_2016','WA_SP_STANDARD_2016','CO_FR_STANDARD_2016','CO_SW_STANDARD_2016','CO_NW_STANDARD_2016','ID_SA_STANDARD_2016','ID_STATE_STANDARD_2016','NM_FMD_STANDARD_2016','OR_PR_PERENNIAL_2016','OR_PR_INTERMITTENT_2016','UT_GR_STANDARD_2016','UT_WD_STANDARD_2016','WY_RA_STANDARD_2016')
+#2018 filters
+projects=c('AKEFO','AK_AN_BSWI_2017','AK_CY_PLANUNIT_2017','AK_CY_UTILITYCORRIDOR_2016','AK_GL_STANDARD_2016','CO_FR_STANDARD_2016','CO_SW_STANDARD_2016','CO_NW_STANDARD_2016','NM_SONM_STANDARD_2018','OR_PR_WSR_2018','UT_GR_WSP_2018','WY_RA_STANDARD_2016','UT_CY_STANDARD_2017','UT_WD_SHEEPROCK_2017','WY_HD_STANDARD_2017')
 
-####
-years=c('2013','2014','2015','2016')#as character, not number
-####
-#Pre-2016# protocols=c('NRSA13','WRSA14','BOAT14','AK14')#for separating differences in overall protocol, may not be relevant for some parameters
-#2016#
+years=c('2018')#as character, not number
+
 protocols=c('WADE2016','BOAT2016')
 
 sitecodes=c('')
-########Sitecode filter will likely be use to check data at one site or troubleshoot code during processing. Must add to code as needed as it is not built in to code below.
-########sitecodes=c('OT-SS-7112')#c('EL-LS-8134','EL-SS-8127','MN-LS-1004','MN-SS-1104','MS-SS-3103','XE-RO-5086','XN-LS-4016','XN-SS-4128','XS-LS-6029' )#QAduplicateSites#c('AR-LS-8003','AR-LS-8007', 'TP-LS-8240')#sites for NorCalTesting
 
-library(plyr)
+insertion=c('22','23','24')
+
 
 ###################################################################################################################
 ###################################################################################################################
@@ -52,7 +47,8 @@ listsites=listsites[,c(15,9,1,4,6,10,13,14,16,7,11,8,12,2,3,5)]
 listsites$PROTOCOL2_CHECK=ifelse(listsites$PROTOCOL=="BOAT14"|listsites$PROTOCOL=="BOAT2016","BOATABLE","WADEABLE")
 listsites$FieldStatus_CHECK=ifelse(listsites$VALXSITE_CHECK=="WADEABLE"|listsites$VALXSITE_CHECK=="BOATABLE","Sampled - Full Reach",
                              ifelse(listsites$VALXSITE_CHECK=="PARBYWADE"|listsites$VALXSITE_CHECK=="PARBYBOAT","Sampled - Partial Reach",
-                                    ifelse(listsites$VALXSITE_CHECK=="INTWADE","Sampled - Interrupted Flow",listsites$VALXSITE_CHECK)))
+                                    ifelse(listsites$VALXSITE_CHECK=="INTWADE","Sampled - Interrupted Flow",
+                                    ifelse(listsites$VALXSITE_CHECK=="SUBSETWADE","Sampled - Core Subset",listsites$VALXSITE_CHECK ))))
 # #listsites=listsites[,c(1,12,6,2,3,7,10,13,11,5,9,4,8)]
 # #run list sites and TRCHLEN below to get sinuosity data
 TRCHLEN1=tblRetrieve(Parameters=c('TRCHLEN','INCREMENT'),Projects=projects,Years=years,Protocols=protocols,SiteCodes=sitecodes,Insertion=insertion)#not using TRCHLEN
@@ -211,23 +207,23 @@ Slope=tblRetrieve(Parameters=c('AVGSLOPE','SLPRCHLEN','PCT_GRADE'),Projects=proj
 ##########################################################################################################
 ##### Other metrics still being worked on or old metrics no longer used #####
 ##########################################################################################################
-#W1_HALL- human influence
-#Figure out the differences... Human influence sample type...
-Human_Influ=tblRetrieve(Parameters=c('BUILD','LOG','MINE','PARK','PAST','PAVE','PIPES','ROAD','ROW','TRASH','WALL'), Projects=projects,Years=years,Protocols=protocols,SiteCodes=sitecodes)                       
-#Human_Influpvt=cast(Human_Influ,'UID+TRANSECT+POINT~PARAMETER',value='RESULT')
-#unique(Human_Influ$RESULT)
-#unique(Human_Influpvt$POINT)
-
-#QR1
-#run densiom, Human_Influ, and RipWW to get the data. Code to calculate QR1 is in NC_DataAnalysis file
-
-#XEMBED - embeddedness
-EMBED=tblRetrieve(Parameters='EMBED', Projects=projects,Years=years,Protocols=protocols,SiteCodes=sitecodes)
-#EMBEDpvt=cast(EMBED,'UID+TRANSECT+POINT~PARAMETER',value='RESULT')
-#unique(EMBED$RESULT)
-#unique(EMBED$TRANSECT)
-#unique(EMBED$POINT)
-
+# #W1_HALL- human influence
+# #Figure out the differences... Human influence sample type...
+# Human_Influ=tblRetrieve(Parameters=c('BUILD','LOG','MINE','PARK','PAST','PAVE','PIPES','ROAD','ROW','TRASH','WALL'), Projects=projects,Years=years,Protocols=protocols,SiteCodes=sitecodes)                       
+# #Human_Influpvt=cast(Human_Influ,'UID+TRANSECT+POINT~PARAMETER',value='RESULT')
+# #unique(Human_Influ$RESULT)
+# #unique(Human_Influpvt$POINT)
+# 
+# #QR1
+# #run densiom, Human_Influ, and RipWW to get the data. Code to calculate QR1 is in NC_DataAnalysis file
+# 
+# #XEMBED - embeddedness
+# EMBED=tblRetrieve(Parameters='EMBED', Projects=projects,Years=years,Protocols=protocols,SiteCodes=sitecodes)
+# #EMBEDpvt=cast(EMBED,'UID+TRANSECT+POINT~PARAMETER',value='RESULT')
+# #unique(EMBED$RESULT)
+# #unique(EMBED$TRANSECT)
+# #unique(EMBED$POINT)
+# 
 
 ### Getting Data to calculate Indicators Stops here
 
@@ -623,7 +619,7 @@ H_Sed=rbind(pctsafn_2013,G_Sed2014)# uncomment for 2013 data #needs to be change
 PCT_SAFN_ALL=join(H_Sed,K_Sed2014,by="UID",type="left")#uncomment for 2013 data
 
 #2014 only?
-#PCT_SAFN_ALL=join(G_Sed2014,K_Sed2014,by="UID",type="left")
+PCT_SAFN_ALL=join(G_Sed2014,K_Sed2014,by="UID",type="left")#need to uncomment if there is also boating or 2013 data
 #PCT_SAFN_sub=subset(PCT_SAFN_ALL,nallPCT_SAFN_CHECK<50)
 PCT_SAFN_ALL$allPCT_SAFN2_CHECK=ifelse(PCT_SAFN_ALL$nallPCT_SAFN_CHECK<50,NA,PCT_SAFN_ALL$allPCT_SAFN2_CHECK)
 PCT_SAFN_ALL$bedPCT_SAFN2_CHECK=ifelse(PCT_SAFN_ALL$nbedPCT_SAFN_CHECK<50,NA,PCT_SAFN_ALL$bedPCT_SAFN2_CHECK)
@@ -1054,43 +1050,43 @@ listsites$SINUOSITY_CHECK=ifelse(listsites$VALXSITE_CHECK=="PARBYWADE"|listsites
 ###################################################################################################################
 ###################################################################################################################
 
-#Xembed - embeddedness
-XEMBED=setNames(cast(EMBED,'UID~PARAMETER', value='RESULT', fun='mean'), list('UID','XEMBED_CHECK'))
-nXEMBED=setNames(count(EMBED,"UID"),c("UID","nXEMBED"))
-XEMBED=merge(XEMBED,nXEMBED,by="UID")
-XEMBED$XEMBED_CHECK=round(XEMBED$XEMBED_CHECK,digits=0)
-
-#W1_HALL- human influence
-#Be careful, the documentation says to use P=0.667, but the aquamet code says 0.6667, if there ends up being a lot of P's in the data this makes a difference!!! 
-#EMAP_WEST
-Human_Influ$EMAP_Weights=ifelse(Human_Influ$RESULT == "B", 1.5,ifelse(Human_Influ$RESULT == "C", 1.0, ifelse(Human_Influ$RESULT == "P", 0.6667, 0))) 
-W1_HALL=cast(Human_Influ,'UID~PARAMETER', value='EMAP_Weights',fun='mean')
-W1_HALL$EMAP_W1_HALL_CHECK=rowSums(W1_HALL[,c(2:12)])     
-#NRSA
-Human_Influ$NRSA_Weights=ifelse(Human_Influ$RESULT == "B", 1.5,ifelse(Human_Influ$RESULT == "C", 1.0, ifelse(Human_Influ$RESULT == "P", 0.5, 0))) 
-W1_HALL_NRSA=cast(Human_Influ,'UID~PARAMETER', value='NRSA_Weights',fun='mean')
-W1_HALL$NRSA_W1_HALL_CHECK=rowSums(W1_HALL_NRSA[,c(2:12)])     
-
-#QR1
-#xcdenbk: needed for QR1
-#QR1
-#QR1= {(QRVeg1) (QRVeg2) (QRDIST1)} ^ 0.333; 
-#if XCMGW <=2.00, then QRVeg1=.1+(.9 (XCMGW/2.00))
-#if XCMGW >2.00 then QRVeg1=1; 
-#and QRVeg2=0.1 + [0.9(XCDENBK/100)]; 
-#QRDIST1=1/(1+W1_Hall). 
-QR1=join_all(list(XCMGW_new1,BnkDensPvt,W1_HALL), by='UID')
-QR1=setNames(subset(QR1[,c('UID','XCMGW_CHECK','xcdenbk_CHECK','EMAP_W1_HALL_CHECK')]),list('UID','XCMGW','xcdenbk','W1_HALL'))
-
-#QRVeg1
-QR1$QRveg1=ifelse(QR1$XCMGW<=2.00,.1+(.9*(QR1$XCMGW/2)),1)
-#QRVeg2
-QR1$QRVeg2=0.1 + (0.9*(QR1$xcdenbk/100))
-#QRDIST1
-QR1$QRDIST1=1/(1+QR1$W1_HALL)
-#Final QR1 calculation
-QR1$QR1_CHECK=(QR1$QRveg1*QR1$QRVeg2*QR1$QRDIST1)^0.333
-
+# #Xembed - embeddedness
+# XEMBED=setNames(cast(EMBED,'UID~PARAMETER', value='RESULT', fun='mean'), list('UID','XEMBED_CHECK'))
+# nXEMBED=setNames(count(EMBED,"UID"),c("UID","nXEMBED"))
+# XEMBED=merge(XEMBED,nXEMBED,by="UID")
+# XEMBED$XEMBED_CHECK=round(XEMBED$XEMBED_CHECK,digits=0)
+# 
+# #W1_HALL- human influence
+# #Be careful, the documentation says to use P=0.667, but the aquamet code says 0.6667, if there ends up being a lot of P's in the data this makes a difference!!! 
+# #EMAP_WEST
+# Human_Influ$EMAP_Weights=ifelse(Human_Influ$RESULT == "B", 1.5,ifelse(Human_Influ$RESULT == "C", 1.0, ifelse(Human_Influ$RESULT == "P", 0.6667, 0))) 
+# W1_HALL=cast(Human_Influ,'UID~PARAMETER', value='EMAP_Weights',fun='mean')
+# W1_HALL$EMAP_W1_HALL_CHECK=rowSums(W1_HALL[,c(2:12)])     
+# #NRSA
+# Human_Influ$NRSA_Weights=ifelse(Human_Influ$RESULT == "B", 1.5,ifelse(Human_Influ$RESULT == "C", 1.0, ifelse(Human_Influ$RESULT == "P", 0.5, 0))) 
+# W1_HALL_NRSA=cast(Human_Influ,'UID~PARAMETER', value='NRSA_Weights',fun='mean')
+# W1_HALL$NRSA_W1_HALL_CHECK=rowSums(W1_HALL_NRSA[,c(2:12)])     
+# 
+# #QR1
+# #xcdenbk: needed for QR1
+# #QR1
+# #QR1= {(QRVeg1) (QRVeg2) (QRDIST1)} ^ 0.333; 
+# #if XCMGW <=2.00, then QRVeg1=.1+(.9 (XCMGW/2.00))
+# #if XCMGW >2.00 then QRVeg1=1; 
+# #and QRVeg2=0.1 + [0.9(XCDENBK/100)]; 
+# #QRDIST1=1/(1+W1_Hall). 
+# QR1=join_all(list(XCMGW_new1,BnkDensPvt,W1_HALL), by='UID')
+# QR1=setNames(subset(QR1[,c('UID','XCMGW_CHECK','xcdenbk_CHECK','EMAP_W1_HALL_CHECK')]),list('UID','XCMGW','xcdenbk','W1_HALL'))
+# 
+# #QRVeg1
+# QR1$QRveg1=ifelse(QR1$XCMGW<=2.00,.1+(.9*(QR1$XCMGW/2)),1)
+# #QRVeg2
+# QR1$QRVeg2=0.1 + (0.9*(QR1$xcdenbk/100))
+# #QRDIST1
+# QR1$QRDIST1=1/(1+QR1$W1_HALL)
+# #Final QR1 calculation
+# QR1$QR1_CHECK=(QR1$QRveg1*QR1$QRVeg2*QR1$QRDIST1)^0.333
+# 
 
 ###################################################################################################################
 ###################################################################################################################
@@ -1104,27 +1100,29 @@ QR1$QR1_CHECK=(QR1$QRveg1*QR1$QRVeg2*QR1$QRDIST1)^0.333
 ###################################################################################################################
 #To get all calculated values together... Although some tables still have the metrics included.
 #IndicatorCheckJoin=join_all(list(listsites,WQfinal,BnkErosional,BnkAll,fishpvt2,DensPvt,BnkDensPvt,XCMGW_new1,XCMG_new1,XGB_new1,IncBnk,BankWid,WetWid,XEMBED,PCT_SAFN_ALL,W1_HALL,QR1,MeanAngle,Slope_Per,Thalweg,Pools),by="UID")
-#choose correct line to run below based on the indicators that you have run and want included
-IndicatorCheckJoin=join_all(list(listsites,WQfinal,BnkErosional,BnkAll,fishpvt2,DensPvt,BnkDensPvt,XCMG_new1,IncBnk,BankWidFinal,WetWidFinal,XEMBED,PCT_SAFN_ALL,MeanAngle,Slope_Per,Thalweg,Pools,LWD),by="UID")
-IndicatorCheckJoin=join_all(list(listsites,WQfinal,BnkErosional,BnkAll,DensPvt,BnkDensPvt,XCMG_new1,IncBnk,BankWidFinal,WetWidFinal,PCT_SAFN_ALL,MeanAngle,Thalweg,Pools,LWD,avgFloodWidth),by="UID")
-IndicatorCheckJoin=join_all(list(listsites,BnkErosional,BnkAll,fishpvt2,DensPvt,BnkDensPvt,XCMG_new1,IncBnk,BankWidFinal,WetWidFinal,XEMBED,PCT_SAFN_ALL,MeanAngle,Slope_Per,Thalweg,LWD),by="UID")
-#2016,2017
+# #choose correct line to run below based on the indicators that you have run and want included
+# IndicatorCheckJoin=join_all(list(listsites,WQfinal,BnkErosional,BnkAll,fishpvt2,DensPvt,BnkDensPvt,XCMG_new1,IncBnk,BankWidFinal,WetWidFinal,XEMBED,PCT_SAFN_ALL,MeanAngle,Slope_Per,Thalweg,Pools,LWD),by="UID")
+# IndicatorCheckJoin=join_all(list(listsites,WQfinal,BnkErosional,BnkAll,DensPvt,BnkDensPvt,XCMG_new1,IncBnk,BankWidFinal,WetWidFinal,PCT_SAFN_ALL,MeanAngle,Thalweg,Pools,LWD,avgFloodWidth),by="UID")
+# IndicatorCheckJoin=join_all(list(listsites,BnkErosional,BnkAll,fishpvt2,DensPvt,BnkDensPvt,XCMG_new1,IncBnk,BankWidFinal,WetWidFinal,XEMBED,PCT_SAFN_ALL,MeanAngle,Slope_Per,Thalweg,LWD),by="UID")
+#2016,2017,2018
+#with pool tail fines
 IndicatorCheckJoin=join_all(list(listsites,DensPvt,BnkDensPvt,XCMG_new1, RIP_VEG,FQCY_VEG,WQfinal,Pools,LWD,ALLSED,FinalpvtPoolFines,BnkErosional,BnkAll,IncBnk,fishpvt2,MeanAngle,Thalweg,PctDry,BankWidFinal,WetWidFinal,avgFloodWidth,entrench,Slope_Per),by="UID")
+#without pool tail fines
 IndicatorCheckJoin=join_all(list(listsites,DensPvt,BnkDensPvt,XCMG_new1, RIP_VEG,FQCY_VEG,WQfinal,Pools,LWD,ALLSED,BnkErosional,BnkAll,IncBnk,fishpvt2,MeanAngle,Thalweg,PctDry,BankWidFinal,WetWidFinal,avgFloodWidth,entrench,Slope_Per),by="UID")
 
-#2013,2014,2015
-IndicatorCheckJoin=join_all(list(listsites,WQfinal,BnkErosional,BnkAll,fishpvt2,DensPvt,BnkDensPvt,XCMG_new1,IncBnk,BankWidFinal,WetWidFinal,ALLSED,MeanAngle,Thalweg,PctDry,Pools,FinalpvtPoolFines,LWD,Slope_Per),by="UID")
-IndicatorCheckJoin=join_all(list(listsites,WQfinal,BnkErosional,BnkAll,fishpvt2,DensPvt,BnkDensPvt,XCMG_new1,IncBnk,BankWidFinal,WetWidFinal,ALLSED,MeanAngle,Thalweg,PctDry,Pools,LWD,Slope_Per),by="UID")
-
-###trying to figure out how to combine only files that exist in workspace###### 
-exists("DensPvt")
-
-IndicatorList=objects()
-IndicatorList=exists(c("DensPvt","BnkDensPvt","XCMG_new1", "RIP_VEG","FQCY_VEG","WQfinal","Pools","LWD","ALLSED","FinalpvtPoolFines","BnkErosional","BnkAll","IncBnk","fishpvt2","MeanAngle","Thalweg","PctDry","BankWidFinal","WetWidFinal","avgFloodWidth","entrench","Slope_Per"))
-for (s in 1:length(IndicatorList)) {
-IndicatorCheckJoin=listsites
-IndicatorCheckJoin=join_all(IndicatorCheckJoin,as.name(s))
-}#doesn't currently work
+# #2013,2014,2015
+# IndicatorCheckJoin=join_all(list(listsites,WQfinal,BnkErosional,BnkAll,fishpvt2,DensPvt,BnkDensPvt,XCMG_new1,IncBnk,BankWidFinal,WetWidFinal,ALLSED,MeanAngle,Thalweg,PctDry,Pools,FinalpvtPoolFines,LWD,Slope_Per),by="UID")
+# IndicatorCheckJoin=join_all(list(listsites,WQfinal,BnkErosional,BnkAll,fishpvt2,DensPvt,BnkDensPvt,XCMG_new1,IncBnk,BankWidFinal,WetWidFinal,ALLSED,MeanAngle,Thalweg,PctDry,Pools,LWD,Slope_Per),by="UID")
+# 
+# ###trying to figure out how to combine only files that exist in workspace###### 
+# exists("DensPvt")
+# 
+# IndicatorList=objects()
+# IndicatorList=exists(c("DensPvt","BnkDensPvt","XCMG_new1", "RIP_VEG","FQCY_VEG","WQfinal","Pools","LWD","ALLSED","FinalpvtPoolFines","BnkErosional","BnkAll","IncBnk","fishpvt2","MeanAngle","Thalweg","PctDry","BankWidFinal","WetWidFinal","avgFloodWidth","entrench","Slope_Per"))
+# for (s in 1:length(IndicatorList)) {
+# IndicatorCheckJoin=listsites
+# IndicatorCheckJoin=join_all(IndicatorCheckJoin,as.name(s))
+# }#doesn't currently work
 ################################################################################
 
 
@@ -1136,146 +1134,146 @@ IndicatorCheck=IndicatorCheckJoin[,c("UID",grep("CHECK$", colnames(IndicatorChec
 #write.csv(IndicatorCheck,"C:\\Users\\Nicole\\Desktop\\IndicatorCheck2.csv")
 #Remove all other data files as they are no longer needed
 #IndicatorCheck=subset(IndicatorCheck,PROTOCOL_CHECK=="BOAT14")
-write.csv(IndicatorCheck,"IndicatorCheckAll14march2018_CO.csv")
+write.csv(IndicatorCheck,"IndicatorCheckAll15June2018.csv")
 rm(PHfinal,XGB_new,XGB_new1,BankStab,Banks,RipGB,EMBED,Human_Influ,W1_HALL,W1_HALL_NRSA,QR1,XEMBED,BnkDensPvt,BnkDensiom,densiom,RipXCMG,XCMG_new,XCMG_new1,RipWW,XCMGW_new,XCMGW_new1,IndicatorCheckJoin,fish,fishpvt2,
    MidDensiom,DensPvt,Incision,INCISED,BANKHT,Inc,Bnk,xIncht,xBnkht,IncBnk,Sediment,pctsafn,Sed2014,A_Sed2014,C_Sed2014,E_Sed2014,F_Sed2014,PCT_SAFN_ALL)
 
 
-###################################################################################################################
-########################################################################################################################
-########################################################################################################################
-
-#                                       Notes and Troubleshooting Start                                      #
-
-########################################################################################################################
-########################################################################################################################
-###################################################################################################################
-
-#development of 2013 sediment indicators and boatable sediment indicators that were binned into categories
-Sed2014=bintranslate(Table='Sed2014',ST='CROSSSECW',PM='SIZE_NUM')
-
-#build table of the min and max of each size class 
-#make sure to uncomment HP if want it to be "NA" but subsetting only measurable classes for D50 at least anyway
-tt <- textConnection(
-  "class min     max\n                    
-  RS 4000    8000\n                   
-  RR 4000    8000\n                    
-  RC 4000    8000\n                    
-  BH 4000    8000\n#boatable class?                    
-  XB 1000    4000\n                    
-  SB  250    1000\n                    
-  BL  250    4000\n#combined boulder class                   
-  CB   64     250\n                    
-  GC   16      64\n                    
-  GF    2      16\n                   
-  GR    2      64\n                    
-  SA    0.06    2\n                    
-  FN    0.001   0.06\n                   
-  HP 4000    8000\n
-  #HP   NA      NA\n                    
-  WD   NA      NA\n                    
-  OT   NA      NA\n"
-)
-subsInfo <- read.table(tt, header = TRUE, stringsAsFactors = FALSE)
-close(tt)
-#take the geometric mean for each size class
-#create function for geometric mean
-gmean <- function(x){exp(mean(log(x)))}
-subsInfo$diam <- NA
-for (s in 1:nrow(subsInfo)) {
-  subsInfo[s, ]$diam = gmean(c(subsInfo[s, ]$min, subsInfo[s, 
-                                                           ]$max))
-}
-#log geometric mean diameter and log of the min and max of size classes
-subsInfo$lDiam <- log10(subsInfo$diam)
-subsInfo$lmin = log10(subsInfo$min)
-subsInfo$lmax = log10(subsInfo$max)
-
-#lsub_dmm - this code replicates aquamet for all 2013 data but 
-#list of substrate classes included in lsub_dmm
-wadeableAllOneBoulderClass <- c("RS", "RR", "RC", "BL", "CB", 
-                                "GC", "GF", "SA", "FN", "HP", "WD", "OT")
-#calculating lsub_dmm by taking the mean of the log geometric mean diameter 
-df1lb <- Sediment#input dataframe
-df1lb$RESULT <- ifelse(df1lb$RESULT %in% c("XB", "SB"), 
-                       "BL", df1lb$RESULT)#merging the small and large boulder classes
-ldBuglb <- merge(df1lb, subset(subsInfo, class %in% wadeableAllOneBoulderClass, 
-                               select = c(class, diam, lDiam)), by.x = "RESULT", 
-                 by.y = "class", all.x = TRUE)#subsetting just the classes included in 1sub_dmm
-ldBug11lb <- setNames(aggregate(ldBuglb$lDiam, list(UID = ldBuglb$UID), 
-                                mean, na.rm = TRUE), c("UID","lsub_dmm_CHECK"))# calculating the mean which is "lsub_dmm"
-
-
-#list of measureable classes included in D50
-wadeableMeasurableTwoBoulderClasses <- c("XB", "SB", "CB", 
-                                         "GC", "GF", "SA", "FN")
-interpdata <- subset(Sediment, RESULT %in% wadeableMeasurableTwoBoulderClasses)
-measurable <- setNames(subset(subsInfo, class %in% wadeableMeasurableTwoBoulderClasses, 
-                              select = c(class, lmin, lmax)), c("CLASS", "min", "max"))#setNames is doing something different than the internal rename function that was originally in aquamet
-#####################################################################################
-# A single object matching ‘interpolatePercentile’ was found
+# ###################################################################################################################
+# ########################################################################################################################
+# ########################################################################################################################
+# 
+# #                                       Notes and Troubleshooting Start                                      #
+# 
+# ########################################################################################################################
+# ########################################################################################################################
+# ###################################################################################################################
+# 
+# #development of 2013 sediment indicators and boatable sediment indicators that were binned into categories
+# Sed2014=bintranslate(Table='Sed2014',ST='CROSSSECW',PM='SIZE_NUM')
+# 
+# #build table of the min and max of each size class 
+# #make sure to uncomment HP if want it to be "NA" but subsetting only measurable classes for D50 at least anyway
+# tt <- textConnection(
+#   "class min     max\n                    
+#   RS 4000    8000\n                   
+#   RR 4000    8000\n                    
+#   RC 4000    8000\n                    
+#   BH 4000    8000\n#boatable class?                    
+#   XB 1000    4000\n                    
+#   SB  250    1000\n                    
+#   BL  250    4000\n#combined boulder class                   
+#   CB   64     250\n                    
+#   GC   16      64\n                    
+#   GF    2      16\n                   
+#   GR    2      64\n                    
+#   SA    0.06    2\n                    
+#   FN    0.001   0.06\n                   
+#   HP 4000    8000\n
+#   #HP   NA      NA\n                    
+#   WD   NA      NA\n                    
+#   OT   NA      NA\n"
+# )
+# subsInfo <- read.table(tt, header = TRUE, stringsAsFactors = FALSE)
+# close(tt)
+# #take the geometric mean for each size class
+# #create function for geometric mean
+# gmean <- function(x){exp(mean(log(x)))}
+# subsInfo$diam <- NA
+# for (s in 1:nrow(subsInfo)) {
+#   subsInfo[s, ]$diam = gmean(c(subsInfo[s, ]$min, subsInfo[s, 
+#                                                            ]$max))
+# }
+# #log geometric mean diameter and log of the min and max of size classes
+# subsInfo$lDiam <- log10(subsInfo$diam)
+# subsInfo$lmin = log10(subsInfo$min)
+# subsInfo$lmax = log10(subsInfo$max)
+# 
+# #lsub_dmm - this code replicates aquamet for all 2013 data but 
+# #list of substrate classes included in lsub_dmm
+# wadeableAllOneBoulderClass <- c("RS", "RR", "RC", "BL", "CB", 
+#                                 "GC", "GF", "SA", "FN", "HP", "WD", "OT")
+# #calculating lsub_dmm by taking the mean of the log geometric mean diameter 
+# df1lb <- Sediment#input dataframe
+# df1lb$RESULT <- ifelse(df1lb$RESULT %in% c("XB", "SB"), 
+#                        "BL", df1lb$RESULT)#merging the small and large boulder classes
+# ldBuglb <- merge(df1lb, subset(subsInfo, class %in% wadeableAllOneBoulderClass, 
+#                                select = c(class, diam, lDiam)), by.x = "RESULT", 
+#                  by.y = "class", all.x = TRUE)#subsetting just the classes included in 1sub_dmm
+# ldBug11lb <- setNames(aggregate(ldBuglb$lDiam, list(UID = ldBuglb$UID), 
+#                                 mean, na.rm = TRUE), c("UID","lsub_dmm_CHECK"))# calculating the mean which is "lsub_dmm"
+# 
+# 
+# #list of measureable classes included in D50
+# wadeableMeasurableTwoBoulderClasses <- c("XB", "SB", "CB", 
+#                                          "GC", "GF", "SA", "FN")
+# interpdata <- subset(Sediment, RESULT %in% wadeableMeasurableTwoBoulderClasses)
+# measurable <- setNames(subset(subsInfo, class %in% wadeableMeasurableTwoBoulderClasses, 
+#                               select = c(class, lmin, lmax)), c("CLASS", "min", "max"))#setNames is doing something different than the internal rename function that was originally in aquamet
+# #####################################################################################
+# # A single object matching ‘interpolatePercentile’ was found
+# # It was found in the following places
+# # package:aquamet
+# # namespace:aquamet
+# # with value
+# 
+# interpolatePercentile<-function (df, classVar, percentile, pctlVar, classBounds) 
+# {
+#   df <- subset(df, !is.na(classVar))
+#   classCounts <- aggregate(list(classCount = df[[classVar]]), 
+#                            list(UID = df$UID, CLASS = df[[classVar]]), count)#counting the number of each size class category per uid
+#   sampleSizes <- aggregate(list(totalCount = df[[classVar]]), 
+#                            list(UID = df$UID), count)# counting total number of pebbles per UID
+#   classPcts <- merge(classCounts, sampleSizes, by = "UID")
+#   classPcts$pct <- 100 * classPcts$classCount/classPcts$totalCount# percent each size class makes up of all the pebbles collected at a site
+#   classPcts <- merge(classPcts, classBounds, by = "CLASS", 
+#                      all.x = TRUE)# add the bounds for each size class to the table
+#   classPcts <- classPcts[order(classPcts$UID, classPcts$min), 
+#                          ]# sort by UID and the smallest susbtrate first
+#   classPcts$upperPct <- ave(classPcts$pct, classPcts$UID, FUN = cumsum)#cumulative sum of the percent of each size class per UID --example GF50+GF50+CB25+(GF50+CB25+SB25)
+#   classPcts <- first(classPcts, "UID", "start")#another internal aquamet function using function "lag"
+#   classPcts <- lag(classPcts, "upperPct", "lowerPct")
+#   classPcts[classPcts$start, ]$lowerPct <- 0
+#   tt <- subset(classPcts, lowerPct < percentile & percentile <= 
+#                  upperPct) # percentile will not always fall on a size class so need to determine which two size classes it is in between and then interpolate using line below
+#   tt[pctlVar] <- with(tt, min + (max - min) * (percentile - 
+#                                                  lowerPct)/(upperPct - lowerPct))# linear interpolation equation 2.15 in bunte and abte 2001 pg 41
+#   tt <- tt[c("UID", pctlVar)]
+#   return(tt)
+# }
+# #################################################################################
+# A single object matching ‘first’ was found
 # It was found in the following places
 # package:aquamet
 # namespace:aquamet
 # with value
-
-interpolatePercentile<-function (df, classVar, percentile, pctlVar, classBounds) 
-{
-  df <- subset(df, !is.na(classVar))
-  classCounts <- aggregate(list(classCount = df[[classVar]]), 
-                           list(UID = df$UID, CLASS = df[[classVar]]), count)#counting the number of each size class category per uid
-  sampleSizes <- aggregate(list(totalCount = df[[classVar]]), 
-                           list(UID = df$UID), count)# counting total number of pebbles per UID
-  classPcts <- merge(classCounts, sampleSizes, by = "UID")
-  classPcts$pct <- 100 * classPcts$classCount/classPcts$totalCount# percent each size class makes up of all the pebbles collected at a site
-  classPcts <- merge(classPcts, classBounds, by = "CLASS", 
-                     all.x = TRUE)# add the bounds for each size class to the table
-  classPcts <- classPcts[order(classPcts$UID, classPcts$min), 
-                         ]# sort by UID and the smallest susbtrate first
-  classPcts$upperPct <- ave(classPcts$pct, classPcts$UID, FUN = cumsum)#cumulative sum of the percent of each size class per UID --example GF50+GF50+CB25+(GF50+CB25+SB25)
-  classPcts <- first(classPcts, "UID", "start")#another internal aquamet function using function "lag"
-  classPcts <- lag(classPcts, "upperPct", "lowerPct")
-  classPcts[classPcts$start, ]$lowerPct <- 0
-  tt <- subset(classPcts, lowerPct < percentile & percentile <= 
-                 upperPct) # percentile will not always fall on a size class so need to determine which two size classes it is in between and then interpolate using line below
-  tt[pctlVar] <- with(tt, min + (max - min) * (percentile - 
-                                                 lowerPct)/(upperPct - lowerPct))# linear interpolation equation 2.15 in bunte and abte 2001 pg 41
-  tt <- tt[c("UID", pctlVar)]
-  return(tt)
-}
-#################################################################################
-A single object matching ‘first’ was found
-It was found in the following places
-package:aquamet
-namespace:aquamet
-with value
-
-function (df, v, first.v) 
-{
-  df <- lag(df, v, "..vLag", offset = 1)
-  df[first.v] <- as.vector(ifelse(is.na(df[v]) | is.na(df["..vLag"]), 
-                                  is.na(df[v]) != is.na(df["..vLag"]), df[v] != df["..vLag"]))
-  df[1, first.v] <- TRUE
-  df["..vLag"] <- NULL
-  return(df)
-}
-##################################################################################
-
-
-
-c16 <- interpolatePercentile(interpdata, "RESULT", 16, 
-                             "lsub2d16inor", measurable)
-c50 <- interpolatePercentile(interpdata, "RESULT", 50, 
-                             "lsub2d50inor", measurable)
-c84 <- interpolatePercentile(interpdata, "RESULT", 84, 
-                             "lsub2d84inor", measurable)
-c16$d16 <- 10^(c16$lsub2d16inor)
-c50$d50 <- 10^(c50$lsub2d50inor)
-c84$d84 <- 10^(c84$lsub2d84inor)
-calcs <- merge(c16, merge(c50, c84, by = "UID", all = TRUE), 
-               by = "UID", all = TRUE)
-
-
+# 
+# function (df, v, first.v) 
+# {
+#   df <- lag(df, v, "..vLag", offset = 1)
+#   df[first.v] <- as.vector(ifelse(is.na(df[v]) | is.na(df["..vLag"]), 
+#                                   is.na(df[v]) != is.na(df["..vLag"]), df[v] != df["..vLag"]))
+#   df[1, first.v] <- TRUE
+#   df["..vLag"] <- NULL
+#   return(df)
+# }
+# ##################################################################################
+# 
+# 
+# 
+# c16 <- interpolatePercentile(interpdata, "RESULT", 16, 
+#                              "lsub2d16inor", measurable)
+# c50 <- interpolatePercentile(interpdata, "RESULT", 50, 
+#                              "lsub2d50inor", measurable)
+# c84 <- interpolatePercentile(interpdata, "RESULT", 84, 
+#                              "lsub2d84inor", measurable)
+# c16$d16 <- 10^(c16$lsub2d16inor)
+# c50$d50 <- 10^(c50$lsub2d50inor)
+# c84$d84 <- 10^(c84$lsub2d84inor)
+# calcs <- merge(c16, merge(c50, c84, by = "UID", all = TRUE), 
+#                by = "UID", all = TRUE)
+# 
+# 
 
 #Get pH for NorCal
 # PHtbl=tblRetrieve(Parameters=c('PH'),Projects=projects,Years=years,Protocols=protocols)
