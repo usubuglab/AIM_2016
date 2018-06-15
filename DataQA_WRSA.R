@@ -460,29 +460,26 @@ listsites=tblRetrieve(Parameters=c('SITE_ID','DATE_COL','LOC_NAME','LAT_DD','LON
 listsites=cast(listsites,'UID~PARAMETER',value='RESULT')
 
 # #Check all Z_DISTANCEFROMX to verify within 250 or 500m or allowable distance to be slid
-# # this field is not always accurate..so the calculated "CAL_DISTFROMX" field should be used below...THis field is writen out in the coordinateQC file
+# # this field is not always accurate..so the calculated "CAL_DISTFROMX" field should be used below...THis field is writen out in the coordinate_design_QC file
 # SlideIssues=subset(listsites,as.numeric(Z_DISTANCEFROMX)>250)# not working because of "?"
-# write.csv(SlideIssues,'SlideIssues.csv')
+# write.csv(SlideIssues,'SlideIssues.csv')#CHECK IN coordinate_design_QC instead
 
-#Check for merged sites
-Merge=subset(listsites,MERGE!='N')
-#write.csv(Merge,'Merge.csv')
-#look at FieldTracking or ScoutTracking spreadsheets on the google drive and fill in as needed
-
-#Pull QC sites
-RepeatVisits=subset(listsites,REPEAT_VISIT!='N')
-#write.csv(RepeatVisits,'QC_sites.csv') #CHECK IN coordinate_design_QC instead
+# #Check for merged sites
+# Merge=subset(listsites,MERGE!='N')
+# #write.csv(Merge,'Merge.csv')#CHECK IN coordinate_design_QC instead
+# #look at FieldTracking or ScoutTracking spreadsheets on the google drive and fill in as needed
+# 
+# #Pull QC sites
+# RepeatVisits=subset(listsites,REPEAT_VISIT!='N')
+# #write.csv(RepeatVisits,'QC_sites.csv') #CHECK IN coordinate_design_QC instead
 
 #Check that the straight-line distance between BR and TR does not exceed the total reach length (i.e. sinuosity <1 should never happen)
 listsites$straightline=acos(sin(as.numeric(listsites$LAT_DD_BR)*3.141593/180)*sin(as.numeric(listsites$LAT_DD_TR)*3.141593/180) + cos(as.numeric(listsites$LAT_DD_BR)*3.141593/180)*cos(as.numeric(listsites$LAT_DD_TR)*3.141593/180)*cos(as.numeric(listsites$LON_DD_TR)*3.141593/180-as.numeric(listsites$LON_DD_BR)*3.141593/180)) * 6371000
 listsites$SINUOSITY=as.numeric(listsites$TRCHLEN)/as.numeric(listsites$straightline)
 SinuosityCheck=subset(listsites,SINUOSITY<1)
-#write.csv(SinuosityCheck,'SinuosityCheck.csv')
+#write.csv(SinuosityCheck,'SinuosityCheck.csv') #CHECK IN coordinate_design_QC instead
 
-#After all GPS coordinates check out export coordinates for Ryan Lokteff or GIS tech to compute WestWide bug OE model and EC,TN,TP models
-#write.csv(listsites,'postseason_site_coordinates.csv')
-
-#get other useful information associated with sites
+#get design coordinates and attributes
 #eventually read in design table from SQL but for now the table should be read in from the path below to compare original coordinates with those that were collected
 #designs=read.csv('\\\\share1.bluezone.usu.edu\\miller\\buglab\\Research Projects\\AIM\\AIM_DataManagement\\ProjectMngtSystem\\design_table2.csv')
 #designs=read.csv('\\\\share1.bluezone.usu.edu\\miller\\buglab\\Research Projects\\AIM\\Design\\DesignDatabase\\design_coordinates_QC_Rinput.csv')
@@ -493,9 +490,24 @@ postseasonmetadata=join(listsites,designs, by="SITE_ID", type="left")
 #postseasonmetadata=join(postseason,designmetadata, by="MS_ID", type="left")
 #eventually need to edit the read in csv above to reflect the sampled coordinates for future sample draws at the end of the season
 postseasonmetadata$CALC_DISTFROMX=acos(sin(as.numeric(postseasonmetadata$LAT_DD)*3.141593/180)*sin(as.numeric(postseasonmetadata$DESIGN_LAT)*3.141593/180) + cos(as.numeric(postseasonmetadata$LAT_DD)*3.141593/180)*cos(as.numeric(postseasonmetadata$DESIGN_LAT)*3.141593/180)*cos(as.numeric(postseasonmetadata$DESIGN_LON)*3.141593/180-as.numeric(postseasonmetadata$LON_DD)*3.141593/180)) * 6371000
-coordinate_design_QC=postseasonmetadata[,c('PROJECT','PROTOCOL','SITE_ID','LOC_NAME','DATE_COL','UID','LAT_DD','LON_DD','LAT_DD_TR','LON_DD_TR','LAT_DD_BR','LON_DD_BR','Z_DISTANCEFROMX','CALC_DISTFROMX','SLIDE_YN','SINUOSITY','TRCHLEN','straightline','MERGE','REPEAT_VISIT','StreamOr_1','District','FieldOffice','STATE','COUNTY','Ecoregion_spelledout','Climate_spelledout')]
+coordinate_design_QC=postseasonmetadata[,c('PROJECT','PROTOCOL','SITE_ID','LOC_NAME','DATE_COL','UID','LAT_DD','LON_DD','LAT_DD_TR','LON_DD_TR','LAT_DD_BR','LON_DD_BR','Z_DISTANCEFROMX','CALC_DISTFROMX','SLIDE_YN','SINUOSITY','TRCHLEN','straightline','MERGE','REPEAT_VISIT','StreamOr_1','District','FieldOffice','ADMU_ADMIN','COUNTY','Ecoregion_spelledout','Climate_spelledout')]
+
+#check the below file below for the following
+    #1 make sure the f-transect (xsite) was placed within a the allowable sliding distance of the originial coordinates (250m,500m, or within reach)
+          #Columns:Z_DISTANCEFROMX(app calc)	CALC_DISTFROMX(our calc- sometimes helpful if coordinates have been edited or Z_distancefromx="NA")	SLIDE_YN,TRCHLEN
+    #2 make sure the BR and TR coordinates are correct and not duplicated.
+          #This is checked using the sinuosity column. Sinuosities <1 or > ~1.6 are generally suspect.
+    #1-2 plot all suspect coordinates to verify
+    #3 Check any sites that have MERGE=Y or REPEAT_VISIT=Y to see if they could be merged sites or QC sites. 
+          #Sites that are simply revisited for other reasons among years are not tracked using these fields at the moment
+          #Merge sites should be verified using comments and design management spreadsheet
+          #QC sites should also be verified with the QC cew design management spreadsheet
+    #4 Check that the design database GIS table has been updated with all the needed attributes for these sites
+          #columns Stream_OR - Climate_spelledout
 write.csv(coordinate_design_QC,'coordinate_design_QC.csv')
 
+#After all GPS coordinates check out export coordinates for Ryan Lokteff or GIS tech to compute WestWide bug OE model and EC,TN,TP models
+#write.csv(listsites,'postseason_site_coordinates.csv')
 
 
 #elevation
@@ -510,6 +522,7 @@ Bugspvt=addKEYS(cast(Bugs,'UID~SAMPLE_TYPE+PARAMETER',value='RESULT'),c('SITE_ID
 
 
 #check surber net and mini surber net areas because they were wrong in the app at the begining of 2016 field season
+#these were all correct in 2017 so should be able to ignore this check in 2018
 AreaCheck1=subset(Bugspvt,(as.numeric(BERW_AREA_SAMP)!=0.093 & BERW_SAMPLER=='SU'))
 AreaCheck2=subset(Bugspvt,(as.numeric(BERW_AREA_SAMP)!=0.0413 & BERW_SAMPLER=='MI'))
 AreaCheck3=subset(Bugspvt,(as.numeric(BERW_AREA_SAMP)!=0.093 & BERW_SAMPLER=='KC'))
@@ -520,6 +533,7 @@ write.csv(Bugspvt,'Bugspvt.csv')
 
 
 #check to make sure 8 or 11 TRAN_NUM at all sites
+#the check placed in the app has made this error vitually non-existent, if csvs blank there are no issues
 SamplingCheck1=subset(Bugspvt,(BERW_TRAN_NUM<8 & BERW_BUG_METHOD=='TARGETED RIFFLE'))
 SamplingCheck2=subset(Bugspvt,(BERW_TRAN_NUM<11 & BERW_BUG_METHOD=='REACH WIDE'))
 write.csv(SamplingCheck1,'TargetedRiffleTranNumCheck.csv')
@@ -527,7 +541,7 @@ write.csv(SamplingCheck2,'ReachWideTranNumCheck.csv')
 
 #get data ready to submit via http://www.usu.edu/buglab/SampleProcessing/SampleSubmission/
 postseasonmetadata=subset(postseasonmetadata,PROTOCOL!='FAILED')
-SubMetadata=c('UID','SITE_ID', 'STATE','COUNTY','LOC_NAME','LAT_DD','LON_DD','PROJECT')###'STRATUM')
+SubMetadata=c('UID','SITE_ID', 'ADMU_ADMIN','COUNTY','LOC_NAME','LAT_DD','LON_DD','PROJECT')###'STRATUM')# change ADMU_ADMIN back to STATE once all master sample points attributed with state
 Metadata=postseasonmetadata[SubMetadata]
 Bugspvtsub=c('UID','BERW_JAR_NO','BERW_ACTUAL_DATE','BERW_AREA','BERW_SAMPLER','BERW_BUG_METHOD')
 Bugspvt2=Bugspvt[Bugspvtsub]
