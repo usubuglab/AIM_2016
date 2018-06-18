@@ -494,7 +494,8 @@ postseasonmetadata=join(listsites,designs, by="SITE_ID", type="left")
 #eventually need to edit the read in csv above to reflect the sampled coordinates for future sample draws at the end of the season
 #Z_DISTANCEFROMXthis is not always accurate or filled in..so we calculate this ourselves in "CAL_DISTFROMX"
 postseasonmetadata$CALC_DISTFROMX=acos(sin(as.numeric(postseasonmetadata$LAT_DD)*3.141593/180)*sin(as.numeric(postseasonmetadata$DESIGN_LAT)*3.141593/180) + cos(as.numeric(postseasonmetadata$LAT_DD)*3.141593/180)*cos(as.numeric(postseasonmetadata$DESIGN_LAT)*3.141593/180)*cos(as.numeric(postseasonmetadata$DESIGN_LON)*3.141593/180-as.numeric(postseasonmetadata$LON_DD)*3.141593/180)) * 6371000
-coordinate_design_QC=postseasonmetadata[,c('PROJECT','PROTOCOL','SITE_ID','LOC_NAME','DATE_COL','UID','LAT_DD','LON_DD','LAT_DD_TR','LON_DD_TR','LAT_DD_BR','LON_DD_BR','Z_DISTANCEFROMX','CALC_DISTFROMX','SLIDE_YN','SINUOSITY','TRCHLEN','straightline','MERGE','REPEAT_VISIT','StreamOr_1','District','FieldOffice','ADMU_ADMIN','COUNTY','Ecoregion_spelledout','Climate_spelledout')]
+coordinate_design_QC=postseasonmetadata[,c('PROJECT','PROTOCOL','SITE_ID','LOC_NAME','DATE_COL','UID','LAT_DD','LON_DD','LAT_DD_TR','LON_DD_TR','LAT_DD_BR','LON_DD_BR','DESIGN_LAT','DESIGN_LON','Z_DISTANCEFROMX','CALC_DISTFROMX','SLIDE_YN','SINUOSITY','TRCHLEN','straightline','MERGE','REPEAT_VISIT','StreamOr_1','District','FieldOffice','ADMU_ADMIN','COUNTY','Ecoregion_spelledout','Climate_spelledout')]
+
 
 #check the below file below for the following
     #1 make sure the f-transect (xsite) was placed within a the allowable sliding distance of the originial coordinates (250m,500m, or within reach)
@@ -509,6 +510,31 @@ coordinate_design_QC=postseasonmetadata[,c('PROJECT','PROTOCOL','SITE_ID','LOC_N
     #4 Check that the design database GIS table has been updated with all the needed attributes for these sites
           #columns Stream_OR - Climate_spelledout
 write.csv(coordinate_design_QC,'coordinate_design_QC.csv')
+
+#you can use the code below to plot the coordinates in R
+coordinate_design_QC$LAT_DD=as.numeric(coordinate_design_QC$LAT_DD)
+coordinate_design_QC$LON_DD=as.numeric(coordinate_design_QC$LON_DD)
+coordinate_design_QC$LON_DD_TR=as.numeric(coordinate_design_QC$LON_DD_TR)
+coordinate_design_QC$LON_DD_BR=as.numeric(coordinate_design_QC$LON_DD_BR)
+coordinate_design_QC$LAT_DD_TR=as.numeric(coordinate_design_QC$LAT_DD_TR)
+coordinate_design_QC$LAT_DD_BR=as.numeric(coordinate_design_QC$LAT_DD_BR)
+
+
+
+library(sf)
+library(mapview)
+midcord= st_as_sf(coordinate_design_QC, coords = c("LON_DD", "LAT_DD"), crs = 4269,agr = "constant")#NAD 83 
+mid=mapview(midcord,map.types="Esri.WorldImagery", color="orange",label=midcord$SITE_ID)
+TRcord= st_as_sf(coordinate_design_QC, coords = c("LON_DD_TR", "LAT_DD_TR"), crs = 4269,agr = "constant")
+TR=mapview(TRcord,color="red",map.types="Esri.WorldImagery",label=TRcord$SITE_ID)
+BRcord= st_as_sf(coordinate_design_QC, coords = c("LON_DD_BR", "LAT_DD_BR"), crs = 4269,agr = "constant")
+BR=mapview(BRcord,color="yellow",map.types="Esri.WorldImagery",label=BRcord$SITE_ID)
+designcord=st_as_sf(coordinate_design_QC, coords = c("DESIGN_LON", "DESIGN_LAT"), crs = 4269,agr = "constant")
+design=mapview(BRcord,map.types="Esri.WorldImagery",label=designcord$SITE_ID)
+design+mid+TR+BR
+
+
+
 
 #After all GPS coordinates check out export coordinates for Ryan Lokteff or GIS tech to compute WestWide bug OE model and EC,TN,TP models
 #write.csv(listsites,'postseason_site_coordinates.csv')
@@ -531,9 +557,9 @@ Bugspvt=addKEYS(cast(Bugs,'UID~SAMPLE_TYPE+PARAMETER',value='RESULT'),c('SITE_ID
 AreaCheck1=subset(Bugspvt,(as.numeric(BERW_AREA_SAMP)!=0.093 & BERW_SAMPLER=='SU'))
 AreaCheck2=subset(Bugspvt,(as.numeric(BERW_AREA_SAMP)!=0.0413 & BERW_SAMPLER=='MI'))
 AreaCheck3=subset(Bugspvt,(as.numeric(BERW_AREA_SAMP)!=0.093 & BERW_SAMPLER=='KC'))
-#write.csv(AreaCheck1,'AreaCheck1.csv')
-#write.csv(AreaCheck2,'AreaCheck2.csv')
-#write.csv(AreaCheck3,'AreaCheck3.csv')
+if(nrow(as.dAreaCheck1>0)){write.csv(AreaCheck1,'AreaCheck1.csv')}
+if(nrow(AreaCheck2)>0){write.csv(AreaCheck2,'AreaCheck2.csv')}
+if(nrow(AreaCheck3)>0){write.csv(AreaCheck3,'AreaCheck3.csv')}
 write.csv(Bugspvt,'Bugspvt.csv')
 
 
@@ -541,8 +567,8 @@ write.csv(Bugspvt,'Bugspvt.csv')
 #the check placed in the app has made this error vitually non-existent, if csvs blank there are no issues
 SamplingCheck1=subset(Bugspvt,(BERW_TRAN_NUM<8 & BERW_BUG_METHOD=='TARGETED RIFFLE'))
 SamplingCheck2=subset(Bugspvt,(BERW_TRAN_NUM<11 & BERW_BUG_METHOD=='REACH WIDE'))
-write.csv(SamplingCheck1,'TargetedRiffleTranNumCheck.csv')
-write.csv(SamplingCheck2,'ReachWideTranNumCheck.csv')
+if(nrow(SamplingCheck1)>0){write.csv(SamplingCheck1,'TargetedRiffleTranNumCheck.csv')}
+if(nrow(SamplingCheck2)>0){write.csv(SamplingCheck2,'ReachWideTranNumCheck.csv')}
 
 #get data ready to submit via http://www.usu.edu/buglab/SampleProcessing/SampleSubmission/
 postseasonmetadata=subset(postseasonmetadata,PROTOCOL!='FAILED')
@@ -564,7 +590,7 @@ WQ1=cast(WQ2,'UID~PARAMETER',value='RESULT')
 WQind=cast(WQ2,'UID~PARAMETER',value='IND')
 WQ3=addKEYS(merge(WQ1,WQind,by=c('UID'),all=T) ,c('SITE_ID','DATE_COL','CREW_LEADER'))
 WQ3.sub=subset(WQ3,CORRECTED.x!='Y')
-write.csv(WQ3.sub,'not_temp_corrected_conduct.csv')
+if(nrow(WQ3)>0){write.csv(WQ3.sub,'not_temp_corrected_conduct.csv')}
 
 # #Chem check the hours prior to freezing
 # WQtbl=tblRetrieve(Parameters=c('NTL','PTL','TN_PRED','TP_PRED','TIME_UNFROZEN'),Projects=projects,Years=years,Protocols=protocols,SiteCodes=sitecodes,Insertion=insertion)
@@ -586,11 +612,11 @@ Conduct=addKEYS(tblRetrieve(Comments='Y',Parameters=c('CONDUCTIVITY'),Projects=p
 ConductQuestions=subset(Conduct,RESULT<100 | RESULT>600)# review comments for any sites flagged here 
 #postseasonmetadata_ecoregion=postseasonmetadata[,c('UID','ECO_10')]
 #ConductQuestions=join(ConductQuestions,postseasonmetadata_ecoregion, by="UID",type="left")
-write.csv(ConductQuestions,'ConductQuestions.csv')
+if(nrow(ConductQuestions)>0){write.csv(ConductQuestions,'ConductQuestions.csv')}
 PH=addKEYS(tblRetrieve(Comments='Y',Parameters=c('PH'),Projects=projects,Years=years,Protocols=protocols,SiteCodes=sitecodes,Insertion=insertion),c('SITE_ID'))
 PHQuestions=subset(PH,RESULT<6 | RESULT>9)# review comments for any sites flagged here
 #PHQuestions=join(PHQuestions,postseasonmetadata_ecoregion, by="UID",type="left")
-write.csv(PHQuestions,'PHQuestions.csv')
+if(nrow(PHQuestions)>0){write.csv(PHQuestions,'PHQuestions.csv')}
 
 # #compare any questionable values to ecoregional EPA data
 # #should automate this process so that only values that fall outside this range get flagged ---need to join the ecoregion data to the design table; can't remember where all that site metadata from the master sample ended up
@@ -609,22 +635,22 @@ WQ1=subset(WQ1,CAL_INST_ID=='')# fill in data of interest here
 heights=addKEYS(tblRetrieve(Parameters=c('INCISED','BANKHT'),Years=years, Projects=projects,Protocols=protocols,SiteCodes=sitecodes,Insertion=insertion),c('SITE_ID','DATE_COL','CREW_LEADER'))
 HeightCheck1=subset(heights,RESULT>1.5|RESULT<0.1)
 View(HeightCheck1)
-write.csv(HeightCheck1,'HeightCheck1.csv')
+if(nrow(HeightCheck1)>0){write.csv(HeightCheck1,'HeightCheck1.csv')}
                       
                       
 #######   width  #########
 #cross checks implemented in app and extreme values hard to catch/ not so important so just check for outliers(above), and for protocol issues related to dry sites                       
 Depths=tblRetrieve(Parameters=c('DEPTH'),Years=years, Projects=projects,Protocols=protocols,SiteCodes=sitecodes,Insertion=insertion)
 Depths=subset(Depths,RESULT==0 & POINT==1)
-write.csv(Depths,'Depths.csv')# query wetted width for these transects and UIDs in SQL and check if it is 0 and TRANDRY='Y',can eventually just call sql code directly in R here
+if(nrow(Depths)>0){write.csv(Depths,'Depths.csv')}# query wetted width for these transects and UIDs in SQL and check if it is 0 and TRANDRY='Y',can eventually just call sql code directly in R here
 #do the opposite query
 Widths=tblRetrieve(Parameters=c('WETWID','BANKWID','TRANDRY'),Years=years, Projects=projects,Protocols=protocols,SiteCodes=sitecodes,Insertion=insertion)                      
 pvtWidths=cast(Widths,'UID+TRANSECT~PARAMETER',value='RESULT')
 Widths=subset(Widths,RESULT==0)                     
-write.csv(Widths,'Widths.csv')# query the corresponding thalweg depths in SQL if present and the VALXSITE to make sure it is INTWADE, can eventually just call sql code directly in R here 
+if(nrow(Widths)>0){write.csv(Widths,'Widths.csv')}# query the corresponding thalweg depths in SQL if present and the VALXSITE to make sure it is INTWADE, can eventually just call sql code directly in R here 
 #dry transects
 DryCheck=subset(pvtWidths,(WETWID!=0 & TRANDRY=='Y')|(WETWID==0 & TRANDRY=='N')|(WETWID==0 & is.na(TRANDRY)=='TRUE'))#likely needs tweaking                      
-write.csv(DryCheck,'DryCheck.csv')# issues are exported in this file and no subsequent SQL query needed   
+if(nrow(DryCheck)>0){write.csv(DryCheck,'DryCheck.csv')}# issues are exported in this file and no subsequent SQL query needed   
 
 # #interrupted flow checks---easier to do directly in SQL so see check_interrupted_sites SQL script
 # Interrupt=tblRetrieve(Parameters=c('VALXSITE'),Years=years, Projects=projects,SiteCodes=sitecodes)
@@ -632,6 +658,12 @@ write.csv(DryCheck,'DryCheck.csv')# issues are exported in this file and no subs
 # DryTran=tblRetrieve(Parameters=c('TRANDRY'),Years=years, Projects=projects,SiteCodes=sitecodes)
 # Interrupt_CHECK=join(Interrupt,DryTran, by=c('UID'))
 # DryTran=subset(DryTran,RESULT=='Y')
+
+#####  floodprone width #######
+FloodWidth=tblRetrieve(Parameters=c('FLOOD_WID','FLOOD_BFWIDTH','FLOOD_HEIGHT','FLOOD_BFHEIGHT'), Projects=projects, Years=years,Protocols=protocols,SiteCode=sitecodes,Insertion=insertion)
+FloodWidthpvt=cast(FloodWidth,'UID+TRANSECT~PARAMETER',value='RESULT')
+FloodWidthpvtsub=subset(FloodWidthpvt,FLOOD_WID<FLOOD_BFWIDTH)
+if(nrow(FloodWidthpvtsub)>0) {write.csv(FloodWidthpvtsub,'FloodWidthLessBankfull.csv')}
                       
 ######   bank stability and cover ######
 #gut check values coming out of the app quickly, for real indicator values go to indicator script
@@ -679,8 +711,8 @@ Angle=tblRetrieve(Parameters=c('ANGLE180','SLANT'),Years=years, Projects=project
 pvtAngle=addKEYS(cast(Angle,'UID+TRANSECT+POINT~PARAMETER',value='RESULT'), c('SITE_ID','DATE_COL','CREW_LEADER'))                     
 AngleCheck1=subset(pvtAngle, is.na(pvtAngle$SLANT)=='TRUE')                      
 AngleCheck2=subset(pvtAngle, SLANT=='OB' & as.numeric(ANGLE180)<90)  
-write.csv(AngleCheck1,'AngleCheckSlant.csv')# slant being filled out properly for all angles
-write.csv(AngleCheck2,'AngleCheckSubtraction.csv')# subtraction occuring in app properly for all obtuse angles
+if(nrow(AngleCheck1)>0) {write.csv(AngleCheck1,'AngleCheckSlant.csv')}# slant being filled out properly for all angles
+if(nrow(AngleCheck2)>0) {write.csv(AngleCheck2,'AngleCheckSubtraction.csv')}# subtraction occuring in app properly for all obtuse angles
                  
 #######  Riparian Veg  ########
 #overstory >100% check
@@ -689,7 +721,7 @@ riparian1PVT=cast(riparian1,'UID+TRANSECT+POINT~PARAMETER',value='RESULT')
 riparian1PVT_IND=cast(riparian1,'UID+TRANSECT+POINT~PARAMETER',value='IND')
 riparian1pvt=merge(riparian1PVT,riparian1PVT_IND,by=c('UID','TRANSECT','POINT'),all=T)
 riparian1PVTsub=subset(riparian1pvt,(CANBTRE.x==4 & CANSTRE.x>2) | (CANSTRE.x==4 & CANBTRE.x>2))
-write.csv(riparian1PVTsub,'rip1.csv')
+if(nrow(riparian1PVTsub)>0){write.csv(riparian1PVTsub,'rip1.csv')}
 
 #middlestory >100% check
 riparian2=tblRetrieve(Parameters=c('UNDNWDY','UNDWDY'),Years=years, Projects=projects,SiteCodes=sitecodes,Insertion=insertion)
@@ -697,7 +729,7 @@ riparian2PVT=cast(riparian2,'UID+TRANSECT+POINT~PARAMETER',value='RESULT')
 riparian2PVT_IND=cast(riparian2,'UID+TRANSECT+POINT~PARAMETER',value='IND')
 riparian2pvt=merge(riparian2PVT,riparian2PVT_IND,by=c('UID','TRANSECT','POINT'),all=T)
 riparian2PVTsub=subset(riparian2pvt,(UNDNWDY.x==4 & UNDWDY.x>2) | (UNDWDY.x==4 & UNDNWDY.x>2))
-write.csv(riparian2PVTsub,'rip2.csv')
+if(nrow(riparian2PVTsub)>0){write.csv(riparian2PVTsub,'rip2.csv')}
 
 #understory >100% check
 riparian3=tblRetrieve(Parameters=c('GCNWDY','GCWDY','BARE'),Years=years, Projects=projects,SiteCodes=sitecodes,Insertion=insertion)
@@ -705,30 +737,30 @@ riparian3PVT=cast(riparian3,'UID+TRANSECT+POINT~PARAMETER',value='RESULT')
 riparian3PVT_IND=cast(riparian3,'UID+TRANSECT+POINT~PARAMETER',value='IND')
 riparian3pvt=merge(riparian3PVT,riparian3PVT_IND,by=c('UID','TRANSECT','POINT'),all=T)
 riparian3PVTsub=subset(riparian3pvt,(GCNWDY.x==4 & GCWDY.x>2) | (GCWDY.x==4 & GCNWDY.x>2) | (GCNWDY.x==4 & BARE.x>2) | (BARE.x==4 & GCNWDY.x>2) | (BARE.x==4 & GCWDY.x>2) | (GCWDY.x==4 & BARE.x>2))
-write.csv(riparian3PVTsub,'rip3.csv')
+if(nrow(riparian3PVTsub)>0) {write.csv(riparian3PVTsub,'rip3.csv')}
 
 #veg type missing check
 #canopy
 riparian4=tblRetrieve(Parameters=c('CANVEG','CANBTRE','CANSTRE'),Years=years, Projects=projects,SiteCodes=sitecodes,Insertion=insertion)
 riparian4PVT=cast(riparian4,'UID+TRANSECT+POINT~PARAMETER',value='RESULT')
 riparian4pvtsub=subset(riparian4PVT,CANVEG=='N' & CANBTRE>0 & CANSTRE>0)
-write.csv(riparian4pvtsub,'rip4.csv')
+if(nrow(riparian4PVTsub)>0) {write.csv(riparian4pvtsub,'rip4.csv')}
 
 riparian4PVT_IND=cast(riparian4,'UID+TRANSECT+POINT~PARAMETER',value='IND')
 riparian4pvt=merge(riparian4PVT,riparian4PVT_IND,by=c('UID','TRANSECT','POINT'),all=T)
 riparian4pvtsub2=subset(riparian4pvt,CANVEG.x!='N' & CANBTRE.x==0 & CANSTRE.x==0)
-write.csv(riparian4pvtsub2,'rip42.csv')
+if(nrow(riparian4PVTsub2)>0){write.csv(riparian4pvtsub2,'rip42.csv')}
 
 #middle
 riparian5=tblRetrieve(Parameters=c('UNDERVEG','UNDNWDY','UNDWDY'),Years=years, Projects=projects,SiteCodes=sitecodes,Insertion=insertion)
 riparian5PVT=cast(riparian5,'UID+TRANSECT+POINT~PARAMETER',value='RESULT')
 riparian5pvtsub=subset(riparian5PVT,UNDERVEG=='N' & UNDNWDY>0 & UNDWDY>0)
-write.csv(riparian5pvtsub,'rip5.csv')                      
+if(nrow(riparian5PVTsub)>0){write.csv(riparian5pvtsub,'rip5.csv') }                     
 
 riparian5=tblRetrieve(Parameters=c('UNDERVEG','UNDNWDY','UNDWDY'),Years=years, Projects=projects,SiteCodes=sitecodes,Insertion=insertion)
 riparian5PVT=cast(riparian5,'UID+TRANSECT+POINT~PARAMETER',value='RESULT')
 riparian5pvtsub2=subset(riparian5PVT,UNDERVEG!='N' & UNDNWDY==0 & UNDWDY==0)
-write.csv(riparian5pvtsub2,'rip52.csv') 
+if(nrow(riparian5PVTsub2)>0){write.csv(riparian5pvtsub2,'rip52.csv')}
                       
 ###### Thalweg   #########
 
@@ -800,7 +832,7 @@ toodeep=tblRetrieve(Comments='Y',Parameters=c('TOODEEP','DEPTH_ANGLE','DEPTH'),P
 pvttoodeep=cast(toodeep,'UID+TRANSECT+POINT~PARAMETER',value='RESULT')
 TooDeepCheck=subset(pvttoodeep,TOODEEP=='Y')
 TooDeepCheck=join(TooDeepCheck,toodeep, by="UID",type="left")
-write.csv(TooDeepCheck,'TooDeepCheck.csv')
+if(nrow(TooDeepCheck)>0){write.csv(TooDeepCheck,'TooDeepCheck.csv')}
 
 #thalweg depth/ width EPA check
 #wading sites #skipped this in 2017 but should do in 2018
@@ -813,7 +845,7 @@ check=join_all(list(pvtdepthcheck.sub,width),by=c('UID','TRANSECT'))
 check$RESULT=as.numeric(check$RESULT)
 check$DEPTH=as.numeric(check$DEPTH)
 odd_ratio=addKEYS(subset(check,RESULT/(DEPTH/100)>50|RESULT/(DEPTH/100)<1),c('SITE_ID'))
-write.csv(odd_ratio,'odd_ratio.csv')
+if(nrow(odd_ratio)>0){write.csv(odd_ratio,'odd_ratio.csv')}
 # #boating sites
 # odd_ratio=subset(check,RESULT/(DEPTH)>50|RESULT/(DEPTH)<1)
 # write.csv(odd_ratioBoat,'odd_ratio.csv')
@@ -862,7 +894,7 @@ reach_length=tblRetrieve(Parameters=c('POOLRCHLEN'),Projects=projects,Years=year
 pvtpools2=cast(reach_length,'UID~PARAMETER',value='RESULT') 
 poolsmerge<-merge(pvtpools1,pvtpools2,by=c('UID'),all=T)
 pool_great_100<-subset(poolsmerge,LENGTH>POOLRCHLEN)
-write.csv(pool_great_100,'pool_great_100.csv')#exports any sites that have over 100% pools
+if(nrow(pool_great_100)>0){write.csv(pool_great_100,'pool_great_100.csv')}#exports any sites that have over 100% pools
 
 #pool tail fines
 PoolFines=tblRetrieve(Parameters=c('POOLFINES2','POOLFINES6','POOLNOMEAS','POOLFINES6_512'),Projects=projects, Years=years,Protocols=protocols,SiteCode=sitecodes,Insertion=insertion)

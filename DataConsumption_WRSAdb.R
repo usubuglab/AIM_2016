@@ -12,11 +12,14 @@ DBname=''#ditto as with DBpassword
 
 #--------------------------------------------------------SETUP--------------------------------------------------------#
 #LOAD required packages#
-requiredPACKAGES=c('reshape', 'RODBC','ggplot2','grid','gridExtra','xlsx','sqldf','jpeg','spsurvey','tcltk','plyr')
+requiredPACKAGES=c('reshape', 'RODBC','ggplot2','grid','gridExtra','xlsx','sqldf','jpeg','spsurvey','tcltk','plyr','mapview')
 for (r in 1:length(requiredPACKAGES)){
   if ((requiredPACKAGES[r] %in% installed.packages()[,1])==FALSE){install.packages(requiredPACKAGES[r])}#auto-install if not present
   library(requiredPACKAGES[r],character.only = TRUE)
 }
+
+library(sf)
+#devtools::install_github("edzer/sfr")
 
 #default working directory is the location of the Rproject which is custom to each collaborator and should automatically be set when project is loaded
 #setwd('\\\\share1.bluezone.usu.edu\\miller\\buglab\\Research Projects\\BLM_WRSA_Stream_Surveys\\Technology\\Output\\WRSA')#SWJ to do: map more dynamically but securely
