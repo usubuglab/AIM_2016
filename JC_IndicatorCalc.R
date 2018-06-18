@@ -613,13 +613,11 @@ G_Sed2014=merge(F_Sed2014,Nbed, by="UID")
 K_Sed2014=merge(J_Sed2014,Nall_Sed2014pvtsub, by="UID")
 
 # Combine the two datasets for PCT_SAFN together so that I don't have multiple files for the same thing
-#2013+
-H_Sed=rbind(pctsafn_2013,G_Sed2014)# uncomment for 2013 data #needs to be changed if uncommentout allPCT_SAFN for 2013 data
-#2013+
-PCT_SAFN_ALL=join(H_Sed,K_Sed2014,by="UID",type="left")#uncomment for 2013 data
-
-#2014 only?
-PCT_SAFN_ALL=join(G_Sed2014,K_Sed2014,by="UID",type="left")#need to uncomment if there is also boating or 2013 data
+#combining 2013 and 2014 data
+H_Sed=rbind(pctsafn_2013,G_Sed2014)
+if(exists("H_Sed")==TRUE){
+  PCT_SAFN_ALL=join(H_Sed,K_Sed2014,by="UID",type="left")
+  }else {PCT_SAFN_ALL=join(G_Sed2014,K_Sed2014,by="UID",type="left")}
 #PCT_SAFN_sub=subset(PCT_SAFN_ALL,nallPCT_SAFN_CHECK<50)
 PCT_SAFN_ALL$allPCT_SAFN2_CHECK=ifelse(PCT_SAFN_ALL$nallPCT_SAFN_CHECK<50,NA,PCT_SAFN_ALL$allPCT_SAFN2_CHECK)
 PCT_SAFN_ALL$bedPCT_SAFN2_CHECK=ifelse(PCT_SAFN_ALL$nbedPCT_SAFN_CHECK<50,NA,PCT_SAFN_ALL$bedPCT_SAFN2_CHECK)
@@ -1098,32 +1096,31 @@ listsites$SINUOSITY_CHECK=ifelse(listsites$VALXSITE_CHECK=="PARBYWADE"|listsites
 ###################################################################################################################
 ###################################################################################################################
 ###################################################################################################################
+# ###combine all objects that exist in workspace that contain indicator values####
+IndicatorCheckJoin=listsites
+IndicatorList=c("DensPvt","BnkDensPvt","XCMG_new1", "RIP_VEG","FQCY_VEG","WQfinal","Pools","LWD","ALLSED","FinalpvtPoolFines","BnkErosional","BnkAll","IncBnk","fishpvt2","MeanAngle","Thalweg","PctDry","BankWidFinal","WetWidFinal","avgFloodWidth","entrench","Slope_Per")
+for (s in 1:length(IndicatorList)) {
+if(exists(IndicatorList[s])==TRUE){IndicatorCheckJoin=join_all(list(IndicatorCheckJoin,as.data.frame(get(IndicatorList[s]))),by="UID")}
+  else {IndicatorCheckJoin=IndicatorCheckJoin}
+}
+#####OLD CODE###### 
 #To get all calculated values together... Although some tables still have the metrics included.
 #IndicatorCheckJoin=join_all(list(listsites,WQfinal,BnkErosional,BnkAll,fishpvt2,DensPvt,BnkDensPvt,XCMGW_new1,XCMG_new1,XGB_new1,IncBnk,BankWid,WetWid,XEMBED,PCT_SAFN_ALL,W1_HALL,QR1,MeanAngle,Slope_Per,Thalweg,Pools),by="UID")
 # #choose correct line to run below based on the indicators that you have run and want included
 # IndicatorCheckJoin=join_all(list(listsites,WQfinal,BnkErosional,BnkAll,fishpvt2,DensPvt,BnkDensPvt,XCMG_new1,IncBnk,BankWidFinal,WetWidFinal,XEMBED,PCT_SAFN_ALL,MeanAngle,Slope_Per,Thalweg,Pools,LWD),by="UID")
 # IndicatorCheckJoin=join_all(list(listsites,WQfinal,BnkErosional,BnkAll,DensPvt,BnkDensPvt,XCMG_new1,IncBnk,BankWidFinal,WetWidFinal,PCT_SAFN_ALL,MeanAngle,Thalweg,Pools,LWD,avgFloodWidth),by="UID")
 # IndicatorCheckJoin=join_all(list(listsites,BnkErosional,BnkAll,fishpvt2,DensPvt,BnkDensPvt,XCMG_new1,IncBnk,BankWidFinal,WetWidFinal,XEMBED,PCT_SAFN_ALL,MeanAngle,Slope_Per,Thalweg,LWD),by="UID")
-#2016,2017,2018
+#2016,2017
 #with pool tail fines
-IndicatorCheckJoin=join_all(list(listsites,DensPvt,BnkDensPvt,XCMG_new1, RIP_VEG,FQCY_VEG,WQfinal,Pools,LWD,ALLSED,FinalpvtPoolFines,BnkErosional,BnkAll,IncBnk,fishpvt2,MeanAngle,Thalweg,PctDry,BankWidFinal,WetWidFinal,avgFloodWidth,entrench,Slope_Per),by="UID")
+#IndicatorCheckJoin=join_all(list(listsites,DensPvt,BnkDensPvt,XCMG_new1, RIP_VEG,FQCY_VEG,WQfinal,Pools,LWD,ALLSED,FinalpvtPoolFines,BnkErosional,BnkAll,IncBnk,fishpvt2,MeanAngle,Thalweg,PctDry,BankWidFinal,WetWidFinal,avgFloodWidth,entrench,Slope_Per),by="UID")
 #without pool tail fines
-IndicatorCheckJoin=join_all(list(listsites,DensPvt,BnkDensPvt,XCMG_new1, RIP_VEG,FQCY_VEG,WQfinal,Pools,LWD,ALLSED,BnkErosional,BnkAll,IncBnk,fishpvt2,MeanAngle,Thalweg,PctDry,BankWidFinal,WetWidFinal,avgFloodWidth,entrench,Slope_Per),by="UID")
+#IndicatorCheckJoin=join_all(list(listsites,DensPvt,BnkDensPvt,XCMG_new1, RIP_VEG,FQCY_VEG,WQfinal,Pools,LWD,ALLSED,BnkErosional,BnkAll,IncBnk,fishpvt2,MeanAngle,Thalweg,PctDry,BankWidFinal,WetWidFinal,avgFloodWidth,entrench,Slope_Per),by="UID")
 
 # #2013,2014,2015
 # IndicatorCheckJoin=join_all(list(listsites,WQfinal,BnkErosional,BnkAll,fishpvt2,DensPvt,BnkDensPvt,XCMG_new1,IncBnk,BankWidFinal,WetWidFinal,ALLSED,MeanAngle,Thalweg,PctDry,Pools,FinalpvtPoolFines,LWD,Slope_Per),by="UID")
 # IndicatorCheckJoin=join_all(list(listsites,WQfinal,BnkErosional,BnkAll,fishpvt2,DensPvt,BnkDensPvt,XCMG_new1,IncBnk,BankWidFinal,WetWidFinal,ALLSED,MeanAngle,Thalweg,PctDry,Pools,LWD,Slope_Per),by="UID")
 # 
-# ###trying to figure out how to combine only files that exist in workspace###### 
-# exists("DensPvt")
-# 
-# IndicatorList=objects()
-# IndicatorList=exists(c("DensPvt","BnkDensPvt","XCMG_new1", "RIP_VEG","FQCY_VEG","WQfinal","Pools","LWD","ALLSED","FinalpvtPoolFines","BnkErosional","BnkAll","IncBnk","fishpvt2","MeanAngle","Thalweg","PctDry","BankWidFinal","WetWidFinal","avgFloodWidth","entrench","Slope_Per"))
-# for (s in 1:length(IndicatorList)) {
-# IndicatorCheckJoin=listsites
-# IndicatorCheckJoin=join_all(IndicatorCheckJoin,as.name(s))
-# }#doesn't currently work
-################################################################################
+#################################################################################
 
 
 #remove QC sites
@@ -1135,8 +1132,9 @@ IndicatorCheck=IndicatorCheckJoin[,c("UID",grep("CHECK$", colnames(IndicatorChec
 #Remove all other data files as they are no longer needed
 #IndicatorCheck=subset(IndicatorCheck,PROTOCOL_CHECK=="BOAT14")
 write.csv(IndicatorCheck,"IndicatorCheckAll15June2018.csv")
-rm(PHfinal,XGB_new,XGB_new1,BankStab,Banks,RipGB,EMBED,Human_Influ,W1_HALL,W1_HALL_NRSA,QR1,XEMBED,BnkDensPvt,BnkDensiom,densiom,RipXCMG,XCMG_new,XCMG_new1,RipWW,XCMGW_new,XCMGW_new1,IndicatorCheckJoin,fish,fishpvt2,
-   MidDensiom,DensPvt,Incision,INCISED,BANKHT,Inc,Bnk,xIncht,xBnkht,IncBnk,Sediment,pctsafn,Sed2014,A_Sed2014,C_Sed2014,E_Sed2014,F_Sed2014,PCT_SAFN_ALL)
+
+#rm(PHfinal,XGB_new,XGB_new1,BankStab,Banks,RipGB,EMBED,Human_Influ,W1_HALL,W1_HALL_NRSA,QR1,XEMBED,BnkDensPvt,BnkDensiom,densiom,RipXCMG,XCMG_new,XCMG_new1,RipWW,XCMGW_new,XCMGW_new1,IndicatorCheckJoin,fish,fishpvt2,
+ #  MidDensiom,DensPvt,Incision,INCISED,BANKHT,Inc,Bnk,xIncht,xBnkht,IncBnk,Sediment,pctsafn,Sed2014,A_Sed2014,C_Sed2014,E_Sed2014,F_Sed2014,PCT_SAFN_ALL)
 
 
 # ###################################################################################################################
