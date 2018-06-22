@@ -18,6 +18,7 @@ for (r in 1:length(requiredPACKAGES)){
   library(requiredPACKAGES[r],character.only = TRUE)
 }
 ##needed to convert data to spatial layers and map coordinates
+##to get this package to work properly you might also need R 3.4.4
 library(sf)#if this gives an error run the line below
 #devtools::install_github("edzer/sfr")#this is the most up to date version of the package but might not be stable. The stable version can be gotten from CRAN
 
