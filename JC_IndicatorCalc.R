@@ -8,7 +8,7 @@
 #tblMETADATA= sqlQuery(wrsa1314, "select * from tblMETADATA")
 #############################################################################
 # FIRST Run the settup section of DataConsumption_WRSAdb.R
-# SECOND Run filters for appropriate project, years, and protocols.For all filter options from all years see DataConsumption_WRSAdb.R
+# SECOND Run filters for appropriate project, years, protocols, sitecodes, and insertion. For all filter options from all years see DataConsumption_WRSAdb.R
 ####
 #2018 filters
 projects=c('AKEFO','AK_AN_BSWI_2017','AK_CY_PLANUNIT_2017','AK_CY_UTILITYCORRIDOR_2016','AK_GL_STANDARD_2016','CO_FR_STANDARD_2016','CO_SW_STANDARD_2016','CO_NW_STANDARD_2016','NM_SONM_STANDARD_2018','OR_PR_WSR_2018','UT_GR_WSP_2018','WY_RA_STANDARD_2016','UT_CY_STANDARD_2017','UT_WD_SHEEPROCK_2017','WY_HD_STANDARD_2017')

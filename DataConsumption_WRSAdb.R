@@ -17,9 +17,9 @@ for (r in 1:length(requiredPACKAGES)){
   if ((requiredPACKAGES[r] %in% installed.packages()[,1])==FALSE){install.packages(requiredPACKAGES[r])}#auto-install if not present
   library(requiredPACKAGES[r],character.only = TRUE)
 }
-
-library(sf)
-#devtools::install_github("edzer/sfr")
+##needed to convert data to spatial layers and map coordinates
+library(sf)#if this gives an error run the line below
+#devtools::install_github("edzer/sfr")#this is the most up to date version of the package but might not be stable. The stable version can be gotten from CRAN
 
 #default working directory is the location of the Rproject which is custom to each collaborator and should automatically be set when project is loaded
 #setwd('\\\\share1.bluezone.usu.edu\\miller\\buglab\\Research Projects\\BLM_WRSA_Stream_Surveys\\Technology\\Output\\WRSA')#SWJ to do: map more dynamically but securely
