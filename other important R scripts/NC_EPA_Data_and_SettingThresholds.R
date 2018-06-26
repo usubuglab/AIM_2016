@@ -5,8 +5,8 @@
 #############################################################################
 
 #Read in EMAP and NRSA data
-EMAP=read.csv("\\\\share1.bluezone.usu.edu\\miller\\buglab\\Research Projects\\BLM_WRSA_Stream_Surveys\\Results and Reports\\EPA_Data\\EMAP.csv")
-NRSA=read.csv("\\\\share1.bluezone.usu.edu\\miller\\buglab\\Research Projects\\BLM_WRSA_Stream_Surveys\\Results and Reports\\EPA_Data\\NRSA.csv")
+EMAP=read.csv("\\\\share1.bluezone.usu.edu\\miller\\buglab\\Research Projects\\AIM\\Analysis\\Benchmarks\\EPA_Data\\EMAP.csv")
+NRSA=read.csv("\\\\share1.bluezone.usu.edu\\miller\\buglab\\Research Projects\\AIM\\Analysis\\Benchmarks\\EPA_Data\\NRSA.csv")
 
 #Change all column names to uppercase because R is case sensitive
 names(EMAP) = toupper(names(EMAP))
@@ -32,7 +32,7 @@ Final2=setNames(data.frame(t(Merged2[,-1])), Merged2[,1])
 #CLEAN UP DATA LIST AND WRITE OUT CSV!!!!!!! #deleting indicators that weren't needed
 rm(EMAP,NRSA,T_NRSA,T_EMAP,Merged2,final1)
 #Write out because I cannot figure out how do deal with this in R....
-#write.csv(Final2, "\\\\share1.bluezone.usu.edu\\miller\\buglab\\Research Projects\\BLM_WRSA_Stream_Surveys\\Results and Reports\\EPA_Data\\Mass_Combination_NRSA_EMAP.csv")
+#write.csv(Final2, "\\\\share1.bluezone.usu.edu\\miller\\buglab\\Research Projects\\AIM\\Analysis\\Benchmarks\\EPA_Data\\Mass_Combination_NRSA_EMAP.csv")
 
 #################################################################################
 #############
@@ -41,13 +41,13 @@ rm(EMAP,NRSA,T_NRSA,T_EMAP,Merged2,final1)
 #############
 #################################################################################
 
-combined=read.csv("\\\\share1.bluezone.usu.edu\\miller\\buglab\\Research Projects\\BLM_WRSA_Stream_Surveys\\Results and Reports\\EPA_Data\\Comb_21Oct2014_Rinput_DoNotAlter.csv")
+combined=read.csv("\\\\share1.bluezone.usu.edu\\miller\\buglab\\Research Projects\\AIM\\Analysis\\Benchmarks\\EPA_Data\\Comb_21Oct2014_Rinput_DoNotAlter.csv")
 
 #add back in a few columns from Mass_Combination_NRSA_EMAP
 #key in combined file is SITE_ID
 #as of March 31 2017 the above code to merge NRSA and EMAP data is throwing a row.names duplicate error because REALM is duplicated in the NRSA dataset. 
 #I don't know why this wasn't an issue previously but I assume that the dataset in Mass_combination_NRSA_EMAP.csv is correct and would join needed fields back in from this csv rather than the code below.
-Final2=read.csv("\\\\share1.bluezone.usu.edu\\miller\\buglab\\Research Projects\\BLM_WRSA_Stream_Surveys\\Results and Reports\\EPA_Data\\Mass_Combination_NRSA_EMAP.csv")
+Final2=read.csv("\\\\share1.bluezone.usu.edu\\miller\\buglab\\Research Projects\\AIM\\Analysis\\Benchmarks\\EPA_Data\\Mass_Combination_NRSA_EMAP.csv")
 Final2sub=subset(Final2,select=c(SITE_ID,XBKF_H,W1_HAG, W1H_CROP,W1H_WALL,PROJECT,XC,XM,XG,XSLOPE,XSLOPE_FIELD,XSLOPE_FRDATA,XSLOPE_FRREF,XSLOPE_MAP,XWD_RAT,XWIDTH,XWXD,XBKF_W,XDEPTH,V1W_MSQ,V1WM100,V2W_MSQ,V2WM100,V4W_MSQ,V4WM100,C1TM100,C1WM100,C2TM100,C2WM100,C4TM100,C4WM100,FLOWSITE))
 combined2=join(combined,Final2sub,by='SITE_ID', type="left",match="all")
 

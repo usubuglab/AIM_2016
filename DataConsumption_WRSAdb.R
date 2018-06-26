@@ -129,6 +129,7 @@ projects=c('Training')
 insertion=c('')
 #batches of 2018 QC
 insertion=c('22','23','24')
+insertion=c('25','26')
 
 
 

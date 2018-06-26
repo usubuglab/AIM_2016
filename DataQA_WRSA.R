@@ -187,7 +187,7 @@ if (MissingXwalk==''){
 MissingTotals4=MissingTotals4[,!(names(MissingTotals4) %in% c('POINT'))]
 MissingTotalsOUT= addKEYS(cast(subset(MissingTotals4,is.na(UID)==FALSE ), 'UID + TRANSECT  ~ SAMPLE_TYPE',value='MissingPCT' ),Columns=c('SITE_ID','DATE_COL','Protocol','Project','VALXSITE')) 
 MissingTotalsREACH=subset(MissingTotalsOUT,TRANSECT=='ReachTotal')
-MissingTotalsREACH=MissingTotalsREACH[,c(48,49,50,51,1,47,26,12,16,23,31,13,27,14,10,11,33,21,19,29,30,20,22,28,25,24,15,17,18,9,32,34:46,3:8)]
+#MissingTotalsREACH=MissingTotalsREACH[,c(48,49,50,51,1,47,26,12,16,23,31,13,27,14,10,11,33,21,19,29,30,20,22,28,25,24,15,17,18,9,32,34:46,3:8)]
 names=gsub("^INDICATOR:","",colnames(MissingTotalsREACH))
 MissingTotalsREACH=setNames(MissingTotalsREACH,names)
 write.csv(MissingTotalsREACH,"MissingDataQCrch_nocom.csv")
@@ -960,8 +960,8 @@ if(nrow(pool_great_100)>0){write.csv(pool_great_100,'pool_great_100.csv')}#expor
 #pool tail fines
 PoolFines=tblRetrieve(Parameters=c('POOLFINES2','POOLFINES6','POOLNOMEAS','POOLFINES6_512'),Projects=projects, Years=years,Protocols=protocols,SiteCode=sitecodes,Insertion=insertion)
 pvtPoolFines=addKEYS(cast(PoolFines,'UID+TRANSECT+POINT~PARAMETER',value='RESULT'),c('SITE_ID'))#need to pivot to create the pctPoolFInes variable
-pvtPoolFines$PctPoolFines2_CHECK=pvtPoolFines$POOLFINES2/(50)*100
-pvtPoolFines$PctPoolFines6_CHECK=pvtPoolFines$POOLFINES6/(50)*100
+pvtPoolFines$PctPoolFines2_CHECK=pvtPoolFines$POOLFINES2/(50-pvtPoolFines$POOLNOMEAS)*100
+pvtPoolFines$PctPoolFines6_CHECK=pvtPoolFines$POOLFINES6/(50-pvtPoolFines$POOLNOMEAS)*100
 write.csv(pvtPoolFines,'pvtPoolFines.csv')
 aggpvt1PoolFines=aggregate(PctPoolFines2_CHECK~UID+TRANSECT,data=pvtPoolFines, FUN='mean')#average pool fines at a pool first # note these exclude NAs
 aggpvt2PoolFines=aggregate(PctPoolFines6_CHECK~UID+TRANSECT,data=pvtPoolFines, FUN='mean')#average pool fines at a pool first # note these exclude NAs
