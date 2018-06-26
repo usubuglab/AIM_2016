@@ -187,9 +187,11 @@ if (MissingXwalk==''){
 MissingTotals4=MissingTotals4[,!(names(MissingTotals4) %in% c('POINT'))]
 MissingTotalsOUT= addKEYS(cast(subset(MissingTotals4,is.na(UID)==FALSE ), 'UID + TRANSECT  ~ SAMPLE_TYPE',value='MissingPCT' ),Columns=c('SITE_ID','DATE_COL','Protocol','Project','VALXSITE')) 
 MissingTotalsREACH=subset(MissingTotalsOUT,TRANSECT=='ReachTotal')
-#MissingTotalsREACH=MissingTotalsREACH[,c(48,49,50,51,1,47,26,12,16,23,31,13,27,14,10,11,33,21,19,29,30,20,22,28,25,24,15,17,18,9,32,34:46,3:8)]
 names=gsub("^INDICATOR:","",colnames(MissingTotalsREACH))
 MissingTotalsREACH=setNames(MissingTotalsREACH,names)
+Indicators=c('PROJECT',	'PROTOCOL',	'SITE_ID',	'VALXSITE',	'UID',	'DATE_COL',	'REACH',	'BENTHIC',	'CONDUCTIVITY',	'PH',	'TEMPERATURE',	'BLM RIPARIAN',	'RIPARIAN COVER',	'CANOPY',	'BANK HEIGHT',	'BANK WIDTH',	'WET WIDTH',	'INCISION HEIGHT',	'FLOODPRONE WIDTH',	'STABILITY',	'SUBSTRATE',	'HUMAN INFLUENCE',	'LWD IN',	'SLOPE',	'POOL',	'PHOTO',	'CHEMISTRY',	'DEPTH',	'FISH COVER',	'ANGLE',	'TURBIDITY')
+MissingTotalsREACH=MissingTotalsREACH[,c(Indicators)]
+#grep("^COVARIATE",colnames(MissingTotalsREACH),grep("^QC",colnames(MissingTotalsREACH)
 write.csv(MissingTotalsREACH,"MissingDataQCrch_nocom.csv")
 #MissingTotalsTRAN=subset(MissingTotalsOUT,TRANSECT!='ReachTotal');write.csv(MissingTotalsTRAN,"MissingDataQCttran_nocom.csv")
 #write.csv(MissingCounts,"MissingCounts.csv")
@@ -567,7 +569,7 @@ Bugspvt=addKEYS(cast(Bugs,'UID~SAMPLE_TYPE+PARAMETER',value='RESULT'),c('SITE_ID
 AreaCheck1=subset(Bugspvt,(as.numeric(BERW_AREA_SAMP)!=0.093 & BERW_SAMPLER=='SU'))
 AreaCheck2=subset(Bugspvt,(as.numeric(BERW_AREA_SAMP)!=0.0413 & BERW_SAMPLER=='MI'))
 AreaCheck3=subset(Bugspvt,(as.numeric(BERW_AREA_SAMP)!=0.093 & BERW_SAMPLER=='KC'))
-if(nrow(as.dAreaCheck1>0)){write.csv(AreaCheck1,'AreaCheck1.csv')}
+if(nrow(AreaCheck1>0)){write.csv(AreaCheck1,'AreaCheck1.csv')}
 if(nrow(AreaCheck2)>0){write.csv(AreaCheck2,'AreaCheck2.csv')}
 if(nrow(AreaCheck3)>0){write.csv(AreaCheck3,'AreaCheck3.csv')}
 write.csv(Bugspvt,'Bugspvt.csv')
@@ -600,7 +602,7 @@ WQ1=cast(WQ2,'UID~PARAMETER',value='RESULT')
 WQind=cast(WQ2,'UID~PARAMETER',value='IND')
 WQ3=addKEYS(merge(WQ1,WQind,by=c('UID'),all=T) ,c('SITE_ID','DATE_COL','CREW_LEADER'))
 WQ3.sub=subset(WQ3,CORRECTED.x!='Y')
-if(nrow(WQ3)>0){write.csv(WQ3.sub,'not_temp_corrected_conduct.csv')}
+if(nrow(WQ3.sub)>0){write.csv(WQ3.sub,'not_temp_corrected_conduct.csv')}
 
 # #Chem check the hours prior to freezing
 # WQtbl=tblRetrieve(Parameters=c('NTL','PTL','TN_PRED','TP_PRED','TIME_UNFROZEN'),Projects=projects,Years=years,Protocols=protocols,SiteCodes=sitecodes,Insertion=insertion)
@@ -924,7 +926,9 @@ SlopeCheck_more2passes=subset(Pass,TRANSECT>2)# if more than 2 passes need to ma
 # for any sites that failed one of the above checks, see individual passes below
 IndividualSlope=tblRetrieve(Parameters=c('SLOPE','STARTHEIGHT','ENDHEIGHT'),Projects=projects, Years=years,Protocols=protocols,SiteCodes=sitecodes,Insertion=insertion)
 pvtIndividualSlopeSum=addKEYS(cast(IndividualSlope,'UID+TRANSECT~PARAMETER',value='RESULT', fun=sum),c('SITE_ID','CREW_LEADER'))#note Transect=Pass
+pvtIndividualSlopeSum=pvtIndividualSlopeSum[,c(1:3,5,4,6,7)]
 pvtIndividualSlopeRaw=addKEYS(cast(IndividualSlope,'UID+TRANSECT+POINT~PARAMETER',value='RESULT'),c('SITE_ID','CREW_LEADER'))#note Transect=Pass
+pvtIndividualSlopeRaw=pvtIndividualSlopeRaw[,c(1:4,6,5,7,8)]
 #always double check sites with 3 passes get averaged properly in app
 write.csv(pvtSlope,'pctGrade.csv')
 #write.csv(SlopeCheck_more2passes,'SlopeCheck_more2passes.csv')#I prefer just to check this in the raw slope file rather than getting this seperate export
