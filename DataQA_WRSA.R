@@ -940,8 +940,8 @@ write.csv(pvtIndividualSlopeRaw,'pvtIndividualSlopeRaw.csv')
 
 #########  pools   ################                                           
 #getting all pool data for a specfic set of sites---not collecting one of the parameters below anymore
-pools<-addKEYS(tblRetrieve(Parameters=c('HABTYPE','PTAILDEP','MAXDEPTH','LENGTH'),Projects=projects,Years=years,Protocols=protocols,SiteCodes=sitecodes,Insertion=insertion, Comments='Y'),c('SITE_ID'))
-pvtpools=cast(pools,'UID+TRANSECT+POINT~PARAMETER',value='RESULT')
+pools<-tblRetrieve(Parameters=c('HABTYPE','PTAILDEP','MAXDEPTH','LENGTH'),Projects=projects,Years=years,Protocols=protocols,SiteCodes=sitecodes,Insertion=insertion, Comments='Y')
+pvtpools=addKEYS(cast(pools,'UID+TRANSECT+POINT~PARAMETER',value='RESULT'),c('SITE_ID'))
 write.csv(pvtpools,'pvtpools.csv')#sort and look for min and max and 0 data or unit issues
 
 # flow and collected checks

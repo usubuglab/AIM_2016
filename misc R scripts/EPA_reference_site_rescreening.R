@@ -47,11 +47,62 @@ RIP_RS_minusDup= RIP_RS_reorder[!duplicated(RIP_RS_reorder$DUPLICATE_ID),]
 #View(RIP_RS_minusDup[1000:1999,])
 RIP_RS_final=RIP_RS_minusDup[order(RIP_RS_minusDup$REVISITED_OVERLAP, decreasing=TRUE),]
 
-
 #join in StreamCat data
 StreamCat=read.csv("\\\\share1.bluezone.usu.edu\\miller\\buglab\\Research Projects\\AIM\\Analysis\\Benchmarks\\EPA_Data\\EPA_Data_StreamCat.csv")
 combined3=join(RIP_RS_final,StreamCat, by='SITE_ID', type="left",match="all")
 
+
+
+
+####################################################################
+#subset only R and S sites
+combined3$UrbCombWs=combined3$PctUrbHi2006Ws+combined3$PctUrbLo2006Ws+combined3$PctUrbMd2006Ws
+combined3$AgCombWs=combined3$PctAg2006Slp10Ws+combined3$PctAg2006Slp20Ws
+reference=subset(combined3, RST_FRIP_AND_RMD_PHAB == "R"|RST_FRIP_AND_RMD_PHAB == "S")
+
+
+UrbCombWs=aggregate(UrbCombWs~THRESH3, data=reference, FUN=max)
+AgCombWs=aggregate(AgCombWs~THRESH3, data=reference, FUN=max)
+DamDensWs=aggregate(DamDensWs~THRESH3, data=reference, FUN=max)
+MineDensWs=aggregate(MineDensWs~THRESH3, data=reference, FUN=max)
+NPDESDensWs=aggregate(NPDESDensWs~THRESH3, data=reference, FUN=max)
+RdDensWs=aggregate(RdDensWs~THRESH3, data=reference, FUN=max)
+W1_HALL=aggregate(W1_HALL~THRESH3, data=reference, FUN=max)
+maxes=join_all(list(UrbCombWs,AgCombWs,DamDensWs,MineDensWs,NPDESDensWs,RdDensWs,W1_HALL), by="THRESH3")
+write.csv(maxes,'current_benchmark_anthro_influence.csv')
+
+
+
+T1=setNames(aggregate(reference$UrbCombWs, by = list(reference$THRESH3), FUN = quantile,probs=0.25,na.rm=TRUE), c("THRESH3","UrbCombWs_0.25"))
+T2=setNames(aggregate(reference$UrbCombWs, by = list(reference$THRESH3), FUN = quantile,probs=0.90,na.rm=TRUE), c("THRESH3","UrbCombWs_0.90"))
+
+
+T3=setNames(aggregate(reference$AgCombWs, by = list(reference$THRESH3), FUN = quantile,probs=0.25,na.rm=TRUE), c("THRESH3","AgCombWs_0.25"))
+T4=setNames(aggregate(reference$AgCombWs, by = list(reference$THRESH3), FUN = quantile,probs=0.90,na.rm=TRUE), c("THRESH3","AgCombWs_0.90"))
+
+
+T5=setNames(aggregate(reference$DamDensWs, by = list(reference$THRESH3), FUN = quantile,probs=0.25,na.rm=TRUE), c("THRESH3","DamDensWs_0.25"))#changing alpha
+T6=setNames(aggregate(reference$DamDensWs, by = list(reference$THRESH3), FUN = quantile,probs=0.90,na.rm=TRUE), c("THRESH3","DamDensWs_0.90"))#changing alpha
+T7=join_all(list(T1,T2), by="THRESH3")
+
+T8=setNames(aggregate(reference$MineDensWs, by = list(reference$THRESH3), FUN = quantile,probs=0.25,na.rm=TRUE), c("THRESH3","MineDensWs_0.25"))
+T9=setNames(aggregate(reference$MineDensWs, by = list(reference$THRESH3), FUN = quantile,probs=0.90,na.rm=TRUE), c("THRESH3","MineDensWs_0.90"))
+
+T10=setNames(aggregate(reference$NPDESDensWs, by = list(reference$THRESH3), FUN = quantile,probs=0.25,na.rm=TRUE), c("THRESH3","NPDESDensWs_0.25"))
+T11=setNames(aggregate(reference$NPDESDensWs, by = list(reference$THRESH3), FUN = quantile,probs=0.90,na.rm=TRUE), c("THRESH3","NPDESDensWs_0.90"))
+
+T10=setNames(aggregate(reference$RdDensWs, by = list(reference$THRESH3), FUN = quantile,probs=0.25,na.rm=TRUE), c("THRESH3","RdDensWs_0.25"))
+T11=setNames(aggregate(reference$RdDensWs, by = list(reference$THRESH3), FUN = quantile,probs=0.90,na.rm=TRUE), c("THRESH3","RdDensWs_0.90"))
+
+T12=setNames(aggregate(reference$W1_HALL, by = list(reference$THRESH3), FUN = quantile,probs=0.25,na.rm=TRUE), c("THRESH3","W1_HALL_0.25"))
+T13=setNames(aggregate(reference$W1_HALL, by = list(reference$THRESH3), FUN = quantile,probs=0.90,na.rm=TRUE), c("THRESH3","W1_HALL_0.90"))
+
+
+T14=join_all(list(T1,T2,T3,T4,T5,T6,T7,T8,T9,T10,T11,T12,T13), by="THRESH3")
+
+write.csv(T14,'current_anthro_quantiles.csv')
+
+####################################################################################################
 
 
 
