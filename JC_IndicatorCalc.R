@@ -796,6 +796,38 @@ IncBnk$LINCIS_H_CHECK=round(log10(IncBnk$xinc_h_CHECK-IncBnk$xbnk_h_CHECK+0.1),d
 IncBnk$xinc_h_CHECK=round(IncBnk$xinc_h_CHECK,digits=2)
 IncBnk$xbnk_h_CHECK=round(IncBnk$xbnk_h_CHECK,digits=2)
 
+
+#BNK_HT_RATIO
+#get thawleg info and fix differences in protocols and data storage among years
+#thawleg was stored differently in 2013-2015 than in 2016 on. Points differ among years by one so one needs added to older data
+thalweg_ratio=addKEYS(tblRetrieve(Parameters=c('DEPTH'), Projects=projects, Years=c('2013','2014','2015'),Protocols=protocols,SiteCodes=sitecodes,Insertion=insertion),c('PROTOCOL'))
+thalweg_ratio=subset(thalweg_ratio,SAMPLE_TYPE!='CROSSSECW')
+thalweg_ratio$POINT=as.numeric(thalweg_ratio$POINT)+1
+thalweg_ratio2=addKEYS(tblRetrieve(Parameters=c('DEPTH'), Projects=projects, Years=c('2016'),Protocols=protocols,SiteCodes=sitecodes,Insertion=insertion),c('PROTOCOL'))
+thalweg_ratio3=rbind(thalweg_ratio,thalweg_ratio2)
+thalweg_ratio3=subset(thalweg_ratio3,RESULT!=0)#starting in 2017 bankfull and incision heights measured from thalweg at dry transect but any data before that needs omitted if thalweg=0
+thalweg_ratio4=addKEYS(tblRetrieve(Parameters=c('DEPTH'), Projects=projects, Years=c('2017'),Protocols=protocols,SiteCodes=sitecodes,Insertion=insertion),c('PROTOCOL'))
+thalweg_ratio5=rbind(thalweg_ratio3,thalweg_ratio4)
+depth=subset(thalweg_ratio5,POINT==1)
+#get bank info
+BnkRatio=tblRetrieve(Parameters=c('INCISED','BANKHT'), Projects=projects, Years=years,Protocols=protocols,SiteCodes=sitecodes,Insertion=insertion)
+BnkRatiopvt=cast(BnkRatio,'UID+TRANSECT~PARAMETER',value='RESULT')
+#join thalweg and bank info and calc ratio
+BnkRatiopvt=join(BnkRatiopvt,depth, by=c('UID','TRANSECT'))
+BnkRatiopvt=subset(BnkRatiopvt,is.na(RESULT)==FALSE)
+BnkRatiopvt$BANKHT_DEPTH=BnkRatiopvt$BANKHT+BnkRatiopvt$RESULT
+BnkRatiopvt$INCISED_DEPTH=BnkRatiopvt$INCISED+BnkRatiopvt$RESULT
+BnkRatiopvt$Ratio=BnkRatiopvt$INCISED_DEPTH/BnkRatiopvt$BANKHT_DEPTH
+BnkRatiopvt=subset(BnkRatiopvt,is.na(Ratio)==FALSE)
+BnkRatioAvg=setNames(aggregate(BnkRatiopvt$Ratio,list(UID=BnkRatiopvt$UID),mean),c("UID","BNK_HT_RATIO_CHECK"))
+nBnkRatiopvt=setNames(count(BnkRatiopvt,"UID"),c("UID","nBNK_HT_RATIO_CHECK"))
+BnkRatioAvg=join(BnkRatioAvg,nBnkRatiopvt,by="UID")
+BnkRatioAvg$BNK_HT_RATIO_CHECK=ifelse(BnkRatioAvg$nBNK_HT_RATIO_CHECK<5,NA,BnkRatioAvg$BNK_HT_RATIO_CHECK)
+BnkRatioAvg$BNK_HT_RATIO_CHECK=round(BnkRatioAvg$BNK_HT_RATIO_CHECK,digits=2)
+
+
+
+
 ##########################################################################################################
 #                           Contingent Indicators                                                        #
 ##########################################################################################################
@@ -1098,7 +1130,7 @@ listsites$SINUOSITY_CHECK=ifelse(listsites$VALXSITE_CHECK=="PARBYWADE"|listsites
 ###################################################################################################################
 # ###combine all objects that exist in workspace that contain indicator values####
 IndicatorCheckJoin=listsites
-IndicatorList=c("DensPvt","BnkDensPvt","XCMG_new1", "RIP_VEG","FQCY_VEG","WQfinal","Pools","LWD","ALLSED","FinalpvtPoolFines","BnkErosional","BnkAll","IncBnk","fishpvt2","MeanAngle","Thalweg","PctDry","BankWidFinal","WetWidFinal","avgFloodWidth","entrench","Slope_Per")
+IndicatorList=c("DensPvt","BnkDensPvt","XCMG_new1", "RIP_VEG","FQCY_VEG","WQfinal","Pools","LWD","ALLSED","FinalpvtPoolFines","BnkErosional","BnkAll","IncBnk","BnkRatioAvg","fishpvt2","MeanAngle","Thalweg","PctDry","BankWidFinal","WetWidFinal","avgFloodWidth","entrench","Slope_Per")
 for (s in 1:length(IndicatorList)) {
 if(exists(IndicatorList[s])==TRUE){IndicatorCheckJoin=join_all(list(IndicatorCheckJoin,as.data.frame(get(IndicatorList[s]))),by="UID")}
   else {IndicatorCheckJoin=IndicatorCheckJoin}
