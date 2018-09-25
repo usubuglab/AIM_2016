@@ -1,5 +1,6 @@
 ####Rescreening the EPA reference data#####
-
+library(plyr)
+setwd('Z:\\buglab\\Research Projects\\AIM\\Analysis\\Benchmarks\\EPA_Data\\RevisingThresholds\\discriminatory boxplots')
 
 combined=read.csv("\\\\share1.bluezone.usu.edu\\miller\\buglab\\Research Projects\\AIM\\Analysis\\Benchmarks\\EPA_Data\\Comb_21Oct2014_Rinput_DoNotAlter.csv")
 
@@ -14,26 +15,47 @@ combined2=join(combined,Final2sub,by='SITE_ID', type="left",match="all")
 
 #Use to get wadeable or boatable only, if this line isn't run both boatable and wadeable will be used. Change REALM== "" to specify 
 #combined2=subset(combined2, REALM == "WADEABLE")
-combined2$BNK_THRESH=ifelse(as.numeric(combined2$XBKF_W)>10,"LargeWadeable","SmallWadeable")
+# combined2$BNK_THRESH=ifelse(as.numeric(combined2$XBKF_W)>10,"LargeWadeable","SmallWadeable")
+# combined2$BNK_THRESH=ifelse(combined2$REALM=="WADEABLE",combined2$BNK_THRESH,combined2$REALM)
+# combined2$THRESH=paste(combined2$ECO10,combined2$BNK_THRESH, sep="_")
+# 
+# combined2$THRESH3=as.factor(combined2$THRESH)
+# levels(combined2$THRESH3) <- list( XE_SOUTH_SmallWadeable="XE_SOUTH_SmallWadeable",XE_SOUTH_LargeWadeable="XE_SOUTH_LargeWadeable", 
+#                                    MT_SWEST_SmallWadeable="MT_SWEST_SmallWadeable",MT_SWEST_LargeWadeable="MT_SWEST_LargeWadeable", 
+#                                    XE_EPLAT_SmallWadeable="XE_EPLAT_SmallWadeable",XE_EPLAT_LargeWadeable="XE_EPLAT_LargeWadeable", 
+#                                    MT_PNW_SmallWadeable="MT_PNW_SmallWadeable", MT_PNW_LargeWadeable="MT_PNW_LargeWadeable",MT_PNW_BOATABLE="MT_PNW_BOATABLE",  
+#                                    PL_NCULT_SmallWadeable="PL_NCULT_SmallWadeable", PL_NCULT_LargeWadeable="PL_NCULT_LargeWadeable",PL_NCULT_BOATABLE="PL_NCULT_BOATABLE", 
+#                                    PL_RANGE_SmallWadeable="PL_RANGE_SmallWadeable",PL_RANGE_LargeWadeable="PL_RANGE_LargeWadeable", PL_RANGE_BOATABLE="PL_RANGE_BOATABLE",
+#                                    MT_SROCK_SmallWadeable="MT_SROCK_SmallWadeable",MT_SROCK_LargeWadeable="MT_SROCK_LargeWadeable", 
+#                                    MT_NROCK_SmallWadeable="MT_NROCK_SmallWadeable", MT_NROCK_LargeWadeable="MT_NROCK_LargeWadeable",
+#                                    XE_NORTH_SmallWadeable="XE_NORTH_SmallWadeable",XE_NORTH_LargeWadeable="XE_NORTH_LargeWadeable",
+#                                    #Other=c("XE_CALIF_LargeWadeable","XE_CALIF_SmallWadeable","0_BOATABLE","XE_SOUTH_NA","MT_PNW_0","MT_NROCK_NA", "_SmallWadeable","_LargeWadeable","_BOATABLE"  ,"_NA", "MT_SROCK_NA" , "0_LargeWadeable" , "MT_SWEST_NA", "0_SmallWadeable", "XE_CALIF_BOATABLE","MT_SWEST_BOATABLE"),   
+#                                    MT_ROCK_BOATABLE=c("MT_NROCK_BOATABLE", "MT_SROCK_BOATABLE","XE_NORTH_BOATABLE"),  
+#                                    XE_SEPLAT_BOATABLE=c( "XE_EPLAT_BOATABLE" ,"XE_SOUTH_BOATABLE")
+# )
+# combined2$THRESH2=combined2$THRESH
+# combined2$THRESH2=ifelse(combined2$THRESH2=="PL_RANGE_BOATABLE"|combined2$THRESH2=="PL_NCULT_BOATABLE"|combined2$THRESH2=="MT_PNW_BOATABLE"|combined2$THRESH2=="MT_NROCK_BOATABLE"|combined2$THRESH2=="MT_SROCK_BOATABLE"|combined2$THRESH2=="XE_NORTH_BOATABLE"|combined2$THRESH2=="XE_EPLAT_BOATABLE"|combined2$THRESH2=="XE_SOUTH_BOATABLE","ALL_BOATING",combined2$THRESH2)
+
+combined2$BNK_THRESH=ifelse(as.numeric(combined2$XBKF_W)>10,"L","S")
 combined2$BNK_THRESH=ifelse(combined2$REALM=="WADEABLE",combined2$BNK_THRESH,combined2$REALM)
 combined2$THRESH=paste(combined2$ECO10,combined2$BNK_THRESH, sep="_")
 
 combined2$THRESH3=as.factor(combined2$THRESH)
-levels(combined2$THRESH3) <- list( XE_SOUTH_SmallWadeable="XE_SOUTH_SmallWadeable",XE_SOUTH_LargeWadeable="XE_SOUTH_LargeWadeable", 
-                                   MT_SWEST_SmallWadeable="MT_SWEST_SmallWadeable",MT_SWEST_LargeWadeable="MT_SWEST_LargeWadeable", 
-                                   XE_EPLAT_SmallWadeable="XE_EPLAT_SmallWadeable",XE_EPLAT_LargeWadeable="XE_EPLAT_LargeWadeable", 
-                                   MT_PNW_SmallWadeable="MT_PNW_SmallWadeable", MT_PNW_LargeWadeable="MT_PNW_LargeWadeable",MT_PNW_BOATABLE="MT_PNW_BOATABLE",  
-                                   PL_NCULT_SmallWadeable="PL_NCULT_SmallWadeable", PL_NCULT_LargeWadeable="PL_NCULT_LargeWadeable",PL_NCULT_BOATABLE="PL_NCULT_BOATABLE", 
-                                   PL_RANGE_SmallWadeable="PL_RANGE_SmallWadeable",PL_RANGE_LargeWadeable="PL_RANGE_LargeWadeable", PL_RANGE_BOATABLE="PL_RANGE_BOATABLE",
-                                   MT_SROCK_SmallWadeable="MT_SROCK_SmallWadeable",MT_SROCK_LargeWadeable="MT_SROCK_LargeWadeable", 
-                                   MT_NROCK_SmallWadeable="MT_NROCK_SmallWadeable", MT_NROCK_LargeWadeable="MT_NROCK_LargeWadeable",
-                                   XE_NORTH_SmallWadeable="XE_NORTH_SmallWadeable",XE_NORTH_LargeWadeable="XE_NORTH_LargeWadeable",
-                                   #Other=c("XE_CALIF_LargeWadeable","XE_CALIF_SmallWadeable","0_BOATABLE","XE_SOUTH_NA","MT_PNW_0","MT_NROCK_NA", "_SmallWadeable","_LargeWadeable","_BOATABLE"  ,"_NA", "MT_SROCK_NA" , "0_LargeWadeable" , "MT_SWEST_NA", "0_SmallWadeable", "XE_CALIF_BOATABLE","MT_SWEST_BOATABLE"),   
-                                   MT_ROCK_BOATABLE=c("MT_NROCK_BOATABLE", "MT_SROCK_BOATABLE","XE_NORTH_BOATABLE"),  
-                                   XE_SEPLAT_BOATABLE=c( "XE_EPLAT_BOATABLE" ,"XE_SOUTH_BOATABLE")
+levels(combined2$THRESH3) <- list( XE_SOUTH_S="XE_SOUTH_S",XE_SOUTH_L="XE_SOUTH_L", 
+                                   MT_SWEST_S="MT_SWEST_S",MT_SWEST_L="MT_SWEST_L", 
+                                   XE_EPLAT_S="XE_EPLAT_S",XE_EPLAT_L="XE_EPLAT_L", 
+                                   MT_PNW_S="MT_PNW_S", MT_PNW_L="MT_PNW_L",MT_PNW_B="MT_PNW_B",  
+                                   PL_NCULT_S="PL_NCULT_S", PL_NCULT_L="PL_NCULT_L",PL_NCULT_B="PL_NCULT_B", 
+                                   PL_RANGE_S="PL_RANGE_S",PL_RANGE_L="PL_RANGE_L", PL_RANGE_B="PL_RANGE_B",
+                                   MT_SROCK_S="MT_SROCK_S",MT_SROCK_L="MT_SROCK_L", 
+                                   MT_NROCK_S="MT_NROCK_S", MT_NROCK_L="MT_NROCK_L",
+                                   XE_NORTH_S="XE_NORTH_S",XE_NORTH_L="XE_NORTH_L",
+                                   #Other=c("XE_CALIF_L","XE_CALIF_S","0_B","XE_SOUTH_NA","MT_PNW_0","MT_NROCK_NA", "_S","_L","_B"  ,"_NA", "MT_SROCK_NA" , "0_L" , "MT_SWEST_NA", "0_S", "XE_CALIF_B","MT_SWEST_B"),   
+                                   MT_ROCK_B=c("MT_NROCK_B", "MT_SROCK_B","XE_NORTH_B"),  
+                                   XE_SEPLAT_B=c( "XE_EPLAT_B" ,"XE_SOUTH_B")
 )
 combined2$THRESH2=combined2$THRESH
-combined2$THRESH2=ifelse(combined2$THRESH2=="PL_RANGE_BOATABLE"|combined2$THRESH2=="PL_NCULT_BOATABLE"|combined2$THRESH2=="MT_PNW_BOATABLE"|combined2$THRESH2=="MT_NROCK_BOATABLE"|combined2$THRESH2=="MT_SROCK_BOATABLE"|combined2$THRESH2=="XE_NORTH_BOATABLE"|combined2$THRESH2=="XE_EPLAT_BOATABLE"|combined2$THRESH2=="XE_SOUTH_BOATABLE","ALL_BOATING",combined2$THRESH2)
+combined2$THRESH2=ifelse(combined2$THRESH2=="PL_RANGE_B"|combined2$THRESH2=="PL_NCULT_B"|combined2$THRESH2=="MT_PNW_B"|combined2$THRESH2=="MT_NROCK_B"|combined2$THRESH2=="MT_SROCK_B"|combined2$THRESH2=="XE_NORTH_B"|combined2$THRESH2=="XE_EPLAT_B"|combined2$THRESH2=="XE_SOUTH_B","ALL_BOATING",combined2$THRESH2)
 
 
 RIP_RS_combined=combined2
@@ -54,53 +76,58 @@ combined3=join(RIP_RS_final,StreamCat, by='SITE_ID', type="left",match="all")
 
 
 
-####################################################################
-#subset only R and S sites
-combined3$UrbCombWs=combined3$PctUrbHi2006Ws+combined3$PctUrbLo2006Ws+combined3$PctUrbMd2006Ws
-combined3$AgCombWs=combined3$PctAg2006Slp10Ws+combined3$PctAg2006Slp20Ws
-reference=subset(combined3, RST_FRIP_AND_RMD_PHAB == "R"|RST_FRIP_AND_RMD_PHAB == "S")
+# ####################################################################
+# #subset only R and S sites
+# combined3$UrbCombWs=combined3$PctUrbHi2006Ws+combined3$PctUrbLo2006Ws+combined3$PctUrbMd2006Ws
+# combined3$AgCombWs=combined3$PctAg2006Slp10Ws+combined3$PctAg2006Slp20Ws
+# reference=subset(combined3, RST_FRIP_AND_RMD_PHAB == "R"|RST_FRIP_AND_RMD_PHAB == "S")
+# 
+# 
+# #reference=combined3
+# 
+# UrbCombWs=aggregate(UrbCombWs~THRESH3, data=reference, FUN=max)
+# AgCombWs=aggregate(AgCombWs~THRESH3, data=reference, FUN=max)
+# DamDensWs=aggregate(DamDensWs~THRESH3, data=reference, FUN=max)
+# MineDensWs=aggregate(MineDensWs~THRESH3, data=reference, FUN=max)
+# NPDESDensWs=aggregate(NPDESDensWs~THRESH3, data=reference, FUN=max)
+# RdDensWs=aggregate(RdDensWs~THRESH3, data=reference, FUN=max)
+# W1_HALL=aggregate(W1_HALL~THRESH3, data=reference, FUN=max)
+# maxes=join_all(list(UrbCombWs,AgCombWs,DamDensWs,MineDensWs,NPDESDensWs,RdDensWs,W1_HALL), by="THRESH3")
+# write.csv(maxes,'current_benchmark_anthro_influence.csv')
+# 
+# 
+# 
+# T1=setNames(aggregate(reference$UrbCombWs, by = list(reference$THRESH3), FUN = quantile,probs=0.25,na.rm=TRUE), c("THRESH3","UrbCombWs_0.25"))
+# T2=setNames(aggregate(reference$UrbCombWs, by = list(reference$THRESH3), FUN = quantile,probs=0.90,na.rm=TRUE), c("THRESH3","UrbCombWs_0.90"))
+# 
+# 
+# T3=setNames(aggregate(reference$AgCombWs, by = list(reference$THRESH3), FUN = quantile,probs=0.25,na.rm=TRUE), c("THRESH3","AgCombWs_0.25"))
+# T4=setNames(aggregate(reference$AgCombWs, by = list(reference$THRESH3), FUN = quantile,probs=0.90,na.rm=TRUE), c("THRESH3","AgCombWs_0.90"))
+# 
+# 
+# T5=setNames(aggregate(reference$DamDensWs, by = list(reference$THRESH3), FUN = quantile,probs=0.25,na.rm=TRUE), c("THRESH3","DamDensWs_0.25"))#changing alpha
+# T6=setNames(aggregate(reference$DamDensWs, by = list(reference$THRESH3), FUN = quantile,probs=0.90,na.rm=TRUE), c("THRESH3","DamDensWs_0.90"))#changing alpha
+# T7=join_all(list(T1,T2), by="THRESH3")
+# 
+# T8=setNames(aggregate(reference$MineDensWs, by = list(reference$THRESH3), FUN = quantile,probs=0.25,na.rm=TRUE), c("THRESH3","MineDensWs_0.25"))
+# T9=setNames(aggregate(reference$MineDensWs, by = list(reference$THRESH3), FUN = quantile,probs=0.90,na.rm=TRUE), c("THRESH3","MineDensWs_0.90"))
+# 
+# T10=setNames(aggregate(reference$NPDESDensWs, by = list(reference$THRESH3), FUN = quantile,probs=0.25,na.rm=TRUE), c("THRESH3","NPDESDensWs_0.25"))
+# T11=setNames(aggregate(reference$NPDESDensWs, by = list(reference$THRESH3), FUN = quantile,probs=0.90,na.rm=TRUE), c("THRESH3","NPDESDensWs_0.90"))
+# 
+# T10=setNames(aggregate(reference$RdDensWs, by = list(reference$THRESH3), FUN = quantile,probs=0.25,na.rm=TRUE), c("THRESH3","RdDensWs_0.25"))
+# T11=setNames(aggregate(reference$RdDensWs, by = list(reference$THRESH3), FUN = quantile,probs=0.90,na.rm=TRUE), c("THRESH3","RdDensWs_0.90"))
+# 
+# T12=setNames(aggregate(reference$W1_HALL, by = list(reference$THRESH3), FUN = quantile,probs=0.25,na.rm=TRUE), c("THRESH3","W1_HALL_0.25"))
+# T13=setNames(aggregate(reference$W1_HALL, by = list(reference$THRESH3), FUN = quantile,probs=0.90,na.rm=TRUE), c("THRESH3","W1_HALL_0.90"))
+# 
+# 
+# T14=join_all(list(T1,T2,T3,T4,T5,T6,T7,T8,T9,T10,T11,T12,T13), by="THRESH3")
+# 
+# write.csv(T14,'current_anthro_quantiles.csv')
+# 
 
 
-UrbCombWs=aggregate(UrbCombWs~THRESH3, data=reference, FUN=max)
-AgCombWs=aggregate(AgCombWs~THRESH3, data=reference, FUN=max)
-DamDensWs=aggregate(DamDensWs~THRESH3, data=reference, FUN=max)
-MineDensWs=aggregate(MineDensWs~THRESH3, data=reference, FUN=max)
-NPDESDensWs=aggregate(NPDESDensWs~THRESH3, data=reference, FUN=max)
-RdDensWs=aggregate(RdDensWs~THRESH3, data=reference, FUN=max)
-W1_HALL=aggregate(W1_HALL~THRESH3, data=reference, FUN=max)
-maxes=join_all(list(UrbCombWs,AgCombWs,DamDensWs,MineDensWs,NPDESDensWs,RdDensWs,W1_HALL), by="THRESH3")
-write.csv(maxes,'current_benchmark_anthro_influence.csv')
-
-
-
-T1=setNames(aggregate(reference$UrbCombWs, by = list(reference$THRESH3), FUN = quantile,probs=0.25,na.rm=TRUE), c("THRESH3","UrbCombWs_0.25"))
-T2=setNames(aggregate(reference$UrbCombWs, by = list(reference$THRESH3), FUN = quantile,probs=0.90,na.rm=TRUE), c("THRESH3","UrbCombWs_0.90"))
-
-
-T3=setNames(aggregate(reference$AgCombWs, by = list(reference$THRESH3), FUN = quantile,probs=0.25,na.rm=TRUE), c("THRESH3","AgCombWs_0.25"))
-T4=setNames(aggregate(reference$AgCombWs, by = list(reference$THRESH3), FUN = quantile,probs=0.90,na.rm=TRUE), c("THRESH3","AgCombWs_0.90"))
-
-
-T5=setNames(aggregate(reference$DamDensWs, by = list(reference$THRESH3), FUN = quantile,probs=0.25,na.rm=TRUE), c("THRESH3","DamDensWs_0.25"))#changing alpha
-T6=setNames(aggregate(reference$DamDensWs, by = list(reference$THRESH3), FUN = quantile,probs=0.90,na.rm=TRUE), c("THRESH3","DamDensWs_0.90"))#changing alpha
-T7=join_all(list(T1,T2), by="THRESH3")
-
-T8=setNames(aggregate(reference$MineDensWs, by = list(reference$THRESH3), FUN = quantile,probs=0.25,na.rm=TRUE), c("THRESH3","MineDensWs_0.25"))
-T9=setNames(aggregate(reference$MineDensWs, by = list(reference$THRESH3), FUN = quantile,probs=0.90,na.rm=TRUE), c("THRESH3","MineDensWs_0.90"))
-
-T10=setNames(aggregate(reference$NPDESDensWs, by = list(reference$THRESH3), FUN = quantile,probs=0.25,na.rm=TRUE), c("THRESH3","NPDESDensWs_0.25"))
-T11=setNames(aggregate(reference$NPDESDensWs, by = list(reference$THRESH3), FUN = quantile,probs=0.90,na.rm=TRUE), c("THRESH3","NPDESDensWs_0.90"))
-
-T10=setNames(aggregate(reference$RdDensWs, by = list(reference$THRESH3), FUN = quantile,probs=0.25,na.rm=TRUE), c("THRESH3","RdDensWs_0.25"))
-T11=setNames(aggregate(reference$RdDensWs, by = list(reference$THRESH3), FUN = quantile,probs=0.90,na.rm=TRUE), c("THRESH3","RdDensWs_0.90"))
-
-T12=setNames(aggregate(reference$W1_HALL, by = list(reference$THRESH3), FUN = quantile,probs=0.25,na.rm=TRUE), c("THRESH3","W1_HALL_0.25"))
-T13=setNames(aggregate(reference$W1_HALL, by = list(reference$THRESH3), FUN = quantile,probs=0.90,na.rm=TRUE), c("THRESH3","W1_HALL_0.90"))
-
-
-T14=join_all(list(T1,T2,T3,T4,T5,T6,T7,T8,T9,T10,T11,T12,T13), by="THRESH3")
-
-write.csv(T14,'current_anthro_quantiles.csv')
 
 ####################################################################################################
 
@@ -110,24 +137,131 @@ write.csv(T14,'current_anthro_quantiles.csv')
 #UrbCombWs<5, AgCombWs<3,DamDensWs<0.005,MineDensWs=0,NPDESDensWS=0,RdDensWs<1,W1_HALL<1.5,
 combined3$UrbCombWs=combined3$PctUrbHi2006Ws+combined3$PctUrbLo2006Ws+combined3$PctUrbMd2006Ws
 combined3$AgCombWs=combined3$PctAg2006Slp10Ws+combined3$PctAg2006Slp20Ws
-reference=subset(combined3,UrbCombWs<5 & AgCombWs<3 & DamDensWs<0.005 & MineDensWs==0 & NPDESDensWs==0 & RdDensWs<1 & W1_HALL<1.5)
+combined3$AgUrbCombWs=combined3$UrbCombWs+combined3$AgCombWs
+combined3$UrbCombCat=combined3$PctUrbHi2006Cat+combined3$PctUrbLo2006Cat+combined3$PctUrbMd2006Cat
+combined3$AgCombCat=combined3$PctAg2006Slp10Cat+combined3$PctAg2006Slp20Cat
+combined3$AgUrbCombCat=combined3$UrbCombCat+combined3$AgCombCat
+combined3$NRdCrCat=combined3$RdCrsCat*combined3$CatAreaSqKm
+combined3$NRdCrWs=combined3$RdCrsWs*combined3$WsAreaSqKm
+
+reference=combined3
+attach(reference)
+#starting criteria
+#reference$screen=ifelse(NRdCrCat<10 & NRdCrWs<50 & UrbCombWs<3 & AgCombWs<3 & AgUrbCombWs<5& UrbCombCat<3 & AgCombCat<3 & AgUrbCombCat<5& PctUrbOp2006Cat<7 &PctUrbOp2006Ws<10 & MineDensWs==0 & SuperfundDensWs==0 & RdDensWs<1.5 & W1_HALL<1.5 & DamDensCat==0 & CanalDensCat==0,'Good','Poor')
+#relaxed road density
+#reference$screen=ifelse(NRdCrCat<10 & NRdCrWs<50 & UrbCombWs<3 & AgCombWs<3 & AgUrbCombWs<5& UrbCombCat<3 & AgCombCat<3 & AgUrbCombCat<5& PctUrbOp2006Cat<7 &PctUrbOp2006Ws<10 & MineDensWs==0 & SuperfundDensWs==0 & RdDensWs<2 & W1_HALL<1.5 & DamDensCat==0 & CanalDensCat==0,'Good','Poor')
+#relaxed W1Hall
+reference$screen=ifelse(NRdCrCat<10 & NRdCrWs<50 & UrbCombWs<3 & AgCombWs<3 & AgUrbCombWs<5& UrbCombCat<3 & AgCombCat<3 & AgUrbCombCat<5& PctUrbOp2006Cat<7 &PctUrbOp2006Ws<10 & MineDensWs==0 & SuperfundDensWs==0 & RdDensWs<1.5 & W1_HALL<2 & DamDensCat==0 & CanalDensCat==0,'Good','Poor')
+#relaxed NRdCrWs 100
+reference$screen=ifelse(NRdCrCat<10 & NRdCrWs<100 & UrbCombWs<3 & AgCombWs<3 & AgUrbCombWs<5& UrbCombCat<3 & AgCombCat<3 & AgUrbCombCat<5& PctUrbOp2006Cat<7 &PctUrbOp2006Ws<10 & MineDensWs==0 & SuperfundDensWs==0 & RdDensWs<1.5 & W1_HALL<1.5 & DamDensCat==0 & CanalDensCat==0,'Good','Poor')
+
+
+detach(reference)
+
+
+reference=subset(reference,is.na(THRESH3)==FALSE)
+reference=droplevels(reference)
+
+ecoregions=sort(unique(reference$THRESH3))
+
+png(file=paste("XCDENBK.png"), width=1000,height=700,pointsize=15)
+par(mfrow=c(4,5))  
+for (s in 1:length(ecoregions)){
+  EPAsubset=subset(reference,THRESH3==ecoregions[s])
+  EPAsubset=droplevels(EPAsubset)
+   b=boxplot(XCDENBK~screen,ylab='XCDENBK',xlab=paste(ecoregions[1]),data=EPAsubset,plot=FALSE)
+   boxplot(XCDENBK~screen,ylab='XCDENBK',xlab=paste(ecoregions[s],names=paste0(b$names,"(n=",b$n,")")),data=EPAsubset) 
+}
+
+dev.off()
+
+
+
+png(file=paste("XCMG.png"), width=1000,height=700,pointsize=15)
+par(mfrow=c(4,5))  
+for (s in 1:length(ecoregions)){
+  EPAsubset=subset(reference,THRESH3==ecoregions[s])
+  EPAsubset=droplevels(EPAsubset)
+  b=boxplot(XCMG~screen,ylab='XCMG',xlab=paste(ecoregions[1]),data=EPAsubset,plot=FALSE)
+  boxplot(XCMG~screen,ylab='XCMG',xlab=paste(ecoregions[s],names=paste0(b$names,"(n=",b$n,")")),data=EPAsubset) 
+}
+dev.off()
+
+png(file=paste("PCT_SAFN.png"), width=1000,height=700,pointsize=15)
+par(mfrow=c(4,5))  
+for (s in 1:length(ecoregions)){
+  EPAsubset=subset(reference,THRESH3==ecoregions[s])
+  EPAsubset=droplevels(EPAsubset)
+  b=boxplot(PCT_SAFN~screen,ylab='PCT_SAFN',xlab=paste(ecoregions[1]),data=EPAsubset,plot=FALSE)
+  boxplot(PCT_SAFN~screen,ylab='PCT_SAFN',xlab=paste(ecoregions[s],names=paste0(b$names,"(n=",b$n,")")),data=EPAsubset) 
+}
+dev.off()
+
+
+png(file=paste("LINCIS_H.png"), width=1000,height=700,pointsize=15)
+par(mfrow=c(4,5))  
+for (s in 1:length(ecoregions)){
+  EPAsubset=subset(reference,THRESH3==ecoregions[s])
+  EPAsubset=droplevels(EPAsubset)
+  b=boxplot(LINCIS_H~screen,ylab='LINCIS_H',xlab=paste(ecoregions[1]),data=EPAsubset,plot=FALSE)
+  boxplot(LINCIS_H~screen,ylab='LINCIS_H',xlab=paste(ecoregions[s],names=paste0(b$names,"(n=",b$n,")")),data=EPAsubset) 
+}
+dev.off()
+
+png(file=paste("XFC_NAT.png"), width=1000,height=700,pointsize=15)
+par(mfrow=c(4,5))  
+for (s in 1:length(ecoregions)){
+  EPAsubset=subset(reference,THRESH3==ecoregions[s])
+  EPAsubset=droplevels(EPAsubset)
+  b=boxplot(XFC_NAT~screen,ylab='XFC_NAT',xlab=paste(ecoregions[1]),data=EPAsubset,plot=FALSE)
+  boxplot(XFC_NAT~screen,ylab='XFC_NAT',xlab=paste(ecoregions[s],names=paste0(b$names,"(n=",b$n,")")),data=EPAsubset) 
+}
+dev.off()
+
+
+
+
+
+
+#reference=subset(combined3,UrbCombWs<3 & AgCombWs<3 & DamDensWs<0.005 & MineDensWs==0 & NPDESDensWs==0 & RdDensWs<1.5 & W1_HALL<1.5)
 #UrbCombWs<5 & AgCombWs<3 not in stream cat...need to calc by adding different columns together ...likely used 2006 versions of this data
 #PctCrop2006Ws<15 an additional filter the EPA used instead of pct ag
 
 #Variables in EPA reference data set that may have been used in initial screening
 #SO4	TURB	PTL	PHLAB	PHSTVL	NTL	CL	ANC	DOC	PCT_URB	W1_HALL	W1_HAG	W1H_CROP	W1H_WALL	NHD100_DAMS_CNT
 
+
 #colnames(reference)
 
-pvt1=aggregate(XCDENMID~THRESH3,data=reference,FUN=length)
+
 pvt2=aggregate(XCDENBK~THRESH3,data=reference,FUN=length)
 pvt3=aggregate(XCMG~THRESH3,data=reference,FUN=length)
 pvt4=aggregate(XCMGW~THRESH3,data=reference,FUN=length)
 pvt5=aggregate(PCT_SAFN~THRESH3,data=reference,FUN=length)
 pvt7=aggregate(XFC_NAT~THRESH3,data=reference,FUN=length)
 pvt8=aggregate(LINCIS_H~THRESH3,data=reference,FUN=length)
-pvt9=aggregate(XEMBED~THRESH3,data=reference,FUN=length)
-ECO10_SampSizes=join_all(list(pvt1,pvt2,pvt3,pvt4,pvt5, pvt7,pvt8,pvt9),by="THRESH3")
+ECO10_SampSizes=join_all(list(pvt2,pvt3,pvt4,pvt5, pvt7,pvt8),by="THRESH3")
+write.csv(ECO10_SampSizes,'Eco10_SampSizes.csv')
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 # Use riparian reference sites for:  XCDENMID, XCDENBK, XCMG, XCMGW, and PH!!
 #Use riparian reference for PH because 
