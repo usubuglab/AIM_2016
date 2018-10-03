@@ -809,6 +809,7 @@ thalweg_ratio3=subset(thalweg_ratio3,RESULT!=0)#starting in 2017 bankfull and in
 thalweg_ratio4=addKEYS(tblRetrieve(Parameters=c('DEPTH'), Projects=projects, Years=c('2017'),Protocols=protocols,SiteCodes=sitecodes,Insertion=insertion),c('PROTOCOL'))
 thalweg_ratio5=rbind(thalweg_ratio3,thalweg_ratio4)
 depth=subset(thalweg_ratio5,POINT==1)
+depth$RESULT=depth$RESULT/100
 #get bank info
 BnkRatio=tblRetrieve(Parameters=c('INCISED','BANKHT'), Projects=projects, Years=years,Protocols=protocols,SiteCodes=sitecodes,Insertion=insertion)
 BnkRatiopvt=cast(BnkRatio,'UID+TRANSECT~PARAMETER',value='RESULT')
