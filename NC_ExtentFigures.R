@@ -22,7 +22,8 @@
 #Global Figure parameters#
 axissize=2#cex
 GFPcol=c('firebrick','gold','lightgreen')#c('red','yellow','green')#fix to be global (category can be fed into to only generate relevant colors), needs to be in this order for current code to color good, fair, poor correctly
-results.cat=read.csv('\\\\share1.bluezone.usu.edu\\miller\\buglab\\Research Projects\\AIM\\Projects\\Idaho\\Statewide\\Analysis\\Weights_ExtentEstimates\\ExtentEstimates_Idaho_14June2017.csv')
+#results.cat=read.csv('\\\\share1.bluezone.usu.edu\\miller\\buglab\\Research Projects\\AIM\\Projects\\Idaho\\Statewide\\Analysis\\Weights_ExtentEstimates\\ExtentEstimates_Idaho_14June2017.csv')
+results.cat=read.csv('\\\\share1.bluezone.usu.edu\\miller\\buglab\\Research Projects\\AIM\\Projects\\Colorado\\StatewideAssessment\\Anaysis\\Weights_ExtentEstimates\\ExtentEstimates_CO_Statewide27Sept2018.csv')
 
 ##################  NorCal Specific Code: Start ##################
 # Redo on 20 Oct 2015
@@ -316,8 +317,10 @@ library(ggplot2)
 
 
 
-stressorsVAR2=c("OE", "NTL_CHECK","PTL_CHECK","CONDUCTIVITY_CHECK","PH_CHECK","allPCT_SAFN2_CHECK","LINCIS_H_CHECK","XCDENBK_CHECK","XFC_NAT_CHECK","BnkCover_StabErosional_CHECK","XCMG_CHECK")
+stressorsVAR2=c("OE", "NTL_CHECK","PTL_CHECK","CONDUCTIVITY_CHECK","PH_CHECK","allPCT_SAFN2_CHECK","LINCIS_H_CHECK","XCDENBK_CHECK","XFC_NAT_CHECK","BnkCover_StabErosional_CHECK","XCMG_CHECK","XCMGW_CHECK","BNK_HT_RATIO_CHECK","INVASW_CHECK")
 axislabels=c('O/E Biological Index','Total Nitrogen (ug/L)','Total Phosphorus (ug/L)','Specific Conductance (uS/cm)','pH','% Fine Sediment','Floodplain Connectivity (unitless)','% Bank Overhead Cover','Instream Habitat Complexity (unitless)','% Banks Stable and Covered','Vegetative Complexity (unitless)')
+axislabels=c('MMI','Total Nitrogen (ug/L)','Total Phosphorus (ug/L)','Specific Conductance (uS/cm)','pH','% Fine Sediment','Floodplain Connectivity (unitless)','% Bank Overhead Cover','Instream Habitat Complexity (unitless)','% Banks Stable and Covered','Vegetative Complexity (unitless)','Woody Vegetative Complexity (unitless)','Bank Height Ratio (unitless)','% Non-native Woody')
+
 stressorsvar5=sub(stressorsVAR)
 
 ResponseInfo2=ResponseInfo[,c(stressorsVAR2)]
