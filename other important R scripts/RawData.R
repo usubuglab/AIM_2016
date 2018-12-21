@@ -111,7 +111,8 @@ PoolFines=tblRetrieve(Parameters=c('POOLFINES2','POOLFINES6','POOLNOMEAS'),Proje
 pvtPoolFines=addKEYS(cast(PoolFines,'UID+TRANSECT+POINT~PARAMETER',value='RESULT'),c('SITE_ID'))
 
 #Comments
-comments=addKEYS((sqlQuery(wrsa1314,"select * from tblcomments")),c('SITE_ID'))# still need to filter out desired sites
+comments=addKEYS(tblRetrieve(Table='tblcomments', Years=years, Projects=projects,Protocols=protocols,SiteCodes=sitecodes),c('SITE_ID','PROJECT'))
+comments=comments[,c(13,14,1:12)]
 
 #Metadata
 metadata=(sqlQuery(wrsa1314,"select * from tblmetadata"))
