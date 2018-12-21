@@ -19,6 +19,7 @@ siteeval=read.csv('Z:\\buglab\\Research Projects\\AIM\\Projects\\Idaho\\Statewid
 siteeval=read.csv('Z:\\buglab\\Research Projects\\AIM\\Projects\\Utah\\GSENM\\Analysis\\Weights_ExtentEstimates\\AdjustedWeights_GSENM2016_formated.csv')
 siteeval=read.csv('Z:\\buglab\\Research Projects\\AIM\\Projects\\Wyoming\\Rawlins\\Analysis\\Weights\\AdjustedWeights_Rawlins_NHD_19Jan2018.csv')
 
+
 #siteeval$SITE_ID=siteeval$Sitecode
 #siteeval$Field_Office <- as.factor("Smoke Creek Watershed")
 #siteeval$STRATUM=siteeval$Field_Office
@@ -36,7 +37,7 @@ siteeval$ReportingUnit1 <- as.factor(siteeval$FieldOffice)
 
 #set up subpopulations for use in cat.analysis
 subpopCON=data.frame(siteID=siteeval$SITE_ID,
-                     ReportingUnit1=siteeval$ReportingUnit1#,#rep("IdahoStatewide", nrow(siteeval))
+                     ReportingUnit1=rep("IdahoStatewide", nrow(siteeval))
                      #ReportingUnit2=siteeval$ReportingUnit2,
                      #ReportingUnit3=siteeval$ReportingUnit3
 )
@@ -171,10 +172,11 @@ designCON=data.frame(siteID=siteeval$SITE_ID,
 #ResponseInfo=read.csv('Z:\\buglab\\Research Projects\\BLM_WRSA_Stream_Surveys\\Results and Reports\\AIM_2011_2015_results\\IndicatorsCond_29April2016.csv')
 #ResponseInfo=read.csv('Z:\\buglab\\Research Projects\\BLM_WRSA_Stream_Surveys\\Results and Reports\\AIM_2011_2015_results\\IndicatorsCond_revised_wq_bugs_thresh_example.csv')
 ResponseInfo=read.csv('Z:\\buglab\\Research Projects\\AIM\\Projects\\Wyoming\\Rawlins\\Analysis\\Condition_Rinput.csv')
+ResponseInfo=read.csv('Z:\\buglab\\Research Projects\\AIM\\Projects\\Idaho\\Statewide 2016\\Analysis\\Weights_ExtentEstimates\\IndicatorCond_13Nov2018_NA_RR.csv')
 
 
-ResponseInfo$OErtg=ifelse(ResponseInfo$COUNT<200 & ResponseInfo$OErtg!="Good","NoData",ResponseInfo$OErtg)
-ResponseInfo$OErtg=ifelse(ResponseInfo$MODELTEST=='Fail',"NoData",ResponseInfo$OErtg)
+ResponseInfo$OErtg=ifelse(ResponseInfo$COUNT<200 & ResponseInfo$OErtg!="Good",NA,ResponseInfo$OErtg)
+ResponseInfo$OErtg=ifelse(ResponseInfo$MODELTEST=='Fail',NA,ResponseInfo$OErtg)
 ##exclude QC sites---dont need to worry about it because it is filtered
 #ResponseInfo=subset(ResponseInfo,UID!=12457& UID!=12422& UID!=	12714& UID!=	13550& UID!=	11787& UID!=	13527& UID!=	9779832504& UID!=	13518& UID!=	13539& UID!=	8497901114& UID!=	2772740176& UID!=	3833994365& UID!=	7194282454& UID!=	9846034316& UID!=	7977571143& UID!=	4943503766& UID!=	6152206654& UID!=	6964535047& UID!=	7746712455& UID!=	2956707014& UID!=	4324237804& UID!=	4197418344& UID!=	8537408400& UID!=	4116634326& UID!=	2109978745)
 ResponseInfo=IndicatorsCond
@@ -210,7 +212,7 @@ stressorsVAR=c("OE_TN","OE_TP","OE_EC","PH_CHECK","allPCT_SAFN2","LINCIS_H","XCD
 #GrandStaircase
 stressorsVAR=c("OE_TN","OE_TP","OE_EC","PH_CHECK","allPCT_SAFN2","LINCIS_H","XCDENBK","XFC_NAT","INVASIVE_MACRO","BnkCover_StabErosional","XCMG")#NOT stressorsVAR=c('MMI')   ####'C1WM100','PCT_SAFN','LSUB_DMM')#UTBLM final list: stressorsVAR=c('InvasivesYN','EC','TP','TN','AugST','LBFXWRat','C1WM100','XCDENMID','Stab2','PCT_SAFN')#must be Access names with a matching 'rtg' variable: to view, str(ResponseInfo)
 #Idaho
-#stressorsVAR=c("OE_TN","OE_TP","OE_EC","PH_CHECK","allPCT_SAFN2","LINCIS_H","XCDENBK","BnkCover_StabErosional")#NOT stressorsVAR=c('MMI')  "XFC_NAT" ####'PCT_SAFN','LSUB_DMM')#UTBLM final list: stressorsVAR=c('InvasivesYN','EC','TP','TN','AugST','LBFXWRat','C1WM100','XCDENMID','Stab2','PCT_SAFN')#must be Access names with a matching 'rtg' variable: to view, str(ResponseInfo)
+#stressorsVAR=c("OE_TN","OE_TP","OE_EC","PH_CHECK","allPCT_SAFN2","LINCIS_H","XCDENBK","BnkCover_StabErosional","Temp")#NOT stressorsVAR=c('MMI')  "XFC_NAT" ####'PCT_SAFN','LSUB_DMM')#UTBLM final list: stressorsVAR=c('InvasivesYN','EC','TP','TN','AugST','LBFXWRat','C1WM100','XCDENMID','Stab2','PCT_SAFN')#must be Access names with a matching 'rtg' variable: to view, str(ResponseInfo)
 
 #########WRSA_SFS ################
 # selectVARauto='N'; selectVARchoice=ifelse(selectVARauto=='Y','AllVar','CustomVar')#automatically select all variables
@@ -283,7 +285,7 @@ OE_TNname='Total Nitrogen';OE_TPname='Total Phosphorus';OE_ECname='Specific Cond
 BnkCover_StabErosionalname='Bank Stability and Cover';allPCT_SAFN2name='% Fine Sediment';XCMGname='Vegetative Complexity';XCDENBKname='% Bank Overhead Cover';
 XFC_NATname='Instream Habitat Complexity';LINCIS_Hname='Floodplain Connectivity';
 XEMBEDname='Embeddedness';OEname='Biological Condition'; INVASIVE_MACROname='Benthic Invasives'
-OE_less100name='OE_less100'; OE_50_100name='OE_50_100'
+OE_less100name='OE_less100'; OE_50_100name='OE_50_100'; Tempname='Mean August Temperature'
 
 
 # #WRSA SFS
