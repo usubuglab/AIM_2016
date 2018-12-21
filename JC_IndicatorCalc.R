@@ -800,14 +800,16 @@ IncBnk$xbnk_h_CHECK=round(IncBnk$xbnk_h_CHECK,digits=2)
 #BNK_HT_RATIO
 #get thawleg info and fix differences in protocols and data storage among years
 #thawleg was stored differently in 2013-2015 than in 2016 on. Points differ among years by one so one needs added to older data
-thalweg_ratio=addKEYS(tblRetrieve(Parameters=c('DEPTH'), Projects=projects, Years=c('2013','2014','2015'),Protocols=protocols,SiteCodes=sitecodes,Insertion=insertion),c('PROTOCOL'))
-thalweg_ratio=subset(thalweg_ratio,SAMPLE_TYPE!='CROSSSECW')
-thalweg_ratio$POINT=as.numeric(thalweg_ratio$POINT)+1
-thalweg_ratio2=addKEYS(tblRetrieve(Parameters=c('DEPTH'), Projects=projects, Years=c('2016'),Protocols=protocols,SiteCodes=sitecodes,Insertion=insertion),c('PROTOCOL'))
-thalweg_ratio3=rbind(thalweg_ratio,thalweg_ratio2)
-thalweg_ratio3=subset(thalweg_ratio3,RESULT!=0)#starting in 2017 bankfull and incision heights measured from thalweg at dry transect but any data before that needs omitted if thalweg=0
-thalweg_ratio4=addKEYS(tblRetrieve(Parameters=c('DEPTH'), Projects=projects, Years=c('2017'),Protocols=protocols,SiteCodes=sitecodes,Insertion=insertion),c('PROTOCOL'))
-thalweg_ratio5=rbind(thalweg_ratio3,thalweg_ratio4)
+##UNCOMMENT THIS SECTION IF DATA OLDER THAN 2017
+# thalweg_ratio=addKEYS(tblRetrieve(Parameters=c('DEPTH'), Projects=projects, Years=c('2013','2014','2015'),Protocols=protocols,SiteCodes=sitecodes,Insertion=insertion),c('PROTOCOL'))
+# thalweg_ratio=subset(thalweg_ratio,SAMPLE_TYPE!='CROSSSECW')
+# thalweg_ratio$POINT=as.numeric(thalweg_ratio$POINT)+1
+# thalweg_ratio2=addKEYS(tblRetrieve(Parameters=c('DEPTH'), Projects=projects, Years=c('2016'),Protocols=protocols,SiteCodes=sitecodes,Insertion=insertion),c('PROTOCOL'))
+# thalweg_ratio3=rbind(thalweg_ratio,thalweg_ratio2)
+# thalweg_ratio3=subset(thalweg_ratio3,RESULT!=0)#starting in 2017 bankfull and incision heights measured from thalweg at dry transect but any data before that needs omitted if thalweg=0
+# thalweg_ratio4=addKEYS(tblRetrieve(Parameters=c('DEPTH'), Projects=projects, Years=c('2017'),Protocols=protocols,SiteCodes=sitecodes,Insertion=insertion),c('PROTOCOL'))
+# thalweg_ratio5=rbind(thalweg_ratio3,thalweg_ratio4)
+thalweg_ratio5=addKEYS(tblRetrieve(Parameters=c('DEPTH'), Projects=projects, Years=years,Protocols=protocols,SiteCodes=sitecodes,Insertion=insertion),c('PROTOCOL'))
 depth=subset(thalweg_ratio5,POINT==1)
 depth$RESULT=depth$RESULT/100
 #get bank info
