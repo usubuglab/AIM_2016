@@ -88,9 +88,11 @@ Indicators=join(Indicators,Bugs, by="UID",type="left")
 # Indicators=join(Indicators,WQfinal, by="UID",type="left")
 
 ##########Finally format file for AquADat or benchmark tool
-#Format for AquADat or the benchmark tool
-data.xwalk=read.csv('\\\\share1.bluezone.usu.edu\\miller\\buglab\\Research Projects\\AIM\\Database_Development\\AquaDat_computed_metrics\\indicatorXwalkLocal2018.csv')
+#Format for AquADat OR
+data.xwalk=read.csv('\\\\share1.bluezone.usu.edu\\miller\\buglab\\Research Projects\\AIM\\Database_Development\\AquaDat_computed_metrics\\indicatorXwalkLocal2018_aquadat.csv')
 
+#format for benchmark tool
+data.xwalk=read.csv('\\\\share1.bluezone.usu.edu\\miller\\buglab\\Research Projects\\AIM\\Database_Development\\AquaDat_computed_metrics\\indicatorXwalkLocal2018_benchmarktool.csv')
 
 #To Format data for editing AquADat, download latest data from ArcGISOnline and paste it into the edit worksheet of the following excel file "Z:\buglab\Research Projects\AIM\Database_Development\AquaDat_computed_metrics\2017 updates\2017 updates.xlsx"
 #this worksheet had the correct column headings.

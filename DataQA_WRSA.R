@@ -746,6 +746,13 @@ FinalpvtPoolFines$PctPoolFines6CV=FinalpvtPoolFines$PctPoolFines6SD/FinalpvtPool
 subQC=subset(FinalpvtPoolFines,FinalpvtPoolFines$PctPoolFines6CV>=1.41|FinalpvtPoolFines$PctPoolFines2CV>=1.41)#sites with CV >1.414 should be QCed 
 write.csv(subQC,'pooltailfines_highvariance.csv')
 
+########  side channels  ############
+#check how many side channels crews are at sites to keep an eye on workload of sampling side channels
+side=tblRetrieve(Parameters=c('SIDCHN','SIDCH_TYPE'),Projects=projects,Years=years,Protocols=protocols,SiteCodes=sitecodes,Insertion=insertion)
+sidepvt=addKEYS(cast(side,'UID+TRANSECT~PARAMETER',value='RESULT'),c('SITE_ID','DATE_COL','PROJECT'))
+sidepvtsubset=subset(sidepvt,SIDCHN=='Y')
+write.csv(sidepvtsubset,'SideChannels.csv')
+
 #########  photos  ###################
 #use to check any questionable values such as bankfull widths and heights
 #this hasn't been used to date. photo comments should be reviewed at some point
