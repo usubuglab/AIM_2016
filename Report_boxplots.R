@@ -115,16 +115,21 @@ dev.off()
 #option1
 biotype=c("Biotype1","Biotype2","Biotype3")
 png(file="MMI_by_reporting_unit.png", width=1200,height=700,pointsize=24)
-par(mfrow=c(1,3))
+par(mfrow=c(1,3),oma = c(0, 0, 2, 0),mgp=c(3,1.5,0))
 for (b in 1:length(biotype)){
 sampledBug=subset(sampled,MODEL==paste("CO_EDAS-",biotype[b],sep=""))
-boxplot(OE~POPULATION,names=c('CO','RMD','SWD','NWD'),main=biotype[b],data=sampledBug,ylab="CO MMI Score",ylim=c(10,85))
+t=boxplot(OE~POPULATION,names=c('CO','RMD','SWD','NWD'),main=biotype[b],data=sampledBug,ylab="CO MMI Score",ylim=c(10,85),show.names=TRUE,plot=FALSE)
+boxplot(OE~POPULATION,names=paste0(t$names, " \n(n=",t$n,")"),main=biotype[b],data=sampledBug,ylab="CO MMI Score",ylim=c(10,85),show.names=TRUE)
+
 }
 dev.off()
 
 ##option2
 png(file="MMI_statewide.png", width=900,height=700,pointsize=24)
-boxplot(OE~MODEL,names=c("Biotype1","Biotype2","Biotype3"),data=sampled,ylab="CO MMI Score",ylim=c(10,85))
+par(mgp=c(3,1.5,0))
+t=boxplot(OE~MODEL,names=c("Biotype1","Biotype2","Biotype3"),data=sampled,ylab="CO MMI Score",ylim=c(10,85),plot=FALSE)
+boxplot(OE~MODEL,names=paste0(t$names, " \n(n=",t$n,")"),data=sampled,ylab="CO MMI Score",ylim=c(10,85))
+
 dev.off()
 
 

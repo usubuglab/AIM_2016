@@ -1,7 +1,6 @@
 #run SpSurvey_DesignWeights.R and SpSurvey_ExtentEstimates.R first!
 #source('SpSurvey_DesignWeights.R')
 #source('SpSurvey_ExtentEstimates.R')
-
 #Line 38, 41, and 59 adjust x-axis scales
 
 # Line 101 (around BarEXT=barplot) 
@@ -23,7 +22,7 @@
 axissize=2#cex
 GFPcol=c('firebrick','gold','lightgreen')#c('red','yellow','green')#fix to be global (category can be fed into to only generate relevant colors), needs to be in this order for current code to color good, fair, poor correctly
 #results.cat=read.csv('\\\\share1.bluezone.usu.edu\\miller\\buglab\\Research Projects\\AIM\\Projects\\Idaho\\Statewide\\Analysis\\Weights_ExtentEstimates\\ExtentEstimates_Idaho_14June2017.csv')
-results.cat=read.csv('\\\\share1.bluezone.usu.edu\\miller\\buglab\\Research Projects\\AIM\\Projects\\Colorado\\StatewideAssessment\\Anaysis\\Weights_ExtentEstimates\\ExtentEstimates_CO_Statewide27Sept2018.csv')
+results.cat=read.csv('\\\\share1.bluezone.usu.edu\\miller\\buglab\\Research Projects\\AIM\\Projects\\Colorado\\StatewideAssessment\\Anaysis\\Weights_ExtentEstimates\\ExtentEstimates_CO_Statewide5April2019.csv')
 
 ##################  NorCal Specific Code: Start ##################
 # Redo on 20 Oct 2015
@@ -178,10 +177,10 @@ sitesUSEDprep$stratum=sitesUSEDprep$ReportingUnit3
 districts=c('MT_NROCK','MT_PNW','MT_SROCK','Other','XE_EPLAT','XE_NORTH','XE_SOUTH')
 #ReportingUnit2
 sitesUSEDprep$stratum=sitesUSEDprep$ReportingUnit2
-districts=c('Mountains','Xeric','Plains')
+districts=c('ROCKY MOUNTAIN DISTRICT OFFICE','NORTHWEST DISTRICT OFFICE','SOUTHWEST DISTRICT OFFICE')
 #ReportingUnit1
 sitesUSEDprep$stratum=sitesUSEDprep$ReportingUnit1
-districts=c('IdahoStatewide')
+districts=c('CO')
 
 
 ##WRSA code
@@ -252,6 +251,7 @@ for (r in 1:length(responseVAR)){
                                     xcoord=sitesUSEDv$xcoord, ycoord=sitesUSEDv$ycoord,
                                     conf=90
         )
+       
         #ToDo! finish append results (odd format, some tables, some single values)
         ResponseV=responseVAR[[r]]; StressorV=stressorsVAR[[v]];DistrictV=districts[[d]]
         RelRisk=results.relrisk$RelRisk;LConf=results.relrisk$ConfLimits[[1]];UConf=ifelse(is.na(results.relrisk$ConfLimits),NA,results.relrisk$ConfLimits[[2]])
@@ -279,7 +279,9 @@ for (r in 1:length(responseVAR)){
         legend(x="bottomright",cex=.5,legend=c('Agreement: Not Impaired','Agreement: Impaired','Response Impaired','Stressor Impaired'),fill=colorVALUES)
         #legend placement is fickle! x=-.5 also works for bottom right and is unrelated to png width
         graphics.off()
-      }
+        write.csv(results.relrisk,'results.relrist.csv')
+      
+        }
       options(stringsAsFactors = TRUE)
       RelRiskOUT$RelRisk=as.numeric(RelRiskOUT$RelRisk);RelRiskOUT$UConf=as.numeric(RelRiskOUT$UConf);RelRiskOUT$LConf=as.numeric(RelRiskOUT$LConf)
       #! figure out how to handle NA (one variable has only Good or only Poor) so the var included in chart - the rarer scenario is perfect concordance (denominator=0) which only happens at the district level
