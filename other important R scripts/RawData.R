@@ -20,7 +20,7 @@ reach=join_all(list(pvtlistsites,WQpvt,Bugspvt),by='UID')
 
 #####Transect
 #Fish cover
-fish=tblRetrieve(Parameters=c('BOULDR','BRUSH','LVTREE','OVRHNG','UNDCUT','WOODY'),Projects=projects,Years=years,Protocols=protocols,SiteCodes=sitecodes)
+fish=tblRetrieve(Parameters=c('BOULDR','BRUSH','LVTREE','OVRHNG','UNDCUT','WOODY','ALGAE','MACPHY'),Projects=projects,Years=years,Protocols=protocols,SiteCodes=sitecodes)
 unique(fish$RESULT)# check data structure
 fishpvt=addKEYS(cast(fish,'UID+TRANSECT~PARAMETER',value='RESULT'),c('SITE_ID'))# check data structure to make sure no duplicates
 
@@ -29,7 +29,7 @@ ChannelDimensions=tblRetrieve(Parameters=c('INCISED','BANKHT','BANKWID','WETWID'
 ChannelDimensionspvt=addKEYS(cast(ChannelDimensions,'UID+TRANSECT~PARAMETER',value='RESULT'),c('SITE_ID'))# check data structure to make sure no duplicates
 
 #Floodwidth
-FloodWidth=tblRetrieve(Parameters=c('FLOODWID'), Projects=projects, Years=years,Protocols=protocols,SiteCode=sitecodes)
+FloodWidth=tblRetrieve(Parameters=c('FLOOD_WID'), Projects=projects, Years=years,Protocols=protocols,SiteCode=sitecodes)
 pvtFloodWidth=addKEYS(cast(FloodWidth,'UID+TRANSECT~PARAMETER',value='RESULT'),c('SITE_ID'))
 
 #Wood

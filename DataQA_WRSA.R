@@ -5,10 +5,10 @@
 #all edits should be added to Z:\buglab\Research Projects\AIM\Analysis\QC\OfficeUpdates   for data collected from 2016 and beyond #or Z:\buglab\Research Projects\BLM_WRSA_Stream_Surveys\Results and Reports\QA\final QC of all sites collected up to Nov 2015\Office_updates.xsls for WRSA data
 #follow instructions in "Z:\buglab\Research Projects\AIM\Database_Development\AIM Data Management.docx" page 21 for how to format the data and put it into OfficeUpdates table 
 
-#To get data in the correct format for edits run the following query on the transect, point, sample_type, parameter or result of interest. If using multiple of these put "and" in between them and if querying more than one parameter etc. the SQL "IN()" function is very helpful  
-#Do not run the code below without anything in the "where" clause. Otherwise this queries ALL data in the database and will crash R
-edits=sqlQuery(wrsa1314,"select * from View_AllData where parameter='SITE_ID'") # Prefer to run this query directly in SQL though so that I can see error messages from SQL server and proper SQL centax prompts
-write.csv(edits,'edits.csv',na="")
+# #To get data in the correct format for edits run the following query on the transect, point, sample_type, parameter or result of interest. If using multiple of these put "and" in between them and if querying more than one parameter etc. the SQL "IN()" function is very helpful  
+# #Do not run the code below without anything in the "where" clause. Otherwise this queries ALL data in the database and will crash R
+# edits=sqlQuery(wrsa1314,"select * from View_AllData where parameter='SITE_ID'") # Prefer to run this query directly in SQL though so that I can see error messages from SQL server and proper SQL centax prompts
+# write.csv(edits,'edits.csv',na="")
 #Jennifer will then copy and paste the edits into the ProbSurvey Access database run the stored export to export a csv. Then run the UpdateDatabase_WRSA.R script and follow its subsequent instructions
  
 
@@ -19,7 +19,8 @@ write.csv(edits,'edits.csv',na="")
 ##First step-do you have all the sites you should?
 listsites=tblRetrieve(Parameters=c('SITE_ID','DATE_COL','LOC_NAME','LAT_DD','LON_DD','PROJECT','PROTOCOL','VALXSITE','LAT_DD_BR','LAT_DD_TR','LON_DD_BR','LON_DD_TR'),Projects=projects,Years=years,Protocols=protocols,SiteCodes=sitecodes,Insertion=insertion)
 listsites=cast(listsites,'UID~PARAMETER',value='RESULT')
-
+listsites=listsites[c(10,11,12,6,1,2,13,3,7,4,8,5,9)]
+listsites=listsites[order(listsites$PROJECT,listsites$PROTOCOL,listsites$SITE_ID),]
 #read in sites from final designations and do a left join to determine if any sampled sites are missing or if sample statuses need to be changed
 #if sites are missing check error logs on server or emails and check last modfied date
 
@@ -189,10 +190,14 @@ MissingTotalsOUT= addKEYS(cast(subset(MissingTotals4,is.na(UID)==FALSE ), 'UID +
 MissingTotalsREACH=subset(MissingTotalsOUT,TRANSECT=='ReachTotal')
 names=gsub("^INDICATOR:","",colnames(MissingTotalsREACH))
 MissingTotalsREACH=setNames(MissingTotalsREACH,names)
-Indicators=c('PROJECT',	'PROTOCOL',	'SITE_ID',	'VALXSITE',	'UID',	'DATE_COL',	'REACH',	'BENTHIC',	'CONDUCTIVITY',	'PH',	'TEMPERATURE',	'BLM RIPARIAN',	'RIPARIAN COVER',	'CANOPY',	'BANK HEIGHT',	'BANK WIDTH',	'WET WIDTH',	'INCISION HEIGHT',	'FLOODPRONE WIDTH',	'STABILITY',	'SUBSTRATE',	'HUMAN INFLUENCE',	'LWD IN',	'SLOPE',	'POOL',	'PHOTO',	'CHEMISTRY',	'DEPTH',	'FISH COVER',	'ANGLE',	'TURBIDITY')
-MissingTotalsREACH=MissingTotalsREACH[,c(Indicators)]
+columns=c('PROJECT',	'PROTOCOL',	'SITE_ID',	'VALXSITE',	'UID',	'DATE_COL',	'REACH',	'BENTHIC',	'CONDUCTIVITY',	'PH',	'TEMPERATURE',	'BLM RIPARIAN',	'RIPARIAN COVER',	'CANOPY',	'BANK HEIGHT',	'BANK WIDTH',	'WET WIDTH',	'INCISION HEIGHT',	'FLOODPRONE WIDTH',	'STABILITY',	'SUBSTRATE',	'HUMAN INFLUENCE',	'LWD IN',	'SLOPE',	'POOL',	'PHOTO',	'CHEMISTRY',	'DEPTH',	'FISH COVER',	'ANGLE',	'TURBIDITY') %>%
+    map_dfr( ~tibble(!!.x :=logical()))
+MissingTotalsREACH=bind_rows(columns,MissingTotalsREACH)
+#Indicators=c('PROJECT',	'PROTOCOL',	'SITE_ID',	'VALXSITE',	'UID',	'DATE_COL',	'REACH',	'BENTHIC',	'CONDUCTIVITY',	'PH',	'TEMPERATURE',	'BLM RIPARIAN',	'RIPARIAN COVER',	'CANOPY',	'BANK HEIGHT',	'BANK WIDTH',	'WET WIDTH',	'INCISION HEIGHT',	'FLOODPRONE WIDTH',	'STABILITY',	'SUBSTRATE',	'HUMAN INFLUENCE',	'LWD IN',	'SLOPE',	'POOL',	'PHOTO',	'CHEMISTRY',	'DEPTH',	'FISH COVER',	'ANGLE',	'TURBIDITY')
+#MissingTotalsREACH=MissingTotalsREACH[,c(Indicators)]
 #grep("^COVARIATE",colnames(MissingTotalsREACH),grep("^QC",colnames(MissingTotalsREACH)
-write.csv(MissingTotalsREACH,"MissingDataQCrch_nocom.csv")
+MissingTotalsREACH=MissingTotalsREACH[order(MissingTotalsREACH$PROJECT,MissingTotalsREACH$PROTOCOL,MissingTotalsREACH$SITE_ID),]
+write.xlsx(MissingTotalsREACH,"MissingDataQCrch_nocom.xlsx")
 #MissingTotalsTRAN=subset(MissingTotalsOUT,TRANSECT!='ReachTotal');write.csv(MissingTotalsTRAN,"MissingDataQCttran_nocom.csv")
 #write.csv(MissingCounts,"MissingCounts.csv")
 }
@@ -245,7 +250,8 @@ SinuosityCheck=subset(listsites,SINUOSITY<1)
 #eventually read in design table from SQL but for now the table should be read in from the path below to compare original coordinates with those that were collected
 #designs=read.csv('\\\\share1.bluezone.usu.edu\\miller\\buglab\\Research Projects\\AIM\\AIM_DataManagement\\ProjectMngtSystem\\design_table2.csv')
 #designs=read.csv('\\\\share1.bluezone.usu.edu\\miller\\buglab\\Research Projects\\AIM\\Design\\DesignDatabase\\design_coordinates_QC_Rinput.csv')
-designs=read.csv('\\\\share1.bluezone.usu.edu\\miller\\buglab\\Research Projects\\AIM\\Design\\DesignDatabase\\GIS_table_for_Design_Database.csv')
+#designs=read.csv('\\\\share1.bluezone.usu.edu\\miller\\buglab\\Research Projects\\AIM\\Design\\DesignDatabase\\GIS_table_for_Design_Database.csv')
+designs=read.csv('\\\\share1.bluezone.usu.edu\\miller\\buglab\\Research Projects\\AIM\\Design\\DesignDatabase\\2019DesignSites_for_QC_input.csv')
 postseasonmetadata=join(listsites,designs, by="SITE_ID", type="left")
 #get ecoregional and stream size info for context for values
 #designmetadata=read.csv('\\\\share1.bluezone.usu.edu\\miller\\buglab\\Research Projects\\AIM\\GRTS_CodeGuidance\\MasterSample\\MasterSampleDraws\\Aquatic\\LoticMasterSample\\Attributed\\LoticMasterSampleAttributedPtsWithHybridEcoregions.csv')
@@ -253,7 +259,8 @@ postseasonmetadata=join(listsites,designs, by="SITE_ID", type="left")
 #eventually need to edit the read in csv above to reflect the sampled coordinates for future sample draws at the end of the season
 #Z_DISTANCEFROMXthis is not always accurate or filled in..so we calculate this ourselves in "CAL_DISTFROMX"
 postseasonmetadata$CALC_DISTFROMX=acos(sin(as.numeric(postseasonmetadata$LAT_DD)*3.141593/180)*sin(as.numeric(postseasonmetadata$DESIGN_LAT)*3.141593/180) + cos(as.numeric(postseasonmetadata$LAT_DD)*3.141593/180)*cos(as.numeric(postseasonmetadata$DESIGN_LAT)*3.141593/180)*cos(as.numeric(postseasonmetadata$DESIGN_LON)*3.141593/180-as.numeric(postseasonmetadata$LON_DD)*3.141593/180)) * 6371000
-coordinate_design_QC=postseasonmetadata[,c('PROJECT','PROTOCOL','VALXSITE','SITE_ID','LOC_NAME','DATE_COL','UID','LAT_DD','LON_DD','LAT_DD_TR','LON_DD_TR','LAT_DD_BR','LON_DD_BR','DESIGN_LAT','DESIGN_LON','Z_DISTANCEFROMX','CALC_DISTFROMX','SLIDE_YN','SINUOSITY','TRCHLEN','straightline','MERGE','REPEAT_VISIT','StreamOr_1','District','FieldOffice','ADMU_ADMIN','COUNTY','Ecoregion_spelledout','Climate_spelledout')]
+#coordinate_design_QC=postseasonmetadata[,c('PROJECT','PROTOCOL','VALXSITE','SITE_ID','LOC_NAME','DATE_COL','UID','LAT_DD','LON_DD','LAT_DD_TR','LON_DD_TR','LAT_DD_BR','LON_DD_BR','DESIGN_LAT','DESIGN_LON','Z_DISTANCEFROMX','CALC_DISTFROMX','SLIDE_YN','SINUOSITY','TRCHLEN','straightline','MERGE','REPEAT_VISIT','StreamOr_1','District','FieldOffice','ADMU_ADMIN','COUNTY','Ecoregion_spelledout','Climate_spelledout')]
+coordinate_design_QC=postseasonmetadata[,c('PROJECT','PROTOCOL','VALXSITE','SITE_ID','LOC_NAME','DATE_COL','UID','LAT_DD','LON_DD','LAT_DD_TR','LON_DD_TR','LAT_DD_BR','LON_DD_BR','DESIGN_LAT','DESIGN_LON','Z_DISTANCEFROMX','CALC_DISTFROMX','SLIDE_YN','SINUOSITY','TRCHLEN','straightline','MERGE','REPEAT_VISIT','StreamOr_1','Ecoregion_spelledout','Climate_spelledout')]
 
 
 #check the below file below for the following
@@ -270,31 +277,31 @@ coordinate_design_QC=postseasonmetadata[,c('PROJECT','PROTOCOL','VALXSITE','SITE
           #columns Stream_OR - Climate_spelledout
 write.csv(coordinate_design_QC,'coordinate_design_QC.csv')
 
-#you can use the code below to plot the coordinates in R
-coordinate_design_QC$LAT_DD=as.numeric(coordinate_design_QC$LAT_DD)
-coordinate_design_QC$LON_DD=as.numeric(coordinate_design_QC$LON_DD)
-coordinate_design_QC$LON_DD_TR=as.numeric(coordinate_design_QC$LON_DD_TR)
-coordinate_design_QC$LON_DD_BR=as.numeric(coordinate_design_QC$LON_DD_BR)
-coordinate_design_QC$LAT_DD_TR=as.numeric(coordinate_design_QC$LAT_DD_TR)
-coordinate_design_QC$LAT_DD_BR=as.numeric(coordinate_design_QC$LAT_DD_BR)
-
-# issues=c('RS-SS-11625', 'RS-SS-11561','KS-SS-14609','RA-TR-1060','WD-TR-022','KN-SS-12577')
-
-#coordinate_design_QC=subset(coordinate_design_QC, SITE_ID %in% issues)
-
-
-library(sf)
-library(mapview)
-midcord= st_as_sf(coordinate_design_QC, coords = c("LON_DD", "LAT_DD"), crs = 4269,agr = "constant")#NAD 83 
-mid=mapview(midcord,map.types="Esri.WorldImagery", color="orange",label=midcord$SITE_ID)
-TRcord= st_as_sf(coordinate_design_QC, coords = c("LON_DD_TR", "LAT_DD_TR"), crs = 4269,agr = "constant")
-TR=mapview(TRcord,color="red",map.types="Esri.WorldImagery",label=TRcord$SITE_ID)
-BRcord= st_as_sf(coordinate_design_QC, coords = c("LON_DD_BR", "LAT_DD_BR"), crs = 4269,agr = "constant")
-BR=mapview(BRcord,color="yellow",map.types="Esri.WorldImagery",label=BRcord$SITE_ID)
-designcord=st_as_sf(coordinate_design_QC, coords = c("DESIGN_LON", "DESIGN_LAT"), crs = 4269,agr = "constant")
-design=mapview(designcord,map.types="Esri.WorldImagery",label=designcord$SITE_ID)
-design+mid+TR+BR
-mid+TR+BR
+# #you can use the code below to plot the coordinates in R
+# coordinate_design_QC$LAT_DD=as.numeric(coordinate_design_QC$LAT_DD)
+# coordinate_design_QC$LON_DD=as.numeric(coordinate_design_QC$LON_DD)
+# coordinate_design_QC$LON_DD_TR=as.numeric(coordinate_design_QC$LON_DD_TR)
+# coordinate_design_QC$LON_DD_BR=as.numeric(coordinate_design_QC$LON_DD_BR)
+# coordinate_design_QC$LAT_DD_TR=as.numeric(coordinate_design_QC$LAT_DD_TR)
+# coordinate_design_QC$LAT_DD_BR=as.numeric(coordinate_design_QC$LAT_DD_BR)
+# 
+# # issues=c('RS-SS-11625', 'RS-SS-11561','KS-SS-14609','RA-TR-1060','WD-TR-022','KN-SS-12577')
+# 
+# #coordinate_design_QC=subset(coordinate_design_QC, SITE_ID %in% issues)
+# 
+# 
+# library(sf)
+# library(mapview)
+# midcord= st_as_sf(coordinate_design_QC, coords = c("LON_DD", "LAT_DD"), crs = 4269,agr = "constant")#NAD 83 
+# mid=mapview(midcord,map.types="Esri.WorldImagery", color="orange",label=midcord$SITE_ID)
+# TRcord= st_as_sf(coordinate_design_QC, coords = c("LON_DD_TR", "LAT_DD_TR"), crs = 4269,agr = "constant")
+# TR=mapview(TRcord,color="red",map.types="Esri.WorldImagery",label=TRcord$SITE_ID)
+# BRcord= st_as_sf(coordinate_design_QC, coords = c("LON_DD_BR", "LAT_DD_BR"), crs = 4269,agr = "constant")
+# BR=mapview(BRcord,color="yellow",map.types="Esri.WorldImagery",label=BRcord$SITE_ID)
+# designcord=st_as_sf(coordinate_design_QC, coords = c("DESIGN_LON", "DESIGN_LAT"), crs = 4269,agr = "constant")
+# design=mapview(designcord,map.types="Esri.WorldImagery",label=designcord$SITE_ID)
+# design+mid+TR+BR
+# mid+TR+BR
 
 
 
@@ -319,9 +326,11 @@ Bugspvt=addKEYS(cast(Bugs,'UID~SAMPLE_TYPE+PARAMETER',value='RESULT'),c('SITE_ID
 AreaCheck1=subset(Bugspvt,(as.numeric(BERW_AREA_SAMP)!=0.093 & BERW_SAMPLER=='SU'))
 AreaCheck2=subset(Bugspvt,(as.numeric(BERW_AREA_SAMP)!=0.0413 & BERW_SAMPLER=='MI'))
 AreaCheck3=subset(Bugspvt,(as.numeric(BERW_AREA_SAMP)!=0.093 & BERW_SAMPLER=='KC'))
-if(nrow(AreaCheck1>0)){write.csv(AreaCheck1,'AreaCheck1.csv')}
+if(nrow(AreaCheck1)>0){write.csv(AreaCheck1,'AreaCheck1.csv')}
 if(nrow(AreaCheck2)>0){write.csv(AreaCheck2,'AreaCheck2.csv')}
 if(nrow(AreaCheck3)>0){write.csv(AreaCheck3,'AreaCheck3.csv')}
+Bugspvt=Bugspvt[c(10,11,12,14,1,13,2,9,5,8,3,4,7,6)]
+Bugspvt=Bugspvt[order(Bugspvt$VERIF_PROJECT,Bugspvt$VERIF_PROTOCOL,Bugspvt$SITE_ID),]
 write.csv(Bugspvt,'Bugspvt.csv')
 
 
@@ -332,25 +341,25 @@ SamplingCheck2=subset(Bugspvt,(BERW_TRAN_NUM<11 & BERW_BUG_METHOD=='REACH WIDE')
 if(nrow(SamplingCheck1)>0){write.csv(SamplingCheck1,'TargetedRiffleTranNumCheck.csv')}
 if(nrow(SamplingCheck2)>0){write.csv(SamplingCheck2,'ReachWideTranNumCheck.csv')}
 
-#get data ready to submit via http://www.usu.edu/buglab/SampleProcessing/SampleSubmission/
-postseasonmetadata=subset(postseasonmetadata,PROTOCOL!='FAILED')
-SubMetadata=c('UID','SITE_ID', 'ADMU_ADMIN','COUNTY','LOC_NAME','LAT_DD','LON_DD','PROJECT')###'STRATUM')# change ADMU_ADMIN back to STATE once all master sample points attributed with state
-Metadata=postseasonmetadata[SubMetadata]
-Bugspvtsub=c('UID','BERW_JAR_NO','BERW_ACTUAL_DATE','BERW_AREA','BERW_SAMPLER','BERW_BUG_METHOD')
-Bugspvt2=Bugspvt[Bugspvtsub]
-BugsSubmit=join(Bugspvt2,Metadata, by="UID")
-BugsSubmit$BERW_SAMPLER=ifelse(BugsSubmit$BERW_SAMPLER=='SU'|BugsSubmit$BERW_SAMPLER=='MI',"Surber net",ifelse(BugsSubmit$BERW_SAMPLER=='KC',"Kick net",BugsSubmit$BERW_SAMPLER))
-BugsSubmit$BERW_BUG_METHOD=ifelse(BugsSubmit$BERW_BUG_METHOD=='TARGETED RIFFLE',"Targeted Riffle",ifelse(BugsSubmit$BERW_BUG_METHOD=='REACH WIDE',"Reachwide",BugsSubmit$BERW_BUG_METHOD))
-BugsSubmit=BugsSubmit[,c(13,7,1,2,10,8,9,11,12,3,5,6,4)]#fill in desired columns
-write.csv(BugsSubmit,'BugsSubmit.csv')
-
-#Export list of sites for watershed delineation for bug models and WQ models..all sites should have bug data so just export all sites and delineate and calc WQ stats for all sites is simplest
-SubMetadata=c('UID','MS_ID','SITE_ID','LOC_NAME','DATE_COL','STATE','LAT_DD','LON_DD')
-Delineation=postseasonmetadata[SubMetadata]
-Delineation=setNames(Delineation,c('UID','MS_ID','reachid','location','SampleDate','state','Lat','Long'))                      
-Delineation$SiteID2=1:nrow(Delineation)
-Delineation$rolled=0
-#write.csv(Delineation,'SitesForDelineation.csv')
+# #get data ready to submit via http://www.usu.edu/buglab/SampleProcessing/SampleSubmission/
+# postseasonmetadata=subset(postseasonmetadata,PROTOCOL!='FAILED')
+# SubMetadata=c('UID','SITE_ID', 'ADMU_ADMIN','COUNTY','LOC_NAME','LAT_DD','LON_DD','PROJECT')###'STRATUM')# change ADMU_ADMIN back to STATE once all master sample points attributed with state
+# Metadata=postseasonmetadata[SubMetadata]
+# Bugspvtsub=c('UID','BERW_JAR_NO','BERW_ACTUAL_DATE','BERW_AREA','BERW_SAMPLER','BERW_BUG_METHOD')
+# Bugspvt2=Bugspvt[Bugspvtsub]
+# BugsSubmit=join(Bugspvt2,Metadata, by="UID")
+# BugsSubmit$BERW_SAMPLER=ifelse(BugsSubmit$BERW_SAMPLER=='SU'|BugsSubmit$BERW_SAMPLER=='MI',"Surber net",ifelse(BugsSubmit$BERW_SAMPLER=='KC',"Kick net",BugsSubmit$BERW_SAMPLER))
+# BugsSubmit$BERW_BUG_METHOD=ifelse(BugsSubmit$BERW_BUG_METHOD=='TARGETED RIFFLE',"Targeted Riffle",ifelse(BugsSubmit$BERW_BUG_METHOD=='REACH WIDE',"Reachwide",BugsSubmit$BERW_BUG_METHOD))
+# BugsSubmit=BugsSubmit[,c(13,7,1,2,10,8,9,11,12,3,5,6,4)]#fill in desired columns
+# write.csv(BugsSubmit,'BugsSubmit.csv')
+# 
+# #Export list of sites for watershed delineation for bug models and WQ models..all sites should have bug data so just export all sites and delineate and calc WQ stats for all sites is simplest
+# SubMetadata=c('UID','MS_ID','SITE_ID','LOC_NAME','DATE_COL','STATE','LAT_DD','LON_DD')
+# Delineation=postseasonmetadata[SubMetadata]
+# Delineation=setNames(Delineation,c('UID','MS_ID','reachid','location','SampleDate','state','Lat','Long'))                      
+# Delineation$SiteID2=1:nrow(Delineation)
+# Delineation$rolled=0
+# #write.csv(Delineation,'SitesForDelineation.csv')
                       
 ######## WQ checks ########
 #corrected for temperature check
@@ -392,18 +401,17 @@ if(nrow(PHQuestions)>0){write.csv(PHQuestions,'PHQuestions.csv')}
 #   #could pull code from condition determinations to do that but this code will be pretty complex....for now just leave as a manual task
 # read.csv('\\\\share1.bluezone.usu.edu\\miller\\buglab\\Research Projects\\BLM_WRSA_Stream_Surveys\\Results and Reports\\EPA_Data\\EPA_WQ_typical_values.csv')
 # 
-#instrument check
-#pull all data for instrument if values still not resolved after looking at ecoregional values # not as pertinent this year and in the future because the same instrument will be used for any given proejct and confounded with ecoregional differences
-WQ2=tblRetrieve(Parameters=c('CONDUCTIVITY','PH','CAL_INST_ID'), Comments='Y', Years=years, Projects=projects,Protocols=protocols,SiteCodes=sitecodes,Insertion=insertion)
-WQ1=addKEYS(cast(WQ2,'UID~PARAMETER',value='RESULT')  ,c('SITE_ID','DATE_COL','CREW_LEADER'))
-WQ1=subset(WQ1,CAL_INST_ID=='')# fill in data of interest here
+# #instrument check
+# #pull all data for instrument if values still not resolved after looking at ecoregional values # not as pertinent this year and in the future because the same instrument will be used for any given proejct and confounded with ecoregional differences
+# WQ2=tblRetrieve(Parameters=c('CONDUCTIVITY','PH','CAL_INST_ID'), Comments='Y', Years=years, Projects=projects,Protocols=protocols,SiteCodes=sitecodes,Insertion=insertion)
+# WQ1=addKEYS(cast(WQ2,'UID~PARAMETER',value='RESULT')  ,c('SITE_ID','DATE_COL','CREW_LEADER'))
+# WQ1=subset(WQ1,CAL_INST_ID=='')# fill in data of interest here
 
                       
 ####### incision and bank height ############
 #cross checks implemented in app so just check extreme values, outliers (above), and for unit issues
 heights=addKEYS(tblRetrieve(Parameters=c('INCISED','BANKHT'),Years=years, Projects=projects,Protocols=protocols,SiteCodes=sitecodes,Insertion=insertion),c('SITE_ID','DATE_COL','CREW_LEADER'))
 HeightCheck1=subset(heights,RESULT>1.5|RESULT<0.1)
-View(HeightCheck1)
 if(nrow(HeightCheck1)>0){write.csv(HeightCheck1,'HeightCheck1.csv')}
                       
                       
@@ -425,8 +433,8 @@ WetWid0Sites=data.frame("WetWidSites"=unique(WetWid$UID))
 DryThalweg=tblRetrieve(Parameters=c('DEPTH'),Years=years, Projects=projects,Protocols=protocols,SiteCodes=sitecodes,Insertion=insertion)
 DryThalweg=subset(DryThalweg,RESULT==0)
 DryThalwegSites=data.frame("DryThalweg"=unique(DryThalweg$UID))
-write.xlsx(InterruptSites,'InterruptedFlowChecks.xlsx')
-write.xlsx(DryTranSites,'InterruptedFlowChecks.xlsx',append=TRUE)
+#write.xlsx(InterruptSites,'InterruptedFlowChecks.xlsx')
+#write.xlsx(DryTranSites,'InterruptedFlowChecks.xlsx',append=TRUE)
 
 wb = createWorkbook()
 sheet = createSheet(wb, "All")
@@ -568,23 +576,23 @@ if(nrow(riparian3PVTsub)>0) {write.csv(riparian3PVTsub,'rip3.csv')}
 riparian4=tblRetrieve(Parameters=c('CANVEG','CANBTRE','CANSTRE'),Years=years, Projects=projects,SiteCodes=sitecodes,Insertion=insertion)
 riparian4PVT=cast(riparian4,'UID+TRANSECT+POINT~PARAMETER',value='RESULT')
 riparian4pvtsub=subset(riparian4PVT,CANVEG=='N' & CANBTRE>0 & CANSTRE>0)
-if(nrow(riparian4PVTsub)>0) {write.csv(riparian4pvtsub,'rip4.csv')}
+if(nrow(riparian4pvtsub)>0) {write.csv(riparian4pvtsub,'rip4.csv')}
 
 riparian4PVT_IND=cast(riparian4,'UID+TRANSECT+POINT~PARAMETER',value='IND')
 riparian4pvt=merge(riparian4PVT,riparian4PVT_IND,by=c('UID','TRANSECT','POINT'),all=T)
 riparian4pvtsub2=subset(riparian4pvt,CANVEG.x!='N' & CANBTRE.x==0 & CANSTRE.x==0)
-if(nrow(riparian4PVTsub2)>0){write.csv(riparian4pvtsub2,'rip42.csv')}
+if(nrow(riparian4pvtsub2)>0){write.csv(riparian4pvtsub2,'rip42.csv')}
 
 #middle
 riparian5=tblRetrieve(Parameters=c('UNDERVEG','UNDNWDY','UNDWDY'),Years=years, Projects=projects,SiteCodes=sitecodes,Insertion=insertion)
 riparian5PVT=cast(riparian5,'UID+TRANSECT+POINT~PARAMETER',value='RESULT')
 riparian5pvtsub=subset(riparian5PVT,UNDERVEG=='N' & UNDNWDY>0 & UNDWDY>0)
-if(nrow(riparian5PVTsub)>0){write.csv(riparian5pvtsub,'rip5.csv') }                     
+if(nrow(riparian5pvtsub)>0){write.csv(riparian5pvtsub,'rip5.csv') }                     
 
 riparian5=tblRetrieve(Parameters=c('UNDERVEG','UNDNWDY','UNDWDY'),Years=years, Projects=projects,SiteCodes=sitecodes,Insertion=insertion)
 riparian5PVT=cast(riparian5,'UID+TRANSECT+POINT~PARAMETER',value='RESULT')
 riparian5pvtsub2=subset(riparian5PVT,UNDERVEG!='N' & UNDNWDY==0 & UNDWDY==0)
-if(nrow(riparian5PVTsub2)>0){write.csv(riparian5pvtsub2,'rip52.csv')}
+if(nrow(riparian5pvtsub2)>0){write.csv(riparian5pvtsub2,'rip52.csv')}
                       
 ###### Thalweg   #########
 
@@ -592,7 +600,7 @@ if(nrow(riparian5PVTsub2)>0){write.csv(riparian5pvtsub2,'rip52.csv')}
 tbl=tblRetrieve(Parameters=c('DEPTH'),Project=projects, Years=years,Protocols=protocols,SiteCodes=sitecodes,Insertion=insertion)
 tbl.2=tblRetrieve(Parameters=c('NUM_THALWEG'),Project=projects, Years=years,Protocols=protocols,SiteCodes=sitecodes,Insertion=insertion)
 tbl3=cast(tbl.2,'UID~PARAMETER',value='RESULT',mean)
-tbl.PVT=addKEYS(cast(tbl,'UID~PARAMETER',value='RESULT'),c('SITE_ID'))# count is default
+tbl.PVT=addKEYS(cast(tbl,'UID~PARAMETER',value='RESULT',length),c('SITE_ID'))# count is default
 thalweg.missing=merge(tbl.PVT,tbl3, by='UID')
 thalweg.missing$pctcomplete=thalweg.missing$DEPTH/(thalweg.missing$NUM_THALWEG*10)*100
 write.csv(thalweg.missing,'thalweg.missing.csv')
@@ -725,6 +733,7 @@ if(nrow(pool_great_100)>0){write.csv(pool_great_100,'pool_great_100.csv')}#expor
 
 #pool tail fines
 PoolFines=tblRetrieve(Parameters=c('POOLFINES2','POOLFINES6','POOLNOMEAS','POOLFINES6_512'),Projects=projects, Years=years,Protocols=protocols,SiteCode=sitecodes,Insertion=insertion)
+if(nrow(PoolFines)>0){
 pvtPoolFines=addKEYS(cast(PoolFines,'UID+TRANSECT+POINT~PARAMETER',value='RESULT'),c('SITE_ID'))#need to pivot to create the pctPoolFInes variable
 pvtPoolFines$PctPoolFines2_CHECK=pvtPoolFines$POOLFINES2/(50-pvtPoolFines$POOLNOMEAS)*100
 pvtPoolFines$PctPoolFines6_CHECK=pvtPoolFines$POOLFINES6/(50-pvtPoolFines$POOLNOMEAS)*100
@@ -745,7 +754,7 @@ FinalpvtPoolFines$PctPoolFines2CV=FinalpvtPoolFines$PctPoolFines2SD/FinalpvtPool
 FinalpvtPoolFines$PctPoolFines6CV=FinalpvtPoolFines$PctPoolFines6SD/FinalpvtPoolFines$PctPoolFines6_CHECK#sites with CV >1.414 should be QCed 
 subQC=subset(FinalpvtPoolFines,FinalpvtPoolFines$PctPoolFines6CV>=1.41|FinalpvtPoolFines$PctPoolFines2CV>=1.41)#sites with CV >1.414 should be QCed 
 write.csv(subQC,'pooltailfines_highvariance.csv')
-
+}
 ########  side channels  ############
 #check how many side channels crews are at sites to keep an eye on workload of sampling side channels
 side=tblRetrieve(Parameters=c('SIDCHN','SIDCH_TYPE'),Projects=projects,Years=years,Protocols=protocols,SiteCodes=sitecodes,Insertion=insertion)
@@ -826,115 +835,115 @@ write.csv(UnionTBLnum_pvtSUMMARYn_Site,'UnionTBLnum_pvtSUMMARYn_Site.csv')
 
 
 ############################################################################################################################
-#Final pivot checks on all indicators to make sure no duplicate data exists from data edits
-#run summary data and sort again to make sure no wacky values
-#pay close attention to sample sizes when running indicators....should probably eventually run missing data checks this way rather than the knarly script above                 
-
-#siteinfo
-listsites=tblRetrieve(Parameters=c('SITE_ID','DATE_COL','LOC_NAME','LAT_DD','LON_DD','PROJECT','PROTOCOL','VALXSITE','LAT_DD_BR','LAT_DD_TR','LON_DD_BR','LON_DD_TR','DEWATER','BEAVER_FLOW_MOD','BEAVER_SIGN'),Projects=projects,Years=years,Protocols=protocols,SiteCodes=sitecodes,Insertion=insertion)
-listsites=setNames(cast(listsites,'UID~PARAMETER',value='RESULT'),c("UID","BEAVER_FLOW_MOD_CHECK","BEAVER_SIGN_CHECK","DATE_COL_CHECK","WATER_WITHDRAWAL_CHECK","LAT_DD_CHECK","LAT_DD_BR_CHECK","LAT_DD_TR_CHECK","LOC_NAME_CHECK","LON_DD_CHECK","LON_DD_BR_CHECK","LON_DD_TR_CHECK","PROJECT_CHECK","PROTOCOL_CHECK","SITE_ID_CHECK",'VALXSITE_CHECK'))
-listsites=listsites[,c(15,9,1,4,6,10,13,14,16,7,11,8,12,2,3,5)]
-TRCHLEN=tblRetrieve(Parameters=c('TRCHLEN','INCREMENT'),Projects=projects,Years=years,Protocols=protocols,SiteCodes=sitecodes,Insertion=insertion)#not using TRCHLEN
-TRCHLEN1=cast(TRCHLEN,'UID~PARAMETER',value='RESULT')
-
-#canopy cover
-densiom=tblRetrieve(Parameters='DENSIOM',Projects=projects,Years=years,Protocols=protocols,SiteCodes=sitecodes,Insertion=insertion)
-unique(densiom$RESULT)
-densiompvt=cast(densiom,'UID+TRANSECT+POINT~PARAMETER',value='RESULT')# check data structure to make sure no duplicates
-unique(densiom$POINT)
-
-#riparian
-RipALL=tblRetrieve(Parameters=c("BARE","CANBTRE","CANSTRE","CANVEG","GCNWDY","GCWDY","UNDERVEG","UNDNWDY","UNDWDY"),Projects=projects,Years=years,Protocols=protocols,SiteCodes=sitecodes,Insertion=insertion)
-RipAllpvt=cast(RipALL,'UID+TRANSECT+POINT~PARAMETER',value='RESULT')# check data structure to make sure no duplicates
-unique(RipAllpvt$TRANSECT)
-unique(RipALL$RESULT)
-
-#BLM riparian cover and frequency
-RipBLM=tblRetrieve(Parameters=c('CANRIPW','UNRIPW','GCRIP','INVASW', 'NATIVW','INVASH','NATIVH','SEGRUSH'),Projects=projects,Years=years,Protocols=protocols,SiteCodes=sitecodes,Insertion=insertion)
-pvtRipBLM=cast(RipBLM,'UID+TRANSECT+POINT~PARAMETER',value='RESULT')
-
-#WQ
-WQtbl=tblRetrieve(Parameters=c('CONDUCTIVITY','PH','NTL','PTL','TURBIDITY','TEMPERATURE','EC_PRED','TN_PRED','TP_PRED'),Projects=projects,Years=years,Protocols=protocols,SiteCodes=sitecodes,Insertion=insertion)
-WQpvt=cast(WQtbl,'UID~PARAMETER',value='RESULT')
-
-#pools
-pools<-addKEYS(tblRetrieve(Parameters=c('HABTYPE','PTAILDEP','MAXDEPTH','LENGTH'),Projects=projects,Years=years,Protocols=protocols,SiteCodes=sitecodes,Insertion=insertion, Comments='Y'),c('SITE_ID'))
-pvtpools=cast(pools,'UID+TRANSECT+POINT~PARAMETER',value='RESULT')
-PoolCollect<-tblRetrieve(Parameters=c('POOL_COLLECT','VALXSITE','POOLRCHLEN','TRCHLEN','SLOPE_COLLECT','SLPRCHLEN'),Projects=projects,Years=years,Protocols=protocols,SiteCodes=sitecodes,Insertion=insertion, Comments='Y')
-pvtPoolCollect=addKEYS(cast(PoolCollect,'UID~PARAMETER',value='RESULT'),c('SITE_ID','CREW_LEADER'))
-
-#LWD
-LwdCatWet=unclass(sqlQuery(wrsa1314,"select SAMPLE_TYPE,PARAMETER from tblMetadata where Sample_TYPE like 'LWDW%' and PARAMETER like 'W%'"))$PARAMETER
-LwdCatDry=unclass(sqlQuery(wrsa1314,"select SAMPLE_TYPE,PARAMETER from tblMetadata where Sample_TYPE like 'LWDW%' and PARAMETER like 'D%'"))$PARAMETER
-LwdWet=addKEYS(tblRetrieve(Parameters=LwdCatWet,Projects=projects,Years=years,Protocols=protocols,SiteCodes=sitecodes,Insertion=insertion),c('SITE_ID','DATE_COL'))
-LwdDry=tblRetrieve(Parameters=LwdCatDry,Projects=projects,Years=years,Protocols=protocols,SiteCodes=sitecodes,Insertion=insertion)
-pvtLwdWet=cast(LwdWet, 'UID~TRANSECT+PARAMETER',value='RESULT')
-pvtLwdDry=cast(LwdDry,'UID~TRANSECT+PARAMETER',value='RESULT')
-
-#sediment
-Sediment=tblRetrieve(Parameters=c('SIZE_CLS','XSIZE_CLS'),Projects=projects,Years=years,Protocols=protocols,SiteCodes=sitecodes,Insertion=insertion)
-Sed2014=tblRetrieve(Parameters=c('SIZE_NUM','LOC'),Projects=projects,Years=years,Protocols=protocols,SiteCodes=sitecodes,Insertion=insertion)
-unique(Sediment$RESULT)
-Sedimentpvt=cast(Sediment,'UID+TRANSECT+POINT~PARAMETER',value='RESULT')# check data structure to make sure no duplicates
-unique(Sedimentpvt$TRANSECT)# check data structure
-Sed2014pvt=cast(Sed2014,'UID+TRANSECT+POINT~PARAMETER',value='RESULT')# check data structure to make sure no duplicates
-unique(Sed2014pvt$POINT)# check data structure
-unique(Sed2014pvt$LOC)
-min(Sed2014pvt$SIZE_NUM);max(Sed2014pvt$SIZE_NUM)
-
-#pool tail fines
-PoolFines=tblRetrieve(Parameters=c('POOLFINES2','POOLFINES6','POOLNOMEAS','POOLFINES6_512'),Projects=projects, Years=years,Protocols=protocols,SiteCode=sitecodes,Insertion=insertion)
-pvtPoolFines=addKEYS(cast(PoolFines,'UID+TRANSECT+POINT~PARAMETER',value='RESULT'),c('SITE_ID'))#need to pivot to create the pctPoolFInes variable
-
-#bank stability
-BankStab=tblRetrieve(Parameters=c('STABLE','EROSION','COVER','BNK_VEG','BNK_COBBLE','BNK_LWD','BNK_BEDROCK'), Projects=projects,Years=years,Protocols=protocols,SiteCodes=sitecodes,Insertion=insertion)
-SideBank=tblRetrieve(Parameters=c('SIDCHN_BNK'),Projects=projects,Years=years,Protocols=protocols,SiteCodes=sitecodes,Insertion=insertion)
-unique(BankStab$RESULT)
-BankStabpvt=addKEYS(cast(BankStab,'UID+TRANSECT+POINT~PARAMETER',value='RESULT'),c('SITE_ID'))
-unique(BankStab$POINT)
-unique(BankStab$TRANSECT)
-BankStabCoverClass=tblRetrieve(Parameters=c('BNK_VEG','BNK_COBBLE','BNK_LWD','BNK_BEDROCK'),Projects=projects,Years=years,Protocols=protocols,SiteCodes=sitecodes,Insertion=insertion)
-pvtBankStabCoverClass=addKEYS(cast(BankStabCoverClass,'UID+TRANSECT+POINT~PARAMETER',value='RESULT'),c('SITE_ID'))
-
-#LINCIS_H - floodplain connectivity
-Incision=tblRetrieve(Parameters=c('INCISED','BANKHT'),Projects=projects,Years=years,Protocols=protocols,SiteCodes=sitecodes,Insertion=insertion)
-min(Incision$RESULT);max(Incision$RESULT)
-incisionpvt=cast(Incision,'UID+TRANSECT~PARAMETER',value='RESULT')# check data structure to make sure no duplicates
-
-#XFC_NAT- fish cover
-fish=tblRetrieve(Parameters=c('BOULDR','BRUSH','LVTREE','OVRHNG','UNDCUT','WOODY'),Projects=projects,Years=years,Protocols=protocols,SiteCodes=sitecodes,Insertion=insertion)
-unique(fish$RESULT)# check data structure
-fishpvt=cast(fish,'UID+TRANSECT~PARAMETER',value='RESULT')# check data structure to make sure no duplicates
-
-#Angle-PIBO method only
-Angle=tblRetrieve(Parameters=c('ANGLE180'),Projects=projects, Years=years,Protocols=protocols,SiteCodes=sitecodes,Insertion=insertion)
-Anglepvt=cast(Angle,'UID+TRANSECT+POINT~PARAMETER',value='RESULT')
-unique(Anglepvt$TRANSECT)
-min(Angle$RESULT);max(Angle$RESULT)
-
-#Thalweg mean , CV, and pct dry
-thalweg=addKEYS(tblRetrieve(Parameters=c('DEPTH'), Projects=projects, Years=years,Protocols=protocols,SiteCodes=sitecodes,Insertion=insertion),c('PROTOCOL'))
-thalweg=subset(thalweg,SAMPLE_TYPE!='CROSSSECW')
-thalwegpvt=cast(thalweg,'UID+TRANSECT+POINT~PARAMETER',value='RESULT')
-unique(thalwegpvt$POINT)
-max(thalwegpvt$DEPTH);min(thalwegpvt$DEPTH)
-
-#Channel Dimensions
-WetWid=tblRetrieve(Parameters=c('WETWIDTH'),Projects=projects, Years=years,Protocols=protocols,SiteCode=sitecodes,Insertion=insertion)#Wetted widths from thalweg
-WetWid2=tblRetrieve(Parameters=c('WETWID'),Projects=projects, Years=years,Protocols=protocols,SiteCode=sitecodes,Insertion=insertion)#Wetted widths from main transects
-BankWid=tblRetrieve(Parameters=c('BANKWID'),Projects=projects, Years=years,Protocols=protocols,SiteCode=sitecodes,Insertion=insertion)
-WetWidpvt=cast(WetWid,'UID+TRANSECT+POINT~PARAMETER',value='RESULT')
-WetWid2pvt=cast(WetWid2,'UID+TRANSECT~PARAMETER',value='RESULT')
-BankWidpvt=cast(BankWid,'UID+TRANSECT~PARAMETER',value='RESULT')
-
-#Floodprone width
-FloodWidth=tblRetrieve(Parameters=c('FLOOD_WID','FLOOD_BFWIDTH'), Projects=projects, Years=years,Protocols=protocols,SiteCode=sitecodes,Insertion=insertion)
-FloodWidthpvt=cast(FloodWidth,'UID+TRANSECT~PARAMETER',value='RESULT')
-
-#Slope
-Slope=tblRetrieve(Parameters=c('AVGSLOPE','SLPRCHLEN','PCT_GRADE','TRCHLEN','PARTIAL_RCHLEN','POOLRCHLEN','SLOPE_COLLECT','VALXSITE','Z_SLOPEPASSQA'),Projects=projects,Years=years,Protocols=protocols,SiteCodes=sitecodes,Insertion=insertion)                 
-pvtSlope2=cast(Slope,'UID~PARAMETER',value='RESULT')
-
+# #Final pivot checks on all indicators to make sure no duplicate data exists from data edits
+# #run summary data and sort again to make sure no wacky values
+# #pay close attention to sample sizes when running indicators....should probably eventually run missing data checks this way rather than the knarly script above
+# 
+# #siteinfo
+# listsites=tblRetrieve(Parameters=c('SITE_ID','DATE_COL','LOC_NAME','LAT_DD','LON_DD','PROJECT','PROTOCOL','VALXSITE','LAT_DD_BR','LAT_DD_TR','LON_DD_BR','LON_DD_TR','DEWATER','BEAVER_FLOW_MOD','BEAVER_SIGN'),Projects=projects,Years=years,Protocols=protocols,SiteCodes=sitecodes,Insertion=insertion)
+# listsites=setNames(cast(listsites,'UID~PARAMETER',value='RESULT'),c("UID","BEAVER_FLOW_MOD_CHECK","BEAVER_SIGN_CHECK","DATE_COL_CHECK","WATER_WITHDRAWAL_CHECK","LAT_DD_CHECK","LAT_DD_BR_CHECK","LAT_DD_TR_CHECK","LOC_NAME_CHECK","LON_DD_CHECK","LON_DD_BR_CHECK","LON_DD_TR_CHECK","PROJECT_CHECK","PROTOCOL_CHECK","SITE_ID_CHECK",'VALXSITE_CHECK'))
+# listsites=listsites[,c(15,9,1,4,6,10,13,14,16,7,11,8,12,2,3,5)]
+# TRCHLEN=tblRetrieve(Parameters=c('TRCHLEN','INCREMENT'),Projects=projects,Years=years,Protocols=protocols,SiteCodes=sitecodes,Insertion=insertion)#not using TRCHLEN
+# TRCHLEN1=cast(TRCHLEN,'UID~PARAMETER',value='RESULT')
+# 
+# #canopy cover
+# densiom=tblRetrieve(Parameters='DENSIOM',Projects=projects,Years=years,Protocols=protocols,SiteCodes=sitecodes,Insertion=insertion)
+# unique(densiom$RESULT)
+# densiompvt=cast(densiom,'UID+TRANSECT+POINT~PARAMETER',value='RESULT')# check data structure to make sure no duplicates
+# unique(densiom$POINT)
+# 
+# #riparian
+# RipALL=tblRetrieve(Parameters=c("BARE","CANBTRE","CANSTRE","CANVEG","GCNWDY","GCWDY","UNDERVEG","UNDNWDY","UNDWDY"),Projects=projects,Years=years,Protocols=protocols,SiteCodes=sitecodes,Insertion=insertion)
+# RipAllpvt=cast(RipALL,'UID+TRANSECT+POINT~PARAMETER',value='RESULT')# check data structure to make sure no duplicates
+# unique(RipAllpvt$TRANSECT)
+# unique(RipALL$RESULT)
+# 
+# #BLM riparian cover and frequency
+# RipBLM=tblRetrieve(Parameters=c('CANRIPW','UNRIPW','GCRIP','INVASW', 'NATIVW','INVASH','NATIVH','SEGRUSH'),Projects=projects,Years=years,Protocols=protocols,SiteCodes=sitecodes,Insertion=insertion)
+# pvtRipBLM=cast(RipBLM,'UID+TRANSECT+POINT~PARAMETER',value='RESULT')
+# 
+# #WQ
+# WQtbl=tblRetrieve(Parameters=c('CONDUCTIVITY','PH','NTL','PTL','TURBIDITY','TEMPERATURE','EC_PRED','TN_PRED','TP_PRED'),Projects=projects,Years=years,Protocols=protocols,SiteCodes=sitecodes,Insertion=insertion)
+# WQpvt=cast(WQtbl,'UID~PARAMETER',value='RESULT')
+# 
+# #pools
+# pools<-addKEYS(tblRetrieve(Parameters=c('HABTYPE','PTAILDEP','MAXDEPTH','LENGTH'),Projects=projects,Years=years,Protocols=protocols,SiteCodes=sitecodes,Insertion=insertion, Comments='Y'),c('SITE_ID'))
+# pvtpools=cast(pools,'UID+TRANSECT+POINT~PARAMETER',value='RESULT')
+# PoolCollect<-tblRetrieve(Parameters=c('POOL_COLLECT','VALXSITE','POOLRCHLEN','TRCHLEN','SLOPE_COLLECT','SLPRCHLEN'),Projects=projects,Years=years,Protocols=protocols,SiteCodes=sitecodes,Insertion=insertion, Comments='Y')
+# pvtPoolCollect=addKEYS(cast(PoolCollect,'UID~PARAMETER',value='RESULT'),c('SITE_ID','CREW_LEADER'))
+# 
+# #LWD
+# LwdCatWet=unclass(sqlQuery(wrsa1314,"select SAMPLE_TYPE,PARAMETER from tblMetadata where Sample_TYPE like 'LWDW%' and PARAMETER like 'W%'"))$PARAMETER
+# LwdCatDry=unclass(sqlQuery(wrsa1314,"select SAMPLE_TYPE,PARAMETER from tblMetadata where Sample_TYPE like 'LWDW%' and PARAMETER like 'D%'"))$PARAMETER
+# LwdWet=addKEYS(tblRetrieve(Parameters=LwdCatWet,Projects=projects,Years=years,Protocols=protocols,SiteCodes=sitecodes,Insertion=insertion),c('SITE_ID','DATE_COL'))
+# LwdDry=tblRetrieve(Parameters=LwdCatDry,Projects=projects,Years=years,Protocols=protocols,SiteCodes=sitecodes,Insertion=insertion)
+# pvtLwdWet=cast(LwdWet, 'UID~TRANSECT+PARAMETER',value='RESULT')
+# pvtLwdDry=cast(LwdDry,'UID~TRANSECT+PARAMETER',value='RESULT')
+# 
+# #sediment
+# Sediment=tblRetrieve(Parameters=c('SIZE_CLS','XSIZE_CLS'),Projects=projects,Years=years,Protocols=protocols,SiteCodes=sitecodes,Insertion=insertion)
+# Sed2014=tblRetrieve(Parameters=c('SIZE_NUM','LOC'),Projects=projects,Years=years,Protocols=protocols,SiteCodes=sitecodes,Insertion=insertion)
+# unique(Sediment$RESULT)
+# Sedimentpvt=cast(Sediment,'UID+TRANSECT+POINT~PARAMETER',value='RESULT')# check data structure to make sure no duplicates
+# unique(Sedimentpvt$TRANSECT)# check data structure
+# Sed2014pvt=cast(Sed2014,'UID+TRANSECT+POINT~PARAMETER',value='RESULT')# check data structure to make sure no duplicates
+# unique(Sed2014pvt$POINT)# check data structure
+# unique(Sed2014pvt$LOC)
+# min(Sed2014pvt$SIZE_NUM);max(Sed2014pvt$SIZE_NUM)
+# 
+# #pool tail fines
+# PoolFines=tblRetrieve(Parameters=c('POOLFINES2','POOLFINES6','POOLNOMEAS','POOLFINES6_512'),Projects=projects, Years=years,Protocols=protocols,SiteCode=sitecodes,Insertion=insertion)
+# pvtPoolFines=addKEYS(cast(PoolFines,'UID+TRANSECT+POINT~PARAMETER',value='RESULT'),c('SITE_ID'))#need to pivot to create the pctPoolFInes variable
+# 
+# #bank stability
+# BankStab=tblRetrieve(Parameters=c('STABLE','EROSION','COVER','BNK_VEG','BNK_COBBLE','BNK_LWD','BNK_BEDROCK'), Projects=projects,Years=years,Protocols=protocols,SiteCodes=sitecodes,Insertion=insertion)
+# SideBank=tblRetrieve(Parameters=c('SIDCHN_BNK'),Projects=projects,Years=years,Protocols=protocols,SiteCodes=sitecodes,Insertion=insertion)
+# unique(BankStab$RESULT)
+# BankStabpvt=addKEYS(cast(BankStab,'UID+TRANSECT+POINT~PARAMETER',value='RESULT'),c('SITE_ID'))
+# unique(BankStab$POINT)
+# unique(BankStab$TRANSECT)
+# BankStabCoverClass=tblRetrieve(Parameters=c('BNK_VEG','BNK_COBBLE','BNK_LWD','BNK_BEDROCK'),Projects=projects,Years=years,Protocols=protocols,SiteCodes=sitecodes,Insertion=insertion)
+# pvtBankStabCoverClass=addKEYS(cast(BankStabCoverClass,'UID+TRANSECT+POINT~PARAMETER',value='RESULT'),c('SITE_ID'))
+# 
+# #LINCIS_H - floodplain connectivity
+# Incision=tblRetrieve(Parameters=c('INCISED','BANKHT'),Projects=projects,Years=years,Protocols=protocols,SiteCodes=sitecodes,Insertion=insertion)
+# min(Incision$RESULT);max(Incision$RESULT)
+# incisionpvt=cast(Incision,'UID+TRANSECT~PARAMETER',value='RESULT')# check data structure to make sure no duplicates
+# 
+# #XFC_NAT- fish cover
+# fish=tblRetrieve(Parameters=c('BOULDR','BRUSH','LVTREE','OVRHNG','UNDCUT','WOODY'),Projects=projects,Years=years,Protocols=protocols,SiteCodes=sitecodes,Insertion=insertion)
+# unique(fish$RESULT)# check data structure
+# fishpvt=cast(fish,'UID+TRANSECT~PARAMETER',value='RESULT')# check data structure to make sure no duplicates
+# 
+# #Angle-PIBO method only
+# Angle=tblRetrieve(Parameters=c('ANGLE180'),Projects=projects, Years=years,Protocols=protocols,SiteCodes=sitecodes,Insertion=insertion)
+# Anglepvt=cast(Angle,'UID+TRANSECT+POINT~PARAMETER',value='RESULT')
+# unique(Anglepvt$TRANSECT)
+# min(Angle$RESULT);max(Angle$RESULT)
+# 
+# #Thalweg mean , CV, and pct dry
+# thalweg=addKEYS(tblRetrieve(Parameters=c('DEPTH'), Projects=projects, Years=years,Protocols=protocols,SiteCodes=sitecodes,Insertion=insertion),c('PROTOCOL'))
+# thalweg=subset(thalweg,SAMPLE_TYPE!='CROSSSECW')
+# thalwegpvt=cast(thalweg,'UID+TRANSECT+POINT~PARAMETER',value='RESULT')
+# unique(thalwegpvt$POINT)
+# max(thalwegpvt$DEPTH);min(thalwegpvt$DEPTH)
+# 
+# #Channel Dimensions
+# WetWid=tblRetrieve(Parameters=c('WETWIDTH'),Projects=projects, Years=years,Protocols=protocols,SiteCode=sitecodes,Insertion=insertion)#Wetted widths from thalweg
+# WetWid2=tblRetrieve(Parameters=c('WETWID'),Projects=projects, Years=years,Protocols=protocols,SiteCode=sitecodes,Insertion=insertion)#Wetted widths from main transects
+# BankWid=tblRetrieve(Parameters=c('BANKWID'),Projects=projects, Years=years,Protocols=protocols,SiteCode=sitecodes,Insertion=insertion)
+# WetWidpvt=cast(WetWid,'UID+TRANSECT+POINT~PARAMETER',value='RESULT')
+# WetWid2pvt=cast(WetWid2,'UID+TRANSECT~PARAMETER',value='RESULT')
+# BankWidpvt=cast(BankWid,'UID+TRANSECT~PARAMETER',value='RESULT')
+# 
+# #Floodprone width
+# FloodWidth=tblRetrieve(Parameters=c('FLOOD_WID','FLOOD_BFWIDTH'), Projects=projects, Years=years,Protocols=protocols,SiteCode=sitecodes,Insertion=insertion)
+# FloodWidthpvt=cast(FloodWidth,'UID+TRANSECT~PARAMETER',value='RESULT')
+# 
+# #Slope
+# Slope=tblRetrieve(Parameters=c('AVGSLOPE','SLPRCHLEN','PCT_GRADE','TRCHLEN','PARTIAL_RCHLEN','POOLRCHLEN','SLOPE_COLLECT','VALXSITE','Z_SLOPEPASSQA'),Projects=projects,Years=years,Protocols=protocols,SiteCodes=sitecodes,Insertion=insertion)
+# pvtSlope2=cast(Slope,'UID~PARAMETER',value='RESULT')
+# 
 
 
 #############################################################################
