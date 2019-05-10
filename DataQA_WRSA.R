@@ -21,6 +21,7 @@ listsites=tblRetrieve(Parameters=c('SITE_ID','DATE_COL','LOC_NAME','LAT_DD','LON
 listsites=cast(listsites,'UID~PARAMETER',value='RESULT')
 listsites=listsites[c(10,11,12,6,1,2,13,3,7,4,8,5,9)]
 listsites=listsites[order(listsites$PROJECT,listsites$PROTOCOL,listsites$SITE_ID),]
+write.csv(listsites,'listsites.csv')
 #read in sites from final designations and do a left join to determine if any sampled sites are missing or if sample statuses need to be changed
 #if sites are missing check error logs on server or emails and check last modfied date
 
@@ -32,9 +33,9 @@ listsites=listsites[order(listsites$PROJECT,listsites$PROTOCOL,listsites$SITE_ID
 ######################################################################################
 #export comments table from SQL ----prefer to do this prior to missing data check because might fill in missing data
 #comments=addKEYS(sqlQuery(wrsa1314,sprintf("select * from tblcomments where year(insertion) in (%s) and datepart(wk,insertion) in (%s)",inLOOP(years),inLOOP(insertion))),c('SITE_ID','PROJECT'))#other option, but below is more elegant
-comments=addKEYS(tblRetrieve(Table='tblcomments', Years=years, Projects=projects,Protocols=protocols,SiteCodes=sitecodes,Insertion=insertion),c('SITE_ID','PROJECT'))
+comments=addKEYS(tblRetrieve(Table='tblcomments', Years=years, Projects=projects,Protocols=protocols,SiteCodes=sitecodes,Insertion=insertion),c('SITE_ID','PROJECT','VALXSITE'))
 #comments=subset(comments,PROJECT!='TRAINING'& PROJECT!='TESTORFAKE DATA')
-comments=comments[,c(13,14,1:12)]
+comments=setNames(comments[,c(13,14,15,1,6,4,2:3,5,7:12)],c('PROJECT','SITE_ID','VALXSITE','UID','COMMENT_TYPE','COMMENT','SAMPLE_TYPE','TRANSECT','POINT','IND','ACTIVE','OPERATION','INSERTION','DEPRECATION','REASON'))
 write.xlsx(comments,'comments.xlsx')   
     #check for data not entered in fields
     #check for data that needs to be deleted or moved
@@ -43,6 +44,7 @@ write.xlsx(comments,'comments.xlsx')
     #check for dry transects or partial data notes
     #especially review QA comments
     #inactivate resolved or superfluous comments
+QAcomments=tblRetrieve(Parameter=c())
 
 #review office comments and prioritize anything that might affect below checks----need above site information to link UID to comments and make change
 #https://docs.google.com/spreadsheets/d/1n58CHXDivjPLKXLX-bPwX1nX6XXtFTbpHlDF528LT-k/edit?usp=sharing
@@ -803,9 +805,11 @@ write.csv(pvtpools,'pvtpools.csv')#sort and look for min and max and 0 data or u
 # flow and collected checks
 PoolCollect<-tblRetrieve(Parameters=c('POOL_COLLECT','VALXSITE','POOLRCHLEN','TRCHLEN','SLOPE_COLLECT','SLPRCHLEN'),Projects=projects,Years=years,Protocols=protocols,SiteCodes=sitecodes,Insertion=insertion, Comments='Y')
 pvtPoolCollect=addKEYS(cast(PoolCollect,'UID~PARAMETER',value='RESULT'),c('SITE_ID','CREW_LEADER'))
-write.csv(pvtPoolCollect,'poolcollect.csv')
-pvtPoolCheck=subset(pvtPoolCollect,VALXSITE=='INTWADE'|POOL_COLLECT=='NF'|POOL_COLLECT=='NC')
-write.csv(pvtPoolCheck,'poolNCNFCheck.csv')#check all exported sites to make sure interrupted and partial site protocols properly followed
+pvtPoolCollect=pvtPoolCollect[order(pvtPoolCollect$VALXSITE,pvtPoolCollect$POOL_COLLECT),]
+write.csv(pvtPoolCollect,paste0('poolcollect',Sys.Date(),'.csv'))
+write.csv(pvtPoolCollect,'poolcollect.csv') 
+#pvtPoolCheck=subset(pvtPoolCollect,VALXSITE=='INTWADE'|POOL_COLLECT=='NF'|POOL_COLLECT=='NC')
+#write.csv(pvtPoolCheck,'poolNCNFCheck.csv')#check all exported sites to make sure interrupted and partial site protocols properly followed
 
 #check sum of lengths not > than total reach length  
 pool_length<-tblRetrieve(Parameters=c('LENGTH'),Projects=projects,Years=years,Protocols=protocols,SiteCodes=sitecodes,Insertion=insertion, Comments='Y')
@@ -845,10 +849,10 @@ write.csv(subQC,'pooltailfines_highvariance.csv')
 
 ########  side channels  ############
 #check how many side channels crews are at sites to keep an eye on workload of sampling side channels
-side=tblRetrieve(Parameters=c('SIDCHN','SIDCH_TYPE'),Projects=projects,Years=years,Protocols=protocols,SiteCodes=sitecodes,Insertion=insertion)
-sidepvt=addKEYS(cast(side,'UID+TRANSECT~PARAMETER',value='RESULT'),c('SITE_ID','CREW_LEADER','PROJECT'))
-sidepvtsubset=subset(sidepvt,SIDCHN=='Y')
-write.csv(sidepvtsubset,'SideChannels.csv')
+side=tblRetrieve(Parameters=c('SIDCHN'),Projects=projects,Years=years,Protocols=protocols,SiteCodes=sitecodes,Insertion=insertion)
+side=subset(side,RESULT=='Y')
+sidepvt=addKEYS(cast(side,'UID~PARAMETER',value='RESULT',length),c('SITE_ID','CREW_LEADER','PROJECT'))
+write.csv(sidepvt,'SideChannels.csv')
 
 
 

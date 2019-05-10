@@ -13,7 +13,7 @@
 #IndicatorCheck=read.csv('Z:\\buglab\\Research Projects\\AIM\\Analysis\\QC\\2017\\priority projects\\IndicatorCheck7Nov2017.csv')
 #IndicatorCheck=read.csv('Z:\\buglab\\Research Projects\\AIM\\Projects\\Idaho\\Statewide\\Analysis\\Weights_ExtentEstimates\\IndicatorCheckIDstatewidedata_13April2017.csv')
 #IndicatorCheck=read.csv('Z:\\buglab\\Research Projects\\AIM\\Projects\\Utah\\GSENM\\Analysis\\Weights_ExtentEstimates\\IndicatorCheckGrandStaircase_18April2017.csv')
-IndicatorCheck=read.csv('Z:\\buglab\\Research Projects\\AIM\\Analysis\\QC\\2017\\IndicatorCheckAll14march2018_allsites.csv')
+#IndicatorCheck=read.csv('Z:\\buglab\\Research Projects\\AIM\\Analysis\\QC\\2017\\IndicatorCheckAll14march2018_allsites.csv')
 
 ###Add spatial attributes or Misc other categorical fields needed for setting benchmarks
 #size class info
@@ -65,16 +65,16 @@ Indicators$NAMC_Benchmark=ifelse(Indicators$NAMC_Benchmark=="NorthernRockies_Boa
 # Indicators$THRESH2=ifelse(Indicators$THRESH2=="PL_RANGE_BOATABLE"|Indicators$THRESH2=="PLN_CULT_BOATABLE"|Indicators$THRESH2=="MT_PNW_BOATABLE"|Indicators$THRESH2=="MT_NROCK_BOATABLE"|Indicators$THRESH2=="MT_SROCK_BOATABLE"|Indicators$THRESH2=="XE_NORTH_BOATABLE"|Indicators$THRESH2=="XE_EPLAT_BOATABLE"|Indicators$THRESH2=="XE_SOUTH_BOATABLE","ALL_BOATING",Indicators$THRESH2)
 # Indicators$THRESH4=ifelse(Indicators$ECO10=="XE_EPLAT"|Indicators$ECO10=="XE_SOUTH"|Indicators$ECO10=="PLN_CULT"|Indicators$ECO10=="PL_RANGE","lowstab","highstab")
 
-############Join bug data to all other indicator data
-#If joining bug data to data already in benchmark tool or AquADat just run this portion
-Bugs=read.csv("\\\\share1.bluezone.usu.edu\\miller\\buglab\\OE_Modeling\\NAMC_Supported_OEmodels\\final_bug_scores_R_input_join_to_all_other_metrics_statebasedscores.csv")
-#subset so that only the state model or the model of interest is in the data...this is necesssary because this file has westwide as well as state based scores for a single sample
-Bugs=subset(Bugs,MODEL!="Westwide")#Westwide, ColumbiaRiverBasin_PIBO, OR_WesternCordillera_ColumbiaPlateau, OR_MarineWesternCoastalForest, UT_DEQ_2015,CO_EDAS-Biotype1, CO_EDAS-Biotype2,CO_EDAS-Biotype3,CA_CSCI,NV_MMI
-#exclude sites that were outside the experience of the model and counts less than 200 if condition is poor but include everything in AquDat and Benchmark tool export
-Bugs=Bugs[,c(1,12,5,6,7,8,10,11)]
-#write.csv(Bugs,'Bugs.csv') #uncomment this line to export bug data that needs to be added to already existing records in AquADat
-Indicators=join(Indicators,Bugs, by="UID",type="left")
-
+# ############Join bug data to all other indicator data
+# #If joining bug data to data already in benchmark tool or AquADat just run this portion
+# Bugs=read.csv("\\\\share1.bluezone.usu.edu\\miller\\buglab\\OE_Modeling\\NAMC_Supported_OEmodels\\final_bug_scores_R_input_join_to_all_other_metrics_statebasedscores.csv")
+# #subset so that only the state model or the model of interest is in the data...this is necesssary because this file has westwide as well as state based scores for a single sample
+# Bugs=subset(Bugs,MODEL!="Westwide")#Westwide, ColumbiaRiverBasin_PIBO, OR_WesternCordillera_ColumbiaPlateau, OR_MarineWesternCoastalForest, UT_DEQ_2015,CO_EDAS-Biotype1, CO_EDAS-Biotype2,CO_EDAS-Biotype3,CA_CSCI,NV_MMI
+# #exclude sites that were outside the experience of the model and counts less than 200 if condition is poor but include everything in AquDat and Benchmark tool export
+# Bugs=Bugs[,c(1,12,5,6,7,8,10,11)]
+# #write.csv(Bugs,'Bugs.csv') #uncomment this line to export bug data that needs to be added to already existing records in AquADat
+# Indicators=join(Indicators,Bugs, by="UID",type="left")
+# 
 
 ###########May need to join in WQ data as well if WQ not complete at the time of indicator calc, if so uncomment all lines
 # #All WQ data from Baker lab or modeling
@@ -90,8 +90,8 @@ Indicators=join(Indicators,Bugs, by="UID",type="left")
 # Indicators=join(Indicators,WQfinal, by="UID",type="left")
 
 ##########Finally format file for AquADat or benchmark tool
-#Format for AquADat OR
-data.xwalk=read.csv('\\\\share1.bluezone.usu.edu\\miller\\buglab\\Research Projects\\AIM\\Database_Development\\AquaDat_computed_metrics\\indicatorXwalkLocal2018_aquadat.csv')
+# #Format for AquADat OR
+# data.xwalk=read.csv('\\\\share1.bluezone.usu.edu\\miller\\buglab\\Research Projects\\AIM\\Database_Development\\AquaDat_computed_metrics\\indicatorXwalkLocal2018_aquadat.csv')
 
 #format for benchmark tool
 data.xwalk=read.csv('\\\\share1.bluezone.usu.edu\\miller\\buglab\\Research Projects\\AIM\\Database_Development\\AquaDat_computed_metrics\\indicatorXwalkLocal2018_benchmarktool.csv')
@@ -107,6 +107,12 @@ data.xwalk=read.csv('\\\\share1.bluezone.usu.edu\\miller\\buglab\\Research Proje
 data.input=Indicators
 IndicatorsFinal=indicatorXwalk(data.input,data.xwalk)
 
-write.csv(IndicatorsFinal,'IndicatorsFinalExport16Jan2019.csv',na="")     
+IndicatorsFinal=IndicatorsFinal[order(IndicatorsFinal$Project,IndicatorsFinal$SiteCode),]
+write.csv(IndicatorsFinal,paste0('IndicatorsFinalExport',Sys.Date(),'.csv'),na="")     
 
+project=unique(IndicatorsFinal$Project)
 
+for (p in 1:length(project)){
+  p1=IndicatorsFinal[which(IndicatorsFinal$Project==project[p]),]
+write.csv(p1,paste0('IndicatorsFinalExport',project[p],Sys.Date(),'.csv'))
+  }

@@ -3,12 +3,12 @@
 #test
 
 #-------------------------------------------------------INPUTS--------------------------------------------------------#
-#In the ideal world, users should only need to put inputs here and be able to get results out of the 'black box' below using existing functions.
-DBpassword=''#Always leave blank when saving for security and because changes annually. Contact Sarah Judson for current password.
-DBuser=''#ditto as with DBpassword
-DBserver=''#ditto as with DBpassword
-DBname=''#ditto as with DBpassword
-#this is a change
+# #In the ideal world, users should only need to put inputs here and be able to get results out of the 'black box' below using existing functions.
+# DBpassword=''#Always leave blank when saving for security and because changes annually. Contact Sarah Judson for current password.
+# DBuser=''#ditto as with DBpassword
+# DBserver=''#ditto as with DBpassword
+# DBname=''#ditto as with DBpassword
+# #this is a change
 
 #--------------------------------------------------------SETUP--------------------------------------------------------#
 #LOAD required packages#
@@ -51,8 +51,8 @@ source('FNC_tblRetrievePVT_new.R')
 source('indicatorXwalk.R')
 
 
-#------------------------------------------------------DEFAULTS-----------------------------------------------
-#FILTERS
+#------------------------------------------------------FILTERS-----------------------------------------------
+
 
 ###SITECODES####
 ####all site codes
