@@ -275,6 +275,7 @@ coordinate_design_QC=postseasonmetadata[,c('PROJECT','PROTOCOL','VALXSITE','SITE
           #QC sites should also be verified with the QC cew design management spreadsheet
     #4 Check that the design database GIS table has been updated with all the needed attributes for these sites
           #columns Stream_OR - Climate_spelledout
+coordinate_design_QC=coordinate_design_QC[order(coordinate_design_QC$SINUOSITY),]
 write.csv(coordinate_design_QC,'coordinate_design_QC.csv')
 
 # #you can use the code below to plot the coordinates in R
@@ -366,7 +367,7 @@ if(nrow(SamplingCheck2)>0){write.csv(SamplingCheck2,'ReachWideTranNumCheck.csv')
 WQ2=tblRetrieve(Parameters=c('CONDUCTIVITY','CORRECTED','TEMPERATURE'), Comments='Y', Years=years, Projects=projects,Protocols=protocols,SiteCodes=sitecodes,Insertion=insertion)
 WQ1=cast(WQ2,'UID~PARAMETER',value='RESULT')
 WQind=cast(WQ2,'UID~PARAMETER',value='IND')
-WQ3=addKEYS(merge(WQ1,WQind,by=c('UID'),all=T) ,c('SITE_ID','DATE_COL','CREW_LEADER'))
+WQ3=addKEYS(merge(WQ1,WQind,by=c('UID'),all=T) ,c('SITE_ID','DATE_COL','CREW_LEADER','PROJECT'))
 WQ3.sub=subset(WQ3,CORRECTED.x!='Y')
 if(nrow(WQ3.sub)>0){write.csv(WQ3.sub,'not_temp_corrected_conduct.csv')}
 
@@ -386,14 +387,17 @@ if(nrow(WQ3.sub)>0){write.csv(WQ3.sub,'not_temp_corrected_conduct.csv')}
 # ConditionCheck2=aggregate(TIME_UNFROZEN~OE_TPrtg, data=WQpvt, FUN=mean) 
 #                       
 #view any typical values violations for Conductivity and PH
-Conduct=addKEYS(tblRetrieve(Comments='Y',Parameters=c('CONDUCTIVITY'),Projects=projects,Years=years,Protocols=protocols,SiteCodes=sitecodes,Insertion=insertion),c('SITE_ID'))
+Conduct=addKEYS(tblRetrieve(Comments='Y',Parameters=c('CONDUCTIVITY'),Projects=projects,Years=years,Protocols=protocols,SiteCodes=sitecodes,Insertion=insertion),c('PROJECT','SITE_ID','CREW_LEADER'))
 ConductQuestions=subset(Conduct,RESULT<100 | RESULT>600)# review comments for any sites flagged here 
 #postseasonmetadata_ecoregion=postseasonmetadata[,c('UID','ECO_10')]
 #ConductQuestions=join(ConductQuestions,postseasonmetadata_ecoregion, by="UID",type="left")
+
+ConductQuestions=ConductQuestions[order(ConductQuestions$RESULT),c(1,8,3,4,2,5,6,7,9:17)]
 if(nrow(ConductQuestions)>0){write.csv(ConductQuestions,'ConductQuestions.csv')}
-PH=addKEYS(tblRetrieve(Comments='Y',Parameters=c('PH'),Projects=projects,Years=years,Protocols=protocols,SiteCodes=sitecodes,Insertion=insertion),c('SITE_ID'))
+PH=addKEYS(tblRetrieve(Comments='Y',Parameters=c('PH'),Projects=projects,Years=years,Protocols=protocols,SiteCodes=sitecodes,Insertion=insertion),c('PROJECT','SITE_ID','CREW_LEADER'))
 PHQuestions=subset(PH,RESULT<6 | RESULT>9)# review comments for any sites flagged here
 #PHQuestions=join(PHQuestions,postseasonmetadata_ecoregion, by="UID",type="left")
+PHQuestions=PHQuestions[order(PHQuestions$RESULT),c(1,8,3,4,2,5,6,7,9:17)]
 if(nrow(PHQuestions)>0){write.csv(PHQuestions,'PHQuestions.csv')}
 
 # #compare any questionable values to ecoregional EPA data
@@ -410,8 +414,9 @@ if(nrow(PHQuestions)>0){write.csv(PHQuestions,'PHQuestions.csv')}
                       
 ####### incision and bank height ############
 #cross checks implemented in app so just check extreme values, outliers (above), and for unit issues
-heights=addKEYS(tblRetrieve(Parameters=c('INCISED','BANKHT'),Years=years, Projects=projects,Protocols=protocols,SiteCodes=sitecodes,Insertion=insertion),c('SITE_ID','DATE_COL','CREW_LEADER'))
+heights=addKEYS(tblRetrieve(Parameters=c('INCISED','BANKHT'),Years=years, Projects=projects,Protocols=protocols,SiteCodes=sitecodes,Insertion=insertion),c('SITE_ID','CREW_LEADER','PROJECT'))
 HeightCheck1=subset(heights,RESULT>1.5|RESULT<0.1)
+HeightCheck1=HeightCheck1[order(HeightCheck1$RESULT),c(1,8,3,4,2,5,6,7,9:16)]
 if(nrow(HeightCheck1)>0){write.csv(HeightCheck1,'HeightCheck1.csv')}
                       
                       
@@ -448,7 +453,7 @@ saveWorkbook(wb, "InterruptedFlowChecks.xlsx") #check this file with those expor
 
 
 #######   width  and depth dry checks #########
-#cross checks implemented in app and extreme values hard to catch/ not so important so just check for outliers(above), and for protocol issues related to dry sites                       
+#cross check for protocol issues related to dry sites                       
 Depths=tblRetrieve(Parameters=c('DEPTH'),Years=years, Projects=projects,Protocols=protocols,SiteCodes=sitecodes,Insertion=insertion)
 Depths=subset(Depths,RESULT==0 & POINT==1)
 query=NA
@@ -493,7 +498,7 @@ if(nrow(DryCheck)>0){write.csv(DryCheck,'DryCheck.csv')}# any exported results s
 
 #####  floodprone width #######
 FloodWidth=tblRetrieve(Parameters=c('FLOOD_WID','FLOOD_BFWIDTH','FLOOD_HEIGHT','FLOOD_BFHEIGHT'), Projects=projects, Years=years,Protocols=protocols,SiteCode=sitecodes,Insertion=insertion)
-FloodWidthpvt=cast(FloodWidth,'UID+TRANSECT~PARAMETER',value='RESULT')
+FloodWidthpvt=addKEYS(cast(FloodWidth,'UID+TRANSECT~PARAMETER',value='RESULT'),c('PROJECT','SITE_ID','CREW_LEADER'))
 FloodWidthpvtsub=subset(FloodWidthpvt,FLOOD_WID<FLOOD_BFWIDTH)
 if(nrow(FloodWidthpvtsub)>0) {write.csv(FloodWidthpvtsub,'FloodWidthLessBankfull.csv')}
                       
@@ -533,14 +538,15 @@ Nbed_Sed2014pvt=aggregate(.~UID, data=C_Sed2014, length)#number of bed pebbles
 Nbed_Sed2014pvt=setNames(Nbed_Sed2014pvt[,c(1,5)],c("UID","nbed"))
 Nall_Sed2014pvt=setNames(cast(Sed2014,'UID~PARAMETER',value='RESULT',fun=length),c("UID","nLOC","nall"))#number of all collected pebbles
 Nall_Sed2014pvt=Nall_Sed2014pvt[,c(1,3)]
-sample_size=addKEYS(join(Nbed_Sed2014pvt,Nall_Sed2014pvt, by="UID"),c('SITE_ID'))                      
+sample_size=addKEYS(join(Nbed_Sed2014pvt,Nall_Sed2014pvt, by="UID"),c('SITE_ID','PROJECT','CREW_LEADER'))                      
+sample_size=sample_size[order(sample_size$nall),]
 write.csv(sample_size,'sed_sample_size.csv')
 
 ###### Angle  ########                      
 #outlier checks (above) and check for missing SLANT to check if angle was being calculated in app properly
 #only issues are exported, no issues were found in 2017 with this so can likely ignore for the most part this year
 Angle=tblRetrieve(Parameters=c('ANGLE180','SLANT'),Years=years, Projects=projects,SiteCodes=sitecodes,Insertion=insertion)
-pvtAngle=addKEYS(cast(Angle,'UID+TRANSECT+POINT~PARAMETER',value='RESULT'), c('SITE_ID','DATE_COL','CREW_LEADER'))                     
+pvtAngle=addKEYS(cast(Angle,'UID+TRANSECT+POINT~PARAMETER',value='RESULT'), c('SITE_ID','PROJECT','CREW_LEADER'))                     
 AngleCheck1=subset(pvtAngle, is.na(pvtAngle$SLANT)=='TRUE')                      
 AngleCheck2=subset(pvtAngle, SLANT=='OB' & as.numeric(ANGLE180)<90)  
 if(nrow(AngleCheck1)>0) {write.csv(AngleCheck1,'AngleCheckSlant.csv')}# slant being filled out properly for all angles
@@ -593,6 +599,86 @@ riparian5=tblRetrieve(Parameters=c('UNDERVEG','UNDNWDY','UNDWDY'),Years=years, P
 riparian5PVT=cast(riparian5,'UID+TRANSECT+POINT~PARAMETER',value='RESULT')
 riparian5pvtsub2=subset(riparian5PVT,UNDERVEG!='N' & UNDNWDY==0 & UNDWDY==0)
 if(nrow(riparian5pvtsub2)>0){write.csv(riparian5pvtsub2,'rip52.csv')}
+
+
+##### Non-Natives ######
+nonnative=addKEYS(tblRetrieve(Parameters=c('UNDERVEG'),Years=years, Projects=projects,SiteCodes=sitecodes,Insertion=insertion),c('SITE_ID'))
+nonnative$CommonName=nonnative$RESULT
+specieslists=read.csv("Z:\\buglab\\Research Projects\\AIM\\Protocols\\NonNativeVeg\\specieslist.csv")
+nonnative=join(specieslists,nonnative,by=c("CommonName"),type="left")
+pvtnonnative=addKEYS(cast(nonnative,'UID~ScientificName',value='PARAMETER',length),c('SITE_ID'))
+
+#add full list of species from each state along with scientific name #need full list of sites query unique UIDs for nonnative presence absence and join....
+RipBLM=tblRetrieve(Parameters=c('CANRIPW','UNRIPW','GCRIP','INVASW', 'NATIVW','INVASH','NATIVH','SEGRUSH'),Projects=projects,Years=years,Protocols=protocols,SiteCodes=sitecodes,Insertion=insertion)
+FQCY_VEG=subset(RipBLM, PARAMETER == 'INVASW'|PARAMETER == 'NATIVW'|PARAMETER == 'INVASH'|PARAMETER == 'NATIVH'|PARAMETER == 'SEGRUSH')
+nFQCY_VEG=setNames(plyr::count(FQCY_VEG,c("UID",'PARAMETER')),c("UID",'PARAMETER',"nFQCY_VEG_CHECK"))#total=22,but collected at 5 transects=10, so min N=10
+nFQCY_VEG=cast(nFQCY_VEG,"UID~PARAMETER",value="nFQCY_VEG_CHECK",fun="sum")
+FQCY_VEG$RESULT_A=as.numeric(ifelse(FQCY_VEG$RESULT == 'N', 0,ifelse(FQCY_VEG$RESULT == 'Y', 100,"NA")))
+FQCY_VEG=cast(FQCY_VEG,'UID~PARAMETER',value='RESULT_A',fun=mean)
+FQCY_VEG=setNames(merge(nFQCY_VEG,FQCY_VEG,by="UID"),c("UID","nINVASH_CHECK","nINVASW_CHECK","nNATIVH_CHECK","nNATIVW_CHECK","nSEGRUSH_CHECK","INVASH_CHECK","INVASW_CHECK","NATIVH_CHECK","NATIVW_CHECK","SEGRUSH_CHECK"))                  
+FQCY_VEG$INVASW_CHECK=round(FQCY_VEG$INVASW_CHECK,digits=0)
+FQCY_VEG$INVASH_CHECK=round(FQCY_VEG$INVASH_CHECK,digits=0)
+FQCY_VEG$NATIVH_CHECK=round(FQCY_VEG$NATIVH_CHECK,digits=0)
+FQCY_VEG$NATIVW_CHECK=round(FQCY_VEG$NATIVW_CHECK,digits=0)
+FQCY_VEG$SEGRUSH_CHECK=round(FQCY_VEG$SEGRUSH_CHECK,digits=0)
+FQCY_VEG$INVASW_CHECK=ifelse(FQCY_VEG$nINVASW_CHECK<10,NA,FQCY_VEG$INVASW_CHECK)#total=22,but collected at 5 transects=10, so min N=10
+FQCY_VEG$INVASH_CHECK=ifelse(FQCY_VEG$nINVASH_CHECK<10,NA,FQCY_VEG$INVASH_CHECK)#total=22,but collected at 5 transects=10, so min N=10
+FQCY_VEG$NATIVH_CHECK=ifelse(FQCY_VEG$nNATIVH_CHECK<10,NA,FQCY_VEG$NATIVH_CHECK)#total=22,but collected at 5 transects=10, so min N=10
+FQCY_VEG$NATIVW_CHECK=ifelse(FQCY_VEG$nNATIVW_CHECK<10,NA,FQCY_VEG$NATIVW_CHECK)#total=22,but collected at 5 transects=10, so min N=10
+FQCY_VEG$SEGRUSH_CHECK=ifelse(FQCY_VEG$nSEGRUSH_CHECK<10,NA,FQCY_VEG$SEGRUSH_CHECK)#total=22,but collected at 5 transects=10, so min N=10
+
+pvtnonnative=join(FQCY_VEG,pvtnonnative, by="UID",type="left")
+#convert to percent
+for (i in 14:ncol(pvtnonnative)-2){
+  pvtnonnative[,i]=round(pvtnonnative[,i]/FQCY_VEG$nNATIVW_CHECK*100,digits=0)
+}
+
+#add state info
+designs=read.csv('\\\\share1.bluezone.usu.edu\\miller\\buglab\\Research Projects\\AIM\\Design\\DesignDatabase\\2019DesignSites_for_QC_input.csv')
+state=designs[,c('SITE_ID','STATE')]
+pvtnonnative=join(pvtnonnative,state,by="SITE_ID", type="left")
+
+write.csv(pvtnonnative,'pvtnonnative.csv')
+
+
+# # if species was in the state list, met minium data requirements, and are currently blank should have value of 0 if not make cells NA
+# statelists=read.csv("Z:\\buglab\\Research Projects\\AIM\\Protocols\\NonNativeVeg\\Comprehensive Aquatic AIM Nonnative Riparian Plant Species List_JC.csv")
+# state=unique(statelists$STATE)
+# for (i in 1:length(state)){
+#  statelists2=statelists[statelists$STATE==state[i],]
+#  assign(paste0(state[i]),unique(statelists2$ScientificName))
+# }
+# 
+# sub=pvtnonnative
+# 
+# sub2=sub[,CO]
+# 
+# for (s in 1:length(state)){
+#   sub=pvtnonnative[which(pvtnonnative$STATE==paste0(state[1])),]
+#   cols=colnames(sub)
+#       for (i in 1:ncol(cols)){
+#           for r in 1:nrow(sub)){
+#               if(cols[64] %in% CO & is.na(sub[3,64])==TRUE) {sub[3,64]==0}
+#               else {sub[3,64]==sub[3,64] }
+#               if(cols[i] %in% CO & sub[2,1]=>0) {sub[2,1]==sub[2,1]}
+#               else {sub[2,1]==NA } 
+#           }
+#       }
+# }
+# 
+# for (s in 1:length(state)){
+#   sub=pvtnonnative[which(pvtnonnative$STATE==paste0(state[1])),]
+#   cols=colnames(sub)
+#   for (i in 1:ncol(cols)){
+#     for r in 1:nrow(sub)){
+#       if(cols[s] %in% cols[i] & sub[r,i]==NA) {sub[r,i]==0}
+#       else {sub[r,i]==sub[r,i] }
+#       if(cols[i] %in% state[s] & sub[r,i]=>0) {sub[r,i]==sub[r,i]}
+#       else {sub[r,i]==NA } 
+#     }
+#   }
+# }
+# 
                       
 ###### Thalweg   #########
 
@@ -647,7 +733,7 @@ incrementcheck=tblRetrieve(Parameters=c('TRCHLEN','INCREMENT','RCHWIDTH'), Proje
 incrsub=subset(incrementcheck,UID!='1500BC4F-C9B3-4FFC-9639-B5054B0FCD62')#UID:10383  IND 4849393 needs to be deactivated for this to work
 incrementPVT=cast(incrsub,'UID~PARAMETER',value='RESULT')
 incrementsub=subset(incrementPVT,TRCHLEN/0.01!=INCREMENT)#also check manually in excel and also checked to make sure that RCHWIDTH*40=TRCHLEN and for RCHWIDTH<2.5 INCREMENT=1 and for RCHWIDTH>2.5<4 INCREMENT=1.5
-write.csv(incrementPVT,'incrementPVT.csv')
+#write.csv(incrementPVT,'incrementPVT.csv')
 #weridinc=tblRetrieve(Parameters=c('INCREMENT'),UIDS='11852')
                       
 # #thalweg checks####couldn't get this to work so did cell referencing in excel to interpolate between values with 1 missing value inbetween
@@ -755,19 +841,23 @@ FinalpvtPoolFines$PctPoolFines6CV=FinalpvtPoolFines$PctPoolFines6SD/FinalpvtPool
 subQC=subset(FinalpvtPoolFines,FinalpvtPoolFines$PctPoolFines6CV>=1.41|FinalpvtPoolFines$PctPoolFines2CV>=1.41)#sites with CV >1.414 should be QCed 
 write.csv(subQC,'pooltailfines_highvariance.csv')
 }
+
+
 ########  side channels  ############
 #check how many side channels crews are at sites to keep an eye on workload of sampling side channels
 side=tblRetrieve(Parameters=c('SIDCHN','SIDCH_TYPE'),Projects=projects,Years=years,Protocols=protocols,SiteCodes=sitecodes,Insertion=insertion)
-sidepvt=addKEYS(cast(side,'UID+TRANSECT~PARAMETER',value='RESULT'),c('SITE_ID','DATE_COL','PROJECT'))
+sidepvt=addKEYS(cast(side,'UID+TRANSECT~PARAMETER',value='RESULT'),c('SITE_ID','CREW_LEADER','PROJECT'))
 sidepvtsubset=subset(sidepvt,SIDCHN=='Y')
 write.csv(sidepvtsubset,'SideChannels.csv')
 
-#########  photos  ###################
-#use to check any questionable values such as bankfull widths and heights
-#this hasn't been used to date. photo comments should be reviewed at some point
-Photo=tblRetrieve(Parameters=c('PHOTO_ID','PHOTO_DESCRIP','PHOTO_TYPE','ROD','DIRECTION','COMMENT'),Projects=projects,Years=years,SiteCodes=sitecodes,Insertion=insertion)                   
-pvtPhotos=cast(Photo,'UID+POINT~PARAMETER',value='RESULT')
-write.csv(pvtPhotos,'photos.csv')
+
+
+# #########  photos  ###################
+# #use to check any questionable values such as bankfull widths and heights
+# #this hasn't been used to date. photo comments should be reviewed at some point
+# Photo=tblRetrieve(Parameters=c('PHOTO_ID','PHOTO_DESCRIP','PHOTO_TYPE','ROD','DIRECTION','COMMENT'),Projects=projects,Years=years,SiteCodes=sitecodes,Insertion=insertion)                   
+# pvtPhotos=cast(Photo,'UID+POINT~PARAMETER',value='RESULT')
+# write.csv(pvtPhotos,'photos.csv')
 
 
 #######################################################################
@@ -776,7 +866,7 @@ write.csv(pvtPhotos,'photos.csv')
 
 #This outputs all numeric fields in our database. As such, it is repetitive with many of the above checks. Most fields are better check above. 
 #However, there are a few indicators that don't get checked above or additional checks can be done in this file
-#Angle180--check for typos or angles that are 0 or 180, 180 is less concerning
+#ANGLE180--check for typos or angles that are 0 or 180, 180 is less concerning
 #BANKHT--check for unit issues
 #BANKWID--check for unit issues
 #BARWID--check for typos or unit issues
@@ -828,6 +918,8 @@ if(min(c('SAMPLE_TYPE',tblCOL) %in% colnames(UnionTBL))==1){#if minimum needed c
 # for (t in 1:length(QUANTtbls)){
 #   write.csv(eval(parse(text=QUANTtbls[t])),sprintf('%s.csv',QUANTtbls[t]))#could merge-pvtQUANTmean_, but I like them grouped by categories
 # }
+
+UnionTBLnum_pvtSUMMARYn_Site=subset(UnionTBLnum_pvtSUMMARYn_Site,PARAMETER %in% c('ANGLE180', 'BANKHT','BANKWID','BARWID','DENSIOM','DEPTH','LWD','ELEVATION','INCISED','SIZENUM','TEMPERATURE','WETWID','FLOOD_MAX_DEPTH','FLOOD_WID','FLOOD_BF_HEIGHT','FLOOD_BFWIDTH','FLOOD_HEIGHT'))
 
 write.csv(UnionTBLnum_pvtSUMMARYn_Site,'UnionTBLnum_pvtSUMMARYn_Site.csv')
 

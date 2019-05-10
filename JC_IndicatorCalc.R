@@ -79,7 +79,7 @@ RipGB=tblRetrieve(Parameters=c("BARE"),Projects=projects,Years=years,Protocols=p
 #unique(RipAllpvt$TRANSECT)
 
 #BLM riparian cover and frequency
-RipBLM=tblRetrieve(Parameters=c('CANRIPW','UNRIPW','GCRIP','INVASW', 'NATIVW','INVASH','NATIVH','SEGRUSH'),Projects=projects,Years=years,Protocols=protocols,SiteCodes=sitecodes,Insertion=insertion)
+RipBLM=tblRetrieve(Parameters=c('CANRIPW','UNRIPW','GCRIP','INVASW', 'NATIVW','INVASH','NATIVH','SEGRUSH','INVASAQ'),Projects=projects,Years=years,Protocols=protocols,SiteCodes=sitecodes,Insertion=insertion)
 #pvtRipBLM=cast(RipBLM,'UID+TRANSECT+POINT~PARAMETER',value='RESULT')
 
 #Bug data
@@ -255,7 +255,7 @@ DensPvt=cast(MidDensiom,'UID~PARAMETER',value='RESULT',fun=mean)
 DensPvt$XCDENMID_CHECK=round((DensPvt$DENSIOM/17)*100,digits=2)
 #Trying to figure out what is going on with UID 11802.
 #Dens_Pvt3=cast(MidDens3,'UID+TRANSECT~PARAMETER',value='RESULT',fun=mean)
-nDensPvt=setNames(count(MidDensiom,"UID"),c("UID","nXCDENMID_CHECK"))#should be 4 locations at 11 transects=44 so half is 4 * 5transects
+nDensPvt=setNames(plyr::count(MidDensiom,"UID"),c("UID","nXCDENMID_CHECK"))#should be 4 locations at 11 transects=44 so half is 4 * 5transects
 DensPvt=merge(nDensPvt,DensPvt,by="UID")
 DensPvt$XCDENMID_CHECK=ifelse(DensPvt$nXCDENMID_CHECK<20,NA,DensPvt$XCDENMID_CHECK)
 DensPvt$XCDENMID_CHECK=round(DensPvt$XCDENMID_CHECK,digits=1)
@@ -265,7 +265,7 @@ DensPvt$XCDENMID_CHECK=round(DensPvt$XCDENMID_CHECK,digits=1)
 BnkDensiom = subset(densiom, POINT == "LF"|POINT =="RT"|POINT=="UP"|POINT=="DN")
 BnkDensPvt=cast(BnkDensiom,'UID~PARAMETER',value='RESULT',fun=mean)
 BnkDensPvt$XCDENBK_CHECK=round((BnkDensPvt$DENSIOM/17)*100,digits=2)
-nBnkDensPvt=setNames(count(BnkDensiom,"UID"),c("UID","nXCDENBK_CHECK"))# should be 2 locations at 11 transects=22 so half is 2 * 5 transects
+nBnkDensPvt=setNames(plyr::count(BnkDensiom,"UID"),c("UID","nXCDENBK_CHECK"))# should be 2 locations at 11 transects=22 so half is 2 * 5 transects
 BnkDensPvt=merge(nBnkDensPvt,BnkDensPvt,by="UID")
 BnkDensPvt$XCDENBK_CHECK=ifelse(BnkDensPvt$nXCDENBK_CHECK<10,NA,BnkDensPvt$XCDENBK_CHECK)
 BnkDensPvt$XCDENBK_CHECK=round(BnkDensPvt$XCDENBK_CHECK,digits=1)
@@ -282,7 +282,7 @@ XCMG_new=setNames(cast(RipXCMG,'UID+TRANSECT+POINT~ACTIVE', value='ResultsPer',f
 XCMG_new1=setNames(aggregate(VALUE~UID,data=XCMG_new,FUN=mean),list("UID","XCMG_CHECK"))
 XCMG_new1$XCMG_CHECK=round(XCMG_new1$XCMG_CHECK,digits=2)
 #sample sizes
-nXCMG_new=setNames(count(RipXCMG,"UID"),c("UID","nXCMG_CHECK"))#6 strata(canopy-big trees, small trees,understory- woody, nonwoody,groundcove- woody, nonwoody) *2 banks*11 transects=132 so half data = 6*2* 5 transects=60
+nXCMG_new=setNames(plyr::count(RipXCMG,"UID"),c("UID","nXCMG_CHECK"))#6 strata(canopy-big trees, small trees,understory- woody, nonwoody,groundcove- woody, nonwoody) *2 banks*11 transects=132 so half data = 6*2* 5 transects=60
 XCMG_new1=merge(nXCMG_new,XCMG_new1, by="UID")
 XCMG_new1$XCMG_CHECK=ifelse(XCMG_new1$nXCMG_CHECK<60,NA,XCMG_new1$XCMG_CHECK)#5 sites 3 WRSA 54-60
 
@@ -312,7 +312,7 @@ XCMG_new1$XCMG_CHECK=ifelse(XCMG_new1$nXCMG_CHECK<60,NA,XCMG_new1$XCMG_CHECK)#5 
 #Riparian vegetation cover
 RIP_VEG=subset(RipBLM, PARAMETER == 'CANRIPW'|PARAMETER == 'UNRIPW'|PARAMETER == 'GCRIP')
 RIP_VEG$ResultsPer=ifelse(RIP_VEG$RESULT == 1, 0.05,ifelse(RIP_VEG$RESULT == 2, 0.25,ifelse(RIP_VEG$RESULT == 3, 0.575,ifelse(RIP_VEG$RESULT == 4, 0.875,ifelse(RIP_VEG$RESULT ==0, 0, NA)))))
-nRIP_VEG=setNames(count(RIP_VEG,c("UID",'PARAMETER')),c("UID",'PARAMETER',"nRIP_VEG_CHECK"))#
+nRIP_VEG=setNames(plyr::count(RIP_VEG,c("UID",'PARAMETER')),c("UID",'PARAMETER',"nRIP_VEG_CHECK"))#
 nRIP_VEG=setNames(cast(nRIP_VEG,"UID~PARAMETER",value="nRIP_VEG_CHECK",fun="sum"),c('UID','nCANRIPW_CHECK','nUNRIPW_CHECK', 'nGCRIP_CHECK'))
 RIP_VEG=setNames(cast(RIP_VEG,'UID~PARAMETER', value='ResultsPer',fun='mean'),c('UID','CANRIPW_CHECK','UNRIPW_CHECK', 'GCRIP_CHECK'))
 RIP_VEG=merge(nRIP_VEG,RIP_VEG,by="UID")
@@ -324,24 +324,47 @@ RIP_VEG$UNRIPW_CHECK=ifelse(RIP_VEG$nUNRIPW_CHECK<10,NA,RIP_VEG$UNRIPW_CHECK)#to
 RIP_VEG$GCRIP_CHECK=ifelse(RIP_VEG$nGCRIP_CHECK<10,NA,RIP_VEG$GCRIP_CHECK)#total=22,but collected at 5 transects=10, so min N=10
 
 #Riparian vegetation frequency
-#Works!!!Try to take NA out of quotes and you may not need as.numeric
+# #Works!!!Try to take NA out of quotes and you may not need as.numeric
+# #pre2019 data
+# FQCY_VEG=subset(RipBLM, PARAMETER == 'INVASW'|PARAMETER == 'NATIVW'|PARAMETER == 'INVASH'|PARAMETER == 'NATIVH'|
+#                   PARAMETER == 'SEGRUSH')
+# nFQCY_VEG=setNames(plyr::count(FQCY_VEG,c("UID",'PARAMETER')),c("UID",'PARAMETER',"nFQCY_VEG_CHECK"))#total=22,but collected at 5 transects=10, so min N=10
+# nFQCY_VEG=cast(nFQCY_VEG,"UID~PARAMETER",value="nFQCY_VEG_CHECK",fun="sum")
+# FQCY_VEG$RESULT_A=as.numeric(ifelse(FQCY_VEG$RESULT == 'N', 0,ifelse(FQCY_VEG$RESULT == 'Y', 100,"NA")))
+# FQCY_VEG=cast(FQCY_VEG,'UID~PARAMETER',value='RESULT_A',fun=mean)
+# FQCY_VEG=setNames(merge(nFQCY_VEG,FQCY_VEG,by="UID"),c("UID","nINVASH_CHECK","nINVASW_CHECK","nNATIVH_CHECK","nNATIVW_CHECK","nSEGRUSH_CHECK","INVASH_CHECK","INVASW_CHECK","NATIVH_CHECK","NATIVW_CHECK","SEGRUSH_CHECK"))                  
+# FQCY_VEG$INVASW_CHECK=round(FQCY_VEG$INVASW_CHECK,digits=0)
+# FQCY_VEG$INVASH_CHECK=round(FQCY_VEG$INVASH_CHECK,digits=0)
+# FQCY_VEG$NATIVH_CHECK=round(FQCY_VEG$NATIVH_CHECK,digits=0)
+# FQCY_VEG$NATIVW_CHECK=round(FQCY_VEG$NATIVW_CHECK,digits=0)
+# FQCY_VEG$SEGRUSH_CHECK=round(FQCY_VEG$SEGRUSH_CHECK,digits=0)
+# FQCY_VEG$INVASW_CHECK=ifelse(FQCY_VEG$nINVASW_CHECK<10,NA,FQCY_VEG$INVASW_CHECK)#total=22,but collected at 5 transects=10, so min N=10
+# FQCY_VEG$INVASH_CHECK=ifelse(FQCY_VEG$nINVASH_CHECK<10,NA,FQCY_VEG$INVASH_CHECK)#total=22,but collected at 5 transects=10, so min N=10
+# FQCY_VEG$NATIVH_CHECK=ifelse(FQCY_VEG$nNATIVH_CHECK<10,NA,FQCY_VEG$NATIVH_CHECK)#total=22,but collected at 5 transects=10, so min N=10
+# FQCY_VEG$NATIVW_CHECK=ifelse(FQCY_VEG$nNATIVW_CHECK<10,NA,FQCY_VEG$NATIVW_CHECK)#total=22,but collected at 5 transects=10, so min N=10
+# FQCY_VEG$SEGRUSH_CHECK=ifelse(FQCY_VEG$nSEGRUSH_CHECK<10,NA,FQCY_VEG$SEGRUSH_CHECK)#total=22,but collected at 5 transects=10, so min N=10
+
+#2019 data
 FQCY_VEG=subset(RipBLM, PARAMETER == 'INVASW'|PARAMETER == 'NATIVW'|PARAMETER == 'INVASH'|PARAMETER == 'NATIVH'|
-                  PARAMETER == 'SEGRUSH')
-nFQCY_VEG=setNames(count(FQCY_VEG,c("UID",'PARAMETER')),c("UID",'PARAMETER',"nFQCY_VEG_CHECK"))#total=22,but collected at 5 transects=10, so min N=10
+                  PARAMETER == 'SEGRUSH'|PARAMETER=='INVASAQ')
+nFQCY_VEG=setNames(plyr::count(FQCY_VEG,c("UID",'PARAMETER')),c("UID",'PARAMETER',"nFQCY_VEG_CHECK"))#total=22,but collected at 5 transects=10, so min N=10
 nFQCY_VEG=cast(nFQCY_VEG,"UID~PARAMETER",value="nFQCY_VEG_CHECK",fun="sum")
 FQCY_VEG$RESULT_A=as.numeric(ifelse(FQCY_VEG$RESULT == 'N', 0,ifelse(FQCY_VEG$RESULT == 'Y', 100,"NA")))
 FQCY_VEG=cast(FQCY_VEG,'UID~PARAMETER',value='RESULT_A',fun=mean)
-FQCY_VEG=setNames(merge(nFQCY_VEG,FQCY_VEG,by="UID"),c("UID","nINVASH_CHECK","nINVASW_CHECK","nNATIVH_CHECK","nNATIVW_CHECK","nSEGRUSH_CHECK","INVASH_CHECK","INVASW_CHECK","NATIVH_CHECK","NATIVW_CHECK","SEGRUSH_CHECK"))                  
+FQCY_VEG=setNames(merge(nFQCY_VEG,FQCY_VEG,by="UID"),c("UID","nINVASAQ_CHECK","nINVASH_CHECK","nINVASW_CHECK","nNATIVH_CHECK","nNATIVW_CHECK","nSEGRUSH_CHECK","INVASAQ_CHECK","INVASH_CHECK","INVASW_CHECK","NATIVH_CHECK","NATIVW_CHECK","SEGRUSH_CHECK"))                  
+FQCY_VEG$INVASAQ_CHECK=round(FQCY_VEG$INVASAQ_CHECK,digits=0)
 FQCY_VEG$INVASW_CHECK=round(FQCY_VEG$INVASW_CHECK,digits=0)
 FQCY_VEG$INVASH_CHECK=round(FQCY_VEG$INVASH_CHECK,digits=0)
 FQCY_VEG$NATIVH_CHECK=round(FQCY_VEG$NATIVH_CHECK,digits=0)
 FQCY_VEG$NATIVW_CHECK=round(FQCY_VEG$NATIVW_CHECK,digits=0)
 FQCY_VEG$SEGRUSH_CHECK=round(FQCY_VEG$SEGRUSH_CHECK,digits=0)
+FQCY_VEG$INVASAQ_CHECK=ifelse(FQCY_VEG$nINVASAQ_CHECK<10,NA,FQCY_VEG$INVASAQ_CHECK)#total=22,but collected at 5 transects=10, so min N=10
 FQCY_VEG$INVASW_CHECK=ifelse(FQCY_VEG$nINVASW_CHECK<10,NA,FQCY_VEG$INVASW_CHECK)#total=22,but collected at 5 transects=10, so min N=10
 FQCY_VEG$INVASH_CHECK=ifelse(FQCY_VEG$nINVASH_CHECK<10,NA,FQCY_VEG$INVASH_CHECK)#total=22,but collected at 5 transects=10, so min N=10
 FQCY_VEG$NATIVH_CHECK=ifelse(FQCY_VEG$nNATIVH_CHECK<10,NA,FQCY_VEG$NATIVH_CHECK)#total=22,but collected at 5 transects=10, so min N=10
 FQCY_VEG$NATIVW_CHECK=ifelse(FQCY_VEG$nNATIVW_CHECK<10,NA,FQCY_VEG$NATIVW_CHECK)#total=22,but collected at 5 transects=10, so min N=10
 FQCY_VEG$SEGRUSH_CHECK=ifelse(FQCY_VEG$nSEGRUSH_CHECK<10,NA,FQCY_VEG$SEGRUSH_CHECK)#total=22,but collected at 5 transects=10, so min N=10
+
 
 ###################################################################################################################
 ###################################################################################################################
@@ -402,7 +425,7 @@ RPD=setNames(aggregate(PoolDepth$RPD,list(UID=PoolDepth$UID),mean),c("UID","RPD"
 RPD$RPD=round(RPD$RPD,digits=2)
 
 #combine all pool metrics and add pool frequency
-count=setNames(count(PoolDepth,"UID"),c("UID","NumPools"))
+count=setNames(plyr::count(PoolDepth,"UID"),c("UID","NumPools"))
 poolmerge2=join_all(list(poolsmerge,count,RPD), by="UID")
 poolmerge2$PoolFrq=round((poolmerge2$NumPools/poolmerge2$POOLRCHLEN)*1000,digits=1)###need to consider what reach length to use here #may need shorted lengths for parial reaches#change to use new parameter POOLRCHLEN
 
@@ -424,7 +447,7 @@ Pools=setNames(subset(poolmerge2,select=c(UID,PoolPct,RPD,PoolFrq,NumPools)),c("
 #C1WM100- (Cummulative count of LWD in bankfull channel across all size classes)/(Reach Length) units are pieces/100m
 LwdWet$TRANSECT=mapvalues(LwdWet$TRANSECT, c("XA", "XB","XC","XD","XE","XF","XG","XH","XI","XJ","XK" ),c("A", "B","C","D","E","F","G","H","I","J","K"))
 LWD_test=setNames(aggregate(RESULT~UID+TRANSECT,data=LwdWet,FUN=sum),c("UID","TRANSECT","C1W"))# count of all LWD pieces per site
-LWD_test2=setNames(count(LWD_test,"UID"),c("UID","NUMTRAN"))# count of the number of transects that wood was collected for #may require package plyr which requires R version > 3????? but I have also gotten count to work in other situations with other version of R required for aquamet
+LWD_test2=setNames(plyr::count(LWD_test,"UID"),c("UID","NUMTRAN"))# count of the number of transects that wood was collected for #may require package plyr which requires R version > 3????? but I have also gotten count to work in other situations with other version of R required for aquamet
 LWD=setNames(aggregate(RESULT~UID,data=LwdWet,FUN=sum),c("UID","C1W"))# count of all LWD pieces per site
 LWD=merge(LWD_test2,LWD,by=c('UID'),all=T)
 LWD=merge(LWD,TRCHLEN1,by=c('UID'), all=T)
@@ -495,7 +518,7 @@ LWDvol1$VOLcalc=LWDvol1$VOLUME*LWDvol1$RESULT #Get the overall volume of wood fo
 LWDvolume=setNames(cast(LWDvol1,"UID+DATE_COL+SAMPLE_TYPE~ACTIVE", value="VOLcalc", fun="sum"),c('UID','DATE_COL','SAMPLE_TYPE','LWDvol')) #Pivots table to get the overall volume of wood for the entire reach. Keep Date so we can set different sample size requirements for different years
 LWDvolume=merge(LWDvolume,subset(LWD, select=c(UID,LWD_RCHLEN),all=TRUE), by="UID",all=TRUE)#Need to run code within lwd count code before this will work
 LWDvolume$V1WM100=(LWDvolume$LWDvol/LWDvolume$LWD_RCHLEN)*100
-nLWD=setNames(count(LwdWet,"UID"),c("UID","nLWD"))#Calculates sample size for each site
+nLWD=setNames(plyr::count(LwdWet,"UID"),c("UID","nLWD"))#Calculates sample size for each site
 LWDvolume$YEAR=format(as.Date(LWDvolume$DATE_COL,'%m/%d/%Y'),'%Y') #Separates year from the date as an easy way to apply apply the sample size needed code below since we had different samplke sizes in different years.
 LWDvolume=merge(nLWD,LWDvolume,by="UID",all=TRUE) #Merge sample sizes to data file by UID
 #Excludes all site values if they do not meet the minumum sample size required:
@@ -791,8 +814,8 @@ xIncht=setNames(aggregate(Inc$INCISED,list(UID=Inc$UID),mean),c("UID","xinc_h_CH
 xBnkht=setNames(aggregate(Bnk$BANKHT,list(UID=Bnk$UID),mean),c("UID","xbnk_h_CHECK"))
 
 #sample sizes
-nInc=setNames(count(Inc,"UID"),c("UID","nxinc_h_CHECK"))
-nBnk=setNames(count(Bnk,"UID"),c("UID","nxbnk_h_CHECK"))   
+nInc=setNames(plyr::count(Inc,"UID"),c("UID","nxinc_h_CHECK"))
+nBnk=setNames(plyr::count(Bnk,"UID"),c("UID","nxbnk_h_CHECK"))   
 
 IncBnk=join_all(list(xBnkht,xIncht,nInc, nBnk),by="UID")
 IncBnk$xinc_h_CHECK=ifelse(IncBnk$nxinc_h_CHECK<5,NA,IncBnk$xinc_h_CHECK)#5 sites less than 5, 1-4
@@ -828,7 +851,7 @@ BnkRatiopvt$INCISED_DEPTH=BnkRatiopvt$INCISED+BnkRatiopvt$RESULT
 BnkRatiopvt$Ratio=BnkRatiopvt$INCISED_DEPTH/BnkRatiopvt$BANKHT_DEPTH
 BnkRatiopvt=subset(BnkRatiopvt,is.na(Ratio)==FALSE)
 BnkRatioAvg=setNames(aggregate(BnkRatiopvt$Ratio,list(UID=BnkRatiopvt$UID),mean),c("UID","BNK_HT_RATIO_CHECK"))
-nBnkRatiopvt=setNames(count(BnkRatiopvt,"UID"),c("UID","nBNK_HT_RATIO_CHECK"))
+nBnkRatiopvt=setNames(plyr::count(BnkRatiopvt,"UID"),c("UID","nBNK_HT_RATIO_CHECK"))
 BnkRatioAvg=join(BnkRatioAvg,nBnkRatiopvt,by="UID")
 BnkRatioAvg$BNK_HT_RATIO_CHECK=ifelse(BnkRatioAvg$nBNK_HT_RATIO_CHECK<5,NA,BnkRatioAvg$BNK_HT_RATIO_CHECK)
 BnkRatioAvg$BNK_HT_RATIO_CHECK=round(BnkRatioAvg$BNK_HT_RATIO_CHECK,digits=2)
@@ -882,7 +905,7 @@ Angle=subset(Angle,Angle$SIDCHN_BNK==Angle$POINT)
 MeanAngle=setNames(cast(Angle,'UID~PARAMETER',value='RESULT',fun=mean),c("UID","ANGLE180_CHECK"))
 
 #sample size
-nAngle=setNames(count(Angle,"UID"),c("UID","nANGLE180_CHECK"))# 2 banks* 11 transects=22
+nAngle=setNames(plyr::count(Angle,"UID"),c("UID","nANGLE180_CHECK"))# 2 banks* 11 transects=22
 MeanAngle=merge(nAngle,MeanAngle, by="UID")
 MeanAngle$ANGLE180_CHECK=ifelse(MeanAngle$nANGLE180_CHECK<10,NA,MeanAngle$ANGLE180_CHECK)#8 site 5 WRSA
 MeanAngle$ANGLE180_CHECK=round(MeanAngle$ANGLE180_CHECK,digits=0)
@@ -906,9 +929,9 @@ Thalweg$CVDEPTH_CHECK=round(Thalweg$SDDEPTH/Thalweg$XDEPTH,digits=2)
 
 ##Percent Dry
 #decided to use number of thalweg depth=0 because more spatially explict...this means this indicator can't be calc if thalweg not collected
-CountThalweg=setNames(count(thalweg,"UID"),c('UID','nDEPTH'))
+CountThalweg=setNames(plyr::count(thalweg,"UID"),c('UID','nDEPTH'))
 Dry=subset(thalweg,RESULT=='0')
-Dry=setNames(count(Dry,"UID"),c('UID','nDRY'))
+Dry=setNames(plyr::count(Dry,"UID"),c('UID','nDRY'))
 PctDry=merge(CountThalweg,Dry,by=c('UID'),all=TRUE)
 PctDry$PctDry_CHECK=ifelse(is.na(PctDry$nDRY/PctDry$nDEPTH*100)==TRUE,0,PctDry$nDRY/PctDry$nDEPTH*100)        
 PctDry$PctDry_CHECK=round(PctDry$PctDry_CHECK,digits=1)              
@@ -930,7 +953,7 @@ Thalweg=merge(Thalweg,PctDry, by=c('UID'),all=TRUE)
 tbl=tblRetrieve(Parameters=c('DEPTH'),Project=projects, Years=years,Protocols=protocols,SiteCodes=sitecodes)
 tbl.2=tblRetrieve(Parameters=c('NUM_THALWEG'),Project=projects, Years=years,Protocols=protocols,SiteCodes=sitecodes)
 tbl3=cast(tbl.2,'UID~PARAMETER',value='RESULT',mean)
-tbl.PVT=addKEYS(cast(tbl,'UID~PARAMETER',value='RESULT'),c('SITE_ID'))# count is default
+tbl.PVT=addKEYS(cast(tbl,'UID~PARAMETER',value='RESULT',length),c('SITE_ID'))# count is default
 thalweg.missing=merge(tbl.PVT,tbl3, by='UID')
 thalweg.missing$pctcomplete=thalweg.missing$DEPTH/(thalweg.missing$NUM_THALWEG*10)*100
 Thalweg=merge(Thalweg,thalweg.missing, by=c('UID'))
@@ -1026,7 +1049,7 @@ WetWid=setNames(cast(WetWid,'UID+TRANSECT+POINT~PARAMETER', value='RESULT'), lis
 WetWidSub=WetWid[,c(1,2,4)]# delete the point column
 WetWidAll=rbind(WetWidSub,WetWid2)#merge main transects and intermediate transects together
 WetWidFinal=setNames(aggregate(as.numeric(WETWID)~UID,data=WetWidAll,FUN=mean),list("UID","XWIDTH_CHECK"))#average across all transects
-nWetWid=setNames(count(WetWidAll,"UID"),c("UID","nXWIDTH_CHECK"))#21 transects
+nWetWid=setNames(plyr::count(WetWidAll,"UID"),c("UID","nXWIDTH_CHECK"))#21 transects
 WetWidFinal=merge(nWetWid,WetWidFinal)
 WetWidFinal$XWIDTH_CHECK=ifelse(WetWidFinal$nXWIDTH_CHECK<10,NA,WetWidFinal$XWIDTH_CHECK)#9 ranging from 4-11 not an indicator and just for context so lean towards leaving all measurements
 WetWidFinal$XWIDTH_CHECK=round(WetWidFinal$XWIDTH_CHECK,digits=2)
@@ -1042,7 +1065,7 @@ BankWid$TRANSECT=mapvalues(BankWid$TRANSECT, c("XA", "XB","XC","XD","XE","XF","X
 BankWid$RESULT=as.numeric(BankWid$RESULT)
 BankWidpvt=cast(BankWid,'UID+TRANSECT~PARAMETER', value='RESULT', fun=sum)#sum across side channels and main transects
 BankWidpvt=setNames(aggregate(BankWidpvt$BANKWID,list(UID=BankWidpvt$UID),mean),c("UID","XBKF_W_CHECK"))#average all transects
-nBankWid=setNames(count(BankWid,"UID"),c("UID","nXBKF_W_CHECK"))# should have 11 transects
+nBankWid=setNames(plyr::count(BankWid,"UID"),c("UID","nXBKF_W_CHECK"))# should have 11 transects
 BankWidFinal=merge(nBankWid,BankWidpvt)
 BankWidFinal$XBKF_W_CHECK=ifelse(BankWidFinal$nXBKF_W_CHECK<5,NA,BankWidFinal$XBKF_W_CHECK)# one site with 4 leave in
 BankWidFinal$XBKF_W_CHECK=round(BankWidFinal$XBKF_W_CHECK,digits=2)
@@ -1053,7 +1076,7 @@ BankWidFinal$XBKF_W_CHECK=round(BankWidFinal$XBKF_W_CHECK,digits=2)
 
 ##########################################################
 #Flood Prone Width
-FloodWidthCount=setNames(count(FloodWidth,"UID"),c('UID','nFloodWidth_CHECK'))#count doesn't appear to be working
+FloodWidthCount=setNames(plyr::count(FloodWidth,"UID"),c('UID','nFloodWidth_CHECK'))#count doesn't appear to be working
 FloodWidth$RESULT=as.numeric(FloodWidth$RESULT)
 avgFloodWidth=setNames(cast(FloodWidth,'UID~PARAMETER',value='RESULT', fun=mean),c("UID","BNK_WT_CHECK","FLD_WT_CHECK"))
 avgFloodWidth$FLD_WT_CHECK=round(avgFloodWidth$FLD_WT_CHECK,digits=2)
