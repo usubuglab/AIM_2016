@@ -12,7 +12,7 @@
 
 #--------------------------------------------------------SETUP--------------------------------------------------------#
 #LOAD required packages#
-requiredPACKAGES=c('reshape', 'RODBC','ggplot2','grid','gridExtra','xlsx','sqldf','jpeg','spsurvey','tcltk','plyr','mapview','tidyverse')
+requiredPACKAGES=c('reshape', 'RODBC','ggplot2','grid','gridExtra','openxlsx','zipR', 'sqldf','jpeg','spsurvey','tcltk','plyr','mapview','tidyverse')
 for (r in 1:length(requiredPACKAGES)){
   if ((requiredPACKAGES[r] %in% installed.packages()[,1])==FALSE){install.packages(requiredPACKAGES[r])}#auto-install if not present
   library(requiredPACKAGES[r],character.only = TRUE)
@@ -31,6 +31,7 @@ library(sf)#if this gives an error run the line below
 ##Establish an ODBC connection##
 #the db was created in SQL Server Manager on 11/19/2013 by Sarah Judson#
 wrsaConnectSTR=sprintf("Driver={SQL Server Native Client 10.0};Server=%s;Database=%s;Uid=%s; Pwd=%s;",DBserver,DBname,DBuser, DBpassword)#specify backupdatabase or orignial database
+#wrsaConnectSTR=sprintf("Driver={SQL Server};Server=%s;Database=WRSAdb;Uid=%s; Pwd=%s;",DBserver,DBuser, DBpassword)
 if( grepl(">= 8",Sys.info()['release']) ){
   wrsaConnectSTR=sprintf("Driver=ODBC Driver 13 for SQL Server;Server=%s;Database=%s;Uid=%s; Pwd=%s;",DBserver,DBname,DBuser, DBpassword)#specify backupdatabase or orignial database
 }

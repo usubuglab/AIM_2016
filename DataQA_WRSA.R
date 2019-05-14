@@ -339,8 +339,8 @@ write.csv(Bugspvt,'Bugspvt.csv')
 
 #check to make sure 8 or 11 TRAN_NUM at all sites
 #the check placed in the app has made this error vitually non-existent, if csvs blank there are no issues
-SamplingCheck1=subset(Bugspvt,(BERW_TRAN_NUM<8 & BERW_BUG_METHOD=='TARGETED RIFFLE'))
-SamplingCheck2=subset(Bugspvt,(BERW_TRAN_NUM<11 & BERW_BUG_METHOD=='REACH WIDE'))
+SamplingCheck1=subset(Bugspvt,(as.numeric(BERW_TRAN_NUM)<8 & BERW_BUG_METHOD=='TARGETED RIFFLE'))
+SamplingCheck2=subset(Bugspvt,(as.numeric(BERW_TRAN_NUM)<11 & BERW_BUG_METHOD=='REACH WIDE'))
 if(nrow(SamplingCheck1)>0){write.csv(SamplingCheck1,'TargetedRiffleTranNumCheck.csv')}
 if(nrow(SamplingCheck2)>0){write.csv(SamplingCheck2,'ReachWideTranNumCheck.csv')}
 
@@ -444,12 +444,12 @@ DryThalwegSites=data.frame("DryThalweg"=unique(DryThalweg$UID))
 #write.xlsx(DryTranSites,'InterruptedFlowChecks.xlsx',append=TRUE)
 
 wb = createWorkbook()
-sheet = createSheet(wb, "All")
-addDataFrame(InterruptSites, sheet=sheet, startColumn=1, row.names=FALSE)
-addDataFrame(DryTranSites, sheet=sheet, startColumn=2, row.names=FALSE)
-addDataFrame(WetWid0Sites, sheet=sheet, startColumn=3, row.names=FALSE)
-addDataFrame(DryThalwegSites, sheet=sheet, startColumn=4, row.names=FALSE)
-saveWorkbook(wb, "InterruptedFlowChecks.xlsx") #check this file with those exported above and comments to see if they should be classified as interrupted or not
+sheet = addWorksheet(wb, "All")
+writeData(wb=wb,sheet=sheet,InterruptSites, startCol=1, rowNames=FALSE)
+writeData(wb=wb,sheet=sheet,DryTranSites, startCol=2, rowNames=FALSE)
+writeData(wb=wb,sheet=sheet,WetWid0Sites, startCol=3, rowNames=FALSE)
+writeData(wb=wb,sheet=sheet,DryThalwegSites,  startCol=4, rowNames=FALSE)
+saveWorkbook(wb, "InterruptedFlowChecks.xlsx",overwrite=TRUE) #check this file with those exported above and comments to see if they should be classified as interrupted or not
 
 
 
