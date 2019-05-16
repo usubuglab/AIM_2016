@@ -22,9 +22,13 @@ IndicatorCheck$BNK_THRESH=ifelse(as.numeric(IndicatorCheck$XBKF_W_CHECK)>10,"Lar
 
 #get Ecoregions
 #new design database
-GISInfo=read.csv('\\\\share1.bluezone.usu.edu\\miller\\buglab\\Research Projects\\AIM\\Design\\DesignDatabase\\GIS_table_for_Design_Database.csv')
-DesignInfo=read.csv('\\\\share1.bluezone.usu.edu\\miller\\buglab\\Research Projects\\AIM\\Design\\DesignDatabase\\site_table_for_Design_Database.csv')
-SiteInfo=join(GISInfo,DesignInfo,by="MS_ID")
+#GISInfo=read.csv('\\\\share1.bluezone.usu.edu\\miller\\buglab\\Research Projects\\AIM\\Design\\DesignDatabase\\GIS_table_for_Design_Database.csv')
+#DesignInfo=read.csv('\\\\share1.bluezone.usu.edu\\miller\\buglab\\Research Projects\\AIM\\Design\\DesignDatabase\\site_table_for_Design_Database.csv')
+#SiteInfo=join(GISInfo,DesignInfo,by="MS_ID")
+#temp 2019 file
+SiteInfo=read.csv('\\\\share1.bluezone.usu.edu\\miller\\buglab\\Research Projects\\AIM\\Design\\DesignDatabase\\2019DesignSites_for_QC_input.csv')
+
+
 Indicators=join(IndicatorCheck, SiteInfo, by="SITE_ID_CHECK",type="left",match="first")
 
 #join ecoregions, size class, and protocol info
@@ -110,9 +114,19 @@ IndicatorsFinal=indicatorXwalk(data.input,data.xwalk)
 IndicatorsFinal=IndicatorsFinal[order(IndicatorsFinal$Project,IndicatorsFinal$SiteCode),]
 write.csv(IndicatorsFinal,paste0('IndicatorsFinalExport',Sys.Date(),'.csv'),na="")     
 
+
+#################################### Add additional indicators in seperate table and add a seperate worksheet for metadata
+Metadata=read.csv("Z:\\buglab\\Research Projects\\AIM\\Analysis\\Indicator_Scoping\\TR 1735-3\\IndicatorMetadataBenchmarkTool.csv")
+
+
 project=unique(IndicatorsFinal$Project)
 
 for (p in 1:length(project)){
   p1=IndicatorsFinal[which(IndicatorsFinal$Project==project[p]),]
-write.csv(p1,paste0('IndicatorsFinalExport',project[p],Sys.Date(),'.csv'))
+  wb = createWorkbook()
+  sheet1 = addWorksheet(wb, "IndicatorValues")
+  sheet2 = addWorksheet(wb, "IndicatorMetadata")
+  writeData(wb=wb,sheet=sheet1,p1, startCol=1, rowNames=FALSE)
+  writeData(wb=wb,sheet=sheet2,Metadata, startCol=1, rowNames=FALSE)
+  saveWorkbook(wb, paste0('IndicatorsFinalExport_',project[p],'_',Sys.Date(),'.xlsx'),overwrite=TRUE)
   }
