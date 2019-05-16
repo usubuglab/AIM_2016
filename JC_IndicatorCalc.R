@@ -49,6 +49,8 @@ listsites$FieldStatus_CHECK=ifelse(listsites$VALXSITE_CHECK=="WADEABLE"|listsite
                              ifelse(listsites$VALXSITE_CHECK=="PARBYWADE"|listsites$VALXSITE_CHECK=="PARBYBOAT","Sampled - Partial Reach",
                                     ifelse(listsites$VALXSITE_CHECK=="INTWADE","Sampled - Interrupted Flow",
                                     ifelse(listsites$VALXSITE_CHECK=="SUBSETWADE","Sampled - Core Subset",listsites$VALXSITE_CHECK ))))
+listsites$IndicatorsCollected_CHECK=listsitesFieldStatus_CHECK=ifelse(listsites$VALXSITE_CHECK=="SUBSETWADE","Core Subset","Core" )
+
 # #listsites=listsites[,c(1,12,6,2,3,7,10,13,11,5,9,4,8)]
 # #run list sites and TRCHLEN below to get sinuosity data
 TRCHLEN1=tblRetrieve(Parameters=c('TRCHLEN','INCREMENT'),Projects=projects,Years=years,Protocols=protocols,SiteCodes=sitecodes,Insertion=insertion)#not using TRCHLEN
