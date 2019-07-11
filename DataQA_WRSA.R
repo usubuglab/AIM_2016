@@ -188,11 +188,11 @@ if (MissingXwalk==''){
 } else{MissingTotals4=unique(rbind(MissingTotals2,MissingTotals3)  )
 #! need to fix the revisions to MissingTotals4 before this will work
 MissingTotals4=MissingTotals4[,!(names(MissingTotals4) %in% c('POINT'))]
-MissingTotalsOUT= addKEYS(cast(subset(MissingTotals4,is.na(UID)==FALSE ), 'UID + TRANSECT  ~ SAMPLE_TYPE',value='MissingPCT' ),Columns=c('SITE_ID','DATE_COL','Protocol','Project','VALXSITE')) 
+MissingTotalsOUT= addKEYS(cast(subset(MissingTotals4,is.na(UID)==FALSE ), 'UID + TRANSECT  ~ SAMPLE_TYPE',value='MissingPCT' ),Columns=c('SITE_ID','DATE_COL','Protocol','Project','VALXSITE','CREW_LEADER')) 
 MissingTotalsREACH=subset(MissingTotalsOUT,TRANSECT=='ReachTotal')
 names=gsub("^INDICATOR:","",colnames(MissingTotalsREACH))
 MissingTotalsREACH=setNames(MissingTotalsREACH,names)
-columns=c('PROJECT',	'PROTOCOL',	'SITE_ID',	'VALXSITE',	'UID',	'DATE_COL',	'REACH',	'BENTHIC',	'CONDUCTIVITY',	'PH',	'TEMPERATURE','PA_VEG',	'CANOPY',	'BANK HEIGHT',	'BANK WIDTH',	'WET WIDTH',	'INCISION HEIGHT',	'FLOODPRONE WIDTH',	'STABILITY',	'SUBSTRATE',	'HUMAN INFLUENCE',	'LWD IN',	'SLOPE',	'POOL',	'PHOTO',	'CHEMISTRY',	'DEPTH',	'RIPCOMPLEX',	'VEGCOMPLEX','FISH COVER',	'ANGLE',	'TURBIDITY') %>%
+columns=c('PROJECT',	'PROTOCOL',	'SITE_ID',	'VALXSITE',	'UID',	'DATE_COL',	'CREW_LEADER','REACH',	'BENTHIC',	'CONDUCTIVITY',	'PH',	'TEMPERATURE','PA_VEG',	'CANOPY',	'BANK HEIGHT',	'BANK WIDTH',	'WET WIDTH',	'INCISION HEIGHT',	'FLOODPRONE WIDTH',	'STABILITY',	'SUBSTRATE',	'HUMAN INFLUENCE',	'LWD IN',	'SLOPE',	'POOL',	'PHOTO',	'CHEMISTRY',	'DEPTH',	'RIPCOMPLEX',	'VEGCOMPLEX','FISH COVER',	'ANGLE',	'TURBIDITY') %>%
     map_dfr( ~tibble(!!.x :=logical()))
 MissingTotalsREACH=bind_rows(columns,MissingTotalsREACH)
 #Indicators=c('PROJECT',	'PROTOCOL',	'SITE_ID',	'VALXSITE',	'UID',	'DATE_COL',	'REACH',	'BENTHIC',	'CONDUCTIVITY',	'PH',	'TEMPERATURE',	'BLM RIPARIAN',	'RIPARIAN COVER',	'CANOPY',	'BANK HEIGHT',	'BANK WIDTH',	'WET WIDTH',	'INCISION HEIGHT',	'FLOODPRONE WIDTH',	'STABILITY',	'SUBSTRATE',	'HUMAN INFLUENCE',	'LWD IN',	'SLOPE',	'POOL',	'PHOTO',	'CHEMISTRY',	'DEPTH',	'FISH COVER',	'ANGLE',	'TURBIDITY')
@@ -321,7 +321,7 @@ write.csv(coordinate_design_QC,'coordinate_design_QC.csv')
 ####### Bugs #########
 #get all bug data
 Bugs=tblRetrieve(Parameters=c('JAR_NO','ACTUAL_DATE','AREA_SAMP','TRAN_NUM','SAMPLER','AREA','BUG_METHOD','VALXSITE','PROTOCOL','PROJECT'),Years=years, Projects=projects,Protocol=protocols,SiteCodes=sitecodes,Insertion=insertion)
-Bugspvt=addKEYS(cast(Bugs,'UID~SAMPLE_TYPE+PARAMETER',value='RESULT'),c('SITE_ID','DATE_COL'))
+Bugspvt=addKEYS(cast(Bugs,'UID~SAMPLE_TYPE+PARAMETER',value='RESULT'),c('SITE_ID','DATE_COL','CREW_LEADER','PROJECT'))
 
 
 #check surber net and mini surber net areas because they were wrong in the app at the begining of 2016 field season
@@ -507,7 +507,7 @@ if(nrow(FloodWidthpvtsub)>0) {write.csv(FloodWidthpvtsub,'FloodWidthLessBankfull
 ######   bank stability and cover ######
 #gut check values coming out of the app quickly, for real indicator values go to indicator script
 Bank=tblRetrieve(Parameters=c('Z_PCTEROSIONALBANKS_COVERED', 'Z_PCTEROSIONALBANKS_STABLE','Z_PCTEROSIONALBANKS_TOTAL'),Years=years, Projects=projects,Protocols=protocols,SiteCodes=sitecodes,Insertion=insertion)
-Bankpvt=addKEYS(cast(Bank,'UID~PARAMETER',value='RESULT'),c('PROJECT','SITE_ID','DATE_COL','VALXSITE'))
+Bankpvt=addKEYS(cast(Bank,'UID~PARAMETER',value='RESULT'),c('PROJECT','SITE_ID','DATE_COL','VALXSITE','CREW_LEADER'))
 write.csv(Bankpvt,'Bankpvt.csv')
 
 ####### substrate #######
@@ -604,11 +604,11 @@ if(nrow(riparian5pvtsub2)>0){write.csv(riparian5pvtsub2,'rip52.csv')}
 
 
 ##### Non-Natives ######
-nonnative=addKEYS(tblRetrieve(Parameters=c('UNDERVEG'),Years=years, Projects=projects,SiteCodes=sitecodes,Insertion=insertion),c('SITE_ID'))
+nonnative=addKEYS(tblRetrieve(Parameters=c('INVAS_COMMON_NAME'),Years=years, Projects=projects,SiteCodes=sitecodes,Insertion=insertion),c('SITE_ID'))
 nonnative$CommonName=nonnative$RESULT
 specieslists=read.csv("Z:\\buglab\\Research Projects\\AIM\\Protocols\\NonNativeVeg\\specieslist.csv")
 nonnative=join(specieslists,nonnative,by=c("CommonName"),type="left")
-pvtnonnative=addKEYS(cast(nonnative,'UID~ScientificName',value='PARAMETER',length),c('SITE_ID'))
+pvtnonnative=cast(nonnative,'UID~CommonName',value='PARAMETER',length)
 
 #add full list of species from each state along with scientific name #need full list of sites query unique UIDs for nonnative presence absence and join....
 RipBLM=tblRetrieve(Parameters=c('CANRIPW','UNRIPW','GCRIP','INVASW', 'NATIVW','INVASH','NATIVH','SEGRUSH'),Projects=projects,Years=years,Protocols=protocols,SiteCodes=sitecodes,Insertion=insertion)
@@ -635,10 +635,15 @@ for (i in 14:ncol(pvtnonnative)-2){
   pvtnonnative[,i]=round(pvtnonnative[,i]/FQCY_VEG$nNATIVW_CHECK*100,digits=0)
 }
 
+pvtnonnative=addKEYS(pvtnonnative,c('SITE_ID','CREW_LEADER','PROJECT'))
+pvtnonnative[is.na(pvtnonnative)]<-0
+
 #add state info
 designs=read.csv('\\\\share1.bluezone.usu.edu\\miller\\buglab\\Research Projects\\AIM\\Design\\DesignDatabase\\2019DesignSites_for_QC_input.csv')
 state=designs[,c('SITE_ID','STATE')]
 pvtnonnative=join(pvtnonnative,state,by="SITE_ID", type="left")
+
+
 
 write.csv(pvtnonnative,'pvtnonnative.csv')
 
@@ -688,7 +693,7 @@ write.csv(pvtnonnative,'pvtnonnative.csv')
 tbl=tblRetrieve(Parameters=c('DEPTH'),Project=projects, Years=years,Protocols=protocols,SiteCodes=sitecodes,Insertion=insertion)
 tbl.2=tblRetrieve(Parameters=c('NUM_THALWEG'),Project=projects, Years=years,Protocols=protocols,SiteCodes=sitecodes,Insertion=insertion)
 tbl3=cast(tbl.2,'UID~PARAMETER',value='RESULT',mean)
-tbl.PVT=addKEYS(cast(tbl,'UID~PARAMETER',value='RESULT',length),c('SITE_ID'))# count is default
+tbl.PVT=addKEYS(cast(tbl,'UID~PARAMETER',value='RESULT',length),c('SITE_ID','CREW_LEADER','PROJECT'))# count is default
 thalweg.missing=merge(tbl.PVT,tbl3, by='UID')
 thalweg.missing$pctcomplete=thalweg.missing$DEPTH/(thalweg.missing$NUM_THALWEG*10)*100
 write.csv(thalweg.missing,'thalweg.missing.csv')
@@ -765,7 +770,7 @@ width=tblRetrieve(Parameters=c('WETWID'),Projects=projects, Years=years,Protocol
 check=join_all(list(pvtdepthcheck.sub,width),by=c('UID','TRANSECT'))
 check$RESULT=as.numeric(check$RESULT)
 check$DEPTH=as.numeric(check$DEPTH)
-odd_ratio=addKEYS(subset(check,RESULT/(DEPTH/100)>50|RESULT/(DEPTH/100)<1),c('SITE_ID'))
+odd_ratio=addKEYS(subset(check,RESULT/(DEPTH/100)>50|RESULT/(DEPTH/100)<1),c('SITE_ID','CREW_LEADER','PROJECT'))
 if(nrow(odd_ratio)>0){write.csv(odd_ratio,'odd_ratio.csv')}
 # #boating sites
 # odd_ratio=subset(check,RESULT/(DEPTH)>50|RESULT/(DEPTH)<1)
@@ -774,7 +779,7 @@ if(nrow(odd_ratio)>0){write.csv(odd_ratio,'odd_ratio.csv')}
                  
 #########  slope   ################                    
 Slope=tblRetrieve(Parameters=c('AVGSLOPE','SLPRCHLEN','TRCHLEN','PARTIAL_RCHLEN','POOLRCHLEN','SLOPE_COLLECT','PCT_GRADE','VALXSITE','Z_SLOPEPASSQA'),Projects=projects, Years=years,Protocols=protocols,SiteCodes=sitecodes,Insertion=insertion)                 
-pvtSlope=addKEYS(cast(Slope,'UID~PARAMETER',value='RESULT'), c('SITE_ID','CREW_LEADER'))                
+pvtSlope=addKEYS(cast(Slope,'UID~PARAMETER',value='RESULT'), c('SITE_ID','CREW_LEADER','PROJECT'))                
 # sites with pct_grade==0 likely had some app quirk and slope reach length or avg slope didn't get calculated for some reason
 SlopeCheck_typicalvalues=subset(pvtSlope,as.numeric(PCT_GRADE)>14|as.numeric(PCT_GRADE)<1)
 SlopeCheck_partialno=subset(pvtSlope,SLOPE_COLLECT=='PARTIAL'|SLOPE_COLLECT=='NO SLOPE')
@@ -785,7 +790,7 @@ SlopeCheck_more2passes=subset(Pass,TRANSECT>2)# if more than 2 passes need to ma
 IndividualSlope=tblRetrieve(Parameters=c('SLOPE','STARTHEIGHT','ENDHEIGHT'),Projects=projects, Years=years,Protocols=protocols,SiteCodes=sitecodes,Insertion=insertion)
 pvtIndividualSlopeSum=addKEYS(cast(IndividualSlope,'UID+TRANSECT~PARAMETER',value='RESULT', fun=sum),c('SITE_ID','CREW_LEADER'))#note Transect=Pass
 pvtIndividualSlopeSum=pvtIndividualSlopeSum[,c(1:3,5,4,6,7)]
-pvtIndividualSlopeRaw=addKEYS(cast(IndividualSlope,'UID+TRANSECT+POINT~PARAMETER',value='RESULT'),c('SITE_ID','CREW_LEADER'))#note Transect=Pass
+pvtIndividualSlopeRaw=addKEYS(cast(IndividualSlope,'UID+TRANSECT+POINT~PARAMETER',value='RESULT'),c('SITE_ID','CREW_LEADER','PROJECT'))#note Transect=Pass
 pvtIndividualSlopeRaw=pvtIndividualSlopeRaw[,c(1:4,6,5,7,8)]
 #always double check sites with 3 passes get averaged properly in app
 write.csv(pvtSlope,'pctGrade.csv')
@@ -799,14 +804,14 @@ write.csv(pvtIndividualSlopeRaw,'pvtIndividualSlopeRaw.csv')
 #########  pools   ################                                           
 #getting all pool data for a specfic set of sites---not collecting one of the parameters below anymore
 pools<-tblRetrieve(Parameters=c('HABTYPE','PTAILDEP','MAXDEPTH','LENGTH'),Projects=projects,Years=years,Protocols=protocols,SiteCodes=sitecodes,Insertion=insertion, Comments='Y')
-pvtpools=addKEYS(cast(pools,'UID+TRANSECT+POINT~PARAMETER',value='RESULT'),c('SITE_ID'))
+pvtpools=addKEYS(cast(pools,'UID+TRANSECT+POINT~PARAMETER',value='RESULT'),c('SITE_ID','PROJECT','CREW_LEADER'))
 write.csv(pvtpools,'pvtpools.csv')#sort and look for min and max and 0 data or unit issues
 
 # flow and collected checks
 PoolCollect<-tblRetrieve(Parameters=c('POOL_COLLECT','VALXSITE','POOLRCHLEN','TRCHLEN','SLOPE_COLLECT','SLPRCHLEN'),Projects=projects,Years=years,Protocols=protocols,SiteCodes=sitecodes,Insertion=insertion, Comments='Y')
-pvtPoolCollect=addKEYS(cast(PoolCollect,'UID~PARAMETER',value='RESULT'),c('SITE_ID','CREW_LEADER'))
+pvtPoolCollect=addKEYS(cast(PoolCollect,'UID~PARAMETER',value='RESULT'),c('SITE_ID','CREW_LEADER','PROJECT'))
 pvtPoolCollect=pvtPoolCollect[order(pvtPoolCollect$VALXSITE,pvtPoolCollect$POOL_COLLECT),]
-write.csv(pvtPoolCollect,paste0('poolcollect',Sys.Date(),'.csv'))
+#write.csv(pvtPoolCollect,paste0('poolcollect',Sys.Date(),'.csv'))
 write.csv(pvtPoolCollect,'poolcollect.csv') 
 #pvtPoolCheck=subset(pvtPoolCollect,VALXSITE=='INTWADE'|POOL_COLLECT=='NF'|POOL_COLLECT=='NC')
 #write.csv(pvtPoolCheck,'poolNCNFCheck.csv')#check all exported sites to make sure interrupted and partial site protocols properly followed
@@ -856,12 +861,12 @@ write.csv(sidepvt,'SideChannels.csv')
 
 
 
-# #########  photos  ###################
-# #use to check any questionable values such as bankfull widths and heights
-# #this hasn't been used to date. photo comments should be reviewed at some point
-# Photo=tblRetrieve(Parameters=c('PHOTO_ID','PHOTO_DESCRIP','PHOTO_TYPE','ROD','DIRECTION','COMMENT'),Projects=projects,Years=years,SiteCodes=sitecodes,Insertion=insertion)                   
-# pvtPhotos=cast(Photo,'UID+POINT~PARAMETER',value='RESULT')
-# write.csv(pvtPhotos,'photos.csv')
+#########  photos  ###################
+#use to check any questionable values such as bankfull widths and heights
+#this hasn't been used to date. photo comments should be reviewed at some point
+Photo=tblRetrieve(Parameters=c('PHOTO_ID','PHOTO_DESCRIP','PHOTO_TYPE','ROD','DIRECTION','COMMENT'),Projects=projects,Years=years,SiteCodes=sitecodes,Insertion=insertion)
+pvtPhotos=addKEYS(cast(Photo,'UID+POINT~PARAMETER',value='RESULT'),c('PROJECT'))
+write.csv(pvtPhotos,'photos.csv')
 
 
 #######################################################################
@@ -924,6 +929,7 @@ if(min(c('SAMPLE_TYPE',tblCOL) %in% colnames(UnionTBL))==1){#if minimum needed c
 # }
 
 UnionTBLnum_pvtSUMMARYn_Site=subset(UnionTBLnum_pvtSUMMARYn_Site,PARAMETER %in% c('ANGLE180', 'BANKHT','BANKWID','BARWID','DENSIOM','DEPTH','LWD','ELEVATION','INCISED','SIZENUM','TEMPERATURE','WETWID','FLOOD_MAX_DEPTH','FLOOD_WID','FLOOD_BF_HEIGHT','FLOOD_BFWIDTH','FLOOD_HEIGHT'))
+UnionTBLnum_pvtSUMMARYn_Site=addKEYS(UnionTBLnum_pvtSUMMARYn_Site,c('PROJECT','SITE_ID','CREW_LEADER'))
 
 write.csv(UnionTBLnum_pvtSUMMARYn_Site,'UnionTBLnum_pvtSUMMARYn_Site.csv')
 
