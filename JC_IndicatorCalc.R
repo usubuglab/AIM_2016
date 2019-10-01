@@ -145,7 +145,7 @@ Sed2014=tblRetrieve(Parameters=c('SIZE_NUM','LOC'),Projects=projects,Years=years
 PoolFines=tblRetrieve(Parameters=c('POOLFINES2','POOLFINES6','POOLNOMEAS'),Projects=projects, Years=years,Protocols=protocols,SiteCode=sitecodes,Insertion=insertion)
 
 #Bank Stability
-BankStab=tblRetrieve(Parameters=c('STABLE','EROSION','COVER','BNK_VEG','BNK_COBBLE','BNK_LWD','BNK_BEDROCK'), Projects=projects,Years=years,Protocols=protocols,SiteCodes=sitecodes,Insertion=insertion)
+BankStab=tblRetrieve(Parameters=c('STABLE','EROSION','COVER_FOLIAR','COVER_BASAL','BNK_VEG_FOLIAR','BNK_VEG_BASAL','BNK_COBBLE','BNK_LWD','BNK_BEDROCK'), Projects=projects,Years=years,Protocols=protocols,SiteCodes=sitecodes,Insertion=insertion)
 SideBank=tblRetrieve(Parameters=c('SIDCHN_BNK'),Projects=projects,Years=years,Protocols=protocols,SiteCodes=sitecodes,Insertion=insertion)
 #unique(BankStab$RESULT)
 #BankStabpvt=addKEYS(cast(BankStab,'UID+TRANSECT+POINT~PARAMETER',value='RESULT'),c('SITE_ID'))
@@ -726,65 +726,72 @@ Banks=subset(Banks,Banks$SIDCHN_BNK==Banks$POINT)
 
 ####this section is for all years
 #I want to calculate the percent of banks that are Covered.  
-Banks$CoverValue=as.numeric(ifelse(Banks$COVER=='UC',"0",ifelse(Banks$COVER=='CV',"1","NA")))
+Banks$CoverValueBasal=as.numeric(ifelse(Banks$COVER_BASAL=='UC',"0",ifelse(Banks$COVER_BASAL=='CV',"1","NA")))
+Banks$CoverValueFoliar=as.numeric(ifelse(Banks$COVER_FOLIAR=='UC',"0",ifelse(Banks$COVER_FOLIAR=='CV',"1","NA")))
 #I want to calculate the percent of banks that are Stable (Absent) 
 # Unstable==(Fracture, slump, slough, eroding)
 Banks$StableValue=as.numeric(ifelse(Banks$STABLE=='SP'|Banks$STABLE=='ER'|Banks$STABLE=='LH'|Banks$STABLE=='FC',"0",ifelse(Banks$STABLE=='AB',"1","NA")))
 #combined stability and cover
-Banks$BnkCover_Stab=as.numeric(ifelse((Banks$CoverValue+Banks$StableValue)<2,0,1))
+Banks$BnkCoverFoliar_Stab=as.numeric(ifelse((Banks$CoverValueFoliar+Banks$StableValue)<2,0,1))
 
 #only erosional banks
 BanksErosional=subset(Banks, EROSION=='EL')
-BnkCvrErosional=setNames(aggregate(CoverValue~UID,data=BanksErosional, FUN=mean), c('UID','BnkCover_Erosional_CHECK'))
+BnkCvrBasalErosional=setNames(aggregate(CoverValueBasal~UID,data=BanksErosional, FUN=mean), c('UID','BnkCoverBasal_Erosional_CHECK'))
+BnkCvrFoliarErosional=setNames(aggregate(CoverValueFoliar~UID,data=BanksErosional, FUN=mean), c('UID','BnkCoverFoliar_Erosional_CHECK'))
 BnkStbErosional=setNames(aggregate(StableValue~UID,data=BanksErosional, FUN=mean), c('UID','BnkStability_Erosional_CHECK'))
-BnkCover_StabErosional=setNames(aggregate(BnkCover_Stab~UID,data=BanksErosional, FUN=mean), c('UID','BnkCover_StabErosional_CHECK'))
+BnkCoverFoliar_StabErosional=setNames(aggregate(BnkCoverFoliar_Stab~UID,data=BanksErosional, FUN=mean), c('UID','BnkCoverFoliar_StabErosional_CHECK'))
 BNK_BEDROCK=setNames(aggregate(as.numeric(BNK_BEDROCK)~UID,data=BanksErosional, FUN=mean),c('UID','BNK_BEDROCK_CHECK'))
 BNK_COBBLE=setNames(aggregate(as.numeric(BNK_COBBLE)~UID,data=BanksErosional, FUN=mean),c('UID','BNK_COBBLE_CHECK'))
 BNK_LWD=setNames(aggregate(as.numeric(BNK_LWD)~UID,data=BanksErosional, FUN=mean),c('UID','BNK_LWD_CHECK'))
-BNK_VEG=setNames(aggregate(as.numeric(BNK_VEG)~UID,data=BanksErosional, FUN=mean),c('UID','BNK_VEG_CHECK'))
+BNK_VEG_BASAL=setNames(aggregate(as.numeric(BNK_VEG_BASAL)~UID,data=BanksErosional, FUN=mean),c('UID','BNK_VEG_BASAL_CHECK'))
+BNK_VEG_FOLIAR=setNames(aggregate(as.numeric(BNK_VEG_FOLIAR)~UID,data=BanksErosional, FUN=mean),c('UID','BNK_VEG_FOLIAR_CHECK'))
 
 
 
 #samplesize
-nBnkCover_StabErosional=setNames(aggregate(BnkCover_Stab~UID,data=BanksErosional, FUN=length), c('UID','nBnkCover_StabErosional_CHECK'))
+nBnkCover_StabErosional=setNames(aggregate(STABLE~UID,data=BanksErosional, FUN=length), c('UID','nBnkCover_StabErosional_CHECK'))
 
 
 #both erosional and depositional banks
 BanksAll=Banks
-BnkCvrAll=setNames(aggregate(CoverValue~UID,data=BanksAll, FUN=mean), c('UID','BnkCover_All_CHECK'))
+BnkCvrFoliarAll=setNames(aggregate(CoverValueFoliar~UID,data=BanksAll, FUN=mean), c('UID','BnkCoverFoliar_All_CHECK'))
 BnkStbAll=setNames(aggregate(StableValue~UID,data=BanksAll, FUN=mean), c('UID','BnkStability_All_CHECK'))
-BnkCover_StabAll=setNames(aggregate(BnkCover_Stab~UID,data=BanksAll, FUN=mean), c('UID','BnkCover_StabAll_CHECK'))
+BnkCoverFoliar_StabAll=setNames(aggregate(BnkCoverFoliar_Stab~UID,data=BanksAll, FUN=mean), c('UID','BnkCoverFoliar_StabAll_CHECK'))
 #samplesize
-nBnkCover_StabAll=setNames(aggregate(BnkCover_Stab~UID,data=BanksAll, FUN=length), c('UID','nBnkCover_StabAll_CHECK'))# 2 banks at 21 transects should not be less than 21 except boatable----which could be 11
+nBnkCoverFoliar_StabAll=setNames(aggregate(BnkCoverFoliar_Stab~UID,data=BanksAll, FUN=length), c('UID','nBnkCoverFoliar_StabAll_CHECK'))# 2 banks at 21 transects should not be less than 21 except boatable----which could be 11
 
 #merge all bank files
-BnkErosional=join_all(list(BnkCover_StabErosional,BnkCvrErosional,BnkStbErosional,nBnkCover_StabErosional,BNK_BEDROCK,BNK_COBBLE,BNK_LWD,BNK_VEG), by="UID")
-BnkAll=join_all(list(BnkCover_StabAll,BnkCvrAll,BnkStbAll,nBnkCover_StabAll,nBnkCover_StabAll), by="UID")
+BnkErosional=join_all(list(BnkCoverFoliar_StabErosional,BnkCvrFoliarErosional,BnkCvrBasalErosional,BnkStbErosional,nBnkCover_StabErosional,BNK_BEDROCK,BNK_COBBLE,BNK_LWD,BNK_VEG_FOLIAR, BNK_VEG_BASAL), by="UID",type ="full")
+BnkAll=join_all(list(BnkCoverFoliar_StabAll,BnkCvrFoliarAll,BnkStbAll,nBnkCoverFoliar_StabAll), by="UID",type="full")
 #convert to percent
-BnkErosional$BnkCover_Erosional_CHECK=round(BnkErosional$BnkCover_Erosional_CHECK*100,digits=0)
+BnkErosional$BnkCoverFoliar_Erosional_CHECK=round(BnkErosional$BnkCoverFoliar_Erosional_CHECK*100,digits=0)
+BnkErosional$BnkCoverBasal_Erosional_CHECK=round(BnkErosional$BnkCoverBasal_Erosional_CHECK*100,digits=0)
 BnkErosional$BnkStability_Erosional_CHECK=round(BnkErosional$BnkStability_Erosional_CHECK*100,digits=0)
-BnkErosional$BnkCover_StabErosional_CHECK=round(BnkErosional$BnkCover_StabErosional_CHECK*100,digits=0)
+BnkErosional$BnkCoverFoliar_StabErosional_CHECK=round(BnkErosional$BnkCoverFoliar_StabErosional_CHECK*100,digits=0)
 BnkErosional$BNK_BEDROCK_CHECK=round(BnkErosional$BNK_BEDROCK_CHECK,digits=0)
 BnkErosional$BNK_COBBLE_CHECK=round(BnkErosional$BNK_COBBLE_CHECK,digits=0)
 BnkErosional$BNK_LWD_CHECK=round(BnkErosional$BNK_LWD_CHECK,digits=0)
-BnkErosional$BNK_VEG_CHECK=round(BnkErosional$BNK_VEG_CHECK,digits=0)
-BnkAll$BnkCover_All_CHECK=round(BnkAll$BnkCover_All_CHECK*100,digits=0)
+BnkErosional$BNK_VEG_FOLIAR_CHECK=round(BnkErosional$BNK_VEG_FOLIAR_CHECK,digits=0)
+BnkErosional$BNK_VEG_BASAL_CHECK=round(BnkErosional$BNK_VEG_BASAL_CHECK,digits=0)
+BnkAll$BnkCoverFoliar_All_CHECK=round(BnkAll$BnkCoverFoliar_All_CHECK*100,digits=0)
 BnkAll$BnkStability_All_CHECK=round(BnkAll$BnkStability_All_CHECK*100,digits=0)
-BnkAll$BnkCover_StabAll_CHECK=round(BnkAll$BnkCover_StabAll_CHECK*100,digits=0)
+BnkAll$BnkCoverFoliar_StabAll_CHECK=round(BnkAll$BnkCoverFoliar_StabAll_CHECK*100,digits=0)
 
 #remove cases with less than 50% of data----2 banks at 21 transects should not be less than 21 except boatable----which could be 11
 #exclude=subset(BnkErosional,nBnkCover_StabErosional_CHECK<11)#15 excluded
-BnkErosional$BnkCover_StabErosional_CHECK=ifelse(BnkErosional$nBnkCover_StabErosional_CHECK<11,NA,BnkErosional$BnkCover_StabErosional_CHECK) 
-BnkErosional$BnkCover_Erosional_CHECK=ifelse(BnkErosional$nBnkCover_StabErosional_CHECK<11,NA,BnkErosional$BnkCover_Erosional_CHECK)  
+BnkErosional$BnkCoverFoliar_StabErosional_CHECK=ifelse(BnkErosional$nBnkCover_StabErosional_CHECK<11,NA,BnkErosional$BnkCoverFoliar_StabErosional_CHECK) 
+BnkErosional$BnkCoverFoliar_Erosional_CHECK=ifelse(BnkErosional$nBnkCover_StabErosional_CHECK<11,NA,BnkErosional$BnkCoverFoliar_Erosional_CHECK)  
+BnkErosional$BnkCoverBasal_Erosional_CHECK=ifelse(BnkErosional$nBnkCover_StabErosional_CHECK<11,NA,BnkErosional$BnkCoverBasal_Erosional_CHECK)  
 BnkErosional$BnkStability_Erosional_CHECK=ifelse(BnkErosional$nBnkCover_StabErosional_CHECK<11,NA,BnkErosional$BnkStability_Erosional_CHECK) 
 BnkErosional$BNK_BEDROCK_CHECK=ifelse(BnkErosional$nBnkCover_StabErosional_CHECK<11,NA,BnkErosional$BNK_BEDROCK_CHECK)
 BnkErosional$BNK_COBBLE_CHECK=ifelse(BnkErosional$nBnkCover_StabErosional_CHECK<11,NA,BnkErosional$BNK_COBBLE_CHECK)
 BnkErosional$BNK_LWD_CHECK=ifelse(BnkErosional$nBnkCover_StabErosional_CHECK<11,NA,BnkErosional$BNK_LWD_CHECK)
-BnkErosional$BNK_VEG_CHECK=ifelse(BnkErosional$nBnkCover_StabErosional_CHECK<11,NA,BnkErosional$BNK_VEG_CHECK)
+BnkErosional$BNK_VEG_FOLIAR_CHECK=ifelse(BnkErosional$nBnkCover_StabErosional_CHECK<11,NA,BnkErosional$BNK_VEG_FOLIAR_CHECK)
+BnkErosional$BNK_VEG_BASAL_CHECK=ifelse(BnkErosional$nBnkCover_StabErosional_CHECK<11,NA,BnkErosional$BNK_VEG_BASAL_CHECK)
 
-BnkAll$BnkCover_StabAll_CHECK=ifelse(BnkAll$nBnkCover_StabAll_CHECK<11,NA,BnkAll$BnkCover_StabAll_CHECK)
-BnkAll$BnkCover_All_CHECK=ifelse(BnkAll$nBnkCover_StabAll_CHECK<11,NA,BnkAll$BnkCover_All_CHECK)  
-BnkAll$BnkStability_All_CHECK=ifelse(BnkAll$nBnkCover_StabAll_CHECK<11,NA,BnkAll$BnkStability_All_CHECK) 
+BnkAll$BnkCoverFoliar_StabAll_CHECK=ifelse(BnkAll$nBnkCoverFoliar_StabAll_CHECK<11,NA,BnkAll$BnkCoverFoliar_StabAll_CHECK)
+BnkAll$BnkCoverFoliar_All_CHECK=ifelse(BnkAll$nBnkCoverFoliar_StabAll_CHECK<11,NA,BnkAll$BnkCoverFoliar_All_CHECK)  
+BnkAll$BnkStability_All_CHECK=ifelse(BnkAll$nBnkCoverFoliar_StabAll_CHECK<11,NA,BnkAll$BnkStability_All_CHECK) 
 
 
 # #new Bank Stability Cover Classes

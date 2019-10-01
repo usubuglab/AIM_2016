@@ -332,7 +332,7 @@ AreaCheck3=subset(Bugspvt,(as.numeric(BERW_AREA_SAMP)!=0.093 & BERW_SAMPLER=='KC
 if(nrow(AreaCheck1)>0){write.csv(AreaCheck1,'AreaCheck1.csv')}
 if(nrow(AreaCheck2)>0){write.csv(AreaCheck2,'AreaCheck2.csv')}
 if(nrow(AreaCheck3)>0){write.csv(AreaCheck3,'AreaCheck3.csv')}
-Bugspvt=Bugspvt[c(10,11,12,14,1,13,2,9,5,8,3,4,7,6)]
+Bugspvt=Bugspvt[c(10,16,11,12,14,1,13,2,9,5,8,3,4,7,6)]
 Bugspvt=Bugspvt[order(Bugspvt$VERIF_PROJECT,Bugspvt$VERIF_PROTOCOL,Bugspvt$SITE_ID),]
 write.csv(Bugspvt,'Bugspvt.csv')
 
@@ -346,7 +346,7 @@ if(nrow(SamplingCheck2)>0){write.csv(SamplingCheck2,'ReachWideTranNumCheck.csv')
 
 # #get data ready to submit via http://www.usu.edu/buglab/SampleProcessing/SampleSubmission/
 # postseasonmetadata=subset(postseasonmetadata,PROTOCOL!='FAILED')
-# SubMetadata=c('UID','SITE_ID', 'ADMU_ADMIN','COUNTY','LOC_NAME','LAT_DD','LON_DD','PROJECT')###'STRATUM')# change ADMU_ADMIN back to STATE once all master sample points attributed with state
+# SubMetadata=c('UID','SITE_ID','LOC_NAME','LAT_DD','LON_DD','PROJECT')###'STRATUM')# change ADMU_ADMIN back to STATE once all master sample points attributed with state
 # Metadata=postseasonmetadata[SubMetadata]
 # Bugspvtsub=c('UID','BERW_JAR_NO','BERW_ACTUAL_DATE','BERW_AREA','BERW_SAMPLER','BERW_BUG_METHOD')
 # Bugspvt2=Bugspvt[Bugspvtsub]
@@ -359,7 +359,7 @@ if(nrow(SamplingCheck2)>0){write.csv(SamplingCheck2,'ReachWideTranNumCheck.csv')
 # #Export list of sites for watershed delineation for bug models and WQ models..all sites should have bug data so just export all sites and delineate and calc WQ stats for all sites is simplest
 # SubMetadata=c('UID','MS_ID','SITE_ID','LOC_NAME','DATE_COL','STATE','LAT_DD','LON_DD')
 # Delineation=postseasonmetadata[SubMetadata]
-# Delineation=setNames(Delineation,c('UID','MS_ID','reachid','location','SampleDate','state','Lat','Long'))                      
+# Delineation=setNames(Delineation,c('UID','MS_ID','reachid','location','SampleDate','state','Lat','Long'))
 # Delineation$SiteID2=1:nrow(Delineation)
 # Delineation$rolled=0
 # #write.csv(Delineation,'SitesForDelineation.csv')
