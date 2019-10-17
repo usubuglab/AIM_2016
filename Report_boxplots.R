@@ -11,10 +11,10 @@
 ##### Read in and format sampled data ######
 
 #set working directory to be desired analysis folder
-setwd('Z:\\buglab\\Research Projects\\AIM\\Projects\\Colorado\\StatewideAssessment\\Anaysis\\Weights_ExtentEstimates\\Benchmark Boxplots')
+setwd('Z:\\buglab\\Research Projects\\AIM\\Projects\\Colorado\\StatewideAssessment\\Analysis\\Weights_ExtentEstimates\\Benchmark Boxplots')
 
 #run the extent estimate code to merge the benchmark tool output with the reporting unit info from designs, then write out the SiteInfo file
-sampled=read.csv('Z:\\buglab\\Research Projects\\AIM\\Projects\\Colorado\\StatewideAssessment\\Anaysis\\Weights_ExtentEstimates\\SiteInfo.csv')
+sampled=read.csv('Z:\\buglab\\Research Projects\\AIM\\Projects\\Colorado\\StatewideAssessment\\Analysis\\Weights_ExtentEstimates\\SiteInfo.csv')
 str(sampled)
 
 #get column names from benchmark tool to match EPA reference data
@@ -117,7 +117,7 @@ biotype=c("Biotype1","Biotype2","Biotype3")
 png(file="MMI_by_reporting_unit.png", width=1200,height=700,pointsize=24)
 par(mfrow=c(1,3),oma = c(0, 0, 2, 0),mgp=c(3,1.5,0))
 for (b in 1:length(biotype)){
-sampledBug=subset(sampled,MODEL==paste("CO_EDAS-",biotype[b],sep=""))
+sampledBug=subset(sampled,MODEL==paste("CO_EDAS2017-",biotype[b],sep=""))
 t=boxplot(OE~POPULATION,names=c('CO','RMD','SWD','NWD'),main=biotype[b],data=sampledBug,ylab="CO MMI Score",ylim=c(10,85),show.names=TRUE,plot=FALSE)
 boxplot(OE~POPULATION,names=paste0(t$names, " \n(n=",t$n,")"),main=biotype[b],data=sampledBug,ylab="CO MMI Score",ylim=c(10,85),show.names=TRUE)
 

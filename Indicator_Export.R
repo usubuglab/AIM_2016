@@ -29,7 +29,7 @@ SiteInfo=join(GISInfo,DesignInfo,by="MS_ID")
 #SiteInfo=read.csv('\\\\share1.bluezone.usu.edu\\miller\\buglab\\Research Projects\\AIM\\Design\\DesignDatabase\\2019DesignSites_for_QC_input.csv')
 
 
-Indicators=join(IndicatorCheck, SiteInfo, by=c("SITE_ID_CHECK","PROJECT_CHECK"),type="left",match="first")
+Indicators=join(IndicatorCheck, SiteInfo, by=c("SITE_ID_CHECK"),type="left",match="first")
 
 #join ecoregions, size class, and protocol info
 Indicators$BNK_THRESH=ifelse(Indicators$PROTOCOL2_CHECK=='BOATABLE',"Boatable",Indicators$BNK_THRESH)
