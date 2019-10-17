@@ -279,7 +279,7 @@ for (r in 1:length(responseVAR)){
         legend(x="bottomright",cex=.5,legend=c('Agreement: Not Impaired','Agreement: Impaired','Response Impaired','Stressor Impaired'),fill=colorVALUES)
         #legend placement is fickle! x=-.5 also works for bottom right and is unrelated to png width
         graphics.off()
-        write.csv(results.relrisk,'results.relrist.csv')
+        #write.csv(results.relrisk,'results.relrist.csv')
       
         }
       options(stringsAsFactors = TRUE)
