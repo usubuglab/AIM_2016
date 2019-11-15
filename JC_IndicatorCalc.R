@@ -649,12 +649,19 @@ if(exists("H_Sed")==TRUE){
   PCT_SAFN_ALL=join(H_Sed,K_Sed2014,by="UID",type="left")
   }else {PCT_SAFN_ALL=join(G_Sed2014,K_Sed2014,by="UID",type="left")}
 #PCT_SAFN_sub=subset(PCT_SAFN_ALL,nallPCT_SAFN_CHECK<50)
-PCT_SAFN_ALL$allPCT_SAFN2_CHECK=ifelse(PCT_SAFN_ALL$nallPCT_SAFN_CHECK<50,NA,PCT_SAFN_ALL$allPCT_SAFN2_CHECK)
-PCT_SAFN_ALL$bedPCT_SAFN2_CHECK=ifelse(PCT_SAFN_ALL$nbedPCT_SAFN_CHECK<50,NA,PCT_SAFN_ALL$bedPCT_SAFN2_CHECK)
-PCT_SAFN_ALL$allPCT_SAFN6_CHECK=ifelse(PCT_SAFN_ALL$nallPCT_SAFN_CHECK<50,NA,PCT_SAFN_ALL$allPCT_SAFN6_CHECK)
-PCT_SAFN_ALL$bedPCT_SAFN6_CHECK=ifelse(PCT_SAFN_ALL$nbedPCT_SAFN_CHECK<50,NA,PCT_SAFN_ALL$bedPCT_SAFN6_CHECK)
-
-
+PCT_SAFN_ALL=addKEYS(PCT_SAFN_ALL,c('PROTOCOL','PROJECT'))
+PCT_SAFN_ALL$allPCT_SAFN2_CHECK=ifelse(grepl("^AK", PCT_SAFN_ALL$PROJECT)==TRUE, ifelse(PCT_SAFN_ALL$nallPCT_SAFN_CHECK<50,NA,PCT_SAFN_ALL$allPCT_SAFN2_CHECK),
+                                       ifelse(grepl("^BOAT",PCT_SAFN_ALL$PROTOCOL)==TRUE,ifelse(PCT_SAFN_ALL$nallPCT_SAFN_CHECK<50,NA,PCT_SAFN_ALL$allPCT_SAFN2_CHECK),
+                                              ifelse(PCT_SAFN_ALL$nallPCT_SAFN_CHECK<100,NA,PCT_SAFN_ALL$allPCT_SAFN2_CHECK)))
+PCT_SAFN_ALL$bedPCT_SAFN2_CHECK=ifelse(grepl("^AK", PCT_SAFN_ALL$PROJECT)==TRUE, ifelse(PCT_SAFN_ALL$nallPCT_SAFN_CHECK<50,NA,PCT_SAFN_ALL$bedPCT_SAFN2_CHECK),
+                                       ifelse(grepl("^BOAT",PCT_SAFN_ALL$PROTOCOL)==TRUE,ifelse(PCT_SAFN_ALL$nallPCT_SAFN_CHECK<50,NA,PCT_SAFN_ALL$bedPCT_SAFN2_CHECK),
+                                              ifelse(PCT_SAFN_ALL$nallPCT_SAFN_CHECK<100,NA,PCT_SAFN_ALL$bedPCT_SAFN2_CHECK)))
+PCT_SAFN_ALL$allPCT_SAFN6_CHECK=ifelse(grepl("^AK", PCT_SAFN_ALL$PROJECT)==TRUE, ifelse(PCT_SAFN_ALL$nallPCT_SAFN_CHECK<50,NA,PCT_SAFN_ALL$allPCT_SAFN6_CHECK),
+                                       ifelse(grepl("^BOAT",PCT_SAFN_ALL$PROTOCOL)==TRUE,ifelse(PCT_SAFN_ALL$nallPCT_SAFN_CHECK<50,NA,PCT_SAFN_ALL$allPCT_SAFN6_CHECK),
+                                              ifelse(PCT_SAFN_ALL$nallPCT_SAFN_CHECK<100,NA,PCT_SAFN_ALL$allPCT_SAFN6_CHECK)))
+PCT_SAFN_ALL$bedPCT_SAFN6_CHECK=ifelse(grepl("^AK", PCT_SAFN_ALL$PROJECT)==TRUE, ifelse(PCT_SAFN_ALL$nallPCT_SAFN_CHECK<50,NA,PCT_SAFN_ALL$bedPCT_SAFN6_CHECK),
+                                       ifelse(grepl("^BOAT",PCT_SAFN_ALL$PROTOCOL)==TRUE,ifelse(PCT_SAFN_ALL$nallPCT_SAFN_CHECK<50,NA,PCT_SAFN_ALL$bedPCT_SAFN6_CHECK),
+                                              ifelse(PCT_SAFN_ALL$nallPCT_SAFN_CHECK<100,NA,PCT_SAFN_ALL$bedPCT_SAFN6_CHECK)))
 ####### other sediment metrics ##########
 Sed2014_MEAS=subset(Sed2014,RESULT!=0 & PARAMETER=='SIZE_NUM')
 Sed2014_MEAS$RESULT=as.numeric(Sed2014_MEAS$RESULT)
@@ -1060,7 +1067,8 @@ WetWidAll=rbind(WetWidSub,WetWid2)#merge main transects and intermediate transec
 WetWidFinal=setNames(aggregate(as.numeric(WETWID)~UID,data=WetWidAll,FUN=mean),list("UID","XWIDTH_CHECK"))#average across all transects
 nWetWid=setNames(plyr::count(WetWidAll,"UID"),c("UID","nXWIDTH_CHECK"))#21 transects
 WetWidFinal=merge(nWetWid,WetWidFinal)
-WetWidFinal$XWIDTH_CHECK=ifelse(WetWidFinal$nXWIDTH_CHECK<10,NA,WetWidFinal$XWIDTH_CHECK)#9 ranging from 4-11 not an indicator and just for context so lean towards leaving all measurements
+#WetWidFinal$XWIDTH_CHECK=ifelse(WetWidFinal$nXWIDTH_CHECK<10,NA,WetWidFinal$XWIDTH_CHECK)#9 ranging from 4-11 not an indicator and just for context so lean towards leaving all measurements
+WetWidFinal$XWIDTH_CHECK=ifelse(WetWidFinal$nXWIDTH_CHECK<9,NA,WetWidFinal$XWIDTH_CHECK)# changed to 9 in 2019 because 5 main and 4 intermediate=9
 WetWidFinal$XWIDTH_CHECK=round(WetWidFinal$XWIDTH_CHECK,digits=2)
 
 ##checking for interupted flow sites
@@ -1115,7 +1123,8 @@ listsites$straightline=acos(sin(as.numeric(listsites$LAT_DD_BR_CHECK)*3.141593/1
 TRCHLEN=setNames(cast(TRCHLEN,'UID~PARAMETER',value='RESULT'),c('UID','INCREMENT','TRCHLEN_CHECK'))
 listsites=merge(listsites,TRCHLEN, by='UID', all=T)
 listsites$SINUOSITY_CHECK=round(as.numeric(listsites$TRCHLEN_CHECK)/as.numeric(listsites$straightline),digits=2)
-listsites$SINUOSITY_CHECK=ifelse(listsites$SINUOSITY_CHECK<1,NA,listsites$SINUOSITY_CHECK)
+listsites$SINUOSITY_CHECK=ifelse(listsites$SINUOSITY_CHECK<1,1,listsites$SINUOSITY_CHECK)# changed to round to 1 in 2019
+#listsites$SINUOSITY_CHECK=ifelse(listsites$SINUOSITY_CHECK<1,NA,listsites$SINUOSITY_CHECK)
 #still need to remove data from partial sites
 listsites$SINUOSITY_CHECK=ifelse(listsites$VALXSITE_CHECK=="PARBYWADE"|listsites$VALXSITE_CHECK=="PARBYBOAT",NA,listsites$SINUOSITY_CHECK)
 
