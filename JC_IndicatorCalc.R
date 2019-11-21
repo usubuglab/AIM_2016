@@ -48,7 +48,9 @@ listsites$PROTOCOL2_CHECK=ifelse(listsites$PROTOCOL=="BOAT14"|listsites$PROTOCOL
 listsites$FieldStatus_CHECK=ifelse(listsites$VALXSITE_CHECK=="WADEABLE"|listsites$VALXSITE_CHECK=="BOATABLE","Sampled - Full Reach",
                              ifelse(listsites$VALXSITE_CHECK=="PARBYWADE"|listsites$VALXSITE_CHECK=="PARBYBOAT","Sampled - Partial Reach",
                                     ifelse(listsites$VALXSITE_CHECK=="INTWADE","Sampled - Interrupted Flow",
-                                    ifelse(listsites$VALXSITE_CHECK=="SUBSETWADE","Sampled - Core Subset",listsites$VALXSITE_CHECK ))))
+                                    ifelse(listsites$VALXSITE_CHECK=="SUBSETWADE","Sampled - Core Subset",
+                                    ifelse(listsites$VALXSITE_CHECK=="INTPARBYWADE","Sampled - Interrupted Flow and Partial Reach",listsites$VALXSITE_CHECK )
+                                    ))))
 listsites$IndicatorsCollected_CHECK=listsitesFieldStatus_CHECK=ifelse(listsites$VALXSITE_CHECK=="SUBSETWADE","Core Subset","Core" )
 
 # #listsites=listsites[,c(1,12,6,2,3,7,10,13,11,5,9,4,8)]
@@ -653,15 +655,15 @@ PCT_SAFN_ALL=addKEYS(PCT_SAFN_ALL,c('PROTOCOL','PROJECT'))
 PCT_SAFN_ALL$allPCT_SAFN2_CHECK=ifelse(grepl("^AK", PCT_SAFN_ALL$PROJECT)==TRUE, ifelse(PCT_SAFN_ALL$nallPCT_SAFN_CHECK<50,NA,PCT_SAFN_ALL$allPCT_SAFN2_CHECK),
                                        ifelse(grepl("^BOAT",PCT_SAFN_ALL$PROTOCOL)==TRUE,ifelse(PCT_SAFN_ALL$nallPCT_SAFN_CHECK<50,NA,PCT_SAFN_ALL$allPCT_SAFN2_CHECK),
                                               ifelse(PCT_SAFN_ALL$nallPCT_SAFN_CHECK<100,NA,PCT_SAFN_ALL$allPCT_SAFN2_CHECK)))
-PCT_SAFN_ALL$bedPCT_SAFN2_CHECK=ifelse(grepl("^AK", PCT_SAFN_ALL$PROJECT)==TRUE, ifelse(PCT_SAFN_ALL$nallPCT_SAFN_CHECK<50,NA,PCT_SAFN_ALL$bedPCT_SAFN2_CHECK),
-                                       ifelse(grepl("^BOAT",PCT_SAFN_ALL$PROTOCOL)==TRUE,ifelse(PCT_SAFN_ALL$nallPCT_SAFN_CHECK<50,NA,PCT_SAFN_ALL$bedPCT_SAFN2_CHECK),
-                                              ifelse(PCT_SAFN_ALL$nallPCT_SAFN_CHECK<100,NA,PCT_SAFN_ALL$bedPCT_SAFN2_CHECK)))
+PCT_SAFN_ALL$bedPCT_SAFN2_CHECK=ifelse(grepl("^AK", PCT_SAFN_ALL$PROJECT)==TRUE, ifelse(PCT_SAFN_ALL$nbedPCT_SAFN_CHECK<50,NA,PCT_SAFN_ALL$bedPCT_SAFN2_CHECK),
+                                       ifelse(grepl("^BOAT",PCT_SAFN_ALL$PROTOCOL)==TRUE,ifelse(PCT_SAFN_ALL$nbedPCT_SAFN_CHECK<50,NA,PCT_SAFN_ALL$bedPCT_SAFN2_CHECK),
+                                              ifelse(PCT_SAFN_ALL$nbedPCT_SAFN_CHECK<100,NA,PCT_SAFN_ALL$bedPCT_SAFN2_CHECK)))
 PCT_SAFN_ALL$allPCT_SAFN6_CHECK=ifelse(grepl("^AK", PCT_SAFN_ALL$PROJECT)==TRUE, ifelse(PCT_SAFN_ALL$nallPCT_SAFN_CHECK<50,NA,PCT_SAFN_ALL$allPCT_SAFN6_CHECK),
                                        ifelse(grepl("^BOAT",PCT_SAFN_ALL$PROTOCOL)==TRUE,ifelse(PCT_SAFN_ALL$nallPCT_SAFN_CHECK<50,NA,PCT_SAFN_ALL$allPCT_SAFN6_CHECK),
                                               ifelse(PCT_SAFN_ALL$nallPCT_SAFN_CHECK<100,NA,PCT_SAFN_ALL$allPCT_SAFN6_CHECK)))
-PCT_SAFN_ALL$bedPCT_SAFN6_CHECK=ifelse(grepl("^AK", PCT_SAFN_ALL$PROJECT)==TRUE, ifelse(PCT_SAFN_ALL$nallPCT_SAFN_CHECK<50,NA,PCT_SAFN_ALL$bedPCT_SAFN6_CHECK),
-                                       ifelse(grepl("^BOAT",PCT_SAFN_ALL$PROTOCOL)==TRUE,ifelse(PCT_SAFN_ALL$nallPCT_SAFN_CHECK<50,NA,PCT_SAFN_ALL$bedPCT_SAFN6_CHECK),
-                                              ifelse(PCT_SAFN_ALL$nallPCT_SAFN_CHECK<100,NA,PCT_SAFN_ALL$bedPCT_SAFN6_CHECK)))
+PCT_SAFN_ALL$bedPCT_SAFN6_CHECK=ifelse(grepl("^AK", PCT_SAFN_ALL$PROJECT)==TRUE, ifelse(PCT_SAFN_ALL$nbedPCT_SAFN_CHECK<50,NA,PCT_SAFN_ALL$bedPCT_SAFN6_CHECK),
+                                       ifelse(grepl("^BOAT",PCT_SAFN_ALL$PROTOCOL)==TRUE,ifelse(PCT_SAFN_ALL$nbedPCT_SAFN_CHECK<50,NA,PCT_SAFN_ALL$bedPCT_SAFN6_CHECK),
+                                              ifelse(PCT_SAFN_ALL$nbedPCT_SAFN_CHECK<100,NA,PCT_SAFN_ALL$bedPCT_SAFN6_CHECK)))
 ####### other sediment metrics ##########
 Sed2014_MEAS=subset(Sed2014,RESULT!=0 & PARAMETER=='SIZE_NUM')
 Sed2014_MEAS$RESULT=as.numeric(Sed2014_MEAS$RESULT)
@@ -672,11 +674,18 @@ pvtSed2014_D$D16_CHECK=round(pvtSed2014_D$D16_CHECK,digit=0)
 pvtSed2014_D$D84_CHECK=round(pvtSed2014_D$D84_CHECK,digit=0)
 pvtSed2014_GM$GEOMEAN_CHECK=round(pvtSed2014_GM$GEOMEAN_CHECK,digit=0)
 ALLSED=join_all(list(PCT_SAFN_ALL,pvtSed2014_D,pvtSed2014_GM),by='UID')
-ALLSED$GEOMEAN_CHECK=ifelse(ALLSED$nallPCT_SAFN_CHECK<50,NA,ALLSED$GEOMEAN_CHECK)
-ALLSED$D50_CHECK=ifelse(ALLSED$nallPCT_SAFN_CHECK<50,NA,ALLSED$D50_CHECK)
-ALLSED$D16_CHECK=ifelse(ALLSED$nallPCT_SAFN_CHECK<50,NA,ALLSED$D16_CHECK)
-ALLSED$D84_CHECK=ifelse(ALLSED$nallPCT_SAFN_CHECK<50,NA,ALLSED$D84_CHECK)
-
+ALLSED$GEOMEAN_CHECK=ifelse(grepl("^AK", ALLSED$PROJECT)==TRUE, ifelse(ALLSED$nallPCT_SAFN_CHECK<50,NA,ALLSED$GEOMEAN_CHECK),
+                            ifelse(grepl("^BOAT",ALLSED$PROTOCOL)==TRUE,ifelse(ALLSED$nallPCT_SAFN_CHECK<50,NA,ALLSED$GEOMEAN_CHECK),
+                                   ifelse(ALLSED$nallPCT_SAFN_CHECK<100,NA,ALLSED$GEOMEAN_CHECK)))
+ALLSED$D50_CHECK=ifelse(grepl("^AK", ALLSED$PROJECT)==TRUE, ifelse(ALLSED$nallPCT_SAFN_CHECK<50,NA,ALLSED$D50_CHECK),
+                        ifelse(grepl("^BOAT",ALLSED$PROTOCOL)==TRUE,ifelse(ALLSED$nallPCT_SAFN_CHECK<50,NA,ALLSED$D50_CHECK),
+                               ifelse(ALLSED$nallPCT_SAFN_CHECK<100,NA,ALLSED$D50_CHECK)))
+ALLSED$D16_CHECK=ifelse(grepl("^AK", ALLSED$PROJECT)==TRUE, ifelse(ALLSED$nallPCT_SAFN_CHECK<50,NA,ALLSED$D16_CHECK),
+                        ifelse(grepl("^BOAT",ALLSED$PROTOCOL)==TRUE,ifelse(ALLSED$nallPCT_SAFN_CHECK<50,NA,ALLSED$D16_CHECK),
+                               ifelse(ALLSED$nallPCT_SAFN_CHECK<100,NA,ALLSED$D16_CHECK)))
+ALLSED$D84_CHECK=ifelse(grepl("^AK", ALLSED$PROJECT)==TRUE, ifelse(ALLSED$nallPCT_SAFN_CHECK<50,NA,ALLSED$D84_CHECK),
+                        ifelse(grepl("^BOAT",ALLSED$PROTOCOL)==TRUE,ifelse(ALLSED$nallPCT_SAFN_CHECK<50,NA,ALLSED$D84_CHECK),
+                               ifelse(ALLSED$nallPCT_SAFN_CHECK<100,NA,ALLSED$D84_CHECK)))
 
 #########################################################
 
@@ -973,10 +982,11 @@ tbl.PVT=addKEYS(cast(tbl,'UID~PARAMETER',value='RESULT',length),c('SITE_ID'))# c
 thalweg.missing=merge(tbl.PVT,tbl3, by='UID')
 thalweg.missing$pctcomplete=thalweg.missing$DEPTH/(thalweg.missing$NUM_THALWEG*10)*100
 Thalweg=merge(Thalweg,thalweg.missing, by=c('UID'))
-Thalweg$XDEPTH_CHECK=ifelse(Thalweg$pctcomplete<100,NA,Thalweg$XDEPTH_CHECK)
-Thalweg$CVDEPTH_CHECK=ifelse(Thalweg$pctcomplete<100,NA,Thalweg$CVDEPTH_CHECK)  
+Thalweg=addKEYS(Thalweg,c('VALXSITE'))
+Thalweg$XDEPTH_CHECK=ifelse(Thalweg$VALXSITE %in% c('PARBYWADE','PARBYBOAT','INTPARBYWADE'),ifelse(Thalweg$pctcomplete<40,NA,Thalweg$XDEPTH_CHECK),ifelse(Thalweg$pctcomplete<80,NA,Thalweg$XDEPTH_CHECK))#changed from 100 to 80 in 2019
+Thalweg$CVDEPTH_CHECK=ifelse(Thalweg$VALXSITE %in% c('PARBYWADE','PARBYBOAT','INTPARBYWADE'),ifelse(Thalweg$pctcomplete<40,NA,Thalweg$CVDEPTH_CHECK),ifelse(Thalweg$pctcomplete<80,NA,Thalweg$CVDEPTH_CHECK))#changed from 100 to 80 in 2019
 Thalweg$CVDEPTH_CHECK=ifelse(Thalweg$PctDry_CHECK>0,NA,Thalweg$CVDEPTH_CHECK)# omit cases with dry thalwegs
-Thalweg$PctDry_CHECK=ifelse(Thalweg$pctcomplete<100,NA,Thalweg$PctDry_CHECK)  
+Thalweg$PctDry_CHECK=ifelse(Thalweg$VALXSITE %in% c('PARBYWADE','PARBYBOAT','INTPARBYWADE'),ifelse(Thalweg$pctcomplete<40,NA,Thalweg$PctDry_CHECK),ifelse(Thalweg$pctcomplete<80,NA,Thalweg$PctDry_CHECK))#changed from 100 to 80 in 2019 #changed from 100 to 80 in 2019 
 
 
 
@@ -1126,7 +1136,7 @@ listsites$SINUOSITY_CHECK=round(as.numeric(listsites$TRCHLEN_CHECK)/as.numeric(l
 listsites$SINUOSITY_CHECK=ifelse(listsites$SINUOSITY_CHECK<1,1,listsites$SINUOSITY_CHECK)# changed to round to 1 in 2019
 #listsites$SINUOSITY_CHECK=ifelse(listsites$SINUOSITY_CHECK<1,NA,listsites$SINUOSITY_CHECK)
 #still need to remove data from partial sites
-listsites$SINUOSITY_CHECK=ifelse(listsites$VALXSITE_CHECK=="PARBYWADE"|listsites$VALXSITE_CHECK=="PARBYBOAT",NA,listsites$SINUOSITY_CHECK)
+listsites$SINUOSITY_CHECK=ifelse(listsites$VALXSITE_CHECK=="PARBYWADE"|listsites$VALXSITE_CHECK=="PARBYBOAT"|listsites$VALXSITE_CHECK=="INTPARBYWADE",NA,listsites$SINUOSITY_CHECK)
 
 ###################################################################################################################
 ###################################################################################################################
