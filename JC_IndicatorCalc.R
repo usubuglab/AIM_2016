@@ -745,11 +745,24 @@ Banks=Banks[!(row.names(Banks) %in% grep("^X",Banks$TRANSECT)),] #removes all si
 
 ####this section is for all years
 #I want to calculate the percent of banks that are Covered.  
-Banks$CoverValueBasal=as.numeric(ifelse(Banks$COVER_BASAL=='UC',"0",ifelse(Banks$COVER_BASAL=='CV',"1","NA")))
-Banks$CoverValueFoliar=as.numeric(ifelse(Banks$COVER_FOLIAR=='UC',"0",ifelse(Banks$COVER_FOLIAR=='CV',"1","NA")))
+Banks$CoverValueBasal=as.numeric(ifelse(Banks$COVER_BASAL=='UC',"0",ifelse(Banks$COVER_BASAL=='CV',"1",NA)))
+Banks$CoverValueFoliar=as.numeric(ifelse(Banks$COVER_FOLIAR=='UC',"0",ifelse(Banks$COVER_FOLIAR=='CV',"1",NA)))
 #I want to calculate the percent of banks that are Stable (Absent) 
 # Unstable==(Fracture, slump, slough, eroding)
-Banks$StableValue=as.numeric(ifelse(Banks$EROSION=='DP',"1",ifelse(Banks$STABLE=='SP'|Banks$STABLE=='ER'|Banks$STABLE=='LH'|Banks$STABLE=='FC',"0",ifelse(Banks$STABLE=='AB',"1","NA"))))
+BanksNA=subset(Banks,is.na(EROSION)==TRUE)
+BanksDepositionalFoliar=subset(Banks,EROSION=='DP'&is.na(Banks$CoverValueFoliar)==FALSE)
+BanksDepositionalBasal=subset(Banks,EROSION=='DP'&is.na(Banks$CoverValueFoliar)==TRUE)
+BanksErosional=subset(Banks,EROSION=='EL')  
+BanksDepositionalFoliar$StableValue=as.numeric(ifelse(BanksDepositionalFoliar$CoverValueFoliar=='1',"1",
+                                           ifelse(BanksDepositionalFoliar$CoverValueFoliar=='0',"0","NA")))
+
+BanksDepositionalBasal$StableValue=as.numeric(ifelse(BanksDepositionalBasal$CoverValueBasal=='1', "1",
+                                                              ifelse(BanksDepositionalBasal$CoverValueBasal=='0',"0","NA")))
+BanksErosional$StableValue=as.numeric(ifelse(BanksErosional$STABLE %in% c('SP','ER','LH','FC'),"0",
+                                             ifelse(BanksErosional$STABLE=='AB',"1","NA")))
+Banks=rbind(BanksDepositionalBasal,BanksDepositionalFoliar,BanksErosional,BanksNA)
+              
+
 #combined stability and cover
 Banks$BnkCoverFoliar_Stab=as.numeric(ifelse((Banks$CoverValueFoliar+Banks$StableValue)<2,0,1))
 
@@ -787,7 +800,7 @@ BnkAll$BNK_VEG_BASAL_CHECK=round(BnkAll$BNK_VEG_BASAL_CHECK,digits=0)
 #changed in 2019 to require 21 for wadeable
 #exclude=subset(BnkAll,nBnkCover_StabAll_CHECK<11)#15 excluded
 BnkAll=addKEYS(BnkAll,c('PROTOCOL'))
-if (BnkAll$PROTOCOL=='BOAT2016'|BnkAll$PROTOCOL=='BOAT14'){
+if (BnkAll$PROTOCOL %in% c('BOAT2016','BOAT14')){
 BnkAll$BnkCoverFoliar_StabAll_CHECK=ifelse(BnkAll$nBnkCover_StabAll_CHECK<11,NA,BnkAll$BnkCoverFoliar_StabAll_CHECK) 
 BnkAll$BnkCoverFoliar_All_CHECK=ifelse(BnkAll$nBnkCover_StabAll_CHECK<11,NA,BnkAll$BnkCoverFoliar_All_CHECK)  
 BnkAll$BnkCoverBasal_All_CHECK=ifelse(BnkAll$nBnkCover_StabAll_CHECK<11,NA,BnkAll$BnkCoverBasal_All_CHECK)  
