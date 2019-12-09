@@ -800,27 +800,31 @@ BnkAll$BNK_VEG_BASAL_CHECK=round(BnkAll$BNK_VEG_BASAL_CHECK,digits=0)
 #changed in 2019 to require 21 for wadeable
 #exclude=subset(BnkAll,nBnkCover_StabAll_CHECK<11)#15 excluded
 BnkAll=addKEYS(BnkAll,c('PROTOCOL'))
-if (BnkAll$PROTOCOL %in% c('BOAT2016','BOAT14')){
-BnkAll$BnkCoverFoliar_StabAll_CHECK=ifelse(BnkAll$nBnkCover_StabAll_CHECK<11,NA,BnkAll$BnkCoverFoliar_StabAll_CHECK) 
-BnkAll$BnkCoverFoliar_All_CHECK=ifelse(BnkAll$nBnkCover_StabAll_CHECK<11,NA,BnkAll$BnkCoverFoliar_All_CHECK)  
-BnkAll$BnkCoverBasal_All_CHECK=ifelse(BnkAll$nBnkCover_StabAll_CHECK<11,NA,BnkAll$BnkCoverBasal_All_CHECK)  
-BnkAll$BnkStability_All_CHECK=ifelse(BnkAll$nBnkCover_StabAll_CHECK<11,NA,BnkAll$BnkStability_All_CHECK) 
-BnkAll$BNK_BEDROCK_CHECK=ifelse(BnkAll$nBnkCover_StabAll_CHECK<11,NA,BnkAll$BNK_BEDROCK_CHECK)
-BnkAll$BNK_COBBLE_CHECK=ifelse(BnkAll$nBnkCover_StabAll_CHECK<11,NA,BnkAll$BNK_COBBLE_CHECK)
-BnkAll$BNK_LWD_CHECK=ifelse(BnkAll$nBnkCover_StabAll_CHECK<11,NA,BnkAll$BNK_LWD_CHECK)
-BnkAll$BNK_VEG_FOLIAR_CHECK=ifelse(BnkAll$nBnkCover_StabAll_CHECK<11,NA,BnkAll$BNK_VEG_FOLIAR_CHECK)
-BnkAll$BNK_VEG_BASAL_CHECK=ifelse(BnkAll$nBnkCover_StabAll_CHECK<11,NA,BnkAll$BNK_VEG_BASAL_CHECK)
-} else
-{BnkAll$BnkCoverFoliar_StabAll_CHECK=ifelse(BnkAll$nBnkCover_StabAll_CHECK<21,NA,BnkAll$BnkCoverFoliar_StabAll_CHECK) 
-BnkAll$BnkCoverFoliar_All_CHECK=ifelse(BnkAll$nBnkCover_StabAll_CHECK<21,NA,BnkAll$BnkCoverFoliar_All_CHECK)  
-BnkAll$BnkCoverBasal_All_CHECK=ifelse(BnkAll$nBnkCover_StabAll_CHECK<21,NA,BnkAll$BnkCoverBasal_All_CHECK)  
-BnkAll$BnkStability_All_CHECK=ifelse(BnkAll$nBnkCover_StabAll_CHECK<21,NA,BnkAll$BnkStability_All_CHECK) 
-BnkAll$BNK_BEDROCK_CHECK=ifelse(BnkAll$nBnkCover_StabAll_CHECK<21,NA,BnkAll$BNK_BEDROCK_CHECK)
-BnkAll$BNK_COBBLE_CHECK=ifelse(BnkAll$nBnkCover_StabAll_CHECK<21,NA,BnkAll$BNK_COBBLE_CHECK)
-BnkAll$BNK_LWD_CHECK=ifelse(BnkAll$nBnkCover_StabAll_CHECK<21,NA,BnkAll$BNK_LWD_CHECK)
-BnkAll$BNK_VEG_FOLIAR_CHECK=ifelse(BnkAll$nBnkCover_StabAll_CHECK<21,NA,BnkAll$BNK_VEG_FOLIAR_CHECK)
-BnkAll$BNK_VEG_BASAL_CHECK=ifelse(BnkAll$nBnkCover_StabAll_CHECK<21,NA,BnkAll$BNK_VEG_BASAL_CHECK)
-}
+BnkAllBoatable=subset(BnkAll$PROTOCOL %in% c('BOAT2016','BOAT14'))
+BnkAllWadeable=subset(BnkAll$PROTOCOL %in% c('NRSA13','WRSA14','AK14','WADE2016'))
+
+BnkAllBoatable$BnkCoverFoliar_StabAll_CHECK=ifelse(BnkAllBoatable$nBnkCover_StabAll_CHECK<11,NA,BnkAllBoatable$BnkCoverFoliar_StabAll_CHECK) 
+BnkAllBoatable$BnkCoverFoliar_All_CHECK=ifelse(BnkAllBoatable$nBnkCover_StabAll_CHECK<11,NA,BnkAllBoatable$BnkCoverFoliar_All_CHECK)  
+BnkAllBoatable$BnkCoverBasal_All_CHECK=ifelse(BnkAllBoatable$nBnkCover_StabAll_CHECK<11,NA,BnkAllBoatable$BnkCoverBasal_All_CHECK)  
+BnkAllBoatable$BnkStability_All_CHECK=ifelse(BnkAllBoatable$nBnkCover_StabAll_CHECK<11,NA,BnkAllBoatable$BnkStability_All_CHECK) 
+BnkAllBoatable$BNK_BEDROCK_CHECK=ifelse(BnkAllBoatable$nBnkCover_StabAll_CHECK<11,NA,BnkAllBoatable$BNK_BEDROCK_CHECK)
+BnkAllBoatable$BNK_COBBLE_CHECK=ifelse(BnkAllBoatable$nBnkCover_StabAll_CHECK<11,NA,BnkAllBoatable$BNK_COBBLE_CHECK)
+BnkAllBoatable$BNK_LWD_CHECK=ifelse(BnkAllBoatable$nBnkCover_StabAll_CHECK<11,NA,BnkAllBoatable$BNK_LWD_CHECK)
+BnkAllBoatable$BNK_VEG_FOLIAR_CHECK=ifelse(BnkAllBoatable$nBnkCover_StabAll_CHECK<11,NA,BnkAllBoatable$BNK_VEG_FOLIAR_CHECK)
+BnkAllBoatable$BNK_VEG_BASAL_CHECK=ifelse(BnkAllBoatable$nBnkCover_StabAll_CHECK<11,NA,BnkAllBoatable$BNK_VEG_BASAL_CHECK)
+
+
+BnkAllWadeableWadeable$BnkCoverFoliar_StabAll_CHECK=ifelse(BnkAllWadeable$nBnkCover_StabAll_CHECK<21,NA,BnkAllWadeable$BnkCoverFoliar_StabAll_CHECK) 
+BnkAllWadeable$BnkCoverFoliar_All_CHECK=ifelse(BnkAllWadeable$nBnkCover_StabAll_CHECK<21,NA,BnkAllWadeable$BnkCoverFoliar_All_CHECK)  
+BnkAllWadeable$BnkCoverBasal_All_CHECK=ifelse(BnkAllWadeable$nBnkCover_StabAll_CHECK<21,NA,BnkAllWadeable$BnkCoverBasal_All_CHECK)  
+BnkAllWadeable$BnkStability_All_CHECK=ifelse(BnkAllWadeable$nBnkCover_StabAll_CHECK<21,NA,BnkAllWadeable$BnkStability_All_CHECK) 
+BnkAllWadeable$BNK_BEDROCK_CHECK=ifelse(BnkAllWadeable$nBnkCover_StabAll_CHECK<21,NA,BnkAllWadeable$BNK_BEDROCK_CHECK)
+BnkAllWadeable$BNK_COBBLE_CHECK=ifelse(BnkAllWadeable$nBnkCover_StabAll_CHECK<21,NA,BnkAllWadeable$BNK_COBBLE_CHECK)
+BnkAllWadeable$BNK_LWD_CHECK=ifelse(BnkAllWadeable$nBnkCover_StabAll_CHECK<21,NA,BnkAllWadeable$BNK_LWD_CHECK)
+BnkAllWadeable$BNK_VEG_FOLIAR_CHECK=ifelse(BnkAllWadeable$nBnkCover_StabAll_CHECK<21,NA,BnkAllWadeable$BNK_VEG_FOLIAR_CHECK)
+BnkAllWadeable$BNK_VEG_BASAL_CHECK=ifelse(BnkAllWadeable$nBnkCover_StabAll_CHECK<21,NA,BnkAllWadeable$BNK_VEG_BASAL_CHECK)
+
+BnkAll=ifelse(exists(BnkAllBoatable)==TRUE,rbind(BnkAllWadeable,BnkAllBoatable),BnkAllWadeable)
 
 
 ##########################################################
