@@ -765,6 +765,7 @@ Banks=rbind(BanksDepositionalBasal,BanksDepositionalFoliar,BanksErosional,BanksN
 
 #combined stability and cover
 Banks$BnkCoverFoliar_Stab=as.numeric(ifelse((Banks$CoverValueFoliar+Banks$StableValue)<2,0,1))
+Banks$BnkCoverBasal_Stab=as.numeric(ifelse((Banks$CoverValueBasal+Banks$StableValue)<2,0,1))
 
 #changed in 2019 to only compute indicators to match MIM which includes all banks (erosional and depositional)
 BanksAll=Banks
@@ -772,6 +773,7 @@ BnkCvrBasalAll=setNames(aggregate(CoverValueBasal~UID,data=BanksAll, FUN=mean), 
 BnkCvrFoliarAll=setNames(aggregate(CoverValueFoliar~UID,data=BanksAll, FUN=mean), c('UID','BnkCoverFoliar_All_CHECK'))
 BnkStbAll=setNames(aggregate(StableValue~UID,data=BanksAll, FUN=mean), c('UID','BnkStability_All_CHECK'))
 BnkCoverFoliar_StabAll=setNames(aggregate(BnkCoverFoliar_Stab~UID,data=BanksAll, FUN=mean), c('UID','BnkCoverFoliar_StabAll_CHECK'))
+BnkCoverBasal_StabAll=setNames(aggregate(BnkCoverBasal_Stab~UID,data=BanksAll, FUN=mean), c('UID','BnkCoverBasal_StabAll_CHECK'))
 BNK_BEDROCK=setNames(aggregate(as.numeric(BNK_BEDROCK)~UID,data=BanksAll, FUN=mean),c('UID','BNK_BEDROCK_CHECK'))
 BNK_COBBLE=setNames(aggregate(as.numeric(BNK_COBBLE)~UID,data=BanksAll, FUN=mean),c('UID','BNK_COBBLE_CHECK'))
 BNK_LWD=setNames(aggregate(as.numeric(BNK_LWD)~UID,data=BanksAll, FUN=mean),c('UID','BNK_LWD_CHECK'))
@@ -782,13 +784,14 @@ BNK_VEG_FOLIAR=setNames(aggregate(as.numeric(BNK_VEG_FOLIAR)~UID,data=BanksAll, 
 nBnkCover_StabAll=setNames(aggregate(STABLE~UID,data=BanksAll, FUN=length), c('UID','nBnkCover_StabAll_CHECK'))
 
 #join all Bank Files
-BnkAll=join_all(list(BnkCoverFoliar_StabAll,BnkCvrFoliarAll,BnkCvrBasalAll, BnkStbAll,BNK_BEDROCK,BNK_COBBLE,BNK_LWD,BNK_VEG_BASAL,BNK_VEG_FOLIAR,nBnkCover_StabAll), by="UID",type="full")
+BnkAll=join_all(list(BnkCoverFoliar_StabAll,BnkCoverBasal_StabAll,BnkCvrFoliarAll,BnkCvrBasalAll, BnkStbAll,BNK_BEDROCK,BNK_COBBLE,BNK_LWD,BNK_VEG_BASAL,BNK_VEG_FOLIAR,nBnkCover_StabAll), by="UID",type="full")
 
 #convert to percent
 BnkAll$BnkCoverFoliar_All_CHECK=round(BnkAll$BnkCoverFoliar_All_CHECK*100,digits=0)
 BnkAll$BnkCoverBasal_All_CHECK=round(BnkAll$BnkCoverBasal_All_CHECK*100,digits=0)
 BnkAll$BnkStability_All_CHECK=round(BnkAll$BnkStability_All_CHECK*100,digits=0)
 BnkAll$BnkCoverFoliar_StabAll_CHECK=round(BnkAll$BnkCoverFoliar_StabAll_CHECK*100,digits=0)
+BnkAll$BnkCoverBasal_StabAll_CHECK=round(BnkAll$BnkCoverBasal_StabAll_CHECK*100,digits=0)
 BnkAll$BNK_BEDROCK_CHECK=round(BnkAll$BNK_BEDROCK_CHECK,digits=0)
 BnkAll$BNK_COBBLE_CHECK=round(BnkAll$BNK_COBBLE_CHECK,digits=0)
 BnkAll$BNK_LWD_CHECK=round(BnkAll$BNK_LWD_CHECK,digits=0)
@@ -804,6 +807,7 @@ BnkAllBoatable=subset(BnkAll$PROTOCOL %in% c('BOAT2016','BOAT14'))
 BnkAllWadeable=subset(BnkAll$PROTOCOL %in% c('NRSA13','WRSA14','AK14','WADE2016'))
 
 BnkAllBoatable$BnkCoverFoliar_StabAll_CHECK=ifelse(BnkAllBoatable$nBnkCover_StabAll_CHECK<11,NA,BnkAllBoatable$BnkCoverFoliar_StabAll_CHECK) 
+BnkAllBoatable$BnkCoverBasal_StabAll_CHECK=ifelse(BnkAllBoatable$nBnkCover_StabAll_CHECK<11,NA,BnkAllBoatable$BnkCoverBasal_StabAll_CHECK) 
 BnkAllBoatable$BnkCoverFoliar_All_CHECK=ifelse(BnkAllBoatable$nBnkCover_StabAll_CHECK<11,NA,BnkAllBoatable$BnkCoverFoliar_All_CHECK)  
 BnkAllBoatable$BnkCoverBasal_All_CHECK=ifelse(BnkAllBoatable$nBnkCover_StabAll_CHECK<11,NA,BnkAllBoatable$BnkCoverBasal_All_CHECK)  
 BnkAllBoatable$BnkStability_All_CHECK=ifelse(BnkAllBoatable$nBnkCover_StabAll_CHECK<11,NA,BnkAllBoatable$BnkStability_All_CHECK) 
@@ -815,6 +819,7 @@ BnkAllBoatable$BNK_VEG_BASAL_CHECK=ifelse(BnkAllBoatable$nBnkCover_StabAll_CHECK
 
 
 BnkAllWadeableWadeable$BnkCoverFoliar_StabAll_CHECK=ifelse(BnkAllWadeable$nBnkCover_StabAll_CHECK<21,NA,BnkAllWadeable$BnkCoverFoliar_StabAll_CHECK) 
+BnkAllBoatable$BnkCoverBasal_StabAll_CHECK=ifelse(BnkAllBoatable$nBnkCover_StabAll_CHECK<21,NA,BnkAllBoatable$BnkCoverBasal_StabAll_CHECK)
 BnkAllWadeable$BnkCoverFoliar_All_CHECK=ifelse(BnkAllWadeable$nBnkCover_StabAll_CHECK<21,NA,BnkAllWadeable$BnkCoverFoliar_All_CHECK)  
 BnkAllWadeable$BnkCoverBasal_All_CHECK=ifelse(BnkAllWadeable$nBnkCover_StabAll_CHECK<21,NA,BnkAllWadeable$BnkCoverBasal_All_CHECK)  
 BnkAllWadeable$BnkStability_All_CHECK=ifelse(BnkAllWadeable$nBnkCover_StabAll_CHECK<21,NA,BnkAllWadeable$BnkStability_All_CHECK) 
