@@ -923,12 +923,8 @@ fishpvt2$XFC_NAT_CHECK=round(fishpvt2$XFC_NAT_CHECK,digits=2)
 Angle$RESULT=ifelse(Angle$RESULT<45,45,Angle$RESULT)
 Angle$RESULT=as.numeric(Angle$RESULT)
 
-#2016+ data
-#need to treat side channels the same as with banks stability and only use the angles from the outer banks
-#run the side channel section of the bank stability prior to running this to get pvtSideBank3
-Angle=merge(Angle,pvtSideBank3, by=c('UID','TRANSECT'),all=T)
-Angle$SIDCHN_BNK=ifelse(is.na(Angle$SIDCHN_BNK)==T,Angle$POINT,Angle$SIDCHN_BNK)
-Angle=subset(Angle,Angle$SIDCHN_BNK==Angle$POINT)
+#changed in 2019 to exclude all side channel data rather than taking only outer banks
+Angle=Angle[!(row.names(Angle) %in% grep("^X",Angle$TRANSECT)),] #removes all side channel data (side channel transects are stored with an "X" in front)
 
 #all years
 MeanAngle=setNames(cast(Angle,'UID~PARAMETER',value='RESULT',fun=mean),c("UID","ANGLE180_CHECK"))
