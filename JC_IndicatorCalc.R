@@ -829,16 +829,14 @@ BnkAll$BNK_VEG_BASAL_CHECK=ifelse(BnkAll$nBnkCover_StabAll_CHECK<21,NA,BnkAll$BN
 
 ##########################################################
 #LINCIS_H
-###First the max value of either the side channel or main channel needs to be chosen. To do this I changed all side channels (X-letter) to just the main letter (Sidechannel at A (XA) would be changed to just A).
-###Then I subset the data so that missing values would not cause errors. 
-###Then I pivoted by the max to chose the max transect value (If XA=5 and A=2 then the XA value would be chosen and the A value removed, note that it is no longer called XA so there would just be 2 A transects for a site with an A sidechannel)
+#2019 changed to not collect this data at side channels in 2019 so need to remove historic side channel data from calculations
 ### Then take the average at each site for bank height and incised height. Merge the data back together and then calculate LINCIS_H
 #note that mathematically it does not matter whether you take the mean bankfull height and subtract it from the mean incision height or if you take the paired bankfull height and incision height differences and then calculate a mean if N is same
-Incision$TRANSECT=mapvalues(Incision$TRANSECT, c("XA", "XB","XC","XD","XE","XF","XG","XH","XI","XJ","XK" ),c("A", "B","C","D","E","F","G","H","I","J","K"))
+Incision=Incision[!(row.names(Incision) %in% grep("^X",Incision$TRANSECT)),]
 INCISED=subset(Incision, PARAMETER=="INCISED")
 BANKHT=subset(Incision, PARAMETER=="BANKHT")
-Inc=cast(INCISED,'UID+TRANSECT~PARAMETER', value='RESULT', fun=min)#devating from EPA and taking the min rather than the max because protocl is to take the lowest of the 2 sides
-Bnk=cast(BANKHT,'UID+TRANSECT~PARAMETER', value='RESULT', fun=min)#devating from EPA and taking the min rather than the max because protocl is to take the lowest of the 2 sides
+Inc=cast(INCISED,'UID+TRANSECT~PARAMETER', value='RESULT')#changed this in 2019 from taking the lowest of the two sides to removing side channel data altogether , note EPA takes max
+Bnk=cast(BANKHT,'UID+TRANSECT~PARAMETER', value='RESULT')#changed this in 2019 from taking the lowest of the two sides to removing side channel data altogether , note EPA takes max
 xIncht=setNames(aggregate(Inc$INCISED,list(UID=Inc$UID),mean),c("UID","xinc_h_CHECK"))
 xBnkht=setNames(aggregate(Bnk$BANKHT,list(UID=Bnk$UID),mean),c("UID","xbnk_h_CHECK"))
 
@@ -1069,7 +1067,7 @@ Slope_Per=Slope_Per1
 #We are deviating from the EPA's method of calculating wetted width. We take the max value for main vs. side channels (should in theory always be main channel); then we average across all 21 values (main and intermediate)
 #Because of this deviation, in the future we should remove the variable differences of wetwid and wetwidth and make them the same variable
 WetWid2$TRANSECT=mapvalues(WetWid2$TRANSECT, c("XA", "XB","XC","XD","XE","XF","XG","XH","XI","XJ","XK" ),c("A", "B","C","D","E","F","G","H","I","J","K"))#change all side channels to normal transects
-WetWid2=cast(WetWid2,'UID+TRANSECT~PARAMETER', value='RESULT', fun=max)#take the maximum wetted width among side channels
+WetWid2=cast(WetWid2,'UID+TRANSECT~PARAMETER', value='RESULT', fun=sum)#changed in 2019 to take sum rather than max
 WetWid=subset(WetWid,POINT!=0)#remove duplicate wetted widths 
 WetWid=setNames(cast(WetWid,'UID+TRANSECT+POINT~PARAMETER', value='RESULT'), list ("UID","TRANSECT","POINT","WETWID"))
 WetWidSub=WetWid[,c(1,2,4)]# delete the point column
