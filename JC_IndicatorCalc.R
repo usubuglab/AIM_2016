@@ -725,24 +725,6 @@ subQC=subset(FinalpvtPoolFines,FinalpvtPoolFines$PctPoolFines6CV>=1.41|FinalpvtP
 Banks=cast(BankStab, 'UID+TRANSECT+POINT~PARAMETER', value='RESULT')#run this for all years data and then if 2016 data run subsection below
 Banks=Banks[!(row.names(Banks) %in% grep("^X",Banks$TRANSECT)),] #removes all side channel data (side channel transects are stored with an "X" in front)
 
-#####deleted this section in 2019 ############
-# ###################################################################
-# #run this section for 2016+ data
-# #for 2016 and beyond take only data from outside banks... run above code plus the code below for 2016 data
-# #get which side of the main channel the side channel was on to determine outside banks
-# #if side channel on right bank need to use right bank for X transect data and use left bank data for main transect
-# #if side channel on left bank need to use left bank for X transect data and use right bank data for main transect
-# pvtSideBank1=cast(SideBank,'UID+TRANSECT~PARAMETER',value='RESULT')
-# pvtSideBank2=pvtSideBank1
-# pvtSideBank2$TRANSECT=sub("^","X",pvtSideBank1$TRANSECT)
-# #need to get data to be opposite for main channel
-# pvtSideBank1$SIDCHN_BNK=ifelse(pvtSideBank1$SIDCHN_BNK=='LF','RT',ifelse(pvtSideBank1$SIDCHN_BNK=='RT','LF',pvtSideBank1$SIDCHN_BNK))
-# pvtSideBank3=rbind(pvtSideBank1,pvtSideBank2)
-# Banks=merge(Banks,pvtSideBank3,by=c('UID','TRANSECT'), all=T)
-# Banks$SIDCHN_BNK=ifelse(is.na(Banks$SIDCHN_BNK)==T,Banks$POINT,Banks$SIDCHN_BNK)
-# Banks=subset(Banks,Banks$SIDCHN_BNK==Banks$POINT)
-# #####################################################################
-
 ####this section is for all years
 #I want to calculate the percent of banks that are Covered.  
 Banks$CoverValueBasal=as.numeric(ifelse(Banks$COVER_BASAL=='UC',"0",ifelse(Banks$COVER_BASAL=='CV',"1",NA)))
@@ -803,8 +785,8 @@ BnkAll$BNK_VEG_BASAL_CHECK=round(BnkAll$BNK_VEG_BASAL_CHECK,digits=0)
 #changed in 2019 to require 21 for wadeable
 #exclude=subset(BnkAll,nBnkCover_StabAll_CHECK<11)#15 excluded
 BnkAll=addKEYS(BnkAll,c('PROTOCOL'))
-BnkAllBoatable=subset(BnkAll$PROTOCOL %in% c('BOAT2016','BOAT14'))
-BnkAllWadeable=subset(BnkAll$PROTOCOL %in% c('NRSA13','WRSA14','AK14','WADE2016'))
+BnkAllBoatable=subset(BnkAll,BnkAll$PROTOCOL %in% c('BOAT2016','BOAT14'))
+BnkAllWadeable=subset(BnkAll,BnkAll$PROTOCOL %in% c('NRSA13','WRSA14','AK14','WADE2016'))
 
 BnkAllBoatable$BnkCoverFoliar_StabAll_CHECK=ifelse(BnkAllBoatable$nBnkCover_StabAll_CHECK<11,NA,BnkAllBoatable$BnkCoverFoliar_StabAll_CHECK) 
 BnkAllBoatable$BnkCoverBasal_StabAll_CHECK=ifelse(BnkAllBoatable$nBnkCover_StabAll_CHECK<11,NA,BnkAllBoatable$BnkCoverBasal_StabAll_CHECK) 
@@ -818,8 +800,8 @@ BnkAllBoatable$BNK_VEG_FOLIAR_CHECK=ifelse(BnkAllBoatable$nBnkCover_StabAll_CHEC
 BnkAllBoatable$BNK_VEG_BASAL_CHECK=ifelse(BnkAllBoatable$nBnkCover_StabAll_CHECK<11,NA,BnkAllBoatable$BNK_VEG_BASAL_CHECK)
 
 
-BnkAllWadeableWadeable$BnkCoverFoliar_StabAll_CHECK=ifelse(BnkAllWadeable$nBnkCover_StabAll_CHECK<21,NA,BnkAllWadeable$BnkCoverFoliar_StabAll_CHECK) 
-BnkAllBoatable$BnkCoverBasal_StabAll_CHECK=ifelse(BnkAllBoatable$nBnkCover_StabAll_CHECK<21,NA,BnkAllBoatable$BnkCoverBasal_StabAll_CHECK)
+BnkAllWadeable$BnkCoverFoliar_StabAll_CHECK=ifelse(BnkAllWadeable$nBnkCover_StabAll_CHECK<21,NA,BnkAllWadeable$BnkCoverFoliar_StabAll_CHECK) 
+BnkAllWadeable$BnkCoverBasal_StabAll_CHECK=ifelse(BnkAllWadeable$nBnkCover_StabAll_CHECK<21,NA,BnkAllWadeable$BnkCoverBasal_StabAll_CHECK)
 BnkAllWadeable$BnkCoverFoliar_All_CHECK=ifelse(BnkAllWadeable$nBnkCover_StabAll_CHECK<21,NA,BnkAllWadeable$BnkCoverFoliar_All_CHECK)  
 BnkAllWadeable$BnkCoverBasal_All_CHECK=ifelse(BnkAllWadeable$nBnkCover_StabAll_CHECK<21,NA,BnkAllWadeable$BnkCoverBasal_All_CHECK)  
 BnkAllWadeable$BnkStability_All_CHECK=ifelse(BnkAllWadeable$nBnkCover_StabAll_CHECK<21,NA,BnkAllWadeable$BnkStability_All_CHECK) 
@@ -829,7 +811,8 @@ BnkAllWadeable$BNK_LWD_CHECK=ifelse(BnkAllWadeable$nBnkCover_StabAll_CHECK<21,NA
 BnkAllWadeable$BNK_VEG_FOLIAR_CHECK=ifelse(BnkAllWadeable$nBnkCover_StabAll_CHECK<21,NA,BnkAllWadeable$BNK_VEG_FOLIAR_CHECK)
 BnkAllWadeable$BNK_VEG_BASAL_CHECK=ifelse(BnkAllWadeable$nBnkCover_StabAll_CHECK<21,NA,BnkAllWadeable$BNK_VEG_BASAL_CHECK)
 
-BnkAll=ifelse(exists(BnkAllBoatable)==TRUE,rbind(BnkAllWadeable,BnkAllBoatable),BnkAllWadeable)
+
+if(exists('BnkAllBoatable')==TRUE) {BnkAll=rbind(BnkAllWadeable,BnkAllBoatable)} else {BnkAll=BnkAllWadeable}
 
 
 ##########################################################
