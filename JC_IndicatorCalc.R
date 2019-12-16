@@ -863,6 +863,7 @@ depth=subset(thalweg_ratio5,POINT==1)
 depth$RESULT=depth$RESULT/100
 #get bank info
 BnkRatio=tblRetrieve(Parameters=c('INCISED','BANKHT'), Projects=projects, Years=years,Protocols=protocols,SiteCodes=sitecodes,Insertion=insertion)
+BnkRatio=BnkRatio[!(row.names(BnkRatio) %in% grep("^X",BnkRatio$TRANSECT)),]
 BnkRatiopvt=cast(BnkRatio,'UID+TRANSECT~PARAMETER',value='RESULT')
 #join thalweg and bank info and calc ratio
 BnkRatiopvt=join(BnkRatiopvt,depth, by=c('UID','TRANSECT'))
