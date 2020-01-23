@@ -29,7 +29,7 @@ ChannelDimensions=tblRetrieve(Parameters=c('INCISED','BANKHT','BANKWID','WETWID'
 ChannelDimensionspvt=addKEYS(cast(ChannelDimensions,'UID+TRANSECT~PARAMETER',value='RESULT'),c('SITE_ID'))# check data structure to make sure no duplicates
 
 #Floodwidth
-FloodWidth=tblRetrieve(Parameters=c('FLOOD_WID'), Projects=projects, Years=years,Protocols=protocols,SiteCode=sitecodes)
+FloodWidth=tblRetrieve(Parameters=c('FLOOD_WID','FLOOD_HEIGHT','FLOOD_BFHEIGHT','FLOOD_BFWIDTH','FLOOD_MAXDEPTH'), Projects=projects, Years=years,Protocols=protocols,SiteCode=sitecodes)
 pvtFloodWidth=addKEYS(cast(FloodWidth,'UID+TRANSECT~PARAMETER',value='RESULT'),c('SITE_ID'))
 
 #Wood
@@ -43,7 +43,7 @@ pvtLwd=addKEYS(merge(pvtLwdWet,pvtLwdDry, by=c('UID','TRANSECT')),c('SITE_ID'))
 
 #######Point
 #Bank Stability
-BankStab=tblRetrieve(Parameters=c('STABLE','EROSION','COVER','BNK_VEG','BNK_COBBLE','BNK_LWD','BNK_BEDROCK'), Projects=projects,Years=years,Protocols=protocols,SiteCodes=sitecodes)
+BankStab=tblRetrieve(Parameters=c('STABLE','EROSION','COVER_FOLIAR','COVER_BASAL','BNK_VEG_BASAL','BNK_VEG_FOLIAR','BNK_COBBLE','BNK_LWD','BNK_BEDROCK'), Projects=projects,Years=years,Protocols=protocols,SiteCodes=sitecodes)
 unique(BankStab$RESULT)
 BankStabpvt=addKEYS(cast(BankStab,'UID+TRANSECT+POINT~PARAMETER',value='RESULT'),c('SITE_ID'))
 unique(BankStab$POINT)
