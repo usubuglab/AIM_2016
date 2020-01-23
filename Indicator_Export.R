@@ -80,6 +80,10 @@ Bugs=Bugs[,c(1,12,5,6,7,8,10,11)]
 Indicators=join(Indicators,Bugs, by="UID",type="left")
 
 
+#########Join in Temperature data
+Temperature=read.csv("\\\\share1.bluezone.usu.edu\\miller\\GIS\\Projects\\ModeledStreamTemperature\\2019finaltemperature.csv")
+Indicators=join(Indicators,Temperature, by="UID",type="left")
+
 ###########May need to join in WQ data as well if WQ not complete at the time of indicator calc, if so uncomment all lines
 # #All WQ data from Baker lab or modeling
 # WQtbl=tblRetrieve(Parameters=c('CONDUCTIVITY','NTL','PTL','EC_PRED','TN_PRED','TP_PRED'),Projects=projects,Years=years,Protocols=protocols,SiteCodes=sitecodes)
