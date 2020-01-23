@@ -721,10 +721,26 @@ subQC=subset(FinalpvtPoolFines,FinalpvtPoolFines$PctPoolFines6CV>=1.41|FinalpvtP
 #Pivot data so that Each parameter has it's own column
 #changed in 2019 NOT to averages across all side channel and main channel banks.
 ##PIBO takes only the outside banks but for pre-2016 data we can't determine which are the outside banks after the fact so we averaged across all banks that were collected.
-##decided in 2019 to remove all side channel data to be identical with MIM!!!
 Banks=cast(BankStab, 'UID+TRANSECT+POINT~PARAMETER', value='RESULT')#run this for all years data and then if 2016 data run subsection below
-Banks=Banks[!(row.names(Banks) %in% grep("^X",Banks$TRANSECT)),] #removes all side channel data (side channel transects are stored with an "X" in front)
 
+###################################################################
+#run this section for 2016+ data
+#for 2016 and beyond take only data from outside banks... run above code plus the code below for 2016 data
+#get which side of the main channel the side channel was on to determine outside banks
+#if side channel on right bank need to use right bank for X transect data and use left bank data for main transect
+#if side channel on left bank need to use left bank for X transect data and use right bank data for main transect
+pvtSideBank1=cast(SideBank,'UID+TRANSECT~PARAMETER',value='RESULT')
+pvtSideBank2=pvtSideBank1
+pvtSideBank2$TRANSECT=sub("^","X",pvtSideBank1$TRANSECT)
+#need to get data to be opposite for main channel
+pvtSideBank1$SIDCHN_BNK=ifelse(pvtSideBank1$SIDCHN_BNK=='LF','RT',ifelse(pvtSideBank1$SIDCHN_BNK=='RT','LF',pvtSideBank1$SIDCHN_BNK))
+pvtSideBank3=rbind(pvtSideBank1,pvtSideBank2)
+Banks=merge(Banks,pvtSideBank3,by=c('UID','TRANSECT'), all=T)
+Banks$SIDCHN_BNK=ifelse(is.na(Banks$SIDCHN_BNK)==T,Banks$POINT,Banks$SIDCHN_BNK)
+Banks=subset(Banks,Banks$SIDCHN_BNK==Banks$POINT)
+
+
+#####################################################################
 ####this section is for all years
 #I want to calculate the percent of banks that are Covered.  
 Banks$CoverValueBasal=as.numeric(ifelse(Banks$COVER_BASAL=='UC',"0",ifelse(Banks$COVER_BASAL=='CV',"1",NA)))
@@ -863,7 +879,7 @@ depth=subset(thalweg_ratio5,POINT==1)
 depth$RESULT=depth$RESULT/100
 #get bank info
 BnkRatio=tblRetrieve(Parameters=c('INCISED','BANKHT'), Projects=projects, Years=years,Protocols=protocols,SiteCodes=sitecodes,Insertion=insertion)
-BnkRatio=BnkRatio[!(row.names(BnkRatio) %in% grep("^X",BnkRatio$TRANSECT)),]
+#side channels don't need removed because thalweg not collected on side channels so side channel data not used anyway
 BnkRatiopvt=cast(BnkRatio,'UID+TRANSECT~PARAMETER',value='RESULT')
 #join thalweg and bank info and calc ratio
 BnkRatiopvt=join(BnkRatiopvt,depth, by=c('UID','TRANSECT'))
@@ -916,8 +932,12 @@ fishpvt2$XFC_NAT_CHECK=round(fishpvt2$XFC_NAT_CHECK,digits=2)
 Angle$RESULT=ifelse(Angle$RESULT<45,45,Angle$RESULT)
 Angle$RESULT=as.numeric(Angle$RESULT)
 
-#changed in 2019 to exclude all side channel data rather than taking only outer banks
-Angle=Angle[!(row.names(Angle) %in% grep("^X",Angle$TRANSECT)),] #removes all side channel data (side channel transects are stored with an "X" in front)
+#2016+ data
+#need to treat side channels the same as with banks stability and only use the angles from the outer banks
+#run the side channel section of the bank stability prior to running this to get pvtSideBank3
+Angle=merge(Angle,pvtSideBank3, by=c('UID','TRANSECT'),all=T)
+Angle$SIDCHN_BNK=ifelse(is.na(Angle$SIDCHN_BNK)==T,Angle$POINT,Angle$SIDCHN_BNK)
+Angle=subset(Angle,Angle$SIDCHN_BNK==Angle$POINT)
 
 #all years
 MeanAngle=setNames(cast(Angle,'UID~PARAMETER',value='RESULT',fun=mean),c("UID","ANGLE180_CHECK"))
