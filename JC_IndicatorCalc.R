@@ -730,15 +730,22 @@ Banks=cast(BankStab, 'UID+TRANSECT+POINT~PARAMETER', value='RESULT')#run this fo
 #if side channel on right bank need to use right bank for X transect data and use left bank data for main transect
 #if side channel on left bank need to use left bank for X transect data and use right bank data for main transect
 pvtSideBank1=cast(SideBank,'UID+TRANSECT~PARAMETER',value='RESULT')
-pvtSideBank2=pvtSideBank1
-pvtSideBank2$TRANSECT=sub("^","X",pvtSideBank1$TRANSECT)
+pvtSideBank1$TRANSECT=sub("^","X",pvtSideBank1$TRANSECT)
+#need to only get side channel data that has corresponding bank stability data, before 2019 or 2018? we did not collect data at all kinds of side channels but did note their presence
+sidechanneltran=join(Banks,pvtSideBank1, by=c('UID','TRANSECT'))
+sidechanneltransub=subset(sidechanneltran,is.na(sidechanneltran$SIDCHN_BNK)==FALSE)
+sidechanneltransub=subset(sidechanneltransub, SIDCHN_BNK==POINT)
+pvtSideBank1=sidechanneltransub[,c("UID","TRANSECT","SIDCHN_BNK")]
+
 #need to get data to be opposite for main channel
-pvtSideBank1$SIDCHN_BNK=ifelse(pvtSideBank1$SIDCHN_BNK=='LF','RT',ifelse(pvtSideBank1$SIDCHN_BNK=='RT','LF',pvtSideBank1$SIDCHN_BNK))
+pvtSideBank2=pvtSideBank1
+pvtSideBank2$TRANSECT=sub("^X","",pvtSideBank1$TRANSECT)
+#need to get data to be opposite for main channel
+pvtSideBank2$SIDCHN_BNK=ifelse(pvtSideBank2$SIDCHN_BNK=='LF','RT',ifelse(pvtSideBank2$SIDCHN_BNK=='RT','LF',pvtSideBank2$SIDCHN_BNK))
 pvtSideBank3=rbind(pvtSideBank1,pvtSideBank2)
 Banks=merge(Banks,pvtSideBank3,by=c('UID','TRANSECT'), all=T)
 Banks$SIDCHN_BNK=ifelse(is.na(Banks$SIDCHN_BNK)==T,Banks$POINT,Banks$SIDCHN_BNK)
 Banks=subset(Banks,Banks$SIDCHN_BNK==Banks$POINT)
-
 
 #####################################################################
 ####this section is for all years
