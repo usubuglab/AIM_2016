@@ -205,12 +205,13 @@ MissingTotalsREACHdf=as.data.frame(MissingTotalsREACH)
 MissingTotalsREACH2=reshape2::melt(MissingTotalsREACHdf,id.vars=c('PROJECT',	'PROTOCOL',	'SITE_ID',	'LOC_NAME','VALXSITE',	'UID',	'DATE_COL',	'CREW_LEADER'))
 MissingTotalsREACH2sub=subset(MissingTotalsREACH2,(value>0.45&variable!='AvgMissingData')|(variable=='AvgMissingData' & (VALXSITE!='PARBYWADE'&VALXSITE!='INTPARBYWADE') &value>0.05))
 MissingTotalsREACH2sub$value=MissingTotalsREACH2sub$value*100
-MissingTotalsREACH2sub$ERROR=ifelse(MissingTotalsREACH2sub$variable=='AvgMissingData'|(MissingTotalsREACH2sub$variable=='FLOODPRONE WIDTH'& MissingTotalsREACH2sub$VALXSITE!='PARBYWADE'),"More than 5% of data missing on average across transect data or two floodprone widths were not collected. Sample status may need to be changed to partially sampled. Please confirm that the initial sample status was incorrect. Please ensure crew understands special situation protocols","Indicator supposed to have been collected and more than 45% of data missing")
+MissingTotalsREACH2sub$ERROR=ifelse(MissingTotalsREACH2sub$variable=='AvgMissingData'|(MissingTotalsREACH2sub$variable=='FLOODPRONE WIDTH'& MissingTotalsREACH2sub$VALXSITE!='PARBYWADE'),"More than 5% of data missing on average across transect data or two floodprone widths were not collected. Sample status may need to be changed to partially sampled. Please confirm that the initial sample status was incorrect. Please ensure crew understands special situation protocols","Indicator supposed to have been collected and more than 45% of data missing. Please verify that all data was properly entered into the app. If additional data is found, consult the NOC on next steps. If additional data is not found, the indicator associated with this data will likely not be computed.")
 MissingTotalsREACH2sub$DataType=ifelse(MissingTotalsREACH2sub$variable=='AvgMissingData',"Sample Status- Partial Reach","Missing data")
 contingentindicators=read.csv("Z:/buglab/Research Projects/AIM/Analysis/QC/2020/contingent_indicators.csv")
 MissingTotalsREACH2sub=join(MissingTotalsREACH2sub,contingentindicators, by=c('PROJECT','variable'))
 MissingTotalsREACH2sub=subset(MissingTotalsREACH2sub,Collect!='No'|is.na(Collect)==TRUE)
-MissingTotalsREACH2sub=MissingTotalsREACH2sub[,c('PROJECT','CREW_LEADER','SITE_ID','DATE_COL','LOC_NAME','VALXSITE','DataType','variable','value','ERROR','PROTOCOL')]
+MissingTotalsREACH2sub=setNames(MissingTotalsREACH2sub[,c('PROJECT','CREW_LEADER','SITE_ID','DATE_COL','LOC_NAME','VALXSITE','DataType','variable','value','ERROR','PROTOCOL','UID')],c('PROJECT','CREW_LEADER','SITE_ID','DATE_COL','LOC_NAME','VALXSITE','DataType','IndicatorMethodOrField','ValueOrPercentDataMissing','ERROR','PROTOCOL','UID'))
+
 write.xlsx(MissingTotalsREACH,"MissingDataGeneral.xlsx")
 write.xlsx(MissingTotalsREACH2sub,"MissingDataErrors.xlsx")
 #MissingTotalsTRAN=subset(MissingTotalsOUT,TRANSECT!='ReachTotal');write.csv(MissingTotalsTRAN,"MissingDataQCttran_nocom.csv")
@@ -275,7 +276,7 @@ postseasonmetadata=join(listsites,designs, by="SITE_ID", type="left")
 #Z_DISTANCEFROMXthis is not always accurate or filled in..so we calculate this ourselves in "CAL_DISTFROMX"
 postseasonmetadata$DistanceFromDesignCoordinatesMeters=acos(sin(as.numeric(postseasonmetadata$LAT_DD)*3.141593/180)*sin(as.numeric(postseasonmetadata$LAT)*3.141593/180) + cos(as.numeric(postseasonmetadata$LAT_DD)*3.141593/180)*cos(as.numeric(postseasonmetadata$LAT)*3.141593/180)*cos(as.numeric(postseasonmetadata$LONG)*3.141593/180-as.numeric(postseasonmetadata$LON_DD)*3.141593/180)) * 6371000
 #coordinate_design_QC=postseasonmetadata[,c('PROJECT','PROTOCOL','VALXSITE','SITE_ID','LOC_NAME','DATE_COL','UID','LAT_DD','LON_DD','LAT_DD_TR','LON_DD_TR','LAT_DD_BR','LON_DD_BR','DESIGN_LAT','DESIGN_LON','Z_DISTANCEFROMX','CALC_DISTFROMX','SLIDE_YN','SINUOSITY','TRCHLEN','straightline','MERGE','REPEAT_VISIT','StreamOr_1','District','FieldOffice','ADMU_ADMIN','COUNTY','Ecoregion_spelledout','Climate_spelledout')]
-postseasonmetadata$Coordinates=paste("MidReach:",coordinate_design_QC$LAT_DD,",",coordinate_design_QC$LON_DD,"BottomReach:",coordinate_design_QC$LAT_DD_BR,",",coordinate_design_QC$LON_DD_BR,"TopReach",coordinate_design_QC$LAT_DD_TR,",",coordinate_design_QC$LON_DD_TR)
+postseasonmetadata$Coordinates=paste("MidReach:",postseasonmetadata$LAT_DD,",",postseasonmetadata$LON_DD,"BottomReach:",postseasonmetadata$LAT_DD_BR,",",postseasonmetadata$LON_DD_BR,"TopReach",postseasonmetadata$LAT_DD_TR,",",postseasonmetadata$LON_DD_TR)
 coordinate_design_QC=postseasonmetadata[,c('PROJECT','CREW_LEADER','PROTOCOL','VALXSITE','SITE_ID','LOC_NAME','DATE_COL','UID','SINUOSITY','Coordinates','DistanceFromDesignCoordinatesMeters','TRCHLEN','LAT_DD','LON_DD','LAT_DD_TR','LON_DD_TR','LAT_DD_BR','LON_DD_BR','LAT','LONG','Z_DISTANCEFROMX','SLIDE_YN','straightline')]
 
 #check the below file below for the following
@@ -301,7 +302,7 @@ coordinate_design_QCsub2$IndicatorMethodOrField='Distance from design coordinate
 coordinate_design_QCsub2ValueOrPercentDataMissing=coordinate_design_QCsub2$DistanceFromDesignCoordinatesMeters
 coordinateQCErrors=rbind(coordinate_design_QCsub,coordinate_design_QCsub2)
 coordinateQCErrors$DataType='Coordinates'
-coordinateQCErrors=coordinateQCErrors[,c('PROJECT','CREW_LEADER','SITE_ID','DATE_COL','LOC_NAME','VALXSITE','DataType','IndicatorMethodOrField','ValueOrPercentDataMissing','ERROR')]
+coordinateQCErrors=coordinateQCErrors[,c('PROJECT','CREW_LEADER','SITE_ID','DATE_COL','LOC_NAME','VALXSITE','DataType','IndicatorMethodOrField','ValueOrPercentDataMissing','ERROR','UID')]
 write.csv(coordinate_design_QC,'GeneralcoordinateQC.csv',row.names = FALSE)
 write.csv(coordinateQCErrors,'coordinateQCErrors.csv',row.names = FALSE)
 
@@ -346,29 +347,29 @@ write.csv(coordinateQCErrors,'coordinateQCErrors.csv',row.names = FALSE)
 
 ####### Bugs #########
 #get all bug data
-Bugs=tblRetrieve(Parameters=c('JAR_NO','ACTUAL_DATE','AREA_SAMP','TRAN_NUM','SAMPLER','AREA','BUG_METHOD','VALXSITE','PROTOCOL','PROJECT'),Years=years, Projects=projects,Protocol=protocols,SiteCodes=sitecodes,Insertion=insertion)
-Bugspvt=addKEYS(cast(Bugs,'UID~SAMPLE_TYPE+PARAMETER',value='RESULT'),c('SITE_ID','DATE_COL','CREW_LEADER','PROJECT'))
-
-
-#check surber net and mini surber net areas because they were wrong in the app at the begining of 2016 field season
-#these were all correct in 2017 so should be able to ignore this check in 2018
-AreaCheck1=subset(Bugspvt,(as.numeric(BERW_AREA_SAMP)!=0.093 & BERW_SAMPLER=='SU'))
-AreaCheck2=subset(Bugspvt,(as.numeric(BERW_AREA_SAMP)!=0.0413 & BERW_SAMPLER=='MI'))
-AreaCheck3=subset(Bugspvt,(as.numeric(BERW_AREA_SAMP)!=0.093 & BERW_SAMPLER=='KC'))
-if(nrow(AreaCheck1)>0){write.csv(AreaCheck1,'AreaCheck1.csv')}
-if(nrow(AreaCheck2)>0){write.csv(AreaCheck2,'AreaCheck2.csv')}
-if(nrow(AreaCheck3)>0){write.csv(AreaCheck3,'AreaCheck3.csv')}
-Bugspvt=Bugspvt[c(10,16,11,12,14,1,13,2,9,5,8,3,4,7,6)]
-Bugspvt=Bugspvt[order(Bugspvt$VERIF_PROJECT,Bugspvt$VERIF_PROTOCOL,Bugspvt$SITE_ID),]
-write.csv(Bugspvt,'Bugspvt.csv')
-
-
-#check to make sure 8 or 11 TRAN_NUM at all sites
-#the check placed in the app has made this error vitually non-existent, if csvs blank there are no issues
-SamplingCheck1=subset(Bugspvt,(as.numeric(BERW_TRAN_NUM)<8 & BERW_BUG_METHOD=='TARGETED RIFFLE'))
-SamplingCheck2=subset(Bugspvt,(as.numeric(BERW_TRAN_NUM)<11 & BERW_BUG_METHOD=='REACH WIDE'))
-if(nrow(SamplingCheck1)>0){write.csv(SamplingCheck1,'TargetedRiffleTranNumCheck.csv')}
-if(nrow(SamplingCheck2)>0){write.csv(SamplingCheck2,'ReachWideTranNumCheck.csv')}
+# Bugs=tblRetrieve(Parameters=c('JAR_NO','ACTUAL_DATE','AREA_SAMP','TRAN_NUM','SAMPLER','AREA','BUG_METHOD','VALXSITE','PROTOCOL','PROJECT'),Years=years, Projects=projects,Protocol=protocols,SiteCodes=sitecodes,Insertion=insertion)
+# Bugspvt=addKEYS(cast(Bugs,'UID~SAMPLE_TYPE+PARAMETER',value='RESULT'),c('SITE_ID','DATE_COL','CREW_LEADER','PROJECT'))
+# 
+# 
+# #check surber net and mini surber net areas because they were wrong in the app at the begining of 2016 field season
+# #these were all correct in 2017 so should be able to ignore this check in 2018
+# AreaCheck1=subset(Bugspvt,(as.numeric(BERW_AREA_SAMP)!=0.093 & BERW_SAMPLER=='SU'))
+# AreaCheck2=subset(Bugspvt,(as.numeric(BERW_AREA_SAMP)!=0.0413 & BERW_SAMPLER=='MI'))
+# AreaCheck3=subset(Bugspvt,(as.numeric(BERW_AREA_SAMP)!=0.093 & BERW_SAMPLER=='KC'))
+# if(nrow(AreaCheck1)>0){write.csv(AreaCheck1,'AreaCheck1.csv')}
+# if(nrow(AreaCheck2)>0){write.csv(AreaCheck2,'AreaCheck2.csv')}
+# if(nrow(AreaCheck3)>0){write.csv(AreaCheck3,'AreaCheck3.csv')}
+# Bugspvt=Bugspvt[c(10,16,11,12,14,1,13,2,9,5,8,3,4,7,6)]
+# Bugspvt=Bugspvt[order(Bugspvt$VERIF_PROJECT,Bugspvt$VERIF_PROTOCOL,Bugspvt$SITE_ID),]
+# write.csv(Bugspvt,'Bugspvt.csv')
+# 
+# 
+# #check to make sure 8 or 11 TRAN_NUM at all sites
+# #the check placed in the app has made this error vitually non-existent, if csvs blank there are no issues
+# SamplingCheck1=subset(Bugspvt,(as.numeric(BERW_TRAN_NUM)<8 & BERW_BUG_METHOD=='TARGETED RIFFLE'))
+# SamplingCheck2=subset(Bugspvt,(as.numeric(BERW_TRAN_NUM)<11 & BERW_BUG_METHOD=='REACH WIDE'))
+# if(nrow(SamplingCheck1)>0){write.csv(SamplingCheck1,'TargetedRiffleTranNumCheck.csv')}
+# if(nrow(SamplingCheck2)>0){write.csv(SamplingCheck2,'ReachWideTranNumCheck.csv')}
 
 # #get data ready to submit via http://www.usu.edu/buglab/SampleProcessing/SampleSubmission/
 # postseasonmetadata=subset(postseasonmetadata,PROTOCOL!='FAILED')
@@ -395,9 +396,12 @@ if(nrow(SamplingCheck2)>0){write.csv(SamplingCheck2,'ReachWideTranNumCheck.csv')
 WQ2=tblRetrieve(Parameters=c('CONDUCTIVITY','CORRECTED','TEMPERATURE'), Comments='Y', Years=years, Projects=projects,Protocols=protocols,SiteCodes=sitecodes,Insertion=insertion)
 WQ1=cast(WQ2,'UID~PARAMETER',value='RESULT')
 WQind=cast(WQ2,'UID~PARAMETER',value='IND')
-WQ3=addKEYS(merge(WQ1,WQind,by=c('UID'),all=T) ,c('SITE_ID','DATE_COL','CREW_LEADER','PROJECT'))
+WQ3=addKEYS(merge(WQ1,WQind,by=c('UID'),all=T) ,c('SITE_ID','DATE_COL','CREW_LEADER','PROJECT','LOC_NAME'))
 WQ3.sub=subset(WQ3,CORRECTED.x!='Y')
 if(nrow(WQ3.sub)>0){write.csv(WQ3.sub,'not_temp_corrected_conduct.csv')}
+Corrected=addKEYS(tblRetrieve(Parameters=c('CORRECTED'), Comments='Y', Years=years, Projects=projects,Protocols=protocols,SiteCodes=sitecodes,Insertion=insertion),c('PROJECT','SITE_ID','CREW_LEADER','LOC_NAME','DATE_COL','VALXSITE'))
+WQCTemp=subset(Corrected, RESULT!='Y')
+WQCTemp$ERROR='Crew recorded that conductivity was not temperature corrected; Please verify if conductivity vs. specific conductance (temperature corrected conductivity) was collected. AIM protocol states that temperature corrected conductivity should be recorded if at all possible. Some YSIs may not have this capability but this should be extremely rare.'
 
 # #Chem check the hours prior to freezing
 # WQtbl=tblRetrieve(Parameters=c('NTL','PTL','TN_PRED','TP_PRED','TIME_UNFROZEN'),Projects=projects,Years=years,Protocols=protocols,SiteCodes=sitecodes,Insertion=insertion)
@@ -415,18 +419,39 @@ if(nrow(WQ3.sub)>0){write.csv(WQ3.sub,'not_temp_corrected_conduct.csv')}
 # ConditionCheck2=aggregate(TIME_UNFROZEN~OE_TPrtg, data=WQpvt, FUN=mean) 
 #                       
 #view any typical values violations for Conductivity and PH
-Conduct=addKEYS(tblRetrieve(Comments='Y',Parameters=c('CONDUCTIVITY'),Projects=projects,Years=years,Protocols=protocols,SiteCodes=sitecodes,Insertion=insertion),c('PROJECT','SITE_ID','CREW_LEADER'))
-ConductQuestions=subset(Conduct,RESULT<100 | RESULT>600)# review comments for any sites flagged here 
+Conduct=addKEYS(tblRetrieve(Comments='Y',Parameters=c('CONDUCTIVITY'),Projects=projects,Years=years,Protocols=protocols,SiteCodes=sitecodes,Insertion=insertion),c('PROJECT','SITE_ID','CREW_LEADER','LOC_NAME','DATE_COL','VALXSITE'))
+ConductQuestions=subset(Conduct,RESULT<30 | RESULT>1000)# review comments for any sites flagged here 
 #postseasonmetadata_ecoregion=postseasonmetadata[,c('UID','ECO_10')]
 #ConductQuestions=join(ConductQuestions,postseasonmetadata_ecoregion, by="UID",type="left")
-
-ConductQuestions=ConductQuestions[order(ConductQuestions$RESULT),c(1,8,3,4,2,5,6,7,9:17)]
+ConductQuestions=ConductQuestions[order(ConductQuestions$RESULT),]
+ConductQuestions$ERROR='Value is outside the typical value range of 30-1000 uS/cm. Did crew recalibrate and verify value? If not project lead should determine if value should be trusted or omitted.'
 if(nrow(ConductQuestions)>0){write.csv(ConductQuestions,'ConductQuestions.csv')}
-PH=addKEYS(tblRetrieve(Comments='Y',Parameters=c('PH'),Projects=projects,Years=years,Protocols=protocols,SiteCodes=sitecodes,Insertion=insertion),c('PROJECT','SITE_ID','CREW_LEADER'))
+
+PH=addKEYS(tblRetrieve(Comments='Y',Parameters=c('PH'),Projects=projects,Years=years,Protocols=protocols,SiteCodes=sitecodes,Insertion=insertion),c('PROJECT','SITE_ID','CREW_LEADER','LOC_NAME','DATE_COL','VALXSITE'))
 PHQuestions=subset(PH,RESULT<6 | RESULT>9)# review comments for any sites flagged here
 #PHQuestions=join(PHQuestions,postseasonmetadata_ecoregion, by="UID",type="left")
-PHQuestions=PHQuestions[order(PHQuestions$RESULT),c(1,8,3,4,2,5,6,7,9:17)]
+PHQuestions=PHQuestions[order(PHQuestions$RESULT),]
+PHQuestions$ERROR='Value is outside typical range of 6-9. Did crew recalibrate and verify value? If not project lead should determine if value should be trusted or omitted.'
 if(nrow(PHQuestions)>0){write.csv(PHQuestions,'PHQuestions.csv')}
+
+
+Temperature=addKEYS(tblRetrieve(Comments='Y',Parameters=c('TEMPERATURE'),Projects=projects,Years=years,Protocols=protocols,SiteCodes=sitecodes,Insertion=insertion),c('PROJECT','SITE_ID','CREW_LEADER','LOC_NAME','DATE_COL','VALXSITE'))
+TemperatureQuestions=subset(Temperature,RESULT<2|RESULT>23)
+TemperatureQuestions=TemperatureQuestions[order(TemperatureQuestions$RESULT),]
+TemperatureQuestions$ERROR='Value is outside typical range of 2-23. Please confirm if value should be trusted or omitted.'
+
+
+Turb=addKEYS(tblRetrieve(Parameters=c('TURBIDITY'), Comments='Y', Years=years, Projects=projects,Protocols=protocols,SiteCodes=sitecodes,Insertion=insertion),c('PROJECT','SITE_ID','CREW_LEADER','LOC_NAME','DATE_COL','VALXSITE'))
+TurbQuestions=subset(Turb,RESULT>60)
+TurbQuestions$ERROR='Value is atypically high. Please confirm if value should be trusted or omitted.'
+
+WQ=rbind.fill(WQCTemp,ConductQuestions,PHQuestions,TemperatureQuestions,TurbQuestions)
+WQ$DataType='Water Quality'
+
+WQ=setNames(WQ[,c('PROJECT','CREW_LEADER','SITE_ID','DATE_COL','VALXSITE','DataType','PARAMETER','RESULT','ERROR','COMMENT','FLAG','UID','IND','SAMPLE_TYPE')],c('PROJECT','CREW_LEADER','SITE_ID','DATE_COL','VALXSITE','DataType','IndicatorMethodOrField','ValueOrPercentDataMissing','ERROR','COMMENT','FLAG','UID','IND','SAMPLE_TYPE'))
+
+
+
 
 # #compare any questionable values to ecoregional EPA data
 # #should automate this process so that only values that fall outside this range get flagged ---need to join the ecoregion data to the design table; can't remember where all that site metadata from the master sample ended up
@@ -442,11 +467,69 @@ if(nrow(PHQuestions)>0){write.csv(PHQuestions,'PHQuestions.csv')}
                       
 ####### incision and bank height ############
 #cross checks implemented in app so just check extreme values, outliers (above), and for unit issues
-heights=addKEYS(tblRetrieve(Parameters=c('INCISED','BANKHT'),Years=years, Projects=projects,Protocols=protocols,SiteCodes=sitecodes,Insertion=insertion),c('SITE_ID','CREW_LEADER','PROJECT'))
-HeightCheck1=subset(heights,RESULT>1.5|RESULT<0.1)
-HeightCheck1=HeightCheck1[order(HeightCheck1$RESULT),c(1,8,3,4,2,5,6,7,9:16)]
-if(nrow(HeightCheck1)>0){write.csv(HeightCheck1,'HeightCheck1.csv')}
-                      
+heights=addKEYS(tblRetrieve(Parameters=c('INCISED','BANKHT','BANKWID','WETWID'),Years=years, Projects=projects,Protocols=protocols,SiteCodes=sitecodes,Insertion=insertion),c('SITE_ID','CREW_LEADER','PROJECT','LOC_NAME','PROTOCOL','VALXSITE','DATE_COL'))
+heights$decimals=nchar(strsplit(as.character(heights$RESULT), "\\.")[[1]][2])
+
+decimalplaces <- function(x) {
+  ifelse(abs(x - round(x)) > .Machine$double.eps^0.5,
+         nchar(sub('^\\d+\\.', '', sub('0+$', '', as.character(x)))),
+         0)
+}
+
+heights$decimals=decimalplaces(heights$RESULT)
+heightssub=subset(heights,decimals>2)
+heightssub$ERROR='Verify if value is either in wrong units or too many decimal places were recorded.'
+
+thalweg=addKEYS(tblRetrieve(Parameters=c('DEPTH'),Years=years, Projects=projects,Protocols=protocols,SiteCodes=sitecodes,Insertion=insertion),c('SITE_ID','CREW_LEADER','PROJECT','LOC_NAME','PROTOCOL','VALXSITE','DATE_COL'))
+thalweg$decimals=decimalplaces(thalweg$RESULT)
+thalwegsub=subset(thalweg,decimals>0)
+thalwegsub$ERROR='Verify if value is either in wrong units or too many decimal places were recorded.'
+
+
+
+slopedecimals=addKEYS(tblRetrieve(Parameters=c('STARTHEIGHT','ENDHEIGHT'),Years=years, Projects=projects,Protocols=protocols,SiteCodes=sitecodes,Insertion=insertion),c('SITE_ID','CREW_LEADER','PROJECT','LOC_NAME','PROTOCOL','VALXSITE','DATE_COL'))
+slopedecimals$decimals=decimalplaces(slopedecimals$RESULT)
+slopedecimalssub=subset(slopedecimals,decimals>0)
+slopedecimalssub$ERROR='Slope values were either recorded to the wrong precision or wrong units. NOC will correct values but please verify crew knows how to use the proper equipment and follow the protocol recording slope in cm.'
+
+
+decimals2=rbind.fill(heightssub,thalwegsub,slopedecimalssub)
+decimals2$DataType='Units, Precision, or Typo'
+
+decimals2=setNames(decimals2[,c('PROJECT','CREW_LEADER','SITE_ID','DATE_COL','VALXSITE','DataType','PARAMETER','RESULT','ERROR','UID','IND','SAMPLE_TYPE')],c('PROJECT','CREW_LEADER','SITE_ID','DATE_COL','VALXSITE','DataType','IndicatorMethodOrField','ValueOrPercentDataMissing','ERROR','UID','IND','SAMPLE_TYPE'))
+
+
+
+
+LwdCat=unclass(sqlQuery(wrsa1314,"select SAMPLE_TYPE,PARAMETER from tblMetadata where Sample_TYPE like 'LWDW%'"))$PARAMETER
+Lwd=tblRetrieve(Parameters=LwdCat,Projects=projects,Years=years,Protocols=protocols,SiteCodes=sitecodes,Insertion=insertion)
+Lwdpvt=setNames(addKEYS(cast(Lwd,'UID~ACTIVE',value='RESULT',fun=sum),c('SITE_ID','DATE_COL','LOC_NAME','CREW_LEADER','PROJECT','PROTOCOL','VALXSITE')),c('UID','ValueOrPercentDataMissing','SITE_ID','DATE_COL','LOC_NAME','CREW_LEADER','PROJECT','PROTOCOL','VALXSITE'))
+Lwdpvtsub=subset(Lwdpvt,ValueOrPercentDataMissing>20)
+Lwdpvtsub$ERROR='Value is abnormally high. Please verify this was not a typo.'
+Lwdpvtsub$DataType='Units, Precision, or Typo'
+Lwdpvtsub$IndicatorMethodOrField='Total number of pieces of wood'
+
+
+angle=addKEYS(tblRetrieve(Parameters=c('ANGLE180'),Years=years, Projects=projects,Protocols=protocols,SiteCodes=sitecodes,Insertion=insertion),c('SITE_ID','CREW_LEADER','PROJECT','LOC_NAME','PROTOCOL','VALXSITE','DATE_COL'))
+anglesub=subset(angle,RESULT=='0')
+anglesub$DataType='Units, Precision, or Typo'
+anglesub$ERROR='Angle of 0 is not possible. This would indicate a tunnel/bridge/or culvert. Please confirm that this was a typo and should be omitted.'
+anglesub=etNames(anglesub[,c('PROJECT','CREW_LEADER','SITE_ID','DATE_COL','VALXSITE','DataType','PARAMETER','RESULT','ERROR','UID','IND','SAMPLE_TYPE')],c('PROJECT','CREW_LEADER','SITE_ID','DATE_COL','VALXSITE','DataType','IndicatorMethodOrField','ValueOrPercentDataMissing','ERROR','UID','IND','SAMPLE_TYPE'))
+
+elevation=addKEYS(tblRetrieve(Parameters=c('ELEVATION'),Years=years, Projects=projects,Protocols=protocols,SiteCodes=sitecodes,Insertion=insertion),c('SITE_ID','CREW_LEADER','PROJECT','LOC_NAME','PROTOCOL','VALXSITE','DATE_COL'))
+elevation$RESULT=as.numeric(elevation$RESULT)
+elevationsub=subset(elevation, RESULT>4000)
+elevationsub$DataType='Units, Precision, or Typo'
+elevationsub$ERROR='Value may be in ft when it should be in meters. Please confirm the units.'
+
+
+ErrorLog=rbind.fill(coordinateQCErrors,MissingTotalsREACH2sub,WQ,decimals2,Lwdpvtsub,anglesub,elevationsub)
+
+ErrorLog$DateAppended=Sys.Date()
+ErrorLog$Resolved=NA  
+
+
+write.csv(ErrorLog,'ErrorLog.csv',row.names=FALSE)
                       
 #######   Interrupted Flow Site Check  #########
 #Exporting UIDs that have some line of evidence that they are dry
@@ -456,11 +539,11 @@ Interrupt=subset(Interrupt,RESULT=='INTWADE')
 InterruptSites=data.frame("InterruptSites"=unique(Interrupt$UID))
 
 DryTran=tblRetrieve(Parameters=c('TRANDRY'),Years=years, Projects=projects,SiteCodes=sitecodes,Insertion=insertion)
-DryTran=subset(DryTran,RESULT=='Y')
+DryTran=subset(DryTran,RESULT=='Y' & !(TRANSECT %in% c('XA','XB','XC','XD','XE','XF','XG','XH','XI','XJ','XK')))
 DryTranSites=data.frame("DryTranSites"=unique(DryTran$UID))
 
 WetWid=tblRetrieve(Parameters=c('WETWID'),Years=years, Projects=projects,SiteCodes=sitecodes,Insertion=insertion)
-WetWid=subset(WetWid,RESULT==0)
+WetWid=subset(WetWid,RESULT==0 & !(TRANSECT %in% c('XA','XB','XC','XD','XE','XF','XG','XH','XI','XJ','XK')))
 WetWid0Sites=data.frame("WetWidSites"=unique(WetWid$UID))
 
 DryThalweg=tblRetrieve(Parameters=c('DEPTH'),Years=years, Projects=projects,Protocols=protocols,SiteCodes=sitecodes,Insertion=insertion)
@@ -503,7 +586,7 @@ if(nrow(depthwidthpvt0)>0){write.csv(depthwidthpvt0,'widths_should_be_0_based_on
 #do the opposite query
 Widths=tblRetrieve(Parameters=c('WETWID','BANKWID','TRANDRY'),Years=years, Projects=projects,Protocols=protocols,SiteCodes=sitecodes,Insertion=insertion)                      
 pvtWidths=cast(Widths,'UID+TRANSECT~PARAMETER',value='RESULT')
-Widths=subset(Widths,RESULT==0)                     
+Widths=subset(Widths,RESULT==0 & !(TRANSECT %in% c('XA','XB','XC','XD','XE','XF','XG','XH','XI','XJ','XK')))                     
 query=NA
 for (row in 1:nrow(Widths))
 { UID=Widths[row,"UID"]
@@ -520,65 +603,66 @@ if(nrow(widthdepth0)>0){write.csv(widthdepth0,'depths_should_be_0_based_on_width
 
 #dry transects
 DryCheck=subset(pvtWidths,(WETWID!=0 & TRANDRY=='Y')|(WETWID==0 & TRANDRY=='N')|(WETWID==0 & is.na(TRANDRY)=='TRUE'))#likely needs tweaking                      
+DryCheck=subset(DryCheck,!(TRANSECT %in% c('XA','XB','XC','XD','XE','XF','XG','XH','XI','XJ','XK')))
 if(nrow(DryCheck)>0){write.csv(DryCheck,'DryCheck.csv')}# any exported results should be checked with comments and other lines of evidence to see if the transect was dry or not  
 
 
 
 #####  floodprone width #######
 FloodWidth=tblRetrieve(Parameters=c('FLOOD_WID','FLOOD_BFWIDTH','FLOOD_HEIGHT','FLOOD_BFHEIGHT'), Projects=projects, Years=years,Protocols=protocols,SiteCode=sitecodes,Insertion=insertion)
-FloodWidthpvt=addKEYS(cast(FloodWidth,'UID+TRANSECT~PARAMETER',value='RESULT'),c('PROJECT','SITE_ID','CREW_LEADER'))
+FloodWidthpvt=addKEYS(cast(FloodWidth,'UID+TRANSECT~PARAMETER',value='RESULT'),c('PROJECT','SITE_ID','CREW_LEADER','LOC_NAME','VALXSITE','DATE_COL'))
 FloodWidthpvtsub=subset(FloodWidthpvt,FLOOD_WID<FLOOD_BFWIDTH)
 if(nrow(FloodWidthpvtsub)>0) {write.csv(FloodWidthpvtsub,'FloodWidthLessBankfull.csv')}
                       
-######   bank stability and cover ######
-#gut check values coming out of the app quickly, for real indicator values go to indicator script
-Bank=tblRetrieve(Parameters=c('Z_PCTEROSIONALBANKS_COVERED', 'Z_PCTEROSIONALBANKS_STABLE','Z_PCTEROSIONALBANKS_TOTAL'),Years=years, Projects=projects,Protocols=protocols,SiteCodes=sitecodes,Insertion=insertion)
-Bankpvt=addKEYS(cast(Bank,'UID~PARAMETER',value='RESULT'),c('PROJECT','SITE_ID','DATE_COL','VALXSITE','CREW_LEADER'))
-write.csv(Bankpvt,'Bankpvt.csv')
+# ######   bank stability and cover ######
+# #gut check values coming out of the app quickly, for real indicator values go to indicator script
+# Bank=tblRetrieve(Parameters=c('Z_PCTEROSIONALBANKS_COVERED', 'Z_PCTEROSIONALBANKS_STABLE','Z_PCTEROSIONALBANKS_TOTAL'),Years=years, Projects=projects,Protocols=protocols,SiteCodes=sitecodes,Insertion=insertion)
+# Bankpvt=addKEYS(cast(Bank,'UID~PARAMETER',value='RESULT'),c('PROJECT','SITE_ID','DATE_COL','VALXSITE','CREW_LEADER'))
+# write.csv(Bankpvt,'Bankpvt.csv')
 
-####### substrate #######
-#get sediment data
-Sediment=tblRetrieve(Parameters=c('SIZE_CLS','XSIZE_CLS'),Projects=projects,Years=years,Protocols=protocols,SiteCodes=sitecodes,Insertion=insertion)
-Sed2014=tblRetrieve(Parameters=c('SIZE_NUM','LOC'),Projects=projects,Years=years,Protocols=protocols,SiteCodes=sitecodes,Insertion=insertion)
-A_Sed2014=cast(Sed2014,'UID+TRANSECT+POINT~PARAMETER', value='RESULT')
+# ####### substrate #######
+# #get sediment data
+# Sediment=tblRetrieve(Parameters=c('SIZE_CLS','XSIZE_CLS'),Projects=projects,Years=years,Protocols=protocols,SiteCodes=sitecodes,Insertion=insertion)
+# Sed2014=tblRetrieve(Parameters=c('SIZE_NUM','LOC'),Projects=projects,Years=years,Protocols=protocols,SiteCodes=sitecodes,Insertion=insertion)
+# A_Sed2014=cast(Sed2014,'UID+TRANSECT+POINT~PARAMETER', value='RESULT')
+# 
+# # ##check % of paricles that were "other" categories (No longer need to check because don't collect "other" categories any more)
+# # #2013 data
+# # Sediment_OT=subset(Sediment,RESULT=="OT"| RESULT=="WD")
+# # Sediment_SED=subset(Sediment,RESULT!="OT"& RESULT!="WD")
+# # Sed_OT=setNames(count(Sediment_OT,"UID"),c('UID','countOT'))
+# # Sed_SED=setNames(count(Sediment_SED,"UID"),c('UID','countSED'))
+# # Sed_count=merge(Sed_OT,Sed_SED,by='UID',all=T)
+# # Sed_count$PCT=Sed_count$countOT/(Sed_count$countOT+Sed_count$countSED)*100#if greater than 10% look to see what the OT is
+# # write.csv(Sed_count,'OtherCount2013.csv')
+# # #2014+ data
+# # Sed2014_OT=subset(Sed2014,RESULT==0 & PARAMETER=='SIZE_NUM')
+# # Sed2014_SED=subset(Sed2014, RESULT!=0 & PARAMETER=='SIZE_NUM')
+# # A_Sed2014_OT=setNames(cast(Sed2014_OT,'UID~PARAMETER', value='RESULT',fun=length),c('UID','countOT'))
+# # A_Sed2014_SED=setNames(cast(Sed2014_SED,'UID~PARAMETER', value='RESULT',fun=length),c('UID','countSED'))
+# # A_Sed2014_count=merge(A_Sed2014_OT,A_Sed2014_SED,by='UID',all=T)
+# # A_Sed2014_count$PCT=A_Sed2014_count$countOT/(A_Sed2014_count$countOT+A_Sed2014_count$countSED)*100#if greater than 10% look to see what the OT is
+# # write.csv(A_Sed2014_count,'OtherCount2014.csv')
+# 
+# #check sample sizes and that bed and bank protocols were followed                       
+# C_Sed2014=A_Sed2014[!A_Sed2014$LOC== "BANK", ]
+# Nbed_Sed2014pvt=aggregate(.~UID, data=C_Sed2014, length)#number of bed pebbles
+# Nbed_Sed2014pvt=setNames(Nbed_Sed2014pvt[,c(1,5)],c("UID","nbed"))
+# Nall_Sed2014pvt=setNames(cast(Sed2014,'UID~PARAMETER',value='RESULT',fun=length),c("UID","nLOC","nall"))#number of all collected pebbles
+# Nall_Sed2014pvt=Nall_Sed2014pvt[,c(1,3)]
+# sample_size=addKEYS(join(Nbed_Sed2014pvt,Nall_Sed2014pvt, by="UID"),c('SITE_ID','PROJECT','CREW_LEADER'))                      
+# sample_size=sample_size[order(sample_size$nall),]
+# write.csv(sample_size,'sed_sample_size.csv')
 
-# ##check % of paricles that were "other" categories (No longer need to check because don't collect "other" categories any more)
-# #2013 data
-# Sediment_OT=subset(Sediment,RESULT=="OT"| RESULT=="WD")
-# Sediment_SED=subset(Sediment,RESULT!="OT"& RESULT!="WD")
-# Sed_OT=setNames(count(Sediment_OT,"UID"),c('UID','countOT'))
-# Sed_SED=setNames(count(Sediment_SED,"UID"),c('UID','countSED'))
-# Sed_count=merge(Sed_OT,Sed_SED,by='UID',all=T)
-# Sed_count$PCT=Sed_count$countOT/(Sed_count$countOT+Sed_count$countSED)*100#if greater than 10% look to see what the OT is
-# write.csv(Sed_count,'OtherCount2013.csv')
-# #2014+ data
-# Sed2014_OT=subset(Sed2014,RESULT==0 & PARAMETER=='SIZE_NUM')
-# Sed2014_SED=subset(Sed2014, RESULT!=0 & PARAMETER=='SIZE_NUM')
-# A_Sed2014_OT=setNames(cast(Sed2014_OT,'UID~PARAMETER', value='RESULT',fun=length),c('UID','countOT'))
-# A_Sed2014_SED=setNames(cast(Sed2014_SED,'UID~PARAMETER', value='RESULT',fun=length),c('UID','countSED'))
-# A_Sed2014_count=merge(A_Sed2014_OT,A_Sed2014_SED,by='UID',all=T)
-# A_Sed2014_count$PCT=A_Sed2014_count$countOT/(A_Sed2014_count$countOT+A_Sed2014_count$countSED)*100#if greater than 10% look to see what the OT is
-# write.csv(A_Sed2014_count,'OtherCount2014.csv')
-
-#check sample sizes and that bed and bank protocols were followed                       
-C_Sed2014=A_Sed2014[!A_Sed2014$LOC== "BANK", ]
-Nbed_Sed2014pvt=aggregate(.~UID, data=C_Sed2014, length)#number of bed pebbles
-Nbed_Sed2014pvt=setNames(Nbed_Sed2014pvt[,c(1,5)],c("UID","nbed"))
-Nall_Sed2014pvt=setNames(cast(Sed2014,'UID~PARAMETER',value='RESULT',fun=length),c("UID","nLOC","nall"))#number of all collected pebbles
-Nall_Sed2014pvt=Nall_Sed2014pvt[,c(1,3)]
-sample_size=addKEYS(join(Nbed_Sed2014pvt,Nall_Sed2014pvt, by="UID"),c('SITE_ID','PROJECT','CREW_LEADER'))                      
-sample_size=sample_size[order(sample_size$nall),]
-write.csv(sample_size,'sed_sample_size.csv')
-
-###### Angle  ########                      
-#outlier checks (above) and check for missing SLANT to check if angle was being calculated in app properly
-#only issues are exported, no issues were found in 2017 with this so can likely ignore for the most part this year
-Angle=tblRetrieve(Parameters=c('ANGLE180','SLANT'),Years=years, Projects=projects,SiteCodes=sitecodes,Insertion=insertion)
-pvtAngle=addKEYS(cast(Angle,'UID+TRANSECT+POINT~PARAMETER',value='RESULT'), c('SITE_ID','PROJECT','CREW_LEADER'))                     
-AngleCheck1=subset(pvtAngle, is.na(pvtAngle$SLANT)=='TRUE')                      
-AngleCheck2=subset(pvtAngle, SLANT=='OB' & as.numeric(ANGLE180)<90)  
-if(nrow(AngleCheck1)>0) {write.csv(AngleCheck1,'AngleCheckSlant.csv')}# slant being filled out properly for all angles
-if(nrow(AngleCheck2)>0) {write.csv(AngleCheck2,'AngleCheckSubtraction.csv')}# subtraction occuring in app properly for all obtuse angles
+# ###### Angle  ########                      
+# #outlier checks (above) and check for missing SLANT to check if angle was being calculated in app properly
+# #only issues are exported, no issues were found in 2017 with this so can likely ignore for the most part this year
+# Angle=tblRetrieve(Parameters=c('ANGLE180','SLANT'),Years=years, Projects=projects,SiteCodes=sitecodes,Insertion=insertion)
+# pvtAngle=addKEYS(cast(Angle,'UID+TRANSECT+POINT~PARAMETER',value='RESULT'), c('SITE_ID','PROJECT','CREW_LEADER'))                     
+# AngleCheck1=subset(pvtAngle, is.na(pvtAngle$SLANT)=='TRUE')                      
+# AngleCheck2=subset(pvtAngle, SLANT=='OB' & as.numeric(ANGLE180)<90)  
+# if(nrow(AngleCheck1)>0) {write.csv(AngleCheck1,'AngleCheckSlant.csv')}# slant being filled out properly for all angles
+# if(nrow(AngleCheck2)>0) {write.csv(AngleCheck2,'AngleCheckSubtraction.csv')}# subtraction occuring in app properly for all obtuse angles
                  
 #######  Riparian Veg  ########
 #overstory >100% check
@@ -630,48 +714,7 @@ if(nrow(riparian5pvtsub2)>0){write.csv(riparian5pvtsub2,'rip52.csv')}
 
 
 ##### Non-Natives ######
-nonnative=addKEYS(tblRetrieve(Parameters=c('INVAS_COMMON_NAME'),Years=years, Projects=projects,SiteCodes=sitecodes,Insertion=insertion),c('SITE_ID'))
-nonnative$CommonName=nonnative$RESULT
-specieslists=read.csv("Z:\\buglab\\Research Projects\\AIM\\Protocols\\NonNativeVeg\\specieslist.csv")
-nonnative=join(specieslists,nonnative,by=c("CommonName"),type="left")
-pvtnonnative=cast(nonnative,'UID~CommonName',value='PARAMETER',length)
 
-#add full list of species from each state along with scientific name #need full list of sites query unique UIDs for nonnative presence absence and join....
-RipBLM=tblRetrieve(Parameters=c('CANRIPW','UNRIPW','GCRIP','INVASW', 'NATIVW','INVASH','NATIVH','SEGRUSH'),Projects=projects,Years=years,Protocols=protocols,SiteCodes=sitecodes,Insertion=insertion)
-FQCY_VEG=subset(RipBLM, PARAMETER == 'INVASW'|PARAMETER == 'NATIVW'|PARAMETER == 'INVASH'|PARAMETER == 'NATIVH'|PARAMETER == 'SEGRUSH')
-nFQCY_VEG=setNames(plyr::count(FQCY_VEG,c("UID",'PARAMETER')),c("UID",'PARAMETER',"nFQCY_VEG_CHECK"))#total=22,but collected at 5 transects=10, so min N=10
-nFQCY_VEG=cast(nFQCY_VEG,"UID~PARAMETER",value="nFQCY_VEG_CHECK",fun="sum")
-FQCY_VEG$RESULT_A=as.numeric(ifelse(FQCY_VEG$RESULT == 'N', 0,ifelse(FQCY_VEG$RESULT == 'Y', 100,"NA")))
-FQCY_VEG=cast(FQCY_VEG,'UID~PARAMETER',value='RESULT_A',fun=mean)
-FQCY_VEG=setNames(merge(nFQCY_VEG,FQCY_VEG,by="UID"),c("UID","nINVASH_CHECK","nINVASW_CHECK","nNATIVH_CHECK","nNATIVW_CHECK","nSEGRUSH_CHECK","INVASH_CHECK","INVASW_CHECK","NATIVH_CHECK","NATIVW_CHECK","SEGRUSH_CHECK"))                  
-FQCY_VEG$INVASW_CHECK=round(FQCY_VEG$INVASW_CHECK,digits=0)
-FQCY_VEG$INVASH_CHECK=round(FQCY_VEG$INVASH_CHECK,digits=0)
-FQCY_VEG$NATIVH_CHECK=round(FQCY_VEG$NATIVH_CHECK,digits=0)
-FQCY_VEG$NATIVW_CHECK=round(FQCY_VEG$NATIVW_CHECK,digits=0)
-FQCY_VEG$SEGRUSH_CHECK=round(FQCY_VEG$SEGRUSH_CHECK,digits=0)
-FQCY_VEG$INVASW_CHECK=ifelse(FQCY_VEG$nINVASW_CHECK<10,NA,FQCY_VEG$INVASW_CHECK)#total=22,but collected at 5 transects=10, so min N=10
-FQCY_VEG$INVASH_CHECK=ifelse(FQCY_VEG$nINVASH_CHECK<10,NA,FQCY_VEG$INVASH_CHECK)#total=22,but collected at 5 transects=10, so min N=10
-FQCY_VEG$NATIVH_CHECK=ifelse(FQCY_VEG$nNATIVH_CHECK<10,NA,FQCY_VEG$NATIVH_CHECK)#total=22,but collected at 5 transects=10, so min N=10
-FQCY_VEG$NATIVW_CHECK=ifelse(FQCY_VEG$nNATIVW_CHECK<10,NA,FQCY_VEG$NATIVW_CHECK)#total=22,but collected at 5 transects=10, so min N=10
-FQCY_VEG$SEGRUSH_CHECK=ifelse(FQCY_VEG$nSEGRUSH_CHECK<10,NA,FQCY_VEG$SEGRUSH_CHECK)#total=22,but collected at 5 transects=10, so min N=10
-
-pvtnonnative=join(FQCY_VEG,pvtnonnative, by="UID",type="left")
-#convert to percent
-for (i in 14:ncol(pvtnonnative)-2){
-  pvtnonnative[,i]=round(pvtnonnative[,i]/FQCY_VEG$nNATIVW_CHECK*100,digits=0)
-}
-
-pvtnonnative=addKEYS(pvtnonnative,c('SITE_ID','CREW_LEADER','PROJECT'))
-pvtnonnative[is.na(pvtnonnative)]<-0
-
-#add state info
-designs=read.csv('\\\\share1.bluezone.usu.edu\\miller\\buglab\\Research Projects\\AIM\\Design\\DesignDatabase\\2019DesignSites_for_QC_input.csv')
-state=designs[,c('SITE_ID','STATE')]
-pvtnonnative=join(pvtnonnative,state,by="SITE_ID", type="left")
-
-
-
-write.csv(pvtnonnative,'pvtnonnative.csv')
 
 
 # # if species was in the state list, met minium data requirements, and are currently blank should have value of 0 if not make cells NA
@@ -761,13 +804,13 @@ write.csv(thalweg.missing,'thalweg.missing.csv')
 # thalweg.missing2013$pctcomplete=thalweg.missing2013$DepthCNT/thalweg.missing2013$StationCNT*100
 # thalweg.missing2013_2=aggregate(pctcomplete~UID, data=thalweg.missing2013,mean)                             
 
-#Increment cross-validation checks
-incrementcheck=tblRetrieve(Parameters=c('TRCHLEN','INCREMENT','RCHWIDTH'), Projects=projects, Years=years,Protocols=protocols,SiteCodes=sitecodes,Insertion=insertion)
-incrsub=subset(incrementcheck,UID!='1500BC4F-C9B3-4FFC-9639-B5054B0FCD62')#UID:10383  IND 4849393 needs to be deactivated for this to work
-incrementPVT=cast(incrsub,'UID~PARAMETER',value='RESULT')
-incrementsub=subset(incrementPVT,TRCHLEN/0.01!=INCREMENT)#also check manually in excel and also checked to make sure that RCHWIDTH*40=TRCHLEN and for RCHWIDTH<2.5 INCREMENT=1 and for RCHWIDTH>2.5<4 INCREMENT=1.5
-#write.csv(incrementPVT,'incrementPVT.csv')
-#weridinc=tblRetrieve(Parameters=c('INCREMENT'),UIDS='11852')
+# #Increment cross-validation checks
+# incrementcheck=tblRetrieve(Parameters=c('TRCHLEN','INCREMENT','RCHWIDTH'), Projects=projects, Years=years,Protocols=protocols,SiteCodes=sitecodes,Insertion=insertion)
+# incrsub=subset(incrementcheck,UID!='1500BC4F-C9B3-4FFC-9639-B5054B0FCD62')#UID:10383  IND 4849393 needs to be deactivated for this to work
+# incrementPVT=cast(incrsub,'UID~PARAMETER',value='RESULT')
+# incrementsub=subset(incrementPVT,TRCHLEN/0.01!=INCREMENT)#also check manually in excel and also checked to make sure that RCHWIDTH*40=TRCHLEN and for RCHWIDTH<2.5 INCREMENT=1 and for RCHWIDTH>2.5<4 INCREMENT=1.5
+# #write.csv(incrementPVT,'incrementPVT.csv')
+# #weridinc=tblRetrieve(Parameters=c('INCREMENT'),UIDS='11852')
                       
 # #thalweg checks####couldn't get this to work so did cell referencing in excel to interpolate between values with 1 missing value inbetween
 # #this interpolation was not done in 2017 because it is too much work for no reason.....
@@ -776,33 +819,33 @@ incrementsub=subset(incrementPVT,TRCHLEN/0.01!=INCREMENT)#also check manually in
 # thalweg_depth_pvt<-cast(thalweg_depth,'UID+TRANSECT~POINT', value='RESULT')
 # thalweg_depth_pvt_order<-thalweg_depth_pvt[with(thalweg_depth_pvt, order(1,29))]
 # thaleg_depth_NA<-thalweg_depth_pvt [is.na(thalweg_depth_pvt$'1')==TRUE,c(1:2,4)]
+# 
+# #check too deep variable for any depths that need trig
+# #only one such instance in 2017....not sure why so few and if this is a crew or app issue on not an issue at all
+# #true depth=sin(angle recorded in comments)*recorded height, note that sin function in R requires input to be in radians rather than degrees so you ether need to convert or use a different calculator 
+# toodeep=tblRetrieve(Comments='Y',Parameters=c('TOODEEP','DEPTH_ANGLE','DEPTH'),Projects=projects,Years=years, Protocols=protocols,SiteCodes=sitecodes,Insertion=insertion)
+# pvttoodeep=cast(toodeep,'UID+TRANSECT+POINT~PARAMETER',value='RESULT')
+# TooDeepCheck=subset(pvttoodeep,TOODEEP=='Y')
+# TooDeepCheck=join(TooDeepCheck,toodeep, by="UID",type="left")# join to get comments back in but this creates a mess. probably better to reach out previous line and then look for comments individually
+# if(nrow(TooDeepCheck)>0){write.csv(TooDeepCheck,'TooDeepCheck.csv')}
 
-#check too deep variable for any depths that need trig
-#only one such instance in 2017....not sure why so few and if this is a crew or app issue on not an issue at all
-#true depth=sin(angle recorded in comments)*recorded height, note that sin function in R requires input to be in radians rather than degrees so you ether need to convert or use a different calculator 
-toodeep=tblRetrieve(Comments='Y',Parameters=c('TOODEEP','DEPTH_ANGLE','DEPTH'),Projects=projects,Years=years, Protocols=protocols,SiteCodes=sitecodes,Insertion=insertion)
-pvttoodeep=cast(toodeep,'UID+TRANSECT+POINT~PARAMETER',value='RESULT')
-TooDeepCheck=subset(pvttoodeep,TOODEEP=='Y')
-TooDeepCheck=join(TooDeepCheck,toodeep, by="UID",type="left")# join to get comments back in but this creates a mess. probably better to reach out previous line and then look for comments individually
-if(nrow(TooDeepCheck)>0){write.csv(TooDeepCheck,'TooDeepCheck.csv')}
-
-#thalweg depth/ width EPA check
-#wading sites #skipped this in 2017 but should do in 2018
-depthcheck=tblRetrieve(Parameters=c('DEPTH'), Projects=projects, Years=years,Protocols=protocols,SiteCodes=sitecodes,Insertion=insertion)
-depthcheck.sub=subset(depthcheck,SAMPLE_TYPE!='CROSSSECW')
-pvtdepthcheck=cast(depthcheck.sub,'UID+TRANSECT+POINT~PARAMETER',value='RESULT')
-pvtdepthcheck.sub=subset(pvtdepthcheck,POINT=='1')#1 for 2016 and 0 for pre-2016
-width=tblRetrieve(Parameters=c('WETWID'),Projects=projects, Years=years,Protocols=protocols,SiteCodes=sitecodes,Insertion=insertion)
-check=join_all(list(pvtdepthcheck.sub,width),by=c('UID','TRANSECT'))
-check$RESULT=as.numeric(check$RESULT)
-check$DEPTH=as.numeric(check$DEPTH)
-odd_ratio=addKEYS(subset(check,RESULT/(DEPTH/100)>50|RESULT/(DEPTH/100)<1),c('SITE_ID','CREW_LEADER','PROJECT'))
-if(nrow(odd_ratio)>0){write.csv(odd_ratio,'odd_ratio.csv')}
-# #boating sites
-# odd_ratio=subset(check,RESULT/(DEPTH)>50|RESULT/(DEPTH)<1)
-# write.csv(odd_ratioBoat,'odd_ratio.csv')
-                 
-                 
+# #thalweg depth/ width EPA check
+# #wading sites #skipped this in 2017 but should do in 2018
+# depthcheck=tblRetrieve(Parameters=c('DEPTH'), Projects=projects, Years=years,Protocols=protocols,SiteCodes=sitecodes,Insertion=insertion)
+# depthcheck.sub=subset(depthcheck,SAMPLE_TYPE!='CROSSSECW')
+# pvtdepthcheck=cast(depthcheck.sub,'UID+TRANSECT+POINT~PARAMETER',value='RESULT')
+# pvtdepthcheck.sub=subset(pvtdepthcheck,POINT=='1')#1 for 2016 and 0 for pre-2016
+# width=tblRetrieve(Parameters=c('WETWID'),Projects=projects, Years=years,Protocols=protocols,SiteCodes=sitecodes,Insertion=insertion)
+# check=join_all(list(pvtdepthcheck.sub,width),by=c('UID','TRANSECT'))
+# check$RESULT=as.numeric(check$RESULT)
+# check$DEPTH=as.numeric(check$DEPTH)
+# odd_ratio=addKEYS(subset(check,RESULT/(DEPTH/100)>50|RESULT/(DEPTH/100)<1),c('SITE_ID','CREW_LEADER','PROJECT'))
+# if(nrow(odd_ratio)>0){write.csv(odd_ratio,'odd_ratio.csv')}
+# # #boating sites
+# # odd_ratio=subset(check,RESULT/(DEPTH)>50|RESULT/(DEPTH)<1)
+# # write.csv(odd_ratioBoat,'odd_ratio.csv')
+#                  
+#                  
 #########  slope   ################                    
 Slope=tblRetrieve(Parameters=c('AVGSLOPE','SLPRCHLEN','TRCHLEN','PARTIAL_RCHLEN','POOLRCHLEN','SLOPE_COLLECT','PCT_GRADE','VALXSITE','Z_SLOPEPASSQA'),Projects=projects, Years=years,Protocols=protocols,SiteCodes=sitecodes,Insertion=insertion)                 
 pvtSlope=addKEYS(cast(Slope,'UID~PARAMETER',value='RESULT'), c('SITE_ID','CREW_LEADER','PROJECT'))                
@@ -878,12 +921,12 @@ write.csv(subQC,'pooltailfines_highvariance.csv')
 }
 
 
-########  side channels  ############
-#check how many side channels crews are at sites to keep an eye on workload of sampling side channels
-side=tblRetrieve(Parameters=c('SIDCHN'),Projects=projects,Years=years,Protocols=protocols,SiteCodes=sitecodes,Insertion=insertion)
-side=subset(side,RESULT=='Y')
-sidepvt=addKEYS(cast(side,'UID~PARAMETER',value='RESULT',length),c('SITE_ID','CREW_LEADER','PROJECT'))
-write.csv(sidepvt,'SideChannels.csv')
+# ########  side channels  ############
+# #check how many side channels crews are at sites to keep an eye on workload of sampling side channels
+# side=tblRetrieve(Parameters=c('SIDCHN'),Projects=projects,Years=years,Protocols=protocols,SiteCodes=sitecodes,Insertion=insertion)
+# side=subset(side,RESULT=='Y')
+# sidepvt=addKEYS(cast(side,'UID~PARAMETER',value='RESULT',length),c('SITE_ID','CREW_LEADER','PROJECT'))
+# write.csv(sidepvt,'SideChannels.csv')
 
 
 
@@ -922,43 +965,43 @@ write.csv(pvtPhotos,'photos.csv')
 #UnionTBLnum_pvtQUANTmean_Site is pretty hard to look at. I prefer to look at UnionTBLnum_pvtSUMMARYn_Site sort by parameter and then sort values to look at min and maxes for each parameter across all sites
 #uses tblMETADATA to pull what parameters are in these files so tblMETADATA must be up to date for this to pull newer parameters
 
-UnionTBL=tblRetrieve(Table='', Years=years, Projects=projects,Protocols=protocols,SiteCodes=sitecodes,Insertion=insertion)
-
-tblCOL=c('UID', 'SAMPLE_TYPE','PARAMETER','RESULT','TRANSECT','POINT')
-pvtCOL='UID %s ~ SAMPLE_TYPE + PARAMETER';pvtCOLdefault=sprintf(pvtCOL,'');pvtCOL2=sprintf(pvtCOL,'+ TRANSECT + POINT')
-AggLevel='Site'#options = Site, All
-dbPARAM=sqlQuery(wrsa1314,"Select SAMPLE_TYPE, PARAMETER, LABEL,VAR_TYPE from tblMETADATA where ACTIVE='TRUE'")#parameter names (SWJ to do: iterate over Sample_Type groups to generate pivots)
-params_N=subset(dbPARAM, subset=VAR_TYPE=='NUMERIC')
-tblNAME='UnionTBLnum'
-if(min(c('SAMPLE_TYPE',tblCOL) %in% colnames(UnionTBL))==1){#if minimum needed columns are present, proceed, otherwise assume it is a pivoted or otherwise human readable table
-  #summarized quantitative data (average values per pivot cell which is per site per parameter)
-  tblNUM=subset(UnionTBL,subset=PARAMETER %in% params_N$PARAMETER )
-  if(nrow(tblNUM)>1){#only assign pivot to variable if not empty and only dive into subsequent if not empty
-    if(AggLevel=='Site'){pvtCOL4='UID + SAMPLE_TYPE + PARAMETER ~.'; pvtCOL5='RESULT~UID + SAMPLE_TYPE + PARAMETER'; colUID='tblPVTnSUM2$UID';nameUID=c('UID','SAMPLE_TYPE','PARAMETER','Quant1','Quant2')} else if (AggLevel=='All') {pvtCOL4='SAMPLE_TYPE + PARAMETER ~.';pvtCOL5='RESULT~SAMPLE_TYPE + PARAMETER';colUID='';nameUID=c('SAMPLE_TYPE','PARAMETER','Quant1','Quant2')}
-    tblNUM$RESULT=as.numeric(tblNUM$RESULT)
-    tblNUM=subset(tblNUM,subset= is.na(RESULT)==FALSE)#apparently not removing NAs during pivot aggregation, so done manually because causing errors - have to do after conversion to number
-    tblPVTn=cast(tblNUM, eval(parse(text=pvtCOLdefault)),value='RESULT',fun.aggregate='mean')#pivot reach average by site
-    tblPVTnSUM1=cast(tblNUM, eval(parse(text=pvtCOL4)),value='RESULT',fun.aggregate=c(length,mean,median,min,max,sd),fill='NA') # pivot summary stats by all sites combined or individual sites
-    tblPVTnSUM2=aggregate(eval(parse(text=pvtCOL5)),data=tblNUM,FUN='quantile',probs=c(0.25,0.75),names=FALSE)
-    tblPVTnSUM2=data.frame(cbind(eval(parse(text=colUID)),tblPVTnSUM2$SAMPLE_TYPE,tblPVTnSUM2$PARAMETER,tblPVTnSUM2$RESULT[,1],tblPVTnSUM2$RESULT[,2]));colnames(tblPVTnSUM2)=nameUID
-    tblPVTnSUM=merge(tblPVTnSUM1,tblPVTnSUM2,by=setdiff(nameUID,c('Quant1','Quant2')))
-    #need to do this by UID for WRSA13 QA duplicate comparison
-    assign(sprintf('%s_pvtQUANTmean_%s',tblNAME,AggLevel),tblPVTn)
-    assign(sprintf('%s_pvtSUMMARYn_%s',tblNAME,AggLevel),tblPVTnSUM)
-  }
-}
-
-# #export results
-# QUANTtbls=c(grep('pvtQUANTmean',ls(),value=T),setdiff(grep('pvtSUMMARYn',ls(),value=T),"pvtSUMMARYn"))
-# for (t in 1:length(QUANTtbls)){
-#   write.csv(eval(parse(text=QUANTtbls[t])),sprintf('%s.csv',QUANTtbls[t]))#could merge-pvtQUANTmean_, but I like them grouped by categories
+# UnionTBL=tblRetrieve(Table='', Years=years, Projects=projects,Protocols=protocols,SiteCodes=sitecodes,Insertion=insertion)
+# 
+# tblCOL=c('UID', 'SAMPLE_TYPE','PARAMETER','RESULT','TRANSECT','POINT')
+# pvtCOL='UID %s ~ SAMPLE_TYPE + PARAMETER';pvtCOLdefault=sprintf(pvtCOL,'');pvtCOL2=sprintf(pvtCOL,'+ TRANSECT + POINT')
+# AggLevel='Site'#options = Site, All
+# dbPARAM=sqlQuery(wrsa1314,"Select SAMPLE_TYPE, PARAMETER, LABEL,VAR_TYPE from tblMETADATA where ACTIVE='TRUE'")#parameter names (SWJ to do: iterate over Sample_Type groups to generate pivots)
+# params_N=subset(dbPARAM, subset=VAR_TYPE=='NUMERIC')
+# tblNAME='UnionTBLnum'
+# if(min(c('SAMPLE_TYPE',tblCOL) %in% colnames(UnionTBL))==1){#if minimum needed columns are present, proceed, otherwise assume it is a pivoted or otherwise human readable table
+#   #summarized quantitative data (average values per pivot cell which is per site per parameter)
+#   tblNUM=subset(UnionTBL,subset=PARAMETER %in% params_N$PARAMETER )
+#   if(nrow(tblNUM)>1){#only assign pivot to variable if not empty and only dive into subsequent if not empty
+#     if(AggLevel=='Site'){pvtCOL4='UID + SAMPLE_TYPE + PARAMETER ~.'; pvtCOL5='RESULT~UID + SAMPLE_TYPE + PARAMETER'; colUID='tblPVTnSUM2$UID';nameUID=c('UID','SAMPLE_TYPE','PARAMETER','Quant1','Quant2')} else if (AggLevel=='All') {pvtCOL4='SAMPLE_TYPE + PARAMETER ~.';pvtCOL5='RESULT~SAMPLE_TYPE + PARAMETER';colUID='';nameUID=c('SAMPLE_TYPE','PARAMETER','Quant1','Quant2')}
+#     tblNUM$RESULT=as.numeric(tblNUM$RESULT)
+#     tblNUM=subset(tblNUM,subset= is.na(RESULT)==FALSE)#apparently not removing NAs during pivot aggregation, so done manually because causing errors - have to do after conversion to number
+#     tblPVTn=cast(tblNUM, eval(parse(text=pvtCOLdefault)),value='RESULT',fun.aggregate='mean')#pivot reach average by site
+#     tblPVTnSUM1=cast(tblNUM, eval(parse(text=pvtCOL4)),value='RESULT',fun.aggregate=c(length,mean,median,min,max,sd),fill='NA') # pivot summary stats by all sites combined or individual sites
+#     tblPVTnSUM2=aggregate(eval(parse(text=pvtCOL5)),data=tblNUM,FUN='quantile',probs=c(0.25,0.75),names=FALSE)
+#     tblPVTnSUM2=data.frame(cbind(eval(parse(text=colUID)),tblPVTnSUM2$SAMPLE_TYPE,tblPVTnSUM2$PARAMETER,tblPVTnSUM2$RESULT[,1],tblPVTnSUM2$RESULT[,2]));colnames(tblPVTnSUM2)=nameUID
+#     tblPVTnSUM=merge(tblPVTnSUM1,tblPVTnSUM2,by=setdiff(nameUID,c('Quant1','Quant2')))
+#     #need to do this by UID for WRSA13 QA duplicate comparison
+#     assign(sprintf('%s_pvtQUANTmean_%s',tblNAME,AggLevel),tblPVTn)
+#     assign(sprintf('%s_pvtSUMMARYn_%s',tblNAME,AggLevel),tblPVTnSUM)
+#   }
 # }
-
-UnionTBLnum_pvtSUMMARYn_Site=subset(UnionTBLnum_pvtSUMMARYn_Site,PARAMETER %in% c('ANGLE180', 'BANKHT','BANKWID','BARWID','DENSIOM','DEPTH','LWD','ELEVATION','INCISED','SIZENUM','TEMPERATURE','WETWID','FLOOD_MAX_DEPTH','FLOOD_WID','FLOOD_BF_HEIGHT','FLOOD_BFWIDTH','FLOOD_HEIGHT'))
-UnionTBLnum_pvtSUMMARYn_Site=addKEYS(UnionTBLnum_pvtSUMMARYn_Site,c('PROJECT','SITE_ID','CREW_LEADER'))
-
-write.csv(UnionTBLnum_pvtSUMMARYn_Site,'UnionTBLnum_pvtSUMMARYn_Site.csv')
-
+# 
+# # #export results
+# # QUANTtbls=c(grep('pvtQUANTmean',ls(),value=T),setdiff(grep('pvtSUMMARYn',ls(),value=T),"pvtSUMMARYn"))
+# # for (t in 1:length(QUANTtbls)){
+# #   write.csv(eval(parse(text=QUANTtbls[t])),sprintf('%s.csv',QUANTtbls[t]))#could merge-pvtQUANTmean_, but I like them grouped by categories
+# # }
+# 
+# UnionTBLnum_pvtSUMMARYn_Site=subset(UnionTBLnum_pvtSUMMARYn_Site,PARAMETER %in% c('ANGLE180', 'BANKHT','BANKWID','BARWID','DENSIOM','DEPTH','LWD','ELEVATION','INCISED','SIZENUM','TEMPERATURE','WETWID','FLOOD_MAX_DEPTH','FLOOD_WID','FLOOD_BF_HEIGHT','FLOOD_BFWIDTH','FLOOD_HEIGHT'))
+# UnionTBLnum_pvtSUMMARYn_Site=addKEYS(UnionTBLnum_pvtSUMMARYn_Site,c('PROJECT','SITE_ID','CREW_LEADER'))
+# 
+# write.csv(UnionTBLnum_pvtSUMMARYn_Site,'UnionTBLnum_pvtSUMMARYn_Site.csv')
+# 
 
 
 
@@ -1073,605 +1116,3 @@ write.csv(UnionTBLnum_pvtSUMMARYn_Site,'UnionTBLnum_pvtSUMMARYn_Site.csv')
 # pvtSlope2=cast(Slope,'UID~PARAMETER',value='RESULT')
 # 
 
-
-#############################################################################
-########                         outlier check                 ##############
-#############################################################################
-
-##Need to have binMETADATAtemp.csv in your working directory for this script to work. You can get this table from SQL. It is called "tblMETADATAbin".
-######need to add IND to output!!!!!!!!!!! in the future
-###### this set of code no longer works because of changes made in data structure...
-###### checks were manually done in excel in 2016 and not done at all in 2017 because so many outliers were getting flagged that were not unit errors and nothing could be done to verify them
-###### rely on app for these checks and/or change this code to only check for outliers 3SD from mean and only, bankfull width, height, and incision
-#
-#UnionTBL=tblRetrieve(Table='', Years=years, Projects=projects,Protocols=protocols,SiteCodes=sitecodes,Insertion=insertion)
-# 
-# #incoming vs. comparison dataset
-# UnionTBLsites=unique(UnionTBL$UID)
-# if(exists('UnionTBLall')){
-#   UnionTBLsitesALL=unique(UnionTBLall$UID)
-#   print(sprintf('%s incoming sites will be compared to %s sites in the larger dataset. Review the incoming (UnionTBL) and comparison (UnionTBLall) datasets to confirm before proceeding with outlier checks.',length(UnionTBLsites),length(UnionTBLsitesALL)))
-# } else {print(sprintf('No larger comparision dataset specified. The incoming dataset (%s sites) will also be used for between site comparison. Set UnionTBLall to a different dataset if desired before proceeding with outlier checks.',length(UnionTBLsites)))
-#   UnionTBLall=UnionTBL
-# }
-# 
-# #QA boxplots
-# give.n <- function(x){return(data.frame(y = max(x)+1, label = paste("n =",length(x))))}#SWJ to do: improve to handle the multiple classes for Categorical 
-# whisk95 <- function(x) {r <- quantile(x, probs = c(0.05, 0.25, 0.5, 0.75, 0.95))
-#   names(r) <- c("ymin", "lower", "middle", "upper", "ymax")
-#   r
-# }#supports custom boxplot whiskers (instead of 1.5IQR default)#http://stackoverflow.com/questions/4765482/changing-whisker-definition-in-geom-boxplot
-# out2SD <- function(x) {
-#   #subset(x, x < quantile(x)[2] | quantile(x)[4] < x)
-#   MN=mean(x)
-#   SD2=2*sd(x)
-#   subset(x, x < MN-SD2 | MN+SD2 < x)
-# }#supports custom outliers#http://stackoverflow.com/questions/4765482/changing-whisker-definition-in-geom-boxplot
-# boxPARAM=function(boxdata,outlierdata,sampsize,facetSTR,titleSTR){
-#   siteavg=subset(boxdata,subset=STRATATYPE !="UID"  , select=c('UID','STRATATYPE','PARAMRES', 'PARAMCAT'))
-#   if(grepl('STRATATYPE',facetSTR)){
-#     siteavg=subset(siteavg,UID==allsites[s])
-#   } else { siteavg=subset(siteavg,STRATATYPE==typestrata[n])}
-#   siteavg=aggregate(PARAMRES~PARAMCAT,data=siteavg,FUN='mean')
-#   boxplot=ggplot(boxdata,aes(y=PARAMRES, x=PARAMCAT,fill=PARAMCAT,colour=PARAMCAT,label=SiteLabelOUT2)) +
-#   stat_summary(fun.data=whisk95, geom='boxplot',colour='black') + #geom_boxplot(outlier.colour='darkred',outlier.size=10,colour='black') + 
-#   stat_summary(fun.y=out2SD, geom='point',colour='darkred',size=5,show_guide=F) +
-#   eval(parse(text=facetSTR)) + #
-#   geom_hline(aes(yintercept=PARAMRES, colour=PARAMCAT),siteavg,size=1)  + #mark the average for the site
-#   scale_colour_brewer(drop=FALSE,palette='Set1') + scale_fill_brewer(palette='Set1')+#sync colors between lines and boxplots (especially important for categorical)
-#   #stat_summary(fun.data =give.n, geom = "text") +
-#   eval(parse(text=titleSTR)) +
-#   #geom_text(data=paramQ,aes(label=SiteLabelOUT),show_guide=F,size=3,position= position_jitter(width = 0.5, height=0))+#jitter a little strange, but makes it readable
-#   #stat_summary(fun.y=out2SD, geom='text',colour='red',show_guide=F) +
-#   geom_text(show_guide=F,size=3,position= position_jitter(width = 0.15, height=0))+#data=outlierdata,aes(label=SiteLabelOUT2),
-#   geom_text(aes(label=sprintf('n=%s',SampSize),x=(length(unique(PARAMCAT))/2)+0.5,y=max(PARAMRES)+(max(PARAMRES)/10)),colour='black')+#,x=(length(unique(boxdata$PARAMCAT))/2)+0.5,y=max(boxdata$PARAMRES)+0.25),inherit.aes=FALSE, parse=FALSE)+#annotate("text",x=2,y=max(paramTBL6$PARAMRES)+0.5,label=sprintf('n=%s',paramN$PARAMRES)) +#annotate: n(sites) for strata plots and n(points) for site  (function defined above) #messy for categorical#previous (not working as anticipated, particularly for categorical): #stat_summary(fun.data =give.n, geom = "text") + #function for adding sample size to boxplots #
-#   theme(axis.text.x=element_blank(),axis.ticks.x=element_blank(),axis.title.x=element_blank())  #remove x axis 
-# }# to support similar boxplot structure for stratabox and sitebox
-# subcol=c('UID','SITE_ID','PARAMETER','STRATATYPE','STRATA','PARAMRES','PARAMCAT','TRANSECT','POINT')
-# #compile parameter list
-# dbPARAM=sqlQuery(wrsa1314,"Select SAMPLE_TYPE, PARAMETER, LABEL,VAR_TYPE from tblMETADATA where ACTIVE='TRUE'")#parameter names (SWJ to do: iterate over Sample_Type groups to generate pivots)
-# params_C=subset(dbPARAM, subset=VAR_TYPE=='CHARACTER')
-# allparams=unique(paste(UnionTBL$SAMPLE_TYPE,UnionTBL$PARAMETER,sep=" "))#numeric: allparams=c("BANKW INCISED", "BANKW WETWID" )#categorical: allparams=c("CROSSSECW SIZE_CLS","HUMINFLUW WALL")
-# excludeparams=c("FIELDMEAS DO",'THALW BAR_PRES' ,"THALW BACKWATER",grep("CONSTRAINT",allparams,value=T),grep("VERIF",allparams,value=T),grep("CALIB",allparams,value=T),grep("BERW",allparams,value=T),grep("CHEM",allparams,value=T),grep("PHOTO",allparams,value=T),grep("PACK",allparams,value=T),grep("INVA",allparams,value=T),grep("NOT_COLLECTED",allparams,value=T),"SLOPEW METHOD","FIELDMEAS LOCATION","FIELDMEAS TIME" ,"FIELDMEAS CORRECTED","FIELDMEAS OTH_LOCATION",'CROSSSECW DIST_LB',"FIELDMEAS PROBE_ENDTIME" ,"FIELDMEAS PROBE_ID"       ,"SLOPEW ENDHEIGHT"     ,     "SLOPEW ENDTRAN"  ,   "SLOPEW STARTHEIGHT"        ,    "SLOPEW PROP",   "FIELDMEAS PROBE_STARTTIME",'SLOPEW SLOPE_UNITS','CROSSSECW SUB_5_7','THALW INCREMENT')
-# combineparams=c("CANCOVERW DENSIOM",'CROSSSECW XSIZE_CLS',grep("LWD",allparams,value=T),grep("HUMINFLU",allparams,value=T),grep("VISRIP",allparams,value=T),grep("FISHCOV",allparams,value=T),grep("ASSESS",allparams,value=T),grep("TORR",allparams,value=T))#need to exclude originals from allparams list and add new names back; some of these may be useable, just want to ponder them a bit more (run a few examples through the existing framework)
-# #!add Size_Num to combineparams list, use same translation for converting prior to aquamet, revise legal checks for Size_NUM
-# allparams1=setdiff(allparams,c(excludeparams,combineparams))
-# UnionTBL2=UnionTBLall#UnionTBL2=subset(UnionTBL,SITE_ID=='EL-LS-8126')
-# #!the below be redone with Xwalk along with bin?!
-# UnionTBL2$PARAMETER=ifelse(UnionTBL2$PARAMETER=='XSIZE_CLS','SIZE_CLS',UnionTBL2$PARAMETER)#for all our analysis purposes, these are the same
-# UnionTBL2$PARAMETER=ifelse(UnionTBL2$SAMPLE_TYPE=='LWDW','LWDtally',UnionTBL2$PARAMETER)#xwalk:fmstr#for preliminary analysis purposes, these are the same
-# UnionTBL2$PARAMETER=ifelse(UnionTBL2$SAMPLE_TYPE=='HUMINFLUW','HumanPresence',UnionTBL2$PARAMETER)#xwalk:fmstr
-# UnionTBL2$PARAMETER=ifelse(substr(UnionTBL2$PARAMETER,1,3)=='AGR','AGRicultural',UnionTBL2$PARAMETER)#xwalk:fmstr
-# UnionTBL2$PARAMETER=ifelse(substr(UnionTBL2$PARAMETER,1,3)=='IND','INDustrial',UnionTBL2$PARAMETER)#xwalk:fmstr
-# UnionTBL2$PARAMETER=ifelse(substr(UnionTBL2$PARAMETER,1,3)=='MAN','MANagement',UnionTBL2$PARAMETER)#xwalk:fmstr
-# UnionTBL2$PARAMETER=ifelse(substr(UnionTBL2$PARAMETER,1,3)=='REC','RECreation',UnionTBL2$PARAMETER)#xwalk:fmstr
-# UnionTBL2$PARAMETER=ifelse(substr(UnionTBL2$PARAMETER,1,3)=='RES','RESidential',UnionTBL2$PARAMETER)#xwalk:fmstr
-# UnionTBL2$PARAMETER=ifelse(UnionTBL2$SAMPLE_TYPE=='TORR' & UnionTBL2$PARAMETER!='TSD011','Torrent',UnionTBL2$PARAMETER)#xwalk:fmstr
-# UnionTBL2$SAMPLE_TYPE=ifelse(UnionTBL2$PARAMETER=='VEG_TYPE','VISRIP2W',UnionTBL2$SAMPLE_TYPE)
-# UnionTBL2$PARAMETER=ifelse(UnionTBL2$PARAMETER=='BARE','BARE',UnionTBL2$PARAMETER)#xwalk:fmstr
-# UnionTBL2$PARAMETER=ifelse(UnionTBL2$PARAMETER=='CANBTRE'|UnionTBL2$PARAMETER=='CANSTRE','CAN_TREE',UnionTBL2$PARAMETER)#xwalk:fmstr
-# UnionTBL2$PARAMETER=ifelse(UnionTBL2$PARAMETER=='CANVEG'|UnionTBL2$PARAMETER=='UNDERVEG','VEG_TYPE',UnionTBL2$PARAMETER)#xwalk:fmstr
-# UnionTBL2$PARAMETER=ifelse(UnionTBL2$PARAMETER=='GCNWDY'|UnionTBL2$PARAMETER=='UNDNWDY','NONWOOD',UnionTBL2$PARAMETER)#xwalk:fmstr
-# UnionTBL2$PARAMETER=ifelse(UnionTBL2$PARAMETER=='GCWDY'|UnionTBL2$PARAMETER=='UNDWDY','WOODY',UnionTBL2$PARAMETER)#xwalk:fmstr
-# UnionTBL2$PARAMETER=ifelse(UnionTBL2$PARAMETER=='DENSIOM' & UnionTBL2$POINT %in% c('LF','RT'),'DENSIOMbank',ifelse(UnionTBL2$PARAMETER=='DENSIOM' & (UnionTBL2$POINT  %in% c('LF','RT')==FALSE),'DENSIOMcenter',UnionTBL2$PARAMETER))#for preliminary analysis purposes, these need to be divided (and are believed to be separated in aquamet)
-# combineparamNEW=c('CHEM NTL','CHEM PTL','CANCOVERW DENSIOMbank','CANCOVERW DENSIOMcenter','CROSSSECW SIZE_CLS','LWDW LWDtally','TORR Torrent','ASSESS AGRicultural','ASSESS INDustrial','ASSESS MANagement','ASSESS RECreation','ASSESS RESidential','HUMINFLUW HumanPresence','VISRIPW BARE','VISRIPW CAN_TREE','VISRIP2W VEG_TYPE','VISRIPW NONWOOD','VISRIPW WOODY')##still need to ponder HUMINFLU, VISRIP, FISHCOV, and ASSESS and add back in here
-# allparams1=union(allparams1,combineparamNEW)#allparams1=allparams1[4:length(allparams1)]
-# #binned parameters
-# bin='Y'#'Y' if would like to apply specified binning to results of parameters in binparams
-# binparams=c("CROSSSECW SIZE_CLS",grep("LWD",allparams1,value=T),grep("CANCOVER",allparams1,value=T),'VISRIP2W VEG_TYPE','TORR Torrent','HUMINFLUW HumanPresence',grep("ASSESS",allparams1,value=T),grep("VISRIP",allparams1,value=T))#also list any parameters that should be treated as categorical that are otherwise in params_N
-# binMETA=read.csv('binMETADATAtemp.csv')##!feed in from SQL once solified in FM, R, SQL; also used to order categoricals
-# #set strata for later iteration
-# typestrata=c('ALL','EcoReg','Size')#must match column names that are created
-# numstrata=length(typestrata)
-# UnionTBL2=addKEYS(UnionTBL,'SITE_ID')
-# UnionTBL2$EcoReg=substr(UnionTBL2$SITE_ID,1,2)#!-- Switch to climatic rather than ecoreg?  ; ; may need to explicitly join an ecoregion column if sitecodes change over different projects and/or to utilize the EPA reference dataset, this works for NRSA only; also needs to be more expandable for additional strata
-# UnionTBL2$Size=substr(UnionTBL2$SITE_ID,4,5)
-# UnionTBL2$ALL='ALL'
-# #! other possible strata: reach width (would need to be calculated), VALXSITE or protocol (especially boatable vs. wadeable)
-# #this section is highly dependent on WRSA siteID naming structure and GRTS strata
-# rm(outlierTBL)
-# for (p in 1:length(allparams1)){#this is a standard loop for iterating, could put it in a function that allows you to plug in a string for the most nested middle
-# for (p in 2:6){#target specifc parameters during testing or start over mid-process  
-#   typeparam=strsplit(allparams1[p]," ")
-#   type=typeparam[[1]][[1]]; param=typeparam[[1]][[2]]
-#   paramTBL=subset(UnionTBL2,subset=PARAMETER==param & SAMPLE_TYPE==type)#!some where in subsetting and labelling of graphs, parameter was assumed to be unique...it technically is not (i.e. crosssection vs. thalweg depths, boatable) and needs Sample_TYPE in tandem
-#   paramTBL$CHAR=as.character(paramTBL$RESULT)
-#   paramTBL$NUM=as.numeric(paramTBL$CHAR)
-#   if(nrow(paramTBL)>0){
-#     if(allparams1[p] %in% paste(substr(params_C$SAMPLE_TYPE,1,nchar(params_C$SAMPLE_TYPE)-1),params_C$PARAMETER,sep=" ") |allparams1[p] %in% binparams){
-#       paramTBL$PARAMRES=paramTBL$CHAR#previous if statement: is.na(min(paramTBL$NUM)) & is.na(max(paramTBL$NUM))
-#       paramSTATUS='CHAR'
-#       paramMATCH=param %in% binMETA$PARAMETER
-#       typeMATCH=type %in% as.character(unlist(subset(binMETA,select=SAMPLE_TYPE,subset=is.na(PARAMETER)|PARAMETER=='')))
-#       if(bin=='Y' & (paramMATCH=='TRUE'|typeMATCH=='TRUE')){#if match in binMETA
-#         if(paramMATCH=='TRUE'){temp=merge(paramTBL,binMETA,by=c('SAMPLE_TYPE','PARAMETER','RESULT'))
-#         }else if (typeMATCH=='TRUE'){temp=merge(paramTBL,binMETA,by=c('SAMPLE_TYPE','RESULT')); temp$PARAMETER=param}
-#         if(nrow(paramTBL) != nrow(temp)) {print(sprintf('WARNING: categories are missing from binMETA for %s and are excluded.',typeparam))}##need to determine standard way of reporting what they are once we run into one
-#         paramTBL=temp
-#         paramTBL$PARAMRES=factor(paramTBL$Bin,levels=unique(paramTBL$Bin[order(paramTBL$Order,paramTBL$Bin)]),ordered=TRUE)##bin may be blank if only feeding in order (not yet doing this), determine how to handle depending on final binMETA structure #this method did not work: paramTBL=paramTBL[with(paramTBL,order(Order)),]##will order be retained? ##resetting paramTBL$PARAMRES to paramTBL$Bin automatically made it a factor...this is turned off in options and was problematic for quantiative summaries, not sure implications for boxplots##alternative way may be to order the factor list and apply to the factor levels (but this may be more complicate for ones with no binning, only ordering, unless specifying bin=result (instead of blank))
-#         rm(temp)
-#         # order and/or bin 
-#       } else{print(sprintf('Sorting Order and Binning unknown for %s',typeparam))}
-#     } else{paramTBL$PARAMRES=paramTBL$NUM
-#            paramSTATUS='NUM'}
-#     if(paramSTATUS=='CHAR') {numstrata3=numstrata+1;typestrata3=c('SITE_ID',typestrata)} else{numstrata3=numstrata;typestrata3=typestrata}
-#     for (n in 1:numstrata3) {
-#       paramTBL3=paramTBL
-#       paramTBL3$STRATATYPE=typestrata3[n]
-#       paramTBL3$STRATA=unlist(paramTBL3[typestrata3[n]])#paramTBL3$STRATA='UNK'
-#       if (n==1) { paramTBL2=paramTBL3
-#       } else { 
-#         paramTBL2=rbind(paramTBL2,paramTBL3)
-#       } }
-#     strata=unique(paste(paramTBL2$STRATATYPE,paramTBL2$STRATA,sep="_" ))
-#     if(paramSTATUS=='NUM'){
-#       paramTBL3=aggregate(PARAMRES~UID+SITE_ID+PARAMETER+STRATATYPE+STRATA,data=paramTBL2,FUN=mean)
-#       paramTBL3$PARAMCAT='None'
-#     } else if(paramSTATUS=='CHAR'){
-#       paramTBL3a=aggregate(IND~PARAMRES+UID+SITE_ID+PARAMETER+STRATATYPE+STRATA,data=paramTBL2,FUN=length)
-#       paramTBL3b=aggregate(IND~UID+SITE_ID+PARAMETER+STRATATYPE+STRATA,data=paramTBL2,FUN=length)
-#       paramTBL3=merge(paramTBL3a,paramTBL3b,by=c('UID','SITE_ID','STRATATYPE','STRATA','PARAMETER'))
-#       paramTBL3$PARAMCAT=paramTBL3$PARAMRES;paramTBL3$PARAMRES=paramTBL3$IND.x/paramTBL3$IND.y
-#     }
-#     #set up dataset and outliers for later subsetting by UID and strata in subsequent loops
-#     paramTBL3$TRANSECT='ALL';paramTBL3$POINT='ALL'
-#     paramTBL3$POINT=ifelse(paramSTATUS=='CHAR' & paramTBL3$STRATATYPE=='SITE_ID',paramTBL3$IND.y,paramTBL3$POINT)#set up for later N (sample size) use
-#     paramTBL5=subset(paramTBL3,select=subcol)
-#     if(paramSTATUS=='NUM'){
-#       paramTBL$STRATATYPE='UID';paramTBL$STRATA=paramTBL$SITE;paramTBL$PARAMCAT='None'; paramTBL$STRATA=factor(paramTBL$STRATA,levels=unique(paramTBL$STRATA))
-#       paramTBL6=subset(paramTBL,select=subcol)
-#       paramTBL6=rbind(paramTBL6,paramTBL5)
-#       paramN2=aggregate(PARAMRES~STRATATYPE+UID,data=subset(paramTBL6,STRATATYPE=='UID'),FUN='length');colnames(paramN2)=c(colnames(paramN2)[1:2],'SampSizeTMP')
-#       paramTBL6=merge(paramTBL6,paramN2,by=c('STRATATYPE','UID'),all.x=T)
-#     } else if(paramSTATUS=='CHAR'){paramTBL6=paramTBL5;paramTBL6$STRATATYPE=ifelse(paramTBL6$STRATATYPE=='SITE_ID','UID',paramTBL6$STRATATYPE);paramTBL6$SampSizeTMP=NA}
-#     paramTBL6$STRATATYPE=factor(paramTBL6$STRATATYPE,levels=c("UID",typestrata))
-#     paramTBL6$PARAMCAT=factor(paramTBL6$PARAMCAT)
-#     #label sample size
-#     paramN1=aggregate(PARAMRES~STRATATYPE+STRATA+UID,data=subset(paramTBL6,STRATATYPE!='UID'),FUN='length')#to remove PARAMCAT duplicates for CHAR
-#     paramN1=aggregate(PARAMRES~STRATATYPE+STRATA,paramN1,FUN='length');colnames(paramN1)=c(colnames(paramN1)[1:2],'SampSize')#paramN$STRATATYPE=factor(paramN$STRATATYPE,levels=levels(paramTBL6$STRATATYPE))#might be needed to keep in the same order, unsure
-#     paramTBL6=merge(paramTBL6,paramN1,by=c('STRATATYPE','STRATA'),all.x=T)
-#     paramTBL6$SampSizeTMP=ifelse(is.na(paramTBL6$SampSizeTMP),paramTBL6$POINT,paramTBL6$SampSizeTMP);paramTBL6$SampSize=ifelse(is.na(paramTBL6$SampSize),paramTBL6$SampSizeTMP,paramTBL6$SampSize)
-#     if(paramSTATUS=='CHAR'){paramN$PARAMRES=ifelse(paramN$STRATATYPE=='UID',min(paramTBL6$POINT),round(paramN$PARAMRES/length(unique(paramTBL6$PARAMCAT)),0))}
-#     #label quantiles with SiteCode
-#     paramquant=aggregate(PARAMRES~STRATATYPE+PARAMCAT+STRATA,data=paramTBL6,FUN='quantile',probs=c(0.05,0.95),names=FALSE);colnames(paramquant)=c('STRATATYPE','PARAMCAT','STRATA','Quant')
-#     paramTBL6=merge(paramTBL6,paramquant,by=c('STRATATYPE','PARAMCAT','STRATA'),all.x=T)
-#     paramTBL6$SiteLabelOUT=ifelse(paramTBL6$PARAMRES<paramTBL6$Quant[,1],paramTBL6$SITE_ID,ifelse(paramTBL6$PARAMRES>paramTBL6$Quant[,2],paramTBL6$SITE_ID,NA))#create a site label if an outlier
-#     paramTBL6$SiteLabelOUT=ifelse(paramTBL6$STRATATYPE=="UID"& paramSTATUS=='CHAR',NA, ifelse(paramTBL6$STRATATYPE=="UID" & is.na(paramTBL6$SiteLabelOUT)==FALSE,paste(paramTBL6$TRANSECT,paramTBL6$POINT,sep=":"),paramTBL6$SiteLabelOUT))#change site label to transect if raw data
-#     paramQ=subset(paramTBL6,is.na(SiteLabelOUT)==FALSE)
-#     #label outliers with SiteCode
-#     paramoutlrM=aggregate(PARAMRES~STRATATYPE+PARAMCAT+STRATA,data=paramTBL6,FUN='mean');colnames(paramoutlrM)=c('STRATATYPE','PARAMCAT','STRATA','Mean')
-#     paramoutlrS=aggregate(PARAMRES~STRATATYPE+PARAMCAT+STRATA,data=paramTBL6,FUN='sd');colnames(paramoutlrS)=c('STRATATYPE','PARAMCAT','STRATA','SD')
-#     paramTBL6=merge(paramTBL6,paramoutlrM,by=c('STRATATYPE','PARAMCAT','STRATA'));paramTBL6=merge(paramTBL6,paramoutlrS,by=c('STRATATYPE','PARAMCAT','STRATA'))
-#     paramTBL6$SiteLabelOUT2=ifelse(paramTBL6$PARAMRES>(paramTBL6$Mean + (2*paramTBL6$SD)),paramTBL6$SITE_ID,ifelse(paramTBL6$PARAMRES<(paramTBL6$Mean - (2*paramTBL6$SD)),paramTBL6$SITE_ID,NA))#create a site label if an outlier
-#     paramTBL6$SiteLabelOUT2=ifelse(paramTBL6$STRATATYPE=="UID"& paramSTATUS=='CHAR',NA, ifelse(paramTBL6$STRATATYPE=="UID" & is.na(paramTBL6$SiteLabelOUT2)==FALSE,paste(paramTBL6$TRANSECT,paramTBL6$POINT,sep=":"),paramTBL6$SiteLabelOUT2))#change site label to transect if raw data
-#     paramTBL6$SiteLabelOUT2=ifelse(is.na(paramTBL6$SiteLabelOUT2),'',paramTBL6$SiteLabelOUT2)
-#     paramMSD=subset(paramTBL6,is.na(SiteLabelOUT2)==FALSE & SiteLabelOUT2!='');paramMSDpres=nrow(paramMSD); if(paramMSDpres==0){paramMSD=paramTBL6[1,];paramMSD$SiteLabelOUT2=''}#geom_text will fail if no rows are present
-#     if(paramMSDpres>0){
-#       if(exists('outlierTBL')) {
-#         outlierTBL=rbind(outlierTBL,paramMSD)
-#       } else {outlierTBL=paramMSD}
-#     }
-#     allsites=intersect(unique(paramTBL$UID),unique(UnionTBL$UID))#only iterate over sites in the incoming/subset dataset (UnionTBL)
-#     for (s in 1:length(allsites)){
-#     #for (s in 1:3){#to test a smaller subset
-#       stratas=unique(subset(paramTBL6,select=STRATA,subset=UID==allsites[s]))
-#       paramTBL7=subset(paramTBL6,subset=STRATA %in% stratas$STRATA)
-#       #generate box plot in ggplot2
-#     if(max(paramTBL7$UID==allsites[s] & paramTBL7$SiteLabelOUT2!='')==1){#only print plot if it has outliers within the site or when compared to the strata
-#       sitebox=boxPARAM(boxdata=paramTBL7,sampsize=paramN,facetSTR='facet_grid(.~STRATATYPE)',titleSTR='labs(title=sprintf("SITE- %s (%s) ~ PARAM- %s",unique(subset(boxdata, subset=STRATATYPE=="UID", select=SITE_ID)),allsites[s],param))')
-#       ggsave(filename=sprintf('%s.jpg',sitebox$labels$title),plot=sitebox)#assign(sitebox$labels$title,sitebox)#save jpeg or assign var (need to refine naming)
-#       }
-#       
-#     }
-#   
-#     for (n in 1:numstrata) {#re-enter for loop now that all STRATA are complete and aggregated
-#     if(nrow(subset(paramMSD,STRATATYPE==typestrata[n]))>0){
-#       paramTBL4=subset(paramTBL6,subset=STRATATYPE==typestrata[n])
-#       stratabox=boxPARAM(boxdata=paramTBL4,sampsize=paramN,facetSTR='facet_grid(.~STRATA)',titleSTR='labs (title=sprintf("STRATA- %s ~ PARAM- %s",typestrata[n],param))')
-#       ggsave(filename=sprintf('%s.jpg',stratabox$labels$title),plot=stratabox)#assign(stratabox$labels$title,stratabox)#save jpeg or # assign(sprintf('box_STRATA_%s_%s',typestrata[n],param),stratabox)
-#     }
-#     }
-#   } }
-# rm(paramTBL3,paramTBL4,paramTBL6,paramTBL5,paramTBL3a,paramTBL3b)
-# 
-# outlierTBL=unique(subset(outlierTBL,select=c('STRATATYPE','STRATA','SITE_ID','UID','PARAMETER','PARAMCAT','TRANSECT','POINT','PARAMRES','Mean','SD')))
-# stratat=unique(outlierTBL$STRATATYPE)
-# for (s in 1:length(stratat)){
-#   outlierTBLst=subset(outlierTBL,subset=STRATATYPE==stratat[s])
-#   write.csv(outlierTBLst,file=sprintf('Outliers_2SDmean_%s.csv',stratat[s]))#could export as a single table, but a bit overwhelming
-# }}
-
-#! also output allparams1 to know what was checked (And which were excluded - excludeparams) --> will be easier once in xwalk
-#SWJ to do (2/11/14):
-#print cv or other metric as a warning for the spread? compare cv of site to avg cv of all/strata sites? (Scott--> cv only for repeatable data, didn't give alternate spread)
-#mimic labelling of site boxplots in strata
-#add "all" boxplot in strata
-
-
-
-##########################################################################################################################
-################## Old checks ############################################################################################
-##########################################################################################################################
-# 
-# ##legal value checks
-# #low-high pairs
-# LowHigh=c("MIN,MAX","QLOWI,QHIGHI","QLOWR,QHIGHR");#original FM string: "QLOWI,QHIGHI¶QLOWR,QHIGHR¶MIN,MAX"
-# UnionTBLstat=UnionTBL
-# #random quirks to ignore in legal checks
-# UnionTBLstat=subset(UnionTBLstat,(PARAMETER=='SIZE_CLS' & is.na(as.numeric(RESULT)))==FALSE)#remove text Size_CLS  from 2013 (eventually will not be needed)
-# UnionTBLstat=subset(UnionTBLstat,(PARAMETER=='SIZE_CLS' & RESULT=='0')==FALSE)#remove wood/other SIZE_CLS particles so don't fail the check
-# #loop over pairs
-# for (p in 1:length(LowHigh)){
-#   StatPair=strsplit(LowHigh[p],",")
-#   StatLow=StatPair[[1]][1]
-#   StatHigh=StatPair[[1]][2]
-#   StatValues="Select Sample_Type, Parameter, Stat, Result from tblMetadataRange where ACTIVE='TRUE' and STAT='%s' and Protocol='WRSA14'"#! protocol determination should be dynamic!! currently there are only values for WRSA14
-#   Low=sqlQuery(wrsa1314,sprintf(StatValues,StatLow))
-#   High=sqlQuery(wrsa1314,sprintf(StatValues,StatHigh))
-#   LowHighJoin=sqldf("select * from UnionTBLstat 
-#                     join (select Sample_Type as ST, Parameter as PM, Stat as LowStat,Result as LowResult from Low) L on UnionTBLstat.Sample_Type=L.ST and UnionTBLstat.Parameter=L.PM
-#                     join (select Sample_Type as ST, Parameter as PM, Stat as HighStat,Result as HighResult from High) H on UnionTBLstat.Sample_Type=H.ST and UnionTBLstat.Parameter=H.PM
-#                     ")
-#   LowHighFail=sqldf("select UID,Transect, Point, IND, Sample_Type,Parameter, 
-#                     Result,LowResult,HighResult,LowStat,HighStat
-#                     from LowHighJoin
-#                     where Result<LowResult or Result>HighResult")
-#   if(p==1){LowHighFailOUT=LowHighFail} else{LowHighFailOUT=rbind(LowHighFailOUT,LowHighFail)}
-# }
-# LowHighFailOUT=addKEYS(LowHighFailOUT,c('SITE_ID','DATE_COL'))#JC added to aid in QC process. However, it has duplicate siteid and date columns at the momment, so not very pretty at the moment
-# write.csv(LowHighFailOUT,'LegalChecks.csv')
-# 
-# ####################################################################################################################
-# #slope checks
-# #!compare to GIS
-# ###---Connected Slope passes with no gaps---###
-# SlopeTran1=tblRetrieve(Parameters=c('ENDTRAN'),Years=c('2014','2015','2016'))#WRSA protocol
-# SlopeTran2=tblRetrieve(Parameters=c('SLOPE'),Years=c('2013'))#NRSA protocol
-# SlopeTran2$PARAMETER='ENDTRAN'#could choose to add this in database
-# SlopeTran2$PointTMP=SlopeTran2$POINT
-# SlopeTran2$POINT=SlopeTran2$TRANSECT
-# SlopeTran2$TRANSECT=SlopeTran2$PointTMP;SlopeTran2=SlopeTran2[,!(names(SlopeTran2) %in% c('PointTMP'))]
-# tran=c('A','B','C','D','E','F','G','H','I','J','K')
-# for (t in 1:nrow(SlopeTran2)){
-#   SlopeTran2$RESULT[t]=tran[1+grep(SlopeTran2$POINT[t],tran)]#could choose to add this in database
-# }
-# SlopeTran=rbind(SlopeTran1,SlopeTran2)
-# SlopeTran$Start=SlopeTran$POINT;SlopeTran$Stop=SlopeTran$RESULT;SlopeTran=SlopeTran[,!(names(SlopeTran) %in% c('POINT','RESULT'))]
-# SlopeTran=SlopeTran[,!(names(SlopeTran) %in% c('SAMPLE_TYPE','PARAMETER','IND','ACTIVE','FLAG','OPERATION','INSERTION','DEPRECATION','REASON'))]#!not necessary, just easier to see when clean
-# NotTran=subset(SlopeTran, nchar(Start)>1|nchar(Stop)>1)
-# if(nrow(NotTran)>0){print('WARNING: some transects are not single letter transect names. Review and correct'); View(NotTran)}
-# St=c('Start','Stop')
-# SlopeUID=unique(subset(SlopeTran,select=c(UID,TRANSECT)));SlopeUIDmulti=SlopeUID[0,]
-# for (u in 1:nrow(SlopeUID)){
-#   SlopeU=subset(SlopeTran,UID==SlopeUID$UID[u] & TRANSECT==SlopeUID$TRANSECT[u]);Urow=nrow(SlopeU);SlopeU=unique(SlopeU);if(Urow!=nrow(SlopeU)){SlopeUIDmulti=rbind(SlopeUIDmulti,unique(subset(SlopeU,select=c(UID,TRANSECT))))}
-#   SlopeConnect=SlopeU[1,];SlopeConnect$StartL0=SlopeConnect$Start;SlopeConnect$StartR0=SlopeConnect$Start;SlopeConnect$StopL0=SlopeConnect$Stop;SlopeConnect$StopR0=SlopeConnect$Stop
-#   FinalR=SlopeConnect$Stop;FinalL=SlopeConnect$Start
-#   if(nrow(SlopeU)==1){SlopeMatch=SlopeU[0,]
-#   } else{
-#     SlopeMatch=SlopeU[2:nrow(SlopeU),];
-#   }
-#   if(u==1){SlopeConnectFail=SlopeConnect[1,];SlopeConnectFail$UID=NA;SlopeConnectPass=SlopeConnect[1,];SlopeConnectPass$UID=NA;SlopeMatchFail=SlopeMatch[1,];SlopeMatchFail$UID=NA}
-#   SlopeMatch=SlopeMatch[,!(names(SlopeMatch) %in% c('UID','TRANSECT'))];
-#   for (m in 1:nrow(SlopeMatch)){
-#     if(nrow(SlopeMatch)>0){
-#       SlopeMatchL=SlopeMatch; names(SlopeMatchL)[names(SlopeMatchL) %in% St] <- sprintf('%sL%s',St,m)
-#       SlopeMatchR=SlopeMatch; names(SlopeMatchR)[names(SlopeMatchR) %in% St] <- sprintf('%sR%s',St,m)
-#       SlopeConnect=sqldf(sprintf('select * from SlopeConnect left join SlopeMatchL on ltrim(rtrim(upper(SlopeConnect.StartL%s)))=ltrim(rtrim(upper(SlopeMatchL.StopL%s))) left join SlopeMatchR on ltrim(rtrim(upper(SlopeConnect.StopR%s)))=ltrim(rtrim(upper(SlopeMatchR.StartR%s)))',m-1,m,m-1,m))
-#       StartR=unlist(subset(SlopeConnect,select=sprintf('StartR%s',m)));StartL=unlist(subset(SlopeConnect,select=sprintf('StartL%s',m)));StopR=unlist(subset(SlopeConnect,select=sprintf('StopR%s',m)))
-#       FinalR=ifelse(is.na(StopR),FinalR,StopR);FinalL=ifelse(is.na(StartL),FinalL,StartL)
-#       SlopeMatch=subset(SlopeMatch,(Start %in% c(StartL,StartR))==FALSE)
-#     }}
-#   SlopeConnect$FinalR=FinalR;SlopeConnect$FinalL=FinalL
-#   namesSlope=union(names(SlopeConnectFail),names(SlopeConnect))
-#   if (nrow(SlopeMatch)>0){
-#     SlopeConnectFail=rbind(ColCheck(SlopeConnectFail,namesSlope),ColCheck(SlopeConnect,namesSlope));
-#     SlopeMatchTMP=SlopeMatch;SlopeMatchTMP$UID=SlopeUID$UID[u];SlopeMatchTMP$TRANSECT=SlopeUID$TRANSECT[u]
-#     SlopeMatchFail=rbind(SlopeMatchFail,SlopeMatchTMP)
-#   } else {SlopeConnectPass=rbind(ColCheck(SlopeConnectPass,namesSlope),ColCheck(SlopeConnect,namesSlope))}
-# }
-# SlopeConnectFail=subset(SlopeConnectFail,is.na(UID)==F);SlopeConnectPass=subset(SlopeConnectPass,is.na(UID)==F);SlopeMatchFail=subset(SlopeMatchFail,is.na(UID)==F)
-# #!Warnings
-# SlopeConnectPassEndFail=subset(SlopeConnectPass,((toupper(gsub(" ","",FinalL))=='A'& toupper(gsub(" ","",FinalR))=='K')|(toupper(gsub(" ","",FinalL))=='K'& toupper(gsub(" ","",FinalR))=='A'))==FALSE)
-# SlopeConnectPassEndPass=sqldf('select s1.* from SlopeConnectPass as s1 left join SlopeConnectPassEndFail as s2 on s1.UID=s2.UID and s1.TRANSECT=s2.TRANSECT where s2.UID is null')
-# SlopeConnectPassCNT=sqldf('select UID, Count(*) as CNT from SlopeConnectPassEndPass group by UID');SlopeConnectPass2Pass=subset(SlopeConnectPassCNT,CNT>1);SlopeConnectPass2Fail=subset(SlopeConnectPassCNT,CNT<2)
-# print(sprintf('CONGRATULATIONS! %s sites with 2 successful Slope Passes!',nrow(SlopeConnectPass2Pass)))
-# if(nrow(SlopeConnectPassEndFail)>0){print('WARNING: Some slope passes do not start at A or end at K. Summary data at in SlopeConnectPassEndFail. Examine raw data in detail.');View(subset(SlopeConnectPassEndFail,select=c('UID','TRANSECT','FinalL','FinalR')))}
-# if(nrow(SlopeConnectPass2Fail)>0){print('WARNING: Some sites have only one connected Slope Pass. This may be because the data has already been cleaned to remove the 2nd pass if within 10%.');print(SlopeConnectPass2Fail)}
-# if(nrow(SlopeConnectFail)>0){print('WARNING: Some slope passes had gaps and could not be connected for the entire reach. Summary data in SlopeConnectFail and SlopeMatchFail. Examine raw data in detail.');View(subset(SlopeConnectFail,select=c('UID','TRANSECT','FinalL','FinalR'))); View(SlopeMatchFail)}
-# if(nrow(SlopeUIDmulti)>0){print('WARNING: Duplicate transects within same slope pass. Examine raw data in detail.');print(SlopeUIDmulti)}
-# 
-# 
-# SlopeSlope=tblRetrieve(Parameters=c('SLOPE','PROP','METHOD','SLOPE_UNITS','ENDTRAN'),Years=c('2014','2015','2016'))
-# SlopeSlope=subset(SlopeSlope,substr(SAMPLE_TYPE,1,5) =='SLOPE')
-# ####---SLOPE METHOD CHECK---##
-# SlopeDiffMethod=subset(SlopeSlope,PARAMETER %in% c('PROP','METHOD','SLOPE_UNITS') & (RESULT %in% c('100','TR','CM'))==F)
-# if(nrow(SlopeDiffMethod)>0){print('WARNING: Slopes with non-standard methods. Expected methods are PROP=100, Method=TR (transit) and Units=CM (centimeters)');View(SlopeDiffMethod)}
-# ####---SLOPE 10% CHECK---##
-# Slope2=subset(SlopeSlope,UID %in% SlopeConnectPass2Pass$UID & PARAMETER=='SLOPE');Slope2$RESULT=as.numeric(Slope2$RESULT)
-# Slope2sum=sqldf('select UID,TRANSECT, SUM(RESULT) as SlopeSum from Slope2 group by UID, TRANSECT')
-# Slope2sum=cast(Slope2sum,'UID~TRANSECT',value='SlopeSum')
-# SlopePass1=abs(Slope2sum[2]);SlopePass2=abs(Slope2sum[3]);
-# Slope2sum$TenPCT=ifelse((SlopePass2>(SlopePass1+(SlopePass1*0.1))) | (SlopePass2<(SlopePass1-(SlopePass1*0.1))),'FAIL10%','PASS10%')#! app version is more iterative to check all passes -> could either apply here OR have app flag the slope that passes
-# Slope2pass=subset(Slope2sum,TenPCT=='PASS10%' & is.na(Slope2sum[4]));Slope2fail=subset(Slope2sum,TenPCT=='FAIL10%' | is.na(Slope2sum[4])==F)
-# if(nrow(Slope2fail)>0){print('WARNING: Pass 1 and 2 were not within 10%% OR if within 10% additional passes were present. Reconcile manually.');View(Slope2fail);View(subset(Slope2,UID %in% Slope2fail$UID ))}#print raw and summmed data for failed
-# SlopeManuallyApproveTran1=c('21013264668376829952','5280846501466459068066440','933116886431965036742642','313491917404832989706088','57724867494140169944648','548616094584309022720','6057255640464259809280','21766046479553159758484','30503742404793951322602')
-# if(nrow(Slope2pass)>0){print(sprintf('CONGRATULATIONS! Pass 1 met 10%% match requirements for %s sites. Inactivate Pass 2 in WRSAdb (csv exported).',nrow(Slope2pass)));write.csv(subset(SlopeSlope,TRANSECT>1 & UID %in% c(Slope2pass$UID,SlopeManuallyApproveTran1)),'SlopesToInactivate.csv')}#export 2nd passes to inactivate (eventually connect to UpdateDB.R once screened)
-# #change externally: 
-# #keep Tran2 active, Tran 3 inactive: #subset(SlopeSlope,UID %in% c('81353742941924589578','719428245490921504768','716024640500735016960') & TRANSECT!=2)
-# #inactivate tran 1: 716024640500735016960 # reason: ignore this pass #use above subset
-# #keep Tran3, omit all previous #subset(SlopeSlope,UID %in% c('863868431598454964244') & TRANSECT!=3)
-# #keep Tran1, Point k (not a)  #subset(SlopeSlope,UID %in% c('37519940409184604912244', '47271381432878896252680') & (TRANSECT!=1|POINT=='a'))
-# #keep Tran1, Point a (not k)  #subset(SlopeSlope,UID %in% c('8692216624269710244040620') & (TRANSECT!=1|POINT=='k'))
-# #makes no sense and no comments to clarify 87601876754740660818804248 #View(cast(subset(SlopeSlope,UID=='87601876754740660818804248'),'UID+TRANSECT+POINT~PARAMETER',value='RESULT'))
-# 
-# ##############################################################################################
-# #only works right after running old csv import script and even then I don't think it was correct
-# #custom missing data check for thalweg since flexible
-# ThalwegCheck=sqldf("select Station.UID, StationDUPLICATES,StationCNT,DepthCNT from 
-#                      (select distinct UID, cast((result*2)-1 as numeric) as StationCNT from importmaster where parameter='SUB_5_7') as station
-#                    join
-#                    (select UID,count(result) as StationDUPLICATES from (select distinct UID, result from importmaster where parameter='SUB_5_7') as stcnt group by UID) as stationcount
-#                    on station.uid=stationcount.uid
-#                    join 
-#                    (select UID, max(cast(point as numeric)) as DepthCNT from importmaster where parameter='DEPTH' group by UID) as depth
-#                    on station.uid=depth.uid
-#                    where StationCNT > DepthCNT or stationDUPLICATES>1
-#                    order by Station.UID")
-# 
-# print("Warning! Number of Thalweg depths does not match the number expected from the widths/stations!")
-# #conflicts happen (i.e. multiple sub_5_7 values per site) when crews forget their reach widths on the first few transects, missing data check added in FM to warn them
-# print(ThalwegCheck)  
-#                       
-# ###########################################################################################################                      
-# #####Additional QC Checks
-# #bank cross-validation WRSA checks
-# widhgt=tblRetrieve(Parameters=c('BANKHT','INCISED','WETWID','BANKWID','BARWID'), Projects=projects,Years=years,Protocols=protocols,SiteCodes=sitecodes)
-# widhgt2=tblRetrieve(Parameters=c('BANKHT','INCISED','WETWID','WETWIDTH','BANKWID','BARWID','BARWIDTH'),Projects=projects,Years=years,Protocols=protocols,SiteCodes=sitecodes)
-# #widhgt=tblRetrieve(Parameters=c('BANKHT','INCISED','WETWID','BANKWID','BARWID'), Projects=c('WRSA','NV','GSENM','COPLT'),Years=c('2015'))
-# #widhgt2=tblRetrieve(Parameters=c('BANKHT','INCISED','WETWID','WETWIDTH','BANKWID','BARWID','BARWIDTH'), Projects=c('WRSA','NV','GSENM','COPLT'),Years=c('2015'))
-# widhgt=subset(widhgt,nchar(TRANSECT)==1 | substr(TRANSECT,1,1)=='X')
-# 
-# whPVT=cast(widhgt,'UID+TRANSECT~PARAMETER',value='RESULT')
-# wnPVTIND=cast(widhgt,'UID+TRANSECT~PARAMETER',value='IND')     
-# tranPVT=addKEYS(merge(whPVT,bnkPVT,by=c('UID','TRANSECT'),all=T) ,c('SITE_ID','DATE_COL'))
-# rawwhPVT=addKEYS(merge(whPVT,wnPVTIND,by=c('UID','TRANSECT'),all=T) ,c('SITE_ID','DATE_COL'))
-# colnames(rawwhPVT)<-c('UID','TRANSECT','BANKHT','BANKWID','BARWID','INCISED','WETWID','BANKHT_IND','BANKWID_IND','BARWID_ID','INCISED_IND','WETWID_ID','DATE_COL','SITE_ID')
-# 
-# bankhtcheck=subset(rawwhPVT,BANKHT>INCISED|BANKHT>1.5)#!possible crossvalidation rule to scan for#no bank heights showed up in the legal value or outlier check so wanted to check units
-# wetwidthchecks=subset(rawwhPVT,WETWID>BANKWID)
-# write.csv(bankhtcheck,'bankhtincisedcheck_31Aug2015.csv')
-# write.csv(wetwidthchecks,'wetwidthchecks_31Aug2015.csv')
-# write.csv(rbind(widhgt2,banks),'WidthHeightRaw_31Aug2015.csv')#need raw output to get IND values
-# 
-# #getting raw bank data for a few problem sites
-# widhgt=tblRetrieve(Parameters=c('BANKHT','INCISED','WETWID','BANKWID','BARWID'), Projects=projects,Years=years,Protocols=protocols,SiteCodes=sitecodes)
-# widhgt2=tblRetrieve(Parameters=c('BANKHT','INCISED','WETWID','WETWIDTH','BANKWID','BARWID','BARWIDTH'),Projects=projects,Years=years,Protocols=protocols,SiteCodes=sitecodes)
-# #widhgt=tblRetrieve(Parameters=c('BANKHT','INCISED','WETWID','BANKWID','BARWID'), Projects='WRSA',Years=c('2013','2014'),SiteCodes=c('MN-SS-1133','MP-SS-2091','MS-SS-3126','XE-RO-5081','XE-SS-5105','XS-SS-6135', 'OT-LS-7001',  'OT-LS-7012',  'MP-SS-2080',	'XE-SS-5150',	'MS-LS-3026',	'OT-LS-7019',	'OT-SS-7133'))
-# #widhgt2=tblRetrieve(Parameters=c('BANKHT','INCISED','WETWID','WETWIDTH','BANKWID','BARWID','BARWIDTH'), Projects='WRSA',Years=c('2013','2014'),SiteCodes=c('MN-SS-1133','MP-SS-2091','MS-SS-3126','XE-RO-5081','XE-SS-5105','XS-SS-6135', 'OT-LS-7001',  'OT-LS-7012',	'MP-SS-2080',	'XE-SS-5150',	'MS-LS-3026',	'OT-LS-7019',	'OT-SS-7133'))
-# widhgt=subset(widhgt,nchar(TRANSECT)==1 | substr(TRANSECT,1,1)=='X')
-# 
-# whPVT=cast(widhgt,'UID+TRANSECT~PARAMETER',value='RESULT')
-# wnPVTIND=cast(widhgt,'UID+TRANSECT~PARAMETER',value='IND')     
-# rawwhPVT=addKEYS(merge(whPVT,wnPVTIND,by=c('UID','TRANSECT'),all=T) ,c('SITE_ID','DATE_COL'))
-# colnames(rawwhPVT)<-c('UID','TRANSECT','BANKHT','BANKWID','BARWID','INCISED','WETWID','BANKHT_IND','BANKWID_IND','BARWID_ID','INCISED_IND','WETWID_ID','DATE_COL','SITE_ID')
-# write.csv(rawwhPVT,'problem_sites_cross_valid_bank.csv')
-# 
-# #third bank parameter check on select UIDs based off of summary
-# widhgt=addKEYS(tblRetrieve(Parameters=c('BANKHT'), Projects='WRSA',Years=c('2013','2014'),UIDS=c(10376,10381,13517,11833,12717,11847,12648,11836)),c('SITE_ID','DATE_COL'))
-# widhgt.sub=addKEYS(TBLout,c('SITE_ID','DATE_COL'))
-# 
-# tblRetrieve(Parameters='ANGLE180', SiteCodes='XN-RO-4085')
-# #check 0 substrate flagged in legal values
-# substratecheck=addKEYS(tblRetrieve(Parameters=c('SIZE_NUM'),Projects='WRSA',Years=c('2013','2014'),Protocols=c('NRSA13','WRSA14'), Comments='Y'), c('SITE_ID','DATE_COL'))
-# zerosubstrate=subset(substratecheck, RESULT==0)
-# write.csv(zerosubstrate,'zerosubstrate.csv')
-# 
-# #second round cross validation checks
-# #checked bht and bankwidth 1st round checks again and did not find any values that still needed to be changed
-# incisedhtcheck=subset(rawwhPVT,INCISED>1.5)#many came up but no unit errors obvious
-# barwidthchecks=subset(rawwhPVT,BARWID>WETWID)#none found
-# 
-# banks=tblRetrieve(Parameters=c('ANGLE','UNDERCUT'), Projects='WRSA',Years=c('2013','2014'))
-# banksnum=subset(banks,is.na(as.numeric(RESULT))==F);banksnum$RESULT=as.numeric(banksnum$RESULT)
-# bnkPVT=cast(banks,'UID+TRANSECT~PARAMETER+POINT',value='RESULT')   
-# bnkPVTIND=cast(banks,'UID+TRANSECT~PARAMETER+POINT',value='IND')  
-# rawwhPVT=addKEYS(merge(bnkPVT,bnkPVTIND,by=c('UID','TRANSECT'),all=T) ,c('SITE_ID','DATE_COL'))
-# undercut_checks=subset(rawwhPVT,UNDERCUT_LF.x>1|UNDERCUT_RT.x>1)
-# write.csv(undercut_checks,'undercut_checks.csv')#many units issues                     
-#                       
-# 
-# #check on duplicate wetted widths from field forms
-# ##crossvalidation/business rules
-# ##! store and dynamically compose validation rules 
-# WetWidthDIFF=sqlQuery(wrsa1314,"select WetTRAN.UID, WetTRAN.TRANSECT, RESULT_PNTthal, RESULT_TRAN
-#                       from (select UID, TRANSECT, RESULT as RESULT_PNTthal from tblpoint
-#                       where parameter like 'wetwid%'
-#                       and POINT='0') as WetPNTthal
-#                       join (select  UID, TRANSECT, RESULT as RESULT_TRAN from tbltransect
-#                       where parameter like 'wetwid%') as WetTRAN
-#                       on (WetTRAN.UID=WetPNTthal.UID and WetTRAN.TRANSECT=WetPNTthal.TRANSECT)
-#                       --where ROUND(convert(float,result_pntthal),1) <> ROUND(convert(float,result_tran),1)
-#                       --and WetTRAN.UID=11625 --query struggles when running the convert function with multiple UID, makes no sense, running where statement externally in excel via Exact()
-#                       ")#should only occur on paper forms where value is recorded twice and therefore appears in the db twice
-#                                         
-# ####################################################################################################
-# #Jennifer's attempt to get indicator outliers and boxplots
-# #QA boxplots
-# give.n <- function(x){return(data.frame(y = max(x)+1, label = paste("n =",length(x))))}#SWJ to do: improve to handle the multiple classes for Categorical 
-# whisk95 <- function(x) {r <- quantile(x, probs = c(0.05, 0.25, 0.5, 0.75, 0.95))
-#                         names(r) <- c("ymin", "lower", "middle", "upper", "ymax")
-#                         r
-# }#supports custom boxplot whiskers (instead of 1.5IQR default)#http://stackoverflow.com/questions/4765482/changing-whisker-definition-in-geom-boxplot
-# out2SD <- function(x) {
-#   #subset(x, x < quantile(x)[2] | quantile(x)[4] < x)
-#   MN=mean(x)
-#   SD2=2*sd(x)
-#   subset(x, x < MN-SD2 | MN+SD2 < x)
-# }#supports custom outliers#http://stackoverflow.com/questions/4765482/changing-whisker-definition-in-geom-boxplot
-# boxPARAM=function(boxdata,outlierdata,sampsize,facetSTR,titleSTR){
-#   siteavg=subset(boxdata,subset=STRATATYPE !="UID"  , select=c('UID','STRATATYPE','PARAMRES', 'PARAMCAT'))
-#   if(grepl('STRATATYPE',facetSTR)){
-#     siteavg=subset(siteavg,UID==allsites[s])
-#   } else { siteavg=subset(siteavg,STRATATYPE==typestrata[n])}
-#   siteavg=aggregate(PARAMRES~PARAMCAT,data=siteavg,FUN='mean')
-#   boxplot=ggplot(boxdata,aes(y=PARAMRES, x=PARAMCAT,fill=PARAMCAT,colour=PARAMCAT,label=SiteLabelOUT2)) +
-#     stat_summary(fun.data=whisk95, geom='boxplot',colour='black') + #geom_boxplot(outlier.colour='darkred',outlier.size=10,colour='black') + 
-#     stat_summary(fun.y=out2SD, geom='point',colour='darkred',size=5,show_guide=F) +
-#     eval(parse(text=facetSTR)) + #
-#     geom_hline(aes(yintercept=PARAMRES, colour=PARAMCAT),siteavg,size=1)  + #mark the average for the site
-#     scale_colour_brewer(drop=FALSE,palette='Set1') + scale_fill_brewer(palette='Set1')+#sync colors between lines and boxplots (especially important for categorical)
-#     #stat_summary(fun.data =give.n, geom = "text") +
-#     eval(parse(text=titleSTR)) +
-#     #geom_text(data=paramQ,aes(label=SiteLabelOUT),show_guide=F,size=3,position= position_jitter(width = 0.5, height=0))+#jitter a little strange, but makes it readable
-#     #stat_summary(fun.y=out2SD, geom='text',colour='red',show_guide=F) +
-#     geom_text(show_guide=F,size=3,position= position_jitter(width = 0.15, height=0))+#data=outlierdata,aes(label=SiteLabelOUT2),
-#     geom_text(aes(label=sprintf('n=%s',SampSize),x=(length(unique(PARAMCAT))/2)+0.5,y=max(PARAMRES)+(max(PARAMRES)/10)),colour='black')+#,x=(length(unique(boxdata$PARAMCAT))/2)+0.5,y=max(boxdata$PARAMRES)+0.25),inherit.aes=FALSE, parse=FALSE)+#annotate("text",x=2,y=max(paramTBL6$PARAMRES)+0.5,label=sprintf('n=%s',paramN$PARAMRES)) +#annotate: n(sites) for strata plots and n(points) for site  (function defined above) #messy for categorical#previous (not working as anticipated, particularly for categorical): #stat_summary(fun.data =give.n, geom = "text") + #function for adding sample size to boxplots #
-#     theme(axis.text.x=element_blank(),axis.ticks.x=element_blank(),axis.title.x=element_blank())  #remove x axis 
-# }# to support similar boxplot structure for stratabox and sitebox
-# subcol=c('UID','SITE_ID','PARAMETER','STRATATYPE','STRATA','PARAMRES','PARAMCAT','TRANSECT','POINT')
-# #compile parameter list
-# dbPARAM=list(colnames(indicators))
-# params_C=subset(dbPARAM, subset=VAR_TYPE=='CHARACTER')
-# allparams=unique(paste(UnionTBL$SAMPLE_TYPE,UnionTBL$PARAMETER,sep=" "))#numeric: allparams=c("BANKW INCISED", "BANKW WETWID" )#categorical: allparams=c("CROSSSECW SIZE_CLS","HUMINFLUW WALL")
-# #!add Size_Num to combineparams list, use same translation for converting prior to aquamet, revise legal checks for Size_NUM
-# allparams1=setdiff(allparams,c(excludeparams,combineparams))
-# UnionTBL2=UnionTBLall#UnionTBL2=subset(UnionTBL,SITE_ID=='EL-LS-8126')
-# #set strata for later iteration
-# typestrata=c('ALL','EcoReg','Size')#must match column names that are created
-# numstrata=length(typestrata)
-# UnionTBL2=addKEYS(UnionTBL,'SITE_ID')
-# UnionTBL2$EcoReg=substr(UnionTBL2$SITE_ID,1,2)#!-- Switch to climatic rather than ecoreg?  ; ; may need to explicitly join an ecoregion column if sitecodes change over different projects and/or to utilize the EPA reference dataset, this works for NRSA only; also needs to be more expandable for additional strata
-# UnionTBL2$Size=substr(UnionTBL2$SITE_ID,4,5)
-# UnionTBL2$ALL='ALL'
-# #! other possible strata: reach width (would need to be calculated), VALXSITE or protocol (especially boatable vs. wadeable)
-# #this section is highly dependent on WRSA siteID naming structure and GRTS strata
-# rm(outlierTBL)
-# for (p in 1:length(allparams1)){#this is a standard loop for iterating, could put it in a function that allows you to plug in a string for the most nested middle
-#   for (p in 2:6){#target specifc parameters during testing or start over mid-process  
-#     typeparam=strsplit(allparams1[p]," ")
-#     type=typeparam[[1]][[1]]; param=typeparam[[1]][[2]]
-#     paramTBL=subset(UnionTBL2,subset=PARAMETER==param & SAMPLE_TYPE==type)#!some where in subsetting and labelling of graphs, parameter was assumed to be unique...it technically is not (i.e. crosssection vs. thalweg depths, boatable) and needs Sample_TYPE in tandem
-#     paramTBL$CHAR=as.character(paramTBL$RESULT)
-#     paramTBL$NUM=as.numeric(paramTBL$CHAR)
-#     if(nrow(paramTBL)>0){
-#       if(allparams1[p] %in% paste(substr(params_C$SAMPLE_TYPE,1,nchar(params_C$SAMPLE_TYPE)-1),params_C$PARAMETER,sep=" ") |allparams1[p] %in% binparams){
-#         paramTBL$PARAMRES=paramTBL$CHAR#previous if statement: is.na(min(paramTBL$NUM)) & is.na(max(paramTBL$NUM))
-#         paramSTATUS='CHAR'
-#         paramMATCH=param %in% binMETA$PARAMETER
-#         typeMATCH=type %in% as.character(unlist(subset(binMETA,select=SAMPLE_TYPE,subset=is.na(PARAMETER)|PARAMETER=='')))
-#         if(bin=='Y' & (paramMATCH=='TRUE'|typeMATCH=='TRUE')){#if match in binMETA
-#           if(paramMATCH=='TRUE'){temp=merge(paramTBL,binMETA,by=c('SAMPLE_TYPE','PARAMETER','RESULT'))
-#           }else if (typeMATCH=='TRUE'){temp=merge(paramTBL,binMETA,by=c('SAMPLE_TYPE','RESULT')); temp$PARAMETER=param}
-#           if(nrow(paramTBL) != nrow(temp)) {print(sprintf('WARNING: categories are missing from binMETA for %s and are excluded.',typeparam))}##need to determine standard way of reporting what they are once we run into one
-#           paramTBL=temp
-#           paramTBL$PARAMRES=factor(paramTBL$Bin,levels=unique(paramTBL$Bin[order(paramTBL$Order,paramTBL$Bin)]),ordered=TRUE)##bin may be blank if only feeding in order (not yet doing this), determine how to handle depending on final binMETA structure #this method did not work: paramTBL=paramTBL[with(paramTBL,order(Order)),]##will order be retained? ##resetting paramTBL$PARAMRES to paramTBL$Bin automatically made it a factor...this is turned off in options and was problematic for quantiative summaries, not sure implications for boxplots##alternative way may be to order the factor list and apply to the factor levels (but this may be more complicate for ones with no binning, only ordering, unless specifying bin=result (instead of blank))
-#           rm(temp)
-#           # order and/or bin 
-#         } else{print(sprintf('Sorting Order and Binning unknown for %s',typeparam))}
-#       } else{paramTBL$PARAMRES=paramTBL$NUM
-#              paramSTATUS='NUM'}
-#       if(paramSTATUS=='CHAR') {numstrata3=numstrata+1;typestrata3=c('SITE_ID',typestrata)} else{numstrata3=numstrata;typestrata3=typestrata}
-#       for (n in 1:numstrata3) {
-#         paramTBL3=paramTBL
-#         paramTBL3$STRATATYPE=typestrata3[n]
-#         paramTBL3$STRATA=unlist(paramTBL3[typestrata3[n]])#paramTBL3$STRATA='UNK'
-#         if (n==1) { paramTBL2=paramTBL3
-#         } else { 
-#           paramTBL2=rbind(paramTBL2,paramTBL3)
-#         } }
-#       strata=unique(paste(paramTBL2$STRATATYPE,paramTBL2$STRATA,sep="_" ))
-#       if(paramSTATUS=='NUM'){
-#         paramTBL3=aggregate(PARAMRES~UID+SITE_ID+PARAMETER+STRATATYPE+STRATA,data=paramTBL2,FUN=mean)
-#         paramTBL3$PARAMCAT='None'
-#       } else if(paramSTATUS=='CHAR'){
-#         paramTBL3a=aggregate(IND~PARAMRES+UID+SITE_ID+PARAMETER+STRATATYPE+STRATA,data=paramTBL2,FUN=length)
-#         paramTBL3b=aggregate(IND~UID+SITE_ID+PARAMETER+STRATATYPE+STRATA,data=paramTBL2,FUN=length)
-#         paramTBL3=merge(paramTBL3a,paramTBL3b,by=c('UID','SITE_ID','STRATATYPE','STRATA','PARAMETER'))
-#         paramTBL3$PARAMCAT=paramTBL3$PARAMRES;paramTBL3$PARAMRES=paramTBL3$IND.x/paramTBL3$IND.y
-#       }
-#       #set up dataset and outliers for later subsetting by UID and strata in subsequent loops
-#       paramTBL3$TRANSECT='ALL';paramTBL3$POINT='ALL'
-#       paramTBL3$POINT=ifelse(paramSTATUS=='CHAR' & paramTBL3$STRATATYPE=='SITE_ID',paramTBL3$IND.y,paramTBL3$POINT)#set up for later N (sample size) use
-#       paramTBL5=subset(paramTBL3,select=subcol)
-#       if(paramSTATUS=='NUM'){
-#         paramTBL$STRATATYPE='UID';paramTBL$STRATA=paramTBL$SITE;paramTBL$PARAMCAT='None'; paramTBL$STRATA=factor(paramTBL$STRATA,levels=unique(paramTBL$STRATA))
-#         paramTBL6=subset(paramTBL,select=subcol)
-#         paramTBL6=rbind(paramTBL6,paramTBL5)
-#         paramN2=aggregate(PARAMRES~STRATATYPE+UID,data=subset(paramTBL6,STRATATYPE=='UID'),FUN='length');colnames(paramN2)=c(colnames(paramN2)[1:2],'SampSizeTMP')
-#         paramTBL6=merge(paramTBL6,paramN2,by=c('STRATATYPE','UID'),all.x=T)
-#       } else if(paramSTATUS=='CHAR'){paramTBL6=paramTBL5;paramTBL6$STRATATYPE=ifelse(paramTBL6$STRATATYPE=='SITE_ID','UID',paramTBL6$STRATATYPE);paramTBL6$SampSizeTMP=NA}
-#       paramTBL6$STRATATYPE=factor(paramTBL6$STRATATYPE,levels=c("UID",typestrata))
-#       paramTBL6$PARAMCAT=factor(paramTBL6$PARAMCAT)
-#       #label sample size
-#       paramN1=aggregate(PARAMRES~STRATATYPE+STRATA+UID,data=subset(paramTBL6,STRATATYPE!='UID'),FUN='length')#to remove PARAMCAT duplicates for CHAR
-#       paramN1=aggregate(PARAMRES~STRATATYPE+STRATA,paramN1,FUN='length');colnames(paramN1)=c(colnames(paramN1)[1:2],'SampSize')#paramN$STRATATYPE=factor(paramN$STRATATYPE,levels=levels(paramTBL6$STRATATYPE))#might be needed to keep in the same order, unsure
-#       paramTBL6=merge(paramTBL6,paramN1,by=c('STRATATYPE','STRATA'),all.x=T)
-#       paramTBL6$SampSizeTMP=ifelse(is.na(paramTBL6$SampSizeTMP),paramTBL6$POINT,paramTBL6$SampSizeTMP);paramTBL6$SampSize=ifelse(is.na(paramTBL6$SampSize),paramTBL6$SampSizeTMP,paramTBL6$SampSize)
-#       if(paramSTATUS=='CHAR'){paramN$PARAMRES=ifelse(paramN$STRATATYPE=='UID',min(paramTBL6$POINT),round(paramN$PARAMRES/length(unique(paramTBL6$PARAMCAT)),0))}
-#       #label quantiles with SiteCode
-#       paramquant=aggregate(PARAMRES~STRATATYPE+PARAMCAT+STRATA,data=paramTBL6,FUN='quantile',probs=c(0.05,0.95),names=FALSE);colnames(paramquant)=c('STRATATYPE','PARAMCAT','STRATA','Quant')
-#       paramTBL6=merge(paramTBL6,paramquant,by=c('STRATATYPE','PARAMCAT','STRATA'),all.x=T)
-#       paramTBL6$SiteLabelOUT=ifelse(paramTBL6$PARAMRES<paramTBL6$Quant[,1],paramTBL6$SITE_ID,ifelse(paramTBL6$PARAMRES>paramTBL6$Quant[,2],paramTBL6$SITE_ID,NA))#create a site label if an outlier
-#       paramTBL6$SiteLabelOUT=ifelse(paramTBL6$STRATATYPE=="UID"& paramSTATUS=='CHAR',NA, ifelse(paramTBL6$STRATATYPE=="UID" & is.na(paramTBL6$SiteLabelOUT)==FALSE,paste(paramTBL6$TRANSECT,paramTBL6$POINT,sep=":"),paramTBL6$SiteLabelOUT))#change site label to transect if raw data
-#       paramQ=subset(paramTBL6,is.na(SiteLabelOUT)==FALSE)
-#       #label outliers with SiteCode
-#       paramoutlrM=aggregate(PARAMRES~STRATATYPE+PARAMCAT+STRATA,data=paramTBL6,FUN='mean');colnames(paramoutlrM)=c('STRATATYPE','PARAMCAT','STRATA','Mean')
-#       paramoutlrS=aggregate(PARAMRES~STRATATYPE+PARAMCAT+STRATA,data=paramTBL6,FUN='sd');colnames(paramoutlrS)=c('STRATATYPE','PARAMCAT','STRATA','SD')
-#       paramTBL6=merge(paramTBL6,paramoutlrM,by=c('STRATATYPE','PARAMCAT','STRATA'));paramTBL6=merge(paramTBL6,paramoutlrS,by=c('STRATATYPE','PARAMCAT','STRATA'))
-#       paramTBL6$SiteLabelOUT2=ifelse(paramTBL6$PARAMRES>(paramTBL6$Mean + (2*paramTBL6$SD)),paramTBL6$SITE_ID,ifelse(paramTBL6$PARAMRES<(paramTBL6$Mean - (2*paramTBL6$SD)),paramTBL6$SITE_ID,NA))#create a site label if an outlier
-#       paramTBL6$SiteLabelOUT2=ifelse(paramTBL6$STRATATYPE=="UID"& paramSTATUS=='CHAR',NA, ifelse(paramTBL6$STRATATYPE=="UID" & is.na(paramTBL6$SiteLabelOUT2)==FALSE,paste(paramTBL6$TRANSECT,paramTBL6$POINT,sep=":"),paramTBL6$SiteLabelOUT2))#change site label to transect if raw data
-#       paramTBL6$SiteLabelOUT2=ifelse(is.na(paramTBL6$SiteLabelOUT2),'',paramTBL6$SiteLabelOUT2)
-#       paramMSD=subset(paramTBL6,is.na(SiteLabelOUT2)==FALSE & SiteLabelOUT2!='');paramMSDpres=nrow(paramMSD); if(paramMSDpres==0){paramMSD=paramTBL6[1,];paramMSD$SiteLabelOUT2=''}#geom_text will fail if no rows are present
-#       if(paramMSDpres>0){
-#         if(exists('outlierTBL')) {
-#           outlierTBL=rbind(outlierTBL,paramMSD)
-#         } else {outlierTBL=paramMSD}
-#       }
-#       allsites=intersect(unique(paramTBL$UID),unique(UnionTBL$UID))#only iterate over sites in the incoming/subset dataset (UnionTBL)
-#       for (s in 1:length(allsites)){
-#         #for (s in 1:3){#to test a smaller subset
-#         stratas=unique(subset(paramTBL6,select=STRATA,subset=UID==allsites[s]))
-#         paramTBL7=subset(paramTBL6,subset=STRATA %in% stratas$STRATA)
-#         #generate box plot in ggplot2
-#         if(max(paramTBL7$UID==allsites[s] & paramTBL7$SiteLabelOUT2!='')==1){#only print plot if it has outliers within the site or when compared to the strata
-#           sitebox=boxPARAM(boxdata=paramTBL7,sampsize=paramN,facetSTR='facet_grid(.~STRATATYPE)',titleSTR='labs(title=sprintf("SITE- %s (%s) ~ PARAM- %s",unique(subset(boxdata, subset=STRATATYPE=="UID", select=SITE_ID)),allsites[s],param))')
-#           ggsave(filename=sprintf('%s.jpg',sitebox$labels$title),plot=sitebox)#assign(sitebox$labels$title,sitebox)#save jpeg or assign var (need to refine naming)
-#         }
-#         
-#       }
-#       
-#       for (n in 1:numstrata) {#re-enter for loop now that all STRATA are complete and aggregated
-#         if(nrow(subset(paramMSD,STRATATYPE==typestrata[n]))>0){
-#           paramTBL4=subset(paramTBL6,subset=STRATATYPE==typestrata[n])
-#           stratabox=boxPARAM(boxdata=paramTBL4,sampsize=paramN,facetSTR='facet_grid(.~STRATA)',titleSTR='labs (title=sprintf("STRATA- %s ~ PARAM- %s",typestrata[n],param))')
-#           ggsave(filename=sprintf('%s.jpg',stratabox$labels$title),plot=stratabox)#assign(stratabox$labels$title,stratabox)#save jpeg or # assign(sprintf('box_STRATA_%s_%s',typestrata[n],param),stratabox)
-#         }
-#       }
-#     } }
-#   rm(paramTBL3,paramTBL4,paramTBL6,paramTBL5,paramTBL3a,paramTBL3b)
-#   
-#   outlierTBL=unique(subset(outlierTBL,select=c('STRATATYPE','STRATA','SITE_ID','UID','PARAMETER','PARAMCAT','TRANSECT','POINT','PARAMRES','Mean','SD')))
-#   stratat=unique(outlierTBL$STRATATYPE)
-#   for (s in 1:length(stratat)){
-#     outlierTBLst=subset(outlierTBL,subset=STRATATYPE==stratat[s])
-#     write.csv(outlierTBLst,file=sprintf('Outliers_2SDmean_%s.csv',stratat[s]))#could export as a single table, but a bit overwhelming
-#   }}
-# 
-# indicators=read.csv('IndicatorCheck_4Dec2015.csv')
-# str(indicators)
-# a=aggregate()
-# 
-# for (n in 1:length(indicators))######{mean(indicators$n)}
-# {paste("sub",n)=subset(indicators,ECOREGION==n)}
-# 
-# LIST=list()
-# for (n in 2:ncol(indicators))
-# {
-#  LIST[(n)]=mean(indicators[,n])
-# }
-# ecoregions=c("XN","XS","MN","MS","XE","OT","MP")
-# for (n in 1:length(ecoregions))
-# {subset=indicators$ECOREGION[n,]}
-# boxplot(indicators$PH_CHECK)}
-# boxplot()
-# 
