@@ -44,7 +44,7 @@ write.xlsx(comments,'comments.xlsx')
     #check for dry transects or partial data notes
     #especially review QA comments
     #inactivate resolved or superfluous comments
-QAcomments=tblRetrieve(Parameter=c())
+#QAcomments=tblRetrieve(Parameter=c())
 
 #review office comments and prioritize anything that might affect below checks----need above site information to link UID to comments and make change
 #https://docs.google.com/spreadsheets/d/1n58CHXDivjPLKXLX-bPwX1nX6XXtFTbpHlDF528LT-k/edit?usp=sharing
@@ -205,15 +205,15 @@ MissingTotalsREACHdf=as.data.frame(MissingTotalsREACH)
 MissingTotalsREACH2=reshape2::melt(MissingTotalsREACHdf,id.vars=c('PROJECT',	'PROTOCOL',	'SITE_ID',	'LOC_NAME','VALXSITE',	'UID',	'DATE_COL',	'CREW_LEADER'))
 MissingTotalsREACH2sub=subset(MissingTotalsREACH2,(value>0.45&variable!='AvgMissingData')|(variable=='AvgMissingData' & (VALXSITE!='PARBYWADE'&VALXSITE!='INTPARBYWADE') &value>0.05))
 MissingTotalsREACH2sub$value=MissingTotalsREACH2sub$value*100
-MissingTotalsREACH2sub$ERROR=ifelse(MissingTotalsREACH2sub$variable=='AvgMissingData'|(MissingTotalsREACH2sub$variable=='FLOODPRONE WIDTH'& MissingTotalsREACH2sub$VALXSITE!='PARBYWADE'),"More than 5% of data missing on average across transect data or two floodprone widths were not collected. Sample status may need to be changed to partially sampled. Please confirm that the initial sample status was incorrect. Please ensure crew understands special situation protocols","Indicator supposed to have been collected and more than 45% of data missing. Please verify that all data was properly entered into the app. If additional data is found, consult the NOC on next steps. If additional data is not found, the indicator associated with this data will likely not be computed.")
+MissingTotalsREACH2sub$ERROR=ifelse(MissingTotalsREACH2sub$variable=='AvgMissingData'|(MissingTotalsREACH2sub$variable=='FLOODPRONE WIDTH'& MissingTotalsREACH2sub$VALXSITE!='PARBYWADE'),"More than 5% of data missing on average across transect data or two floodprone widths were not collected. Sample status may need to be changed to partially sampled. Please confirm what the correct sample status is and ensure crew understands special situation protocols","Indicator supposed to have been collected and more than 45% of data missing. Please verify that all data was properly entered into the app. If additional data is found, consult the NOC on next steps. If additional data is not found, the indicator associated with this data will likely not be computed.")
 MissingTotalsREACH2sub$DataType=ifelse(MissingTotalsREACH2sub$variable=='AvgMissingData',"Sample Status- Partial Reach","Missing data")
 contingentindicators=read.csv("Z:/buglab/Research Projects/AIM/Analysis/QC/2020/contingent_indicators.csv")
 MissingTotalsREACH2sub=join(MissingTotalsREACH2sub,contingentindicators, by=c('PROJECT','variable'))
 MissingTotalsREACH2sub=subset(MissingTotalsREACH2sub,Collect!='No'|is.na(Collect)==TRUE)
 MissingTotalsREACH2sub=setNames(MissingTotalsREACH2sub[,c('PROJECT','CREW_LEADER','SITE_ID','DATE_COL','LOC_NAME','VALXSITE','DataType','variable','value','ERROR','PROTOCOL','UID')],c('PROJECT','CREW_LEADER','SITE_ID','DATE_COL','LOC_NAME','VALXSITE','DataType','IndicatorMethodOrField','ValueOrPercentDataMissing','ERROR','PROTOCOL','UID'))
 
-write.xlsx(MissingTotalsREACH,"MissingDataGeneral.xlsx")
-write.xlsx(MissingTotalsREACH2sub,"MissingDataErrors.xlsx")
+#write.xlsx(MissingTotalsREACH,"MissingDataGeneral.xlsx")
+#write.xlsx(MissingTotalsREACH2sub,"MissingDataErrors.xlsx")
 #MissingTotalsTRAN=subset(MissingTotalsOUT,TRANSECT!='ReachTotal');write.csv(MissingTotalsTRAN,"MissingDataQCttran_nocom.csv")
 #write.csv(MissingCounts,"MissingCounts.csv")
 }
@@ -293,18 +293,18 @@ coordinate_design_QC=postseasonmetadata[,c('PROJECT','CREW_LEADER','PROTOCOL','V
           #columns Stream_OR - Climate_spelledout
 coordinate_design_QC=coordinate_design_QC[order(coordinate_design_QC$SINUOSITY),]
 coordinate_design_QCsub=subset(coordinate_design_QC,SINUOSITY<0.9|(SINUOSITY>1.6& (VALXSITE!='PARBYWADE'&VALXSITE!='INTPARBYWADE')))
-coordinate_design_QCsub$ERROR=paste(coordinate_design_QCsub$Coordinates,';Sinuosity of 0.8 or 0.9 may indicate slight GPS errors; values less than 0.8 mean at least one coordinate is completely wrong; values >1.6 should be visually inspected on a map to ensure a fairly sinuous channel and that one or more coordinates are not wrong; anything over 3 indicates significant issues')
+coordinate_design_QCsub$ERROR=paste(coordinate_design_QCsub$Coordinates,';Plot coordinates and provide corrected coordinates if coordinates can be accurately obtained from google earth (i.e. good quality imagery exists and stream features can easily be seen). Sinuosity of 0.8 or 0.9 may indicate slight GPS errors; values less than 0.8 mean at least one coordinate is completely wrong; values >1.6 should be visually inspected on a map to ensure a fairly sinuous channel and that one or more coordinates are not wrong; anything over 3 indicates significant issues')
 coordinate_design_QCsub$IndicatorMethodOrField='Sinuosity'
 coordinate_design_QCsub$ValueOrPercentDataMissing=coordinate_design_QCsub$SINUOSITY
 coordinate_design_QCsub2=subset(coordinate_design_QC,DistanceFromDesignCoordinatesMeters>250& DistanceFromDesignCoordinatesMeters>TRCHLEN)
 coordinate_design_QCsub2$ERROR=paste(coordinate_design_QCsub2$Coordinates,'; PointID incorrect, targeted point coordinates changed, point moved more than allowable distance, or coordinate incorrect. Record the correct PointID or coordinate or confirm targeted point coordinates were changed. If point moved more than allowable distance, consult the NOC.')
 coordinate_design_QCsub2$IndicatorMethodOrField='Distance from design coordinates (m)'
-coordinate_design_QCsub2ValueOrPercentDataMissing=coordinate_design_QCsub2$DistanceFromDesignCoordinatesMeters
-coordinateQCErrors=rbind(coordinate_design_QCsub,coordinate_design_QCsub2)
+coordinate_design_QCsub2$ValueOrPercentDataMissing=coordinate_design_QCsub2$DistanceFromDesignCoordinatesMeters
+coordinateQCErrors=rbind.fill(coordinate_design_QCsub,coordinate_design_QCsub2)
 coordinateQCErrors$DataType='Coordinates'
 coordinateQCErrors=coordinateQCErrors[,c('PROJECT','CREW_LEADER','SITE_ID','DATE_COL','LOC_NAME','VALXSITE','DataType','IndicatorMethodOrField','ValueOrPercentDataMissing','ERROR','UID')]
-write.csv(coordinate_design_QC,'GeneralcoordinateQC.csv',row.names = FALSE)
-write.csv(coordinateQCErrors,'coordinateQCErrors.csv',row.names = FALSE)
+#write.csv(coordinate_design_QC,'GeneralcoordinateQC.csv',row.names = FALSE)
+#write.csv(coordinateQCErrors,'coordinateQCErrors.csv',row.names = FALSE)
 
 
 # #you can use the code below to plot the coordinates in R
@@ -398,10 +398,10 @@ WQ1=cast(WQ2,'UID~PARAMETER',value='RESULT')
 WQind=cast(WQ2,'UID~PARAMETER',value='IND')
 WQ3=addKEYS(merge(WQ1,WQind,by=c('UID'),all=T) ,c('SITE_ID','DATE_COL','CREW_LEADER','PROJECT','LOC_NAME'))
 WQ3.sub=subset(WQ3,CORRECTED.x!='Y')
-if(nrow(WQ3.sub)>0){write.csv(WQ3.sub,'not_temp_corrected_conduct.csv')}
+#if(nrow(WQ3.sub)>0){write.csv(WQ3.sub,'not_temp_corrected_conduct.csv')}
 Corrected=addKEYS(tblRetrieve(Parameters=c('CORRECTED'), Comments='Y', Years=years, Projects=projects,Protocols=protocols,SiteCodes=sitecodes,Insertion=insertion),c('PROJECT','SITE_ID','CREW_LEADER','LOC_NAME','DATE_COL','VALXSITE'))
 WQCTemp=subset(Corrected, RESULT!='Y')
-WQCTemp$ERROR='Crew recorded that conductivity was not temperature corrected; Please verify if conductivity vs. specific conductance (temperature corrected conductivity) was collected. AIM protocol states that temperature corrected conductivity should be recorded if at all possible. Some YSIs may not have this capability but this should be extremely rare.'
+WQCTemp$ERROR='Crew recorded that conductivity was not temperature corrected; Please verify if conductivity vs. specific conductance (temperature corrected conductivity) was collected. AIM protocol states that temperature corrected conductivity should be recorded. Check why specific conductance was recorded and make sure comments are made to justify this.'
 
 # #Chem check the hours prior to freezing
 # WQtbl=tblRetrieve(Parameters=c('NTL','PTL','TN_PRED','TP_PRED','TIME_UNFROZEN'),Projects=projects,Years=years,Protocols=protocols,SiteCodes=sitecodes,Insertion=insertion)
@@ -424,15 +424,15 @@ ConductQuestions=subset(Conduct,RESULT<30 | RESULT>1000)# review comments for an
 #postseasonmetadata_ecoregion=postseasonmetadata[,c('UID','ECO_10')]
 #ConductQuestions=join(ConductQuestions,postseasonmetadata_ecoregion, by="UID",type="left")
 ConductQuestions=ConductQuestions[order(ConductQuestions$RESULT),]
-ConductQuestions$ERROR='Value is outside the typical value range of 30-1000 uS/cm. Did crew recalibrate and verify value? If not project lead should determine if value should be trusted or omitted.'
-if(nrow(ConductQuestions)>0){write.csv(ConductQuestions,'ConductQuestions.csv')}
+ConductQuestions$ERROR='Value is outside the typical value range of 30-1000 uS/cm. Did crew recalibrate and verify value? If not project lead should determine if value should be trusted or omitted. Values should not be removed unless it is justifiable, please explain your reasoning.'
+#if(nrow(ConductQuestions)>0){write.csv(ConductQuestions,'ConductQuestions.csv')}
 
 PH=addKEYS(tblRetrieve(Comments='Y',Parameters=c('PH'),Projects=projects,Years=years,Protocols=protocols,SiteCodes=sitecodes,Insertion=insertion),c('PROJECT','SITE_ID','CREW_LEADER','LOC_NAME','DATE_COL','VALXSITE'))
 PHQuestions=subset(PH,RESULT<6 | RESULT>9)# review comments for any sites flagged here
 #PHQuestions=join(PHQuestions,postseasonmetadata_ecoregion, by="UID",type="left")
 PHQuestions=PHQuestions[order(PHQuestions$RESULT),]
 PHQuestions$ERROR='Value is outside typical range of 6-9. Did crew recalibrate and verify value? If not project lead should determine if value should be trusted or omitted.'
-if(nrow(PHQuestions)>0){write.csv(PHQuestions,'PHQuestions.csv')}
+#if(nrow(PHQuestions)>0){write.csv(PHQuestions,'PHQuestions.csv')}
 
 
 Temperature=addKEYS(tblRetrieve(Comments='Y',Parameters=c('TEMPERATURE'),Projects=projects,Years=years,Protocols=protocols,SiteCodes=sitecodes,Insertion=insertion),c('PROJECT','SITE_ID','CREW_LEADER','LOC_NAME','DATE_COL','VALXSITE'))
@@ -443,12 +443,20 @@ TemperatureQuestions$ERROR='Value is outside typical range of 2-23. Please confi
 
 Turb=addKEYS(tblRetrieve(Parameters=c('TURBIDITY'), Comments='Y', Years=years, Projects=projects,Protocols=protocols,SiteCodes=sitecodes,Insertion=insertion),c('PROJECT','SITE_ID','CREW_LEADER','LOC_NAME','DATE_COL','VALXSITE'))
 TurbQuestions=subset(Turb,RESULT>60)
-TurbQuestions$ERROR='Value is atypically high. Please confirm if value should be trusted or omitted.'
+TurbQuestions$ERROR='Value is atypical. Please confirm if value should be trusted or omitted. Check that the crew calibrated the meter AND cleaned the vial properly.'
 
-WQ=rbind.fill(WQCTemp,ConductQuestions,PHQuestions,TemperatureQuestions,TurbQuestions)
+
+WQ=c('PROJECT','CREW_LEADER','SITE_ID','DATE_COL','VALXSITE','DataType','IndicatorMethodOrField','ValueOrPercentDataMissing','ERROR','UID','IND','SAMPLE_TYPE'	) %>%
+  map_dfr( ~tibble(!!.x :=logical()))
+WQList=c("WQCTemp","ConductQuestions","PHQuestions","TemperatureQuestions","TurbQuestions")
+for (s in 1:length(WQList)) {
+  if(exists(WQList[s])==TRUE){WQ=rbind.fill(list(WQ,as.data.frame(get(WQList[s]))),by="UID")}
+  else {WQ=WQ}
+}
+#WQ=rbind.fill(WQCTemp,ConductQuestions,PHQuestions,TemperatureQuestions,TurbQuestions)
 WQ$DataType='Water Quality'
 
-WQ=setNames(WQ[,c('PROJECT','CREW_LEADER','SITE_ID','DATE_COL','VALXSITE','DataType','PARAMETER','RESULT','ERROR','COMMENT','FLAG','UID','IND','SAMPLE_TYPE')],c('PROJECT','CREW_LEADER','SITE_ID','DATE_COL','VALXSITE','DataType','IndicatorMethodOrField','ValueOrPercentDataMissing','ERROR','COMMENT','FLAG','UID','IND','SAMPLE_TYPE'))
+WQ=setNames(WQ[,c('PROJECT','CREW_LEADER','SITE_ID','DATE_COL','LOC_NAME','VALXSITE','DataType','PARAMETER','RESULT','ERROR','COMMENT','FLAG','UID','IND','SAMPLE_TYPE')],c('PROJECT','CREW_LEADER','SITE_ID','DATE_COL','LOC_NAME','VALXSITE','DataType','IndicatorMethodOrField','ValueOrPercentDataMissing','ERROR','COMMENT','FLAG','UID','IND','SAMPLE_TYPE'))
 
 
 
@@ -478,25 +486,25 @@ decimalplaces <- function(x) {
 
 heights$decimals=decimalplaces(heights$RESULT)
 heightssub=subset(heights,decimals>2)
-heightssub$ERROR='Verify if value is either in wrong units or too many decimal places were recorded.'
+heightssub$ERROR='Heights should be collected in cm and widths should be collected in meters. For data storage purposes, heights and widths displayed here are both in meters and should only have 2 decimal places. Let the NOC know if the value displayed here was recorded in the wrong units or needs rounded to the nearest 0.01 meters.'
 
 thalweg=addKEYS(tblRetrieve(Parameters=c('DEPTH'),Years=years, Projects=projects,Protocols=protocols,SiteCodes=sitecodes,Insertion=insertion),c('SITE_ID','CREW_LEADER','PROJECT','LOC_NAME','PROTOCOL','VALXSITE','DATE_COL'))
 thalweg$decimals=decimalplaces(thalweg$RESULT)
 thalwegsub=subset(thalweg,decimals>0)
-thalwegsub$ERROR='Verify if value is either in wrong units or too many decimal places were recorded.'
+thalwegsub$ERROR='Thalweg should be measured in cm without decimals. Ensure this is not a units issue and ensure the crew knows to round to the nearest cm when measuring heights and depths. Let the NOC know if data needs converted to different units or simply rounded.'
 
 
 
 slopedecimals=addKEYS(tblRetrieve(Parameters=c('STARTHEIGHT','ENDHEIGHT'),Years=years, Projects=projects,Protocols=protocols,SiteCodes=sitecodes,Insertion=insertion),c('SITE_ID','CREW_LEADER','PROJECT','LOC_NAME','PROTOCOL','VALXSITE','DATE_COL'))
 slopedecimals$decimals=decimalplaces(slopedecimals$RESULT)
 slopedecimalssub=subset(slopedecimals,decimals>0)
-slopedecimalssub$ERROR='Slope values were either recorded to the wrong precision or wrong units. NOC will correct values but please verify crew knows how to use the proper equipment and follow the protocol recording slope in cm.'
+slopedecimalssub$ERROR='Slope should be recorded in cm without decimals. Values were either recorded to the wrong precision or wrong units. NOC will correct values but please verify crew the crew has proper equipment or the crew knows how to use the equipment properly and follows the protocol recording slope in cm.'
 
 
 decimals2=rbind.fill(heightssub,thalwegsub,slopedecimalssub)
 decimals2$DataType='Units, Precision, or Typo'
 
-decimals2=setNames(decimals2[,c('PROJECT','CREW_LEADER','SITE_ID','DATE_COL','VALXSITE','DataType','PARAMETER','RESULT','ERROR','UID','IND','SAMPLE_TYPE')],c('PROJECT','CREW_LEADER','SITE_ID','DATE_COL','VALXSITE','DataType','IndicatorMethodOrField','ValueOrPercentDataMissing','ERROR','UID','IND','SAMPLE_TYPE'))
+decimals2=setNames(decimals2[,c('PROJECT','CREW_LEADER','SITE_ID','DATE_COL','LOC_NAME','VALXSITE','DataType','PARAMETER','RESULT','ERROR','UID','IND','SAMPLE_TYPE')],c('PROJECT','CREW_LEADER','SITE_ID','DATE_COL','LOC_NAME','VALXSITE','DataType','IndicatorMethodOrField','ValueOrPercentDataMissing','ERROR','UID','IND','SAMPLE_TYPE'))
 
 
 
@@ -514,7 +522,7 @@ angle=addKEYS(tblRetrieve(Parameters=c('ANGLE180'),Years=years, Projects=project
 anglesub=subset(angle,RESULT=='0')
 anglesub$DataType='Units, Precision, or Typo'
 anglesub$ERROR='Angle of 0 is not possible. This would indicate a tunnel/bridge/or culvert. Please confirm that this was a typo and should be omitted.'
-anglesub=etNames(anglesub[,c('PROJECT','CREW_LEADER','SITE_ID','DATE_COL','VALXSITE','DataType','PARAMETER','RESULT','ERROR','UID','IND','SAMPLE_TYPE')],c('PROJECT','CREW_LEADER','SITE_ID','DATE_COL','VALXSITE','DataType','IndicatorMethodOrField','ValueOrPercentDataMissing','ERROR','UID','IND','SAMPLE_TYPE'))
+anglesub=setNames(anglesub[,c('PROJECT','CREW_LEADER','SITE_ID','DATE_COL','VALXSITE','DataType','PARAMETER','RESULT','ERROR','UID','IND','SAMPLE_TYPE')],c('PROJECT','CREW_LEADER','SITE_ID','DATE_COL','VALXSITE','DataType','IndicatorMethodOrField','ValueOrPercentDataMissing','ERROR','UID','IND','SAMPLE_TYPE'))
 
 elevation=addKEYS(tblRetrieve(Parameters=c('ELEVATION'),Years=years, Projects=projects,Protocols=protocols,SiteCodes=sitecodes,Insertion=insertion),c('SITE_ID','CREW_LEADER','PROJECT','LOC_NAME','PROTOCOL','VALXSITE','DATE_COL'))
 elevation$RESULT=as.numeric(elevation$RESULT)
@@ -522,8 +530,14 @@ elevationsub=subset(elevation, RESULT>4000)
 elevationsub$DataType='Units, Precision, or Typo'
 elevationsub$ERROR='Value may be in ft when it should be in meters. Please confirm the units.'
 
+ErrorLog=c('PROJECT','CREW_LEADER','SITE_ID','DATE_COL','VALXSITE','DataType','IndicatorMethodOrField','ValueOrPercentDataMissing','ERROR','UID','IND','SAMPLE_TYPE'	) %>%
+  map_dfr( ~tibble(!!.x :=logical()))
+ErrorList=c("coordinateQCErrors","MissingTotalsREACH2sub","WQ","decimals2","Lwdpvtsub","anglesub","elevationsub")
+for (s in 1:length(ErrorList)) {
+  if(exists(ErrorList[s])==TRUE){ErrorLog=rbind.fill(list(ErrorLog,as.data.frame(get(ErrorList[s]))),by="UID")}
+  else {ErrorLog=ErrorLog}
+}
 
-ErrorLog=rbind.fill(coordinateQCErrors,MissingTotalsREACH2sub,WQ,decimals2,Lwdpvtsub,anglesub,elevationsub)
 
 ErrorLog$DateAppended=Sys.Date()
 ErrorLog$Resolved=NA  
@@ -663,54 +677,54 @@ if(nrow(FloodWidthpvtsub)>0) {write.csv(FloodWidthpvtsub,'FloodWidthLessBankfull
 # AngleCheck2=subset(pvtAngle, SLANT=='OB' & as.numeric(ANGLE180)<90)  
 # if(nrow(AngleCheck1)>0) {write.csv(AngleCheck1,'AngleCheckSlant.csv')}# slant being filled out properly for all angles
 # if(nrow(AngleCheck2)>0) {write.csv(AngleCheck2,'AngleCheckSubtraction.csv')}# subtraction occuring in app properly for all obtuse angles
-                 
-#######  Riparian Veg  ########
-#overstory >100% check
-riparian1=tblRetrieve(Parameters=c('CANBTRE','CANSTRE'),Years=years, Projects=projects,SiteCodes=sitecodes,Insertion=insertion)
-riparian1PVT=cast(riparian1,'UID+TRANSECT+POINT~PARAMETER',value='RESULT')
-riparian1PVT_IND=cast(riparian1,'UID+TRANSECT+POINT~PARAMETER',value='IND')
-riparian1pvt=merge(riparian1PVT,riparian1PVT_IND,by=c('UID','TRANSECT','POINT'),all=T)
-riparian1PVTsub=subset(riparian1pvt,(CANBTRE.x==4 & CANSTRE.x>2) | (CANSTRE.x==4 & CANBTRE.x>2))
-if(nrow(riparian1PVTsub)>0){write.csv(riparian1PVTsub,'rip1.csv')}
-
-#middlestory >100% check
-riparian2=tblRetrieve(Parameters=c('UNDNWDY','UNDWDY'),Years=years, Projects=projects,SiteCodes=sitecodes,Insertion=insertion)
-riparian2PVT=cast(riparian2,'UID+TRANSECT+POINT~PARAMETER',value='RESULT')
-riparian2PVT_IND=cast(riparian2,'UID+TRANSECT+POINT~PARAMETER',value='IND')
-riparian2pvt=merge(riparian2PVT,riparian2PVT_IND,by=c('UID','TRANSECT','POINT'),all=T)
-riparian2PVTsub=subset(riparian2pvt,(UNDNWDY.x==4 & UNDWDY.x>2) | (UNDWDY.x==4 & UNDNWDY.x>2))
-if(nrow(riparian2PVTsub)>0){write.csv(riparian2PVTsub,'rip2.csv')}
-
-#understory >100% check
-riparian3=tblRetrieve(Parameters=c('GCNWDY','GCWDY','BARE'),Years=years, Projects=projects,SiteCodes=sitecodes,Insertion=insertion)
-riparian3PVT=cast(riparian3,'UID+TRANSECT+POINT~PARAMETER',value='RESULT')
-riparian3PVT_IND=cast(riparian3,'UID+TRANSECT+POINT~PARAMETER',value='IND')
-riparian3pvt=merge(riparian3PVT,riparian3PVT_IND,by=c('UID','TRANSECT','POINT'),all=T)
-riparian3PVTsub=subset(riparian3pvt,(GCNWDY.x==4 & GCWDY.x>2) | (GCWDY.x==4 & GCNWDY.x>2) | (GCNWDY.x==4 & BARE.x>2) | (BARE.x==4 & GCNWDY.x>2) | (BARE.x==4 & GCWDY.x>2) | (GCWDY.x==4 & BARE.x>2))
-if(nrow(riparian3PVTsub)>0) {write.csv(riparian3PVTsub,'rip3.csv')}
-
-#veg type missing check
-#canopy
-riparian4=tblRetrieve(Parameters=c('CANVEG','CANBTRE','CANSTRE'),Years=years, Projects=projects,SiteCodes=sitecodes,Insertion=insertion)
-riparian4PVT=cast(riparian4,'UID+TRANSECT+POINT~PARAMETER',value='RESULT')
-riparian4pvtsub=subset(riparian4PVT,CANVEG=='N' & CANBTRE>0 & CANSTRE>0)
-if(nrow(riparian4pvtsub)>0) {write.csv(riparian4pvtsub,'rip4.csv')}
-
-riparian4PVT_IND=cast(riparian4,'UID+TRANSECT+POINT~PARAMETER',value='IND')
-riparian4pvt=merge(riparian4PVT,riparian4PVT_IND,by=c('UID','TRANSECT','POINT'),all=T)
-riparian4pvtsub2=subset(riparian4pvt,CANVEG.x!='N' & CANBTRE.x==0 & CANSTRE.x==0)
-if(nrow(riparian4pvtsub2)>0){write.csv(riparian4pvtsub2,'rip42.csv')}
-
-#middle
-riparian5=tblRetrieve(Parameters=c('UNDERVEG','UNDNWDY','UNDWDY'),Years=years, Projects=projects,SiteCodes=sitecodes,Insertion=insertion)
-riparian5PVT=cast(riparian5,'UID+TRANSECT+POINT~PARAMETER',value='RESULT')
-riparian5pvtsub=subset(riparian5PVT,UNDERVEG=='N' & UNDNWDY>0 & UNDWDY>0)
-if(nrow(riparian5pvtsub)>0){write.csv(riparian5pvtsub,'rip5.csv') }                     
-
-riparian5=tblRetrieve(Parameters=c('UNDERVEG','UNDNWDY','UNDWDY'),Years=years, Projects=projects,SiteCodes=sitecodes,Insertion=insertion)
-riparian5PVT=cast(riparian5,'UID+TRANSECT+POINT~PARAMETER',value='RESULT')
-riparian5pvtsub2=subset(riparian5PVT,UNDERVEG!='N' & UNDNWDY==0 & UNDWDY==0)
-if(nrow(riparian5pvtsub2)>0){write.csv(riparian5pvtsub2,'rip52.csv')}
+#                  
+# #######  Riparian Veg  ########
+# #overstory >100% check
+# riparian1=tblRetrieve(Parameters=c('CANBTRE','CANSTRE'),Years=years, Projects=projects,SiteCodes=sitecodes,Insertion=insertion)
+# riparian1PVT=cast(riparian1,'UID+TRANSECT+POINT~PARAMETER',value='RESULT')
+# riparian1PVT_IND=cast(riparian1,'UID+TRANSECT+POINT~PARAMETER',value='IND')
+# riparian1pvt=merge(riparian1PVT,riparian1PVT_IND,by=c('UID','TRANSECT','POINT'),all=T)
+# riparian1PVTsub=subset(riparian1pvt,(CANBTRE.x==4 & CANSTRE.x>2) | (CANSTRE.x==4 & CANBTRE.x>2))
+# if(nrow(riparian1PVTsub)>0){write.csv(riparian1PVTsub,'rip1.csv')}
+# 
+# #middlestory >100% check
+# riparian2=tblRetrieve(Parameters=c('UNDNWDY','UNDWDY'),Years=years, Projects=projects,SiteCodes=sitecodes,Insertion=insertion)
+# riparian2PVT=cast(riparian2,'UID+TRANSECT+POINT~PARAMETER',value='RESULT')
+# riparian2PVT_IND=cast(riparian2,'UID+TRANSECT+POINT~PARAMETER',value='IND')
+# riparian2pvt=merge(riparian2PVT,riparian2PVT_IND,by=c('UID','TRANSECT','POINT'),all=T)
+# riparian2PVTsub=subset(riparian2pvt,(UNDNWDY.x==4 & UNDWDY.x>2) | (UNDWDY.x==4 & UNDNWDY.x>2))
+# if(nrow(riparian2PVTsub)>0){write.csv(riparian2PVTsub,'rip2.csv')}
+# 
+# #understory >100% check
+# riparian3=tblRetrieve(Parameters=c('GCNWDY','GCWDY','BARE'),Years=years, Projects=projects,SiteCodes=sitecodes,Insertion=insertion)
+# riparian3PVT=cast(riparian3,'UID+TRANSECT+POINT~PARAMETER',value='RESULT')
+# riparian3PVT_IND=cast(riparian3,'UID+TRANSECT+POINT~PARAMETER',value='IND')
+# riparian3pvt=merge(riparian3PVT,riparian3PVT_IND,by=c('UID','TRANSECT','POINT'),all=T)
+# riparian3PVTsub=subset(riparian3pvt,(GCNWDY.x==4 & GCWDY.x>2) | (GCWDY.x==4 & GCNWDY.x>2) | (GCNWDY.x==4 & BARE.x>2) | (BARE.x==4 & GCNWDY.x>2) | (BARE.x==4 & GCWDY.x>2) | (GCWDY.x==4 & BARE.x>2))
+# if(nrow(riparian3PVTsub)>0) {write.csv(riparian3PVTsub,'rip3.csv')}
+# 
+# #veg type missing check
+# #canopy
+# riparian4=tblRetrieve(Parameters=c('CANVEG','CANBTRE','CANSTRE'),Years=years, Projects=projects,SiteCodes=sitecodes,Insertion=insertion)
+# riparian4PVT=cast(riparian4,'UID+TRANSECT+POINT~PARAMETER',value='RESULT')
+# riparian4pvtsub=subset(riparian4PVT,CANVEG=='N' & CANBTRE>0 & CANSTRE>0)
+# if(nrow(riparian4pvtsub)>0) {write.csv(riparian4pvtsub,'rip4.csv')}
+# 
+# riparian4PVT_IND=cast(riparian4,'UID+TRANSECT+POINT~PARAMETER',value='IND')
+# riparian4pvt=merge(riparian4PVT,riparian4PVT_IND,by=c('UID','TRANSECT','POINT'),all=T)
+# riparian4pvtsub2=subset(riparian4pvt,CANVEG.x!='N' & CANBTRE.x==0 & CANSTRE.x==0)
+# if(nrow(riparian4pvtsub2)>0){write.csv(riparian4pvtsub2,'rip42.csv')}
+# 
+# #middle
+# riparian5=tblRetrieve(Parameters=c('UNDERVEG','UNDNWDY','UNDWDY'),Years=years, Projects=projects,SiteCodes=sitecodes,Insertion=insertion)
+# riparian5PVT=cast(riparian5,'UID+TRANSECT+POINT~PARAMETER',value='RESULT')
+# riparian5pvtsub=subset(riparian5PVT,UNDERVEG=='N' & UNDNWDY>0 & UNDWDY>0)
+# if(nrow(riparian5pvtsub)>0){write.csv(riparian5pvtsub,'rip5.csv') }                     
+# 
+# riparian5=tblRetrieve(Parameters=c('UNDERVEG','UNDNWDY','UNDWDY'),Years=years, Projects=projects,SiteCodes=sitecodes,Insertion=insertion)
+# riparian5PVT=cast(riparian5,'UID+TRANSECT+POINT~PARAMETER',value='RESULT')
+# riparian5pvtsub2=subset(riparian5PVT,UNDERVEG!='N' & UNDNWDY==0 & UNDWDY==0)
+# if(nrow(riparian5pvtsub2)>0){write.csv(riparian5pvtsub2,'rip52.csv')}
 
 
 ##### Non-Natives ######
@@ -848,7 +862,7 @@ write.csv(thalweg.missing,'thalweg.missing.csv')
 #                  
 #########  slope   ################                    
 Slope=tblRetrieve(Parameters=c('AVGSLOPE','SLPRCHLEN','TRCHLEN','PARTIAL_RCHLEN','POOLRCHLEN','SLOPE_COLLECT','PCT_GRADE','VALXSITE','Z_SLOPEPASSQA'),Projects=projects, Years=years,Protocols=protocols,SiteCodes=sitecodes,Insertion=insertion)                 
-pvtSlope=addKEYS(cast(Slope,'UID~PARAMETER',value='RESULT'), c('SITE_ID','CREW_LEADER','PROJECT'))                
+pvtSlope=addKEYS(cast(Slope,'UID~PARAMETER',value='RESULT'), c('SITE_ID','CREW_LEADER','PROJECT','DATE_COL','VALXSITE'))                
 # sites with pct_grade==0 likely had some app quirk and slope reach length or avg slope didn't get calculated for some reason
 SlopeCheck_typicalvalues=subset(pvtSlope,as.numeric(PCT_GRADE)>14|as.numeric(PCT_GRADE)<1)
 SlopeCheck_partialno=subset(pvtSlope,SLOPE_COLLECT=='PARTIAL'|SLOPE_COLLECT=='NO SLOPE')
@@ -857,10 +871,10 @@ SlopeCheck_more2passes=subset(Pass,TRANSECT>2)# if more than 2 passes need to ma
 #NOT10PER=subset(pvtSlope,Z_SLOPEPASSQA=='N') #not particularly helpful because gets flagged as "N" if they do more than 2 passes and doesn't get flagged back as "Y" if 2 of those are within 10%
 # for any sites that failed one of the above checks, see individual passes below
 IndividualSlope=tblRetrieve(Parameters=c('SLOPE','STARTHEIGHT','ENDHEIGHT'),Projects=projects, Years=years,Protocols=protocols,SiteCodes=sitecodes,Insertion=insertion)
-pvtIndividualSlopeSum=addKEYS(cast(IndividualSlope,'UID+TRANSECT~PARAMETER',value='RESULT', fun=sum),c('SITE_ID','CREW_LEADER'))#note Transect=Pass
+pvtIndividualSlopeSum=addKEYS(cast(IndividualSlope,'UID+TRANSECT~PARAMETER',value='RESULT', fun=sum),c('SITE_ID','CREW_LEADER','PROJECT','DATE_COL','VALXSITE'))#note Transect=Pass
 pvtIndividualSlopeSum=pvtIndividualSlopeSum[,c(1:3,5,4,6,7)]
-pvtIndividualSlopeRaw=addKEYS(cast(IndividualSlope,'UID+TRANSECT+POINT~PARAMETER',value='RESULT'),c('SITE_ID','CREW_LEADER','PROJECT'))#note Transect=Pass
-pvtIndividualSlopeRaw=pvtIndividualSlopeRaw[,c(1:4,6,5,7,8)]
+pvtIndividualSlopeRaw=addKEYS(cast(IndividualSlope,'UID+TRANSECT+POINT~PARAMETER',value='RESULT'),c('SITE_ID','CREW_LEADER','PROJECT','DATE_COL','VALXSITE'))#note Transect=Pass
+pvtIndividualSlopeRaw=pvtIndividualSlopeRaw[,c(1:4,6,5,7:10)]
 #always double check sites with 3 passes get averaged properly in app
 write.csv(pvtSlope,'pctGrade.csv')
 #write.csv(SlopeCheck_more2passes,'SlopeCheck_more2passes.csv')#I prefer just to check this in the raw slope file rather than getting this seperate export
@@ -878,7 +892,7 @@ write.csv(pvtpools,'pvtpools.csv')#sort and look for min and max and 0 data or u
 
 # flow and collected checks
 PoolCollect<-tblRetrieve(Parameters=c('POOL_COLLECT','VALXSITE','POOLRCHLEN','TRCHLEN','SLOPE_COLLECT','SLPRCHLEN'),Projects=projects,Years=years,Protocols=protocols,SiteCodes=sitecodes,Insertion=insertion, Comments='Y')
-pvtPoolCollect=addKEYS(cast(PoolCollect,'UID~PARAMETER',value='RESULT'),c('SITE_ID','CREW_LEADER','PROJECT'))
+pvtPoolCollect=addKEYS(cast(PoolCollect,'UID~PARAMETER',value='RESULT'),c('SITE_ID','CREW_LEADER','PROJECT','DATE_COL'))
 pvtPoolCollect=pvtPoolCollect[order(pvtPoolCollect$VALXSITE,pvtPoolCollect$POOL_COLLECT),]
 #write.csv(pvtPoolCollect,paste0('poolcollect',Sys.Date(),'.csv'))
 write.csv(pvtPoolCollect,'poolcollect.csv') 
@@ -898,7 +912,7 @@ if(nrow(pool_great_100)>0){write.csv(pool_great_100,'pool_great_100.csv')}#expor
 #pool tail fines
 PoolFines=tblRetrieve(Parameters=c('POOLFINES2','POOLFINES6','POOLNOMEAS','POOLFINES6_512'),Projects=projects, Years=years,Protocols=protocols,SiteCode=sitecodes,Insertion=insertion)
 if(nrow(PoolFines)>0){
-pvtPoolFines=addKEYS(cast(PoolFines,'UID+TRANSECT+POINT~PARAMETER',value='RESULT'),c('SITE_ID'))#need to pivot to create the pctPoolFInes variable
+pvtPoolFines=addKEYS(cast(PoolFines,'UID+TRANSECT+POINT~PARAMETER',value='RESULT'),c('SITE_ID','PROJECT','CREW_LEADER','DATE_COL','VALXSITE'))#need to pivot to create the pctPoolFInes variable
 pvtPoolFines$PctPoolFines2_CHECK=pvtPoolFines$POOLFINES2/(50-pvtPoolFines$POOLNOMEAS)*100
 pvtPoolFines$PctPoolFines6_CHECK=pvtPoolFines$POOLFINES6/(50-pvtPoolFines$POOLNOMEAS)*100
 write.csv(pvtPoolFines,'pvtPoolFines.csv')
@@ -908,7 +922,7 @@ aggpvt3PoolFines=aggregate(PctPoolFines2_CHECK~UID,data=aggpvt1PoolFines, FUN='m
 aggpvt4PoolFines=aggregate(PctPoolFines6_CHECK~UID,data=aggpvt2PoolFines, FUN='mean')#average pool fines at a pool first # note these exclude NAs
 aggpvt5PoolFines=setNames(aggregate(PctPoolFines2_CHECK~UID,data=aggpvt1PoolFines, FUN='sd'),c("UID","PctPoolFines2SD"))#average pool fines at a pool first # note these exclude NAs
 aggpvt6PoolFines=setNames(aggregate(PctPoolFines6_CHECK~UID,data=aggpvt2PoolFines, FUN='sd'),c("UID","PctPoolFines6SD"))#average pool fines at a pool first # note these exclude NAs
-FinalpvtPoolFines=addKEYS(join_all(list(aggpvt3PoolFines,aggpvt4PoolFines,aggpvt5PoolFines,aggpvt6PoolFines),by=c('UID')),c('SITE_ID'))
+FinalpvtPoolFines=addKEYS(join_all(list(aggpvt3PoolFines,aggpvt4PoolFines,aggpvt5PoolFines,aggpvt6PoolFines),by=c('UID')),c('SITE_ID','PROJECT','CREW_LEADER','DATE_COL','VALXSITE'))
 #FinalpvtPoolFines=join_all(list(aggpvt3PoolFines,aggpvt5PoolFines),by=c('UID'))
 FinalpvtPoolFines$PctPoolFines2_CHECK=round(FinalpvtPoolFines$PctPoolFines2_CHECK,digits=0)
 FinalpvtPoolFines$PctPoolFines6_CHECK=round(FinalpvtPoolFines$PctPoolFines6_CHECK,digits=0)
@@ -917,7 +931,7 @@ write.csv(FinalpvtPoolFines,'FinalpvtPoolFines.csv')
 FinalpvtPoolFines$PctPoolFines2CV=FinalpvtPoolFines$PctPoolFines2SD/FinalpvtPoolFines$PctPoolFines2_CHECK#sites with CV >1.414 should be QCed 
 FinalpvtPoolFines$PctPoolFines6CV=FinalpvtPoolFines$PctPoolFines6SD/FinalpvtPoolFines$PctPoolFines6_CHECK#sites with CV >1.414 should be QCed 
 subQC=subset(FinalpvtPoolFines,FinalpvtPoolFines$PctPoolFines6CV>=1.41|FinalpvtPoolFines$PctPoolFines2CV>=1.41)#sites with CV >1.414 should be QCed 
-write.csv(subQC,'pooltailfines_highvariance.csv')
+#write.csv(subQC,'pooltailfines_highvariance.csv')
 }
 
 
@@ -934,7 +948,7 @@ write.csv(subQC,'pooltailfines_highvariance.csv')
 #use to check any questionable values such as bankfull widths and heights
 #this hasn't been used to date. photo comments should be reviewed at some point
 Photo=tblRetrieve(Parameters=c('PHOTO_ID','PHOTO_DESCRIP','PHOTO_TYPE','ROD','DIRECTION','COMMENT'),Projects=projects,Years=years,SiteCodes=sitecodes,Insertion=insertion)
-pvtPhotos=addKEYS(cast(Photo,'UID+POINT~PARAMETER',value='RESULT'),c('PROJECT'))
+pvtPhotos=addKEYS(cast(Photo,'UID+POINT~PARAMETER',value='RESULT'),c('PROJECT','CREW_LEADER','DATE_COL','VALXSITE','SITE_ID'))
 write.csv(pvtPhotos,'photos.csv')
 
 

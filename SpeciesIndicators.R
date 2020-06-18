@@ -35,7 +35,7 @@ sites=unique(speciesDataFreq$SITE_ID)
 designs=read.csv('\\\\share1.bluezone.usu.edu\\miller\\buglab\\Research Projects\\AIM\\Design\\DesignDatabase\\lkp_GRTS_SiteInfo.csv')
 state=designs[,c('SITE_ID','STATE')]
 
-specieslists=read.csv("Z:\\buglab\\Research Projects\\AIM\\Protocols\\NonNativeVeg\\Comprehensive Aquatic AIM Nonnative Riparian Plant Species List_JC.csv")
+specieslists=read.csv("Z:\\buglab\\Research Projects\\AIM\\Protocols\\NonNativeVeg\\Comprehensive Aquatic AIM Nonnative Riparian Plant Species List_JC2020.csv")
 
 statespecies=join(state,specieslists,by="STATE", type="left")
 statespecies=subset(statespecies, SITE_ID %in% sites)
@@ -65,7 +65,9 @@ write.csv(AllSpeciesFinal,'SpeciesFrequencyall.csv')
 
 nonnative=addKEYS(tblRetrieve(Parameters=c('INVAS_COMMON_NAME'),Years=years, Projects=projects,SiteCodes=sitecodes,Insertion=insertion),c('SITE_ID'))
 nonnative$CommonName=nonnative$RESULT
-specieslists=read.csv("Z:\\buglab\\Research Projects\\AIM\\Protocols\\NonNativeVeg\\specieslist.csv")
+#specieslists=read.csv("Z:\\buglab\\Research Projects\\AIM\\Protocols\\NonNativeVeg\\specieslist.csv")
+specieslists=read.csv("Z:\\buglab\\Research Projects\\AIM\\Protocols\\NonNativeVeg\\specieslist2020.csv")
+
 nonnative=join(specieslists,nonnative,by=c("CommonName"),type="left")
 pvtnonnative=cast(nonnative,'UID~TypeFinal',value='PARAMETER',length)
 
