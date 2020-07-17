@@ -118,6 +118,31 @@ IndicatorsFinal=indicatorXwalk(data.input,data.xwalk)
 IndicatorsFinal=IndicatorsFinal[order(IndicatorsFinal$Project,IndicatorsFinal$SiteCode),]
 write.csv(IndicatorsFinal,paste0('IndicatorsFinalExport',Sys.Date(),'.csv'),na="")     
 
+historicIndicators=read.csv("Z:\\buglab\\Research Projects\\AIM\\Analysis\\QC\\Aquadat9.csv")
+historicIndicators2=historicIndicators[,c(2:3,4,5,6,8,9:11,24:101)]
+historicIndicators3=melt(historicIndicators2,id.vars=c('UID','Project','SiteCode','MasterCode','VisitNumber','StreamName','FieldStatus'))
+historicInidicators4=cast(historicIndicators3,'MasterCode+variable~VisitNumber',value='value')
+uniquesites=read.csv('\\\\share1.bluezone.usu.edu\\miller\\buglab\\Research Projects\\AIM\\Design\\DesignDatabase\\site_table_for_Design_Database_unique_sites.csv')
+DesignInfosub=setNames(uniquesites[,c('MS_ID','SITE_ID_CHECK')],c('MasterCode','SiteCode'))
+historicIndicators5=join(historicInidicators4,DesignInfosub,by=c('MasterCode'), type='left')
+
+
+IndicatorsFinal=read.csv('IndicatorsFinalExport2020-06-18.csv')
+IndicatorsFinal=addKEYS(IndicatorsFinal,c('CREW_LEADER'))
+IndicatorsFinal2=IndicatorsFinal[,c(1,3:6,9:11,24:105)]
+
+ComputedIndicators=melt(IndicatorsFinal2,id.vars=c('UID','Project','CREW_LEADER','SiteCode','MasterCode','StreamName','FieldStatus'))
+ComputedIndicators2=setNames(join(ComputedIndicators, historicIndicators5,type='left',by=c('SiteCode','variable')),c('UID','Project','CREW_LEADER','SiteCode','MasterCode','StreamName','FieldStatus','variable','value','MasterCode','Visit1','Visit2','Visit3','Visit4','Visit5','Visit6'))
+#ComputedIndicators2$PercentDifference=abs(as.numeric(ComputedIndicators2$value)-ComputedIndicators2$Visit1)/mean(ComputedIndicators2,ComputerIndicators2$Visit1)*100
+filter=read.csv("Z:\\buglab\\Research Projects\\AIM\\Database_Development\\AquaDat_computed_metrics\\indicatorXwalkLocal2018_benchmarktool_IndicatorType.csv")
+ComputedIndicators2=join(ComputedIndicators2,filter,by='variable',type='left')
+ComputedIndicators2=ComputedIndicators2[,c(1:7,17,8:9,11:16)]
+Date=subset(ComputedIndicators2, variable=='Date')
+Date1=setNames(Date[,c(1,10:15)],c('UID','SampleDate','RevisitData1SampleDate','RevisitData2SampleDate','RevisitData3SampleDate','RevisitData4SampleDate','RevisitData5SampleDate'))
+ComputedIndicators3=subset(ComputedIndicators2,variable!='Date')
+ComputedIndicators4=join(ComputedIndicators3,Date1, type='left',by='UID')
+ComputedIndicators4=ComputedIndicators4[,c(1:5,17,6:16,18:22)]
+write.csv(ComputedIndicators4,'ComputedIndicators4.csv',row.names=FALSE)
 
 #################################### Add additional indicators in seperate table and add a seperate worksheet for metadata
 Metadata=read.csv("Z:\\buglab\\Research Projects\\AIM\\Analysis\\Indicator_Scoping\\TR 1735-3\\IndicatorMetadataBenchmarkTool.csv")
