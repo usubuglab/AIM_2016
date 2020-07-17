@@ -56,6 +56,7 @@ listsites$IndicatorsCollected_CHECK=listsitesFieldStatus_CHECK=ifelse(listsites$
 # #listsites=listsites[,c(1,12,6,2,3,7,10,13,11,5,9,4,8)]
 # #run list sites and TRCHLEN below to get sinuosity data
 TRCHLEN1=tblRetrieve(Parameters=c('TRCHLEN','INCREMENT'),Projects=projects,Years=years,Protocols=protocols,SiteCodes=sitecodes,Insertion=insertion)#not using TRCHLEN
+TRCHLEN1$RESULT=as.numeric(TRCHLEN1$RESULT)
 
 #Side channel info
 side=tblRetrieve(Parameters=c('SIDCHN','SIDCH_TYPE'),Projects=projects,Years=years,Protocols=protocols,SiteCodes=sitecodes,Insertion=insertion)
@@ -68,6 +69,7 @@ sidecount$SIDCHN_PRES_CHECK=ifelse(sidecount$NumSideChn_CHECK>0,"PRESENT","ABSEN
 ##########################################################################################
 #xcdenmid and xcdenbk - canopy cover
 densiom=tblRetrieve(Parameters='DENSIOM',Projects=projects,Years=years,Protocols=protocols,SiteCodes=sitecodes,Insertion=insertion)
+densiom$RESULT=as.numeric(densiom$RESULT)
 #unique(densiom$RESULT)
 #densiompvt=cast(densiom,'UID+TRANSECT+POINT~PARAMETER',value='RESULT')# check data structure to make sure no duplicates
 #unique(densiom$POINT)
@@ -76,9 +78,12 @@ densiom=tblRetrieve(Parameters='DENSIOM',Projects=projects,Years=years,Protocols
 #RipALL=tblRetrieve(Parameters=c("BARE","CANBTRE","CANSTRE","CANVEG","GCNWDY","GCWDY","UNDERVEG","UNDNWDY","UNDWDY"),Projects=projects,Years=years,Protocols=protocols,SiteCodes=sitecodes,Insertion=insertion)
 #unique(RipALL$RESULT)
 RipXCMG=tblRetrieve(Parameters=c("CANBTRE","CANSTRE","GCNWDY","GCWDY","UNDNWDY","UNDWDY"),Projects=projects,Years=years,Protocols=protocols,SiteCodes=sitecodes,Insertion=insertion)
+RipXCMG$RESULT=as.numeric(RipXCMG$RESULT)
 #unique(RipXCMG$RESULT)
 RipWW=tblRetrieve(Parameters=c("CANBTRE","CANSTRE","GCWDY","UNDWDY"),Projects=projects,Years=years,Protocols=protocols,SiteCodes=sitecodes,Insertion=insertion)
+RipWW$RESULT=as.numeric(RipWW$RESULT)
 RipGB=tblRetrieve(Parameters=c("BARE"),Projects=projects,Years=years,Protocols=protocols,SiteCodes=sitecodes,Insertion=insertion)
+RipGB$RESULT=as.numeric(RipGB$RESULT)
 #RipAllpvt=cast(RipALL,'UID+TRANSECT+POINT~PARAMETER',value='RESULT')# check data structure to make sure no duplicates
 #unique(RipAllpvt$TRANSECT)
 
@@ -98,6 +103,7 @@ RipBLM=tblRetrieve(Parameters=c('CANRIPW','UNRIPW','GCRIP','INVASW', 'NATIVW','I
 ###############################################################################################
 #All WQ data
 WQtbl=tblRetrieve(Parameters=c('CONDUCTIVITY','PH','NTL','PTL','TURBIDITY','TEMPERATURE','EC_PRED','TN_PRED','TP_PRED'),Projects=projects,Years=years,Protocols=protocols,SiteCodes=sitecodes,Insertion=insertion)
+WQtbl$RESULT=as.numeric(WQtbl$RESULT)
 WQpvt=cast(WQtbl,'UID~PARAMETER',value='RESULT')
 #WQfinal=WQpvt
 
@@ -108,19 +114,25 @@ WQpvt=cast(WQtbl,'UID~PARAMETER',value='RESULT')
 ###############################################################################################
 #Pools
 pool_length=tblRetrieve(Parameters=c('LENGTH'),Projects=projects, Years=years,Protocols=protocols,SiteCode=sitecodes,Insertion=insertion)
+pool_length$RESULT=as.numeric(pool_length$RESULT)
 reach_length=tblRetrieve(Parameters=c('POOLRCHLEN'),Projects=projects, Years=years,Protocols=protocols,SiteCode=sitecodes,Insertion=insertion)
+reach_length$RESULT=as.numeric(reach_length$RESULT)
 PoolDepth=tblRetrieve(Parameters=c('PTAILDEP','MAXDEPTH'), Projects=projects, Years=years,Protocols=protocols,SiteCode=sitecodes,Insertion=insertion)
+PoolDepth$RESULT=as.numeric(PoolDepth$RESULT)
 poolcollect=tblRetrieve(Parameters='POOL_COLLECT',Projects=projects, Years=years,Protocols=protocols,SiteCode=sitecodes,Insertion=insertion)
 
 #LWD- should query wadeable and boatable wood because boatable wood stored under wadeable?
 LwdCatWet=unclass(sqlQuery(wrsa1314,"select SAMPLE_TYPE,PARAMETER from tblMetadata where Sample_TYPE like 'LWDW%' and PARAMETER like 'W%'"))$PARAMETER
 LwdCatDry=unclass(sqlQuery(wrsa1314,"select SAMPLE_TYPE,PARAMETER from tblMetadata where Sample_TYPE like 'LWDW%' and PARAMETER like 'D%'"))$PARAMETER
 LwdWet=addKEYS(tblRetrieve(Parameters=LwdCatWet,Projects=projects,Years=years,Protocols=protocols,SiteCodes=sitecodes,Insertion=insertion),c('SITE_ID','DATE_COL'))
+LwdWet$RESULT=as.numeric(LwdWet$RESULT)
 LwdDry=tblRetrieve(Parameters=LwdCatDry,Projects=projects,Years=years,Protocols=protocols,SiteCodes=sitecodes,Insertion=insertion)
+LwdDry$RESULT=as.numeric(LwdDry$RESULT)
 #pvtLwdWet=cast(LwdWet, 'UID~TRANSECT+PARAMETER',value='RESULT')
 #pvtLwdDry=cast(LwdDry,'UID~TRANSECT+PARAMETER',value='RESULT')
 #pvtLwd=merge(pvtLwdWet,pvtLwdDry, by='UID')
 TRCHLEN=tblRetrieve(Parameters=c('TRCHLEN','INCREMENT'),Projects=projects,Years=years,Protocols=protocols,SiteCodes=sitecodes,Insertion=insertion)#not using TRCHLEN
+TRCHLEN$RESULT=as.numeric(TRCHLEN$RESULT)
 TRCHLEN1=cast(TRCHLEN,'UID~PARAMETER',value='RESULT')
 #TRCHLEN is not the same as the reachlen used in Aquamet
 #The reachlen is calc from mulitplying INCREMENT by the thalweg stations
@@ -145,6 +157,7 @@ Sed2014=tblRetrieve(Parameters=c('SIZE_NUM','LOC'),Projects=projects,Years=years
 
 #Pool Tail Fines
 PoolFines=tblRetrieve(Parameters=c('POOLFINES2','POOLFINES6','POOLNOMEAS'),Projects=projects, Years=years,Protocols=protocols,SiteCode=sitecodes,Insertion=insertion)
+PoolFines$RESULT=as.numeric(PoolFines$RESULT)
 
 #Bank Stability
 BankStab=tblRetrieve(Parameters=c('STABLE','EROSION','COVER_FOLIAR','COVER_BASAL','BNK_VEG_FOLIAR','BNK_VEG_BASAL','BNK_COBBLE','BNK_LWD','BNK_BEDROCK'), Projects=projects,Years=years,Protocols=protocols,SiteCodes=sitecodes,Insertion=insertion)
@@ -158,22 +171,26 @@ SideBank=tblRetrieve(Parameters=c('SIDCHN_BNK'),Projects=projects,Years=years,Pr
 
 #LINCIS_H - floodplain connectivity
 Incision=tblRetrieve(Parameters=c('INCISED','BANKHT'),Projects=projects,Years=years,Protocols=protocols,SiteCodes=sitecodes,Insertion=insertion)
+Incision$RESULT=as.numeric(Incision$RESULT)
 #min(Incision$RESULT);max(Incision$RESULT)
 #incisionpvt=cast(Incision,'UID+TRANSECT~PARAMETER',value='RESULT')# check data structure to make sure no duplicates
 
 #XFC_NAT- fish cover
 fish=tblRetrieve(Parameters=c('BOULDR','BRUSH','LVTREE','OVRHNG','UNDCUT','WOODY'),Projects=projects,Years=years,Protocols=protocols,SiteCodes=sitecodes,Insertion=insertion)
+fish$RESULT=as.numeric(fish$RESULT)
 #unique(fish$RESULT)# check data structure
 #fishpvt=cast(fish,'UID+TRANSECT~PARAMETER',value='RESULT')# check data structure to make sure no duplicates
 
 #Angle-PIBO method only
 Angle=tblRetrieve(Parameters=c('ANGLE180'),Projects=projects, Years=years,Protocols=protocols,SiteCodes=sitecodes,Insertion=insertion)
+Angle$RESULT=as.numeric(Angle$RESULT)
 #Anglepvt=cast(Angle,'UID+TRANSECT+POINT~PARAMETER',value='RESULT')
 #unique(Anglepvt$TRANSECT)
 #min(Angle$RESULT);max(Angle$RESULT)
 
 #Thalweg mean , CV, and pct dry
 thalweg=addKEYS(tblRetrieve(Parameters=c('DEPTH'), Projects=projects, Years=years,Protocols=protocols,SiteCodes=sitecodes,Insertion=insertion),c('PROTOCOL'))
+thalweg$RESULT=as.numeric(thalweg$RESULT)
 thalweg=subset(thalweg,SAMPLE_TYPE!='CROSSSECW')
 #thalwegpvt=cast(thalweg,'UID+TRANSECT+POINT~PARAMETER',value='RESULT')
 #unique(thalwegpvt$POINT)
@@ -187,8 +204,11 @@ thalweg=subset(thalweg,SAMPLE_TYPE!='CROSSSECW')
 #########################################################################################################
 #Channel Dimensions
 WetWid=tblRetrieve(Parameters=c('WETWIDTH'),Projects=projects, Years=years,Protocols=protocols,SiteCode=sitecodes,Insertion=insertion)#Wetted widths from thalweg
+WetWid$RESULT=as.numeric(WetWid$RESULT)
 WetWid2=tblRetrieve(Parameters=c('WETWID'),Projects=projects, Years=years,Protocols=protocols,SiteCode=sitecodes,Insertion=insertion)#Wetted widths from main transects
+WetWid2$RESULT=as.numeric(WetWid2$RESULT)
 BankWid=tblRetrieve(Parameters=c('BANKWID'),Projects=projects, Years=years,Protocols=protocols,SiteCode=sitecodes,Insertion=insertion)
+BankWid$RESULT=as.numeric(BankWid$RESULT)
 #WetWidpvt=cast(WetWid,'UID+TRANSECT+POINT~PARAMETER',value='RESULT')
 #WetWid2pvt=cast(WetWid2,'UID+TRANSECT~PARAMETER',value='RESULT')
 #BankWidpvt=cast(BankWid,'UID+TRANSECT~PARAMETER',value='RESULT')
@@ -198,11 +218,12 @@ BankWid=tblRetrieve(Parameters=c('BANKWID'),Projects=projects, Years=years,Proto
 #FloodWidth=tblRetrieve(Parameters=c('FLOOD_WID'), Projects=projects, Years=years,Protocols=protocols,SiteCode=sitecodes,Insertion=insertion)
 #2017 plus
 FloodWidth=tblRetrieve(Parameters=c('FLOOD_WID','FLOOD_BFWIDTH'), Projects=projects, Years=years,Protocols=protocols,SiteCode=sitecodes,Insertion=insertion)
+FloodWidth$RESULT=as.numeric(FloodWidth$RESULT)
 #FloodWidthpvt=cast(FloodWidth,'UID+TRANSECT~PARAMETER',value='RESULT')
 #Slope
 #2017
 Slope=tblRetrieve(Parameters=c('AVGSLOPE','SLPRCHLEN','PCT_GRADE'),Projects=projects,Years=years,Protocols=protocols,SiteCodes=sitecodes,Insertion=insertion)                 
-
+Slope$RESULT=as.numeric(Slope$RESULT)
 # Slope_height=tblRetrieve(Parameters=c('SLOPE'), Projects=projects, Years=c('2013','2014','2015'),Protocols=protocols,SiteCodes=sitecodes,Insertion=insertion)
 # SlpReachLen=tblRetrieve(Parameters=c('SLPRCHLEN'), Projects=projects, Years=c('2013','2014','2015'),Protocols=protocols,SiteCodes=sitecodes,Insertion=insertion)
 # #Slope_heightpvt=cast(Slope_height,'UID+TRANSECT+POINT~PARAMETER',value='RESULT')
@@ -291,6 +312,10 @@ XCMG_new1=merge(nXCMG_new,XCMG_new1, by="UID")
 XCMG_new1$XCMG_CHECK=ifelse(XCMG_new1$nXCMG_CHECK<60,NA,XCMG_new1$XCMG_CHECK)#5 sites 3 WRSA 54-60
 
 
+# #####layer by layer#####
+# RipXCMG$ResultsPer=ifelse(RipXCMG$RESULT == 1, 0.05,ifelse(RipXCMG$RESULT == 2, 0.25,ifelse(RipXCMG$RESULT == 3, 0.575,ifelse(RipXCMG$RESULT == 4, 0.875,ifelse(RipXCMG$RESULT ==0, 0, NA)))))
+# layers=cast(RipXCMG,'UID~PARAMETER', value='ResultsPer',fun='mean')
+
 ######## other EPA veg complexity variations ###########
 # #RipGB
 # RipGB$ResultsPer=ifelse(RipGB$RESULT == 1, 0.05,ifelse(RipGB$RESULT == 2, 0.25,ifelse(RipGB$RESULT == 3, 0.575,ifelse(RipGB$RESULT == 4, 0.875,ifelse(RipGB$RESULT ==0, 0, NA)))))
@@ -315,6 +340,7 @@ XCMG_new1$XCMG_CHECK=ifelse(XCMG_new1$nXCMG_CHECK<60,NA,XCMG_new1$XCMG_CHECK)#5 
 ##BLM riparian cover and frequency##
 #Riparian vegetation cover
 RIP_VEG=subset(RipBLM, PARAMETER == 'CANRIPW'|PARAMETER == 'UNRIPW'|PARAMETER == 'GCRIP')
+RIP_VEG$RESULT=as.numeric(RIP_VEG$RESULT)
 RIP_VEG$ResultsPer=ifelse(RIP_VEG$RESULT == 1, 0.05,ifelse(RIP_VEG$RESULT == 2, 0.25,ifelse(RIP_VEG$RESULT == 3, 0.575,ifelse(RIP_VEG$RESULT == 4, 0.875,ifelse(RIP_VEG$RESULT ==0, 0, NA)))))
 nRIP_VEG=setNames(plyr::count(RIP_VEG,c("UID",'PARAMETER')),c("UID",'PARAMETER',"nRIP_VEG_CHECK"))#
 nRIP_VEG=setNames(cast(nRIP_VEG,"UID~PARAMETER",value="nRIP_VEG_CHECK",fun="sum"),c('UID','nCANRIPW_CHECK','nUNRIPW_CHECK', 'nGCRIP_CHECK'))
@@ -750,59 +776,61 @@ Banks=subset(Banks,Banks$SIDCHN_BNK==Banks$POINT)
 #####################################################################
 ####this section is for all years
 #I want to calculate the percent of banks that are Covered.  
-Banks$CoverValueBasal=as.numeric(ifelse(Banks$COVER_BASAL=='UC',"0",ifelse(Banks$COVER_BASAL=='CV',"1",NA)))
+#Banks$CoverValueBasal=as.numeric(ifelse(Banks$COVER_BASAL=='UC',"0",ifelse(Banks$COVER_BASAL=='CV',"1",NA)))
 Banks$CoverValueFoliar=as.numeric(ifelse(Banks$COVER_FOLIAR=='UC',"0",ifelse(Banks$COVER_FOLIAR=='CV',"1",NA)))
 #I want to calculate the percent of banks that are Stable (Absent) 
 # Unstable==(Fracture, slump, slough, eroding)
 BanksNA=subset(Banks,is.na(EROSION)==TRUE)
 BanksNA$StableValue=NA
 BanksDepositionalFoliar=subset(Banks,EROSION=='DP'&is.na(Banks$CoverValueFoliar)==FALSE)
-BanksDepositionalBasal=subset(Banks,EROSION=='DP'&is.na(Banks$CoverValueFoliar)==TRUE)
+#BanksDepositionalBasal=subset(Banks,EROSION=='DP'&is.na(Banks$CoverValueFoliar)==TRUE)
 BanksErosional=subset(Banks,EROSION=='EL')  
 BanksDepositionalFoliar$StableValue=as.numeric(ifelse(BanksDepositionalFoliar$CoverValueFoliar=='1',"1",
                                            ifelse(BanksDepositionalFoliar$CoverValueFoliar=='0',"0","NA")))
 
-BanksDepositionalBasal$StableValue=as.numeric(ifelse(BanksDepositionalBasal$CoverValueBasal=='1', "1",
-                                                              ifelse(BanksDepositionalBasal$CoverValueBasal=='0',"0","NA")))
+#BanksDepositionalBasal$StableValue=as.numeric(ifelse(BanksDepositionalBasal$CoverValueBasal=='1', "1",
+#                                                              ifelse(BanksDepositionalBasal$CoverValueBasal=='0',"0","NA")))
 BanksErosional$StableValue=as.numeric(ifelse(BanksErosional$STABLE %in% c('SP','ER','LH','FC'),"0",
                                              ifelse(BanksErosional$STABLE=='AB',"1","NA")))
-Banks=rbind(BanksDepositionalBasal,BanksDepositionalFoliar,BanksErosional,BanksNA)
-              
+#Banks=rbind(BanksDepositionalBasal,BanksDepositionalFoliar,BanksErosional,BanksNA)
+Banks=rbind(BanksDepositionalFoliar,BanksErosional,BanksNA)
+
 
 #combined stability and cover
 Banks$BnkCoverFoliar_Stab=as.numeric(ifelse((Banks$CoverValueFoliar+Banks$StableValue)<2,0,1))
-Banks$BnkCoverBasal_Stab=as.numeric(ifelse((Banks$CoverValueBasal+Banks$StableValue)<2,0,1))
+#Banks$BnkCoverBasal_Stab=as.numeric(ifelse((Banks$CoverValueBasal+Banks$StableValue)<2,0,1))
 
 #changed in 2019 to only compute indicators to match MIM which includes all banks (erosional and depositional)
 BanksAll=Banks
-BnkCvrBasalAll=setNames(aggregate(CoverValueBasal~UID,data=BanksAll, FUN=mean), c('UID','BnkCoverBasal_All_CHECK'))
+#BnkCvrBasalAll=setNames(aggregate(CoverValueBasal~UID,data=BanksAll, FUN=mean), c('UID','BnkCoverBasal_All_CHECK'))
 BnkCvrFoliarAll=setNames(aggregate(CoverValueFoliar~UID,data=BanksAll, FUN=mean), c('UID','BnkCoverFoliar_All_CHECK'))
 BnkStbAll=setNames(aggregate(StableValue~UID,data=BanksAll, FUN=mean), c('UID','BnkStability_All_CHECK'))
 BnkCoverFoliar_StabAll=setNames(aggregate(BnkCoverFoliar_Stab~UID,data=BanksAll, FUN=mean), c('UID','BnkCoverFoliar_StabAll_CHECK'))
-BnkCoverBasal_StabAll=setNames(aggregate(BnkCoverBasal_Stab~UID,data=BanksAll, FUN=mean), c('UID','BnkCoverBasal_StabAll_CHECK'))
+#BnkCoverBasal_StabAll=setNames(aggregate(BnkCoverBasal_Stab~UID,data=BanksAll, FUN=mean), c('UID','BnkCoverBasal_StabAll_CHECK'))
 BNK_BEDROCK=setNames(aggregate(as.numeric(BNK_BEDROCK)~UID,data=BanksAll, FUN=mean),c('UID','BNK_BEDROCK_CHECK'))
 BNK_COBBLE=setNames(aggregate(as.numeric(BNK_COBBLE)~UID,data=BanksAll, FUN=mean),c('UID','BNK_COBBLE_CHECK'))
 BNK_LWD=setNames(aggregate(as.numeric(BNK_LWD)~UID,data=BanksAll, FUN=mean),c('UID','BNK_LWD_CHECK'))
-BNK_VEG_BASAL=setNames(aggregate(as.numeric(BNK_VEG_BASAL)~UID,data=BanksAll, FUN=mean),c('UID','BNK_VEG_BASAL_CHECK'))
+#BNK_VEG_BASAL=setNames(aggregate(as.numeric(BNK_VEG_BASAL)~UID,data=BanksAll, FUN=mean),c('UID','BNK_VEG_BASAL_CHECK'))
 BNK_VEG_FOLIAR=setNames(aggregate(as.numeric(BNK_VEG_FOLIAR)~UID,data=BanksAll, FUN=mean),c('UID','BNK_VEG_FOLIAR_CHECK'))
 
 #samplesize
 nBnkCover_StabAll=setNames(aggregate(STABLE~UID,data=BanksAll, FUN=length), c('UID','nBnkCover_StabAll_CHECK'))
 
 #join all Bank Files
-BnkAll=join_all(list(BnkCoverFoliar_StabAll,BnkCoverBasal_StabAll,BnkCvrFoliarAll,BnkCvrBasalAll, BnkStbAll,BNK_BEDROCK,BNK_COBBLE,BNK_LWD,BNK_VEG_BASAL,BNK_VEG_FOLIAR,nBnkCover_StabAll), by="UID",type="full")
+#BnkAll=join_all(list(BnkCoverFoliar_StabAll,BnkCoverBasal_StabAll,BnkCvrFoliarAll,BnkCvrBasalAll, BnkStbAll,BNK_BEDROCK,BNK_COBBLE,BNK_LWD,BNK_VEG_BASAL,BNK_VEG_FOLIAR,nBnkCover_StabAll), by="UID",type="full")
+BnkAll=join_all(list(BnkCoverFoliar_StabAll,BnkCvrFoliarAll, BnkStbAll,BNK_BEDROCK,BNK_COBBLE,BNK_LWD,BNK_VEG_FOLIAR,nBnkCover_StabAll), by="UID",type="full")
 
 #convert to percent
 BnkAll$BnkCoverFoliar_All_CHECK=round(BnkAll$BnkCoverFoliar_All_CHECK*100,digits=0)
-BnkAll$BnkCoverBasal_All_CHECK=round(BnkAll$BnkCoverBasal_All_CHECK*100,digits=0)
+#BnkAll$BnkCoverBasal_All_CHECK=round(BnkAll$BnkCoverBasal_All_CHECK*100,digits=0)
 BnkAll$BnkStability_All_CHECK=round(BnkAll$BnkStability_All_CHECK*100,digits=0)
 BnkAll$BnkCoverFoliar_StabAll_CHECK=round(BnkAll$BnkCoverFoliar_StabAll_CHECK*100,digits=0)
-BnkAll$BnkCoverBasal_StabAll_CHECK=round(BnkAll$BnkCoverBasal_StabAll_CHECK*100,digits=0)
+#BnkAll$BnkCoverBasal_StabAll_CHECK=round(BnkAll$BnkCoverBasal_StabAll_CHECK*100,digits=0)
 BnkAll$BNK_BEDROCK_CHECK=round(BnkAll$BNK_BEDROCK_CHECK,digits=0)
 BnkAll$BNK_COBBLE_CHECK=round(BnkAll$BNK_COBBLE_CHECK,digits=0)
 BnkAll$BNK_LWD_CHECK=round(BnkAll$BNK_LWD_CHECK,digits=0)
 BnkAll$BNK_VEG_FOLIAR_CHECK=round(BnkAll$BNK_VEG_FOLIAR_CHECK,digits=0)
-BnkAll$BNK_VEG_BASAL_CHECK=round(BnkAll$BNK_VEG_BASAL_CHECK,digits=0)
+#BnkAll$BNK_VEG_BASAL_CHECK=round(BnkAll$BNK_VEG_BASAL_CHECK,digits=0)
 
 
 #remove cases with less than 45% of data- boatable 5 transects 2 banks=10
@@ -810,31 +838,31 @@ BnkAll$BNK_VEG_BASAL_CHECK=round(BnkAll$BNK_VEG_BASAL_CHECK,digits=0)
 #changed in 2019 to require 21 for wadeable
 #exclude=subset(BnkAll,nBnkCover_StabAll_CHECK<11)#15 excluded
 BnkAll=addKEYS(BnkAll,c('PROTOCOL'))
-BnkAllBoatable=subset(BnkAll,BnkAll$PROTOCOL %in% c('BOAT2016','BOAT14'))
-BnkAllWadeable=subset(BnkAll,BnkAll$PROTOCOL %in% c('NRSA13','WRSA14','AK14','WADE2016'))
+BnkAllBoatable=subset(BnkAll,BnkAll$PROTOCOL %in% c('BOAT2016','BOAT14','BOAT2020'))
+BnkAllWadeable=subset(BnkAll,BnkAll$PROTOCOL %in% c('NRSA13','WRSA14','AK14','WADE2016','WADE2020'))
 
 BnkAllBoatable$BnkCoverFoliar_StabAll_CHECK=ifelse(BnkAllBoatable$nBnkCover_StabAll_CHECK<10,NA,BnkAllBoatable$BnkCoverFoliar_StabAll_CHECK) 
-BnkAllBoatable$BnkCoverBasal_StabAll_CHECK=ifelse(BnkAllBoatable$nBnkCover_StabAll_CHECK<10,NA,BnkAllBoatable$BnkCoverBasal_StabAll_CHECK) 
+#BnkAllBoatable$BnkCoverBasal_StabAll_CHECK=ifelse(BnkAllBoatable$nBnkCover_StabAll_CHECK<10,NA,BnkAllBoatable$BnkCoverBasal_StabAll_CHECK) 
 BnkAllBoatable$BnkCoverFoliar_All_CHECK=ifelse(BnkAllBoatable$nBnkCover_StabAll_CHECK<10,NA,BnkAllBoatable$BnkCoverFoliar_All_CHECK)  
-BnkAllBoatable$BnkCoverBasal_All_CHECK=ifelse(BnkAllBoatable$nBnkCover_StabAll_CHECK<10,NA,BnkAllBoatable$BnkCoverBasal_All_CHECK)  
+#BnkAllBoatable$BnkCoverBasal_All_CHECK=ifelse(BnkAllBoatable$nBnkCover_StabAll_CHECK<10,NA,BnkAllBoatable$BnkCoverBasal_All_CHECK)  
 BnkAllBoatable$BnkStability_All_CHECK=ifelse(BnkAllBoatable$nBnkCover_StabAll_CHECK<10,NA,BnkAllBoatable$BnkStability_All_CHECK) 
 BnkAllBoatable$BNK_BEDROCK_CHECK=ifelse(BnkAllBoatable$nBnkCover_StabAll_CHECK<10,NA,BnkAllBoatable$BNK_BEDROCK_CHECK)
 BnkAllBoatable$BNK_COBBLE_CHECK=ifelse(BnkAllBoatable$nBnkCover_StabAll_CHECK<10,NA,BnkAllBoatable$BNK_COBBLE_CHECK)
 BnkAllBoatable$BNK_LWD_CHECK=ifelse(BnkAllBoatable$nBnkCover_StabAll_CHECK<10,NA,BnkAllBoatable$BNK_LWD_CHECK)
 BnkAllBoatable$BNK_VEG_FOLIAR_CHECK=ifelse(BnkAllBoatable$nBnkCover_StabAll_CHECK<10,NA,BnkAllBoatable$BNK_VEG_FOLIAR_CHECK)
-BnkAllBoatable$BNK_VEG_BASAL_CHECK=ifelse(BnkAllBoatable$nBnkCover_StabAll_CHECK<10,NA,BnkAllBoatable$BNK_VEG_BASAL_CHECK)
+#BnkAllBoatable$BNK_VEG_BASAL_CHECK=ifelse(BnkAllBoatable$nBnkCover_StabAll_CHECK<10,NA,BnkAllBoatable$BNK_VEG_BASAL_CHECK)
 
 
 BnkAllWadeable$BnkCoverFoliar_StabAll_CHECK=ifelse(BnkAllWadeable$nBnkCover_StabAll_CHECK<18,NA,BnkAllWadeable$BnkCoverFoliar_StabAll_CHECK) 
-BnkAllWadeable$BnkCoverBasal_StabAll_CHECK=ifelse(BnkAllWadeable$nBnkCover_StabAll_CHECK<18,NA,BnkAllWadeable$BnkCoverBasal_StabAll_CHECK)
+#BnkAllWadeable$BnkCoverBasal_StabAll_CHECK=ifelse(BnkAllWadeable$nBnkCover_StabAll_CHECK<18,NA,BnkAllWadeable$BnkCoverBasal_StabAll_CHECK)
 BnkAllWadeable$BnkCoverFoliar_All_CHECK=ifelse(BnkAllWadeable$nBnkCover_StabAll_CHECK<18,NA,BnkAllWadeable$BnkCoverFoliar_All_CHECK)  
-BnkAllWadeable$BnkCoverBasal_All_CHECK=ifelse(BnkAllWadeable$nBnkCover_StabAll_CHECK<18,NA,BnkAllWadeable$BnkCoverBasal_All_CHECK)  
+#BnkAllWadeable$BnkCoverBasal_All_CHECK=ifelse(BnkAllWadeable$nBnkCover_StabAll_CHECK<18,NA,BnkAllWadeable$BnkCoverBasal_All_CHECK)  
 BnkAllWadeable$BnkStability_All_CHECK=ifelse(BnkAllWadeable$nBnkCover_StabAll_CHECK<18,NA,BnkAllWadeable$BnkStability_All_CHECK) 
 BnkAllWadeable$BNK_BEDROCK_CHECK=ifelse(BnkAllWadeable$nBnkCover_StabAll_CHECK<18,NA,BnkAllWadeable$BNK_BEDROCK_CHECK)
 BnkAllWadeable$BNK_COBBLE_CHECK=ifelse(BnkAllWadeable$nBnkCover_StabAll_CHECK<18,NA,BnkAllWadeable$BNK_COBBLE_CHECK)
 BnkAllWadeable$BNK_LWD_CHECK=ifelse(BnkAllWadeable$nBnkCover_StabAll_CHECK<18,NA,BnkAllWadeable$BNK_LWD_CHECK)
 BnkAllWadeable$BNK_VEG_FOLIAR_CHECK=ifelse(BnkAllWadeable$nBnkCover_StabAll_CHECK<18,NA,BnkAllWadeable$BNK_VEG_FOLIAR_CHECK)
-BnkAllWadeable$BNK_VEG_BASAL_CHECK=ifelse(BnkAllWadeable$nBnkCover_StabAll_CHECK<18,NA,BnkAllWadeable$BNK_VEG_BASAL_CHECK)
+#BnkAllWadeable$BNK_VEG_BASAL_CHECK=ifelse(BnkAllWadeable$nBnkCover_StabAll_CHECK<18,NA,BnkAllWadeable$BNK_VEG_BASAL_CHECK)
 
 
 if(exists('BnkAllBoatable')==TRUE) {BnkAll=rbind(BnkAllWadeable,BnkAllBoatable)} else {BnkAll=BnkAllWadeable}
@@ -882,10 +910,12 @@ IncBnk$xbnk_h_CHECK=round(IncBnk$xbnk_h_CHECK,digits=2)
 # thalweg_ratio4=addKEYS(tblRetrieve(Parameters=c('DEPTH'), Projects=projects, Years=c('2017'),Protocols=protocols,SiteCodes=sitecodes,Insertion=insertion),c('PROTOCOL'))
 # thalweg_ratio5=rbind(thalweg_ratio3,thalweg_ratio4)
 thalweg_ratio5=addKEYS(tblRetrieve(Parameters=c('DEPTH'), Projects=projects, Years=years,Protocols=protocols,SiteCodes=sitecodes,Insertion=insertion),c('PROTOCOL'))
+thalweg_ratio5$RESULT=as.numeric(thalweg_ratio5$RESULT)
 depth=subset(thalweg_ratio5,POINT==1)
 depth$RESULT=depth$RESULT/100
 #get bank info
 BnkRatio=tblRetrieve(Parameters=c('INCISED','BANKHT'), Projects=projects, Years=years,Protocols=protocols,SiteCodes=sitecodes,Insertion=insertion)
+BnkRatio$RESULT=as.numeric(BnkRatio$RESULT)
 #side channels don't need removed because thalweg not collected on side channels so side channel data not used anyway
 BnkRatiopvt=cast(BnkRatio,'UID+TRANSECT~PARAMETER',value='RESULT')
 #join thalweg and bank info and calc ratio
@@ -996,7 +1026,9 @@ Thalweg=merge(Thalweg,PctDry, by=c('UID'),all=TRUE)
 
 #omit cases with incomplete thalweg 2016+ data 
 tbl=tblRetrieve(Parameters=c('DEPTH'),Project=projects, Years=years,Protocols=protocols,SiteCodes=sitecodes)
+tbl$RESULT=as.numeric(tbl$RESULT)
 tbl.2=tblRetrieve(Parameters=c('NUM_THALWEG'),Project=projects, Years=years,Protocols=protocols,SiteCodes=sitecodes)
+tbl.2$RESULT=as.numeric(tbl.2$RESULT)
 tbl3=cast(tbl.2,'UID~PARAMETER',value='RESULT',mean)
 tbl.PVT=addKEYS(cast(tbl,'UID~PARAMETER',value='RESULT',length),c('SITE_ID'))# count is default
 thalweg.missing=merge(tbl.PVT,tbl3, by='UID')

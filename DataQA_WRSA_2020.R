@@ -33,6 +33,8 @@ write.csv(listsites,'listsites.csv')
 ######################################################################################
 #export comments table from SQL ----prefer to do this prior to missing data check because might fill in missing data
 #comments=addKEYS(sqlQuery(wrsa1314,sprintf("select * from tblcomments where year(insertion) in (%s) and datepart(wk,insertion) in (%s)",inLOOP(years),inLOOP(insertion))),c('SITE_ID','PROJECT'))#other option, but below is more elegant
+#comments=addKEYS(sqlQuery(wrsa1314,sprintf("select * from tblcomments where year(insertion) in (%s) and datepart(wk,insertion) in (%s)",inLOOP(years),inLOOP(insertion))),c('SITE_ID','PROJECT'))#other option, but below is more elegant
+
 comments=addKEYS(tblRetrieve(Table='tblcomments', Years=years, Projects=projects,Protocols=protocols,SiteCodes=sitecodes,Insertion=insertion),c('SITE_ID','PROJECT','VALXSITE'))
 #comments=subset(comments,PROJECT!='TRAINING'& PROJECT!='TESTORFAKE DATA')
 comments=setNames(comments[,c(13,14,15,1,6,4,2:3,5,7:12)],c('PROJECT','SITE_ID','VALXSITE','UID','COMMENT_TYPE','COMMENT','SAMPLE_TYPE','TRANSECT','POINT','IND','ACTIVE','OPERATION','INSERTION','DEPRECATION','REASON'))
@@ -109,7 +111,7 @@ emptytmp=emptyFulldataset#;empty14Jul14=emptyFulldataset
 
 #!method/checking oddities (not sure if these should be handled in emptyFulldataset or MissingCounts)
 UnionTBL$TRANSECT=ifelse(UnionTBL$SAMPLE_TYPE %in% c('SLOPEW', 'HABITAT','PHOTO') 
-                         & addKEYS(UnionTBL,c('PROTOCOL'))$PROTOCOL %in% c('WRSA14','AK14','WADE2016','BOAT2016'),
+                         & addKEYS(UnionTBL,c('PROTOCOL'))$PROTOCOL %in% c('WRSA14','AK14','WADE2016','BOAT2016','WADE2020','BOAT2020'),
                          NA,UnionTBL$TRANSECT)#instances where only care if have at least one, but it's recorded as multiple so TRANSECT unable to join in MissingCounts if different
 UnionTBL$TRANSECT=ifelse(UnionTBL$PARAMETER %in% c('FLOOD_WID', 'FLOOD_BFWIDTH'),
                          NA,UnionTBL$TRANSECT)
@@ -123,15 +125,15 @@ MissingCounts=sqldf("select *, case when MissingCount is null then Points else P
                     group by Sample_Type, Parameter, [UID], Transect) as ObservedCounts
                     on ExpectedCounts.Sample_Type=ObservedCounts.STO and ExpectedCounts.Parameter=ObservedCounts.PO and ExpectedCounts.TRE=ObservedCounts.TR and ExpectedCounts.UID=ObservedCounts.UIDo
                     where (MissingCount < Points or MissingCount is null) ")
-if(CommentsCount=='Y'){
-  COMt=unique(ColCheck(tblRetrieve(Table='tblCOMMENTS',UIDS=unique(UnionTBL$UID)),c('SAMPLE_TYPE','TRANSECT','UID','FLAG')))##6692-2898
-  FLAGS=unique(subset(UnionTBL,select=c(UID,SAMPLE_TYPE,TRANSECT,FLAG),is.na(FLAG)==FALSE));FLAGS$PRESENT=1#trying to count only comments that don't have a pair = that's why data is missing
-  COMt=merge(COMt,FLAGS,all.x=T);COMt=subset(COMt,is.na(PRESENT))
-  COMt=unique(ColCheck(COMt,c('SAMPLE_TYPE','TRANSECT','UID')))  
-  COMt$TRANSECT=ifelse(COMt$TRANSECT=="ALL","O",COMt$TRANSECT);MissingCounts$TRANSECT=ifelse(is.na(MissingCounts$TRANSECT),"O",MissingCounts$TRANSECT)
-  COMt$COMMENTcnt=1
-  MissingCounts=merge(MissingCounts,COMt,by=c('SAMPLE_TYPE','TRANSECT','UID'),all.x=T)
-} else{MissingCounts$COMMENTcnt=NA}
+# if(CommentsCount=='Y'){
+#   COMt=unique(ColCheck(tblRetrieve(Table='tblCOMMENTS',UIDS=unique(UnionTBL$UID)),c('SAMPLE_TYPE','TRANSECT','UID','FLAG')))##6692-2898
+#   FLAGS=unique(subset(UnionTBL,select=c(UID,SAMPLE_TYPE,TRANSECT,FLAG),is.na(FLAG)==FALSE));FLAGS$PRESENT=1#trying to count only comments that don't have a pair = that's why data is missing
+#   COMt=merge(COMt,FLAGS,all.x=T);COMt=subset(COMt,is.na(PRESENT))
+#   COMt=unique(ColCheck(COMt,c('SAMPLE_TYPE','TRANSECT','UID')))
+#   COMt$TRANSECT=ifelse(COMt$TRANSECT=="ALL","O",COMt$TRANSECT);MissingCounts$TRANSECT=ifelse(is.na(MissingCounts$TRANSECT),"O",MissingCounts$TRANSECT)
+#   COMt$COMMENTcnt=1
+#   MissingCounts=merge(MissingCounts,COMt,by=c('SAMPLE_TYPE','TRANSECT','UID'),all.x=T)
+# } else{MissingCounts$COMMENTcnt=NA}
   
 #count number of parameters with missing data
 MissingTotals=sqldf('select UID,count(*) ParamCNT from MissingCounts group by UID')
@@ -162,24 +164,23 @@ if (MissingXwalk==''){
 
 
 #group by Sample_type + Transect #! likely want a more custom solution with something more akin to QAbins in FM
-MissingTotals2=sqldf(sprintf("select UID,SAMPLE_TYPE,TRE as TRANSECT,MC MissCNT, PT ExpectedCNT, cast(ifnull(round(MC/PT,2) ,0) as float) MissingPCT, CC COMMENTcnt from
+MissingTotals2=sqldf("select UID,SAMPLE_TYPE,TRE as TRANSECT,MC MissCNT, PT ExpectedCNT, cast(ifnull(round(MC/PT,2) ,0) as float) MissingPCT from
                      (select UID, SAMPLE_TYPE,count(*) PTC, cast(sum(Points) as float) PT, case when Transect is null then 'O' else Transect end as TRE
                      from emptyFulldataset group by UID, SAMPLE_TYPE, Transect) as ExpectedCounts
                      outer left join 
-                     (select UID as UIDo, SAMPLE_TYPE STO,case when Transect is null then 'O' else Transect end as TR, count(*) MCC, cast(sum(MissingCNT) as float) MC , sum(COMMENTcnt) as CC
+                     (select UID as UIDo, SAMPLE_TYPE STO,case when Transect is null then 'O' else Transect end as TR, count(*) MCC, cast(sum(MissingCNT) as float) MC
                      from MissingCounts group by UID, SAMPLE_TYPE, Transect) as ObservedCounts
-                     on ExpectedCounts.UID=ObservedCounts.UIDo and ExpectedCounts.Sample_Type=ObservedCounts.STO  and ExpectedCounts.TRE=ObservedCounts.TR 
-                     %s",ifelse(CommentsCount=='Y','where COMMENTcnt is null','')))
+                     on ExpectedCounts.UID=ObservedCounts.UIDo and ExpectedCounts.Sample_Type=ObservedCounts.STO  and ExpectedCounts.TRE=ObservedCounts.TR")
 
 
 #group by Sample_type only to get reach totals
-MissingTotals3=sqldf("select UID,SAMPLE_TYPE, 'ReachTotal' TRANSECT,sum(MissCNT) MissCNT, sum(ExpectedCNT) ExpectedCNT ,  cast(ifnull(round((cast(sum(MissCNT) as float)/cast(sum(ExpectedCNT) as float) ),2),0) as float) MissingPCT, sum(COMMENTcnt) as COMMENTcnt from MissingTotals2 group by UID, SAMPLE_TYPE")
+MissingTotals3=sqldf("select UID,SAMPLE_TYPE, 'ReachTotal' TRANSECT,sum(MissCNT) MissCNT, sum(ExpectedCNT) ExpectedCNT ,  cast(ifnull(round((cast(sum(MissCNT) as float)/cast(sum(ExpectedCNT) as float) ),2),0) as float) MissingPCT from MissingTotals2 group by UID, SAMPLE_TYPE")
 
 #main ouput (until param and comments fleshed out more)
 if (MissingXwalk==''){
   MissingTotals5=sqldf("select UID, 'REACH' SAMPLE_TYPE,  'O' TRANSECT, ParamCNT,MissCNT,  ExpectedCNT, MissingPCT ,COMMENTcnt from MissingTotals 
                      join 
-                     (select UID as UIDm,  sum(MissCNT) MissCNT, sum(ExpectedCNT) ExpectedCNT,sum(MissCNT) /sum(ExpectedCNT)  MissingPCT , sum(COMMENTcnt) as COMMENTcnt from MissingTotals2 group by UID) as Totals
+                     (select UID as UIDm,  sum(MissCNT) MissCNT, sum(ExpectedCNT) ExpectedCNT,sum(MissCNT) /sum(ExpectedCNT)  MissingPCT from MissingTotals2 group by UID) as Totals
                      on MissingTotals.UID=Totals.UIDm
                      ")
   MissingTotals6=MissingTotals5[,!(names(MissingTotals5) %in% c('ParamCNT'))];MissingTotals7=MissingTotals5;MissingTotals7$MissingPCT=MissingTotals7$ParamCNT;MissingTotals7$SAMPLE_TYPE='Param';MissingTotals7=MissingTotals7[,!(names(MissingTotals7) %in% c('ParamCNT'))]
@@ -192,9 +193,11 @@ MissingTotalsOUT= addKEYS(cast(subset(MissingTotals4,is.na(UID)==FALSE ), 'UID +
 MissingTotalsREACH=subset(MissingTotalsOUT,TRANSECT=='ReachTotal')
 names=gsub("^INDICATOR:","",colnames(MissingTotalsREACH))
 MissingTotalsREACH=setNames(MissingTotalsREACH,names)
-columns=c('PROJECT',	'PROTOCOL',	'SITE_ID',	'LOC_NAME','VALXSITE',	'UID',	'DATE_COL',	'CREW_LEADER','REACH INFO',	'MACROINVERT',	'CONDUCTIVITY',	'PH',	'TEMPERATURE','VEG',	'CANOPY COVER',	'BANKFULL HEIGHT',	'BANKFULL WIDTH',	'WETTED WIDTH',	'BENCH HEIGHT',	'FLOODPRONE WIDTH',	'BANK STABILITY',	'STREAMBED PARTICLES',	'HUMAN INFLUENCE',	'LARGE WOOD',	'SLOPE',	'POOL',	'PHOTO',	'TNTP',	'TURBIDITY','THALWEG DEPTH PROFILE',	'BANK ANGLE','POOL TAIL FINES','VEGCOMPLEX','FISH COVER'	) %>%
-    map_dfr( ~tibble(!!.x :=logical()))
-MissingTotalsREACH=bind_rows(columns,MissingTotalsREACH)
+MissingTotalsREACH=MissingTotalsREACH[,!names(MissingTotalsREACH) %in% c('QC:BANK ANGLE','QC:CHANNEL WIDTH','QC:CROSSSEC',	'QC:FINAL QA','QC:INSTRUMENT',	'QC:MACROINVERT',	'QC:PARTIAL REACH','QC:REACH',	'QC:SIDE CHANNEL','QC:SLOPE','QC:SUBSTRATE',	'QC:THALWEG',	'QC:TNTP','TRANSECT','COVARIATE:ASSESSMENT OTHER',	'COVARIATE:CONSTRAINT',	'COVARIATE:INTWADE','COVARIATE:LWD ABOVE','COVARIATE:POOL',	'COVARIATE:REACH','COVARIATE:THALWEG')]
+#columns=read.csv("Z:/buglab/Research Projects/AIM/Analysis/QC/MissingDataGeneral_input.csv")
+# columns=c('PROJECT',	'PROTOCOL',	'SITE_ID',	'LOC_NAME','VALXSITE',	'UID',	'DATE_COL',	'CREW_LEADER','REACH INFO',	'MACROINVERT',	'CONDUCTIVITY',	'PH',	'TEMPERATURE','VEG',	'CANOPY COVER',	'BANKFULL HEIGHT',	'BANKFULL WIDTH',	'WETTED WIDTH',	'BENCH HEIGHT',	'FLOODPRONE WIDTH',	'BANK STABILITY',	'STREAMBED PARTICLES',	'HUMAN INFLUENCE',	'LARGE WOOD',	'SLOPE',	'POOL',	'PHOTO',	'TNTP',	'TURBIDITY','THALWEG DEPTH PROFILE',	'BANK ANGLE','POOL TAIL FINES','VEGCOMPLEX','FISH COVER'	) %>%
+#     map_dfr( ~tibble(!!.x :=))
+#MissingTotalsREACH=bind_rows(columns,MissingTotalsREACH)
 #Indicators=c('PROJECT',	'PROTOCOL',	'SITE_ID',	'VALXSITE',	'UID',	'DATE_COL',	'REACH',	'MACROINVERT',	'CONDUCTIVITY',	'PH',	'TEMPERATURE',	'BLM RIPARIAN',	'RIPARIAN COVER',	'CANOPY',	'BANK HEIGHT',	'BANK WIDTH',	'WET WIDTH',	'INCISION HEIGHT',	'FLOODPRONE WIDTH',	'STABILITY',	'SUBSTRATE',	'HUMAN INFLUENCE',	'LWD IN',	'SLOPE',	'POOL',	'PHOTO',	'CHEMISTRY',	'DEPTH',	'FISH COVER',	'ANGLE',	'TURBIDITY')
 #MissingTotalsREACH=MissingTotalsREACH[,c(Indicators)]
 #grep("^COVARIATE",colnames(MissingTotalsREACH),grep("^QC",colnames(MissingTotalsREACH)
@@ -203,15 +206,15 @@ MissingTotalsREACH=MissingTotalsREACH[,c('PROJECT',	'PROTOCOL',	'SITE_ID',	'LOC_
 MissingTotalsREACH$AvgMissingData=rowMeans(MissingTotalsREACH[,c(13:18,20:23)],na.rm='TRUE')
 MissingTotalsREACHdf=as.data.frame(MissingTotalsREACH)
 MissingTotalsREACH2=reshape2::melt(MissingTotalsREACHdf,id.vars=c('PROJECT',	'PROTOCOL',	'SITE_ID',	'LOC_NAME','VALXSITE',	'UID',	'DATE_COL',	'CREW_LEADER'))
-MissingTotalsREACH2sub=subset(MissingTotalsREACH2,(value>0.45&variable!='AvgMissingData')|(variable=='AvgMissingData' & (VALXSITE!='PARBYWADE'&VALXSITE!='INTPARBYWADE') &value>0.05))
+MissingTotalsREACH2$value=as.numeric(MissingTotalsREACH2$value)
+MissingTotalsREACH2sub=subset(MissingTotalsREACH2,(value>0.55&variable!='AvgMissingData')|(variable=='AvgMissingData' & (VALXSITE!='PARBYWADE'&VALXSITE!='INTPARBYWADE') &value>0.05))
 MissingTotalsREACH2sub$value=MissingTotalsREACH2sub$value*100
-MissingTotalsREACH2sub$ERROR=ifelse(MissingTotalsREACH2sub$variable=='AvgMissingData'|(MissingTotalsREACH2sub$variable=='FLOODPRONE WIDTH'& MissingTotalsREACH2sub$VALXSITE!='PARBYWADE'),"More than 5% of data missing on average across transect data or two floodprone widths were not collected. Sample status may need to be changed to partially sampled. Please confirm what the correct sample status is and ensure crew understands special situation protocols","Indicator supposed to have been collected and more than 45% of data missing. Please verify that all data was properly entered into the app. If additional data is found, consult the NOC on next steps. If additional data is not found, the indicator associated with this data will likely not be computed.")
+MissingTotalsREACH2sub$ERROR=ifelse(MissingTotalsREACH2sub$variable=='AvgMissingData'|(MissingTotalsREACH2sub$variable=='FLOODPRONE WIDTH'& MissingTotalsREACH2sub$VALXSITE!='PARBYWADE'),"More than 5% of data missing on average across transect data or two floodprone widths were not collected. Sample status may need to be changed to partially sampled. Please confirm what the correct sample status is and ensure crew understands special situation protocols","Indicator supposed to have been collected and more than 55% of data missing. Please verify that all data was properly entered into the app. If additional data is found, consult the NOC on next steps. If additional data is not found, the indicator associated with this data will likely not be computed.")
 MissingTotalsREACH2sub$DataType=ifelse(MissingTotalsREACH2sub$variable=='AvgMissingData',"Sample Status- Partial Reach","Missing data")
 contingentindicators=read.csv("Z:/buglab/Research Projects/AIM/Analysis/QC/2020/contingent_indicators.csv")
 MissingTotalsREACH2sub=join(MissingTotalsREACH2sub,contingentindicators, by=c('PROJECT','variable'))
 MissingTotalsREACH2sub=subset(MissingTotalsREACH2sub,Collect!='No'|is.na(Collect)==TRUE)
 MissingTotalsREACH2sub=setNames(MissingTotalsREACH2sub[,c('PROJECT','CREW_LEADER','SITE_ID','DATE_COL','LOC_NAME','VALXSITE','DataType','variable','value','ERROR','PROTOCOL','UID')],c('PROJECT','CREW_LEADER','SITE_ID','DATE_COL','LOC_NAME','VALXSITE','DataType','IndicatorMethodOrField','ValueOrPercentDataMissing','ERROR','PROTOCOL','UID'))
-
 #write.xlsx(MissingTotalsREACH,"MissingDataGeneral.xlsx")
 #write.xlsx(MissingTotalsREACH2sub,"MissingDataErrors.xlsx")
 #MissingTotalsTRAN=subset(MissingTotalsOUT,TRANSECT!='ReachTotal');write.csv(MissingTotalsTRAN,"MissingDataQCttran_nocom.csv")
@@ -420,7 +423,7 @@ WQCTemp$ERROR='Crew recorded that conductivity was not temperature corrected; Pl
 #                       
 #view any typical values violations for Conductivity and PH
 Conduct=addKEYS(tblRetrieve(Comments='Y',Parameters=c('CONDUCTIVITY'),Projects=projects,Years=years,Protocols=protocols,SiteCodes=sitecodes,Insertion=insertion),c('PROJECT','SITE_ID','CREW_LEADER','LOC_NAME','DATE_COL','VALXSITE'))
-ConductQuestions=subset(Conduct,RESULT<30 | RESULT>1000)# review comments for any sites flagged here 
+ConductQuestions=subset(Conduct,as.numeric(RESULT)<30 | as.numeric(RESULT)>1000)# review comments for any sites flagged here 
 #postseasonmetadata_ecoregion=postseasonmetadata[,c('UID','ECO_10')]
 #ConductQuestions=join(ConductQuestions,postseasonmetadata_ecoregion, by="UID",type="left")
 ConductQuestions=ConductQuestions[order(ConductQuestions$RESULT),]
@@ -428,7 +431,7 @@ ConductQuestions$ERROR='Value is outside the typical value range of 30-1000 uS/c
 #if(nrow(ConductQuestions)>0){write.csv(ConductQuestions,'ConductQuestions.csv')}
 
 PH=addKEYS(tblRetrieve(Comments='Y',Parameters=c('PH'),Projects=projects,Years=years,Protocols=protocols,SiteCodes=sitecodes,Insertion=insertion),c('PROJECT','SITE_ID','CREW_LEADER','LOC_NAME','DATE_COL','VALXSITE'))
-PHQuestions=subset(PH,RESULT<6 | RESULT>9)# review comments for any sites flagged here
+PHQuestions=subset(PH,as.numeric(RESULT)<6 | as.numeric(RESULT)>9)# review comments for any sites flagged here
 #PHQuestions=join(PHQuestions,postseasonmetadata_ecoregion, by="UID",type="left")
 PHQuestions=PHQuestions[order(PHQuestions$RESULT),]
 PHQuestions$ERROR='Value is outside typical range of 6-9. Did crew recalibrate and verify value? If not project lead should determine if value should be trusted or omitted.'
@@ -436,13 +439,13 @@ PHQuestions$ERROR='Value is outside typical range of 6-9. Did crew recalibrate a
 
 
 Temperature=addKEYS(tblRetrieve(Comments='Y',Parameters=c('TEMPERATURE'),Projects=projects,Years=years,Protocols=protocols,SiteCodes=sitecodes,Insertion=insertion),c('PROJECT','SITE_ID','CREW_LEADER','LOC_NAME','DATE_COL','VALXSITE'))
-TemperatureQuestions=subset(Temperature,RESULT<2|RESULT>23)
+TemperatureQuestions=subset(Temperature,as.numeric(RESULT)<2|as.numeric(RESULT)>23)
 TemperatureQuestions=TemperatureQuestions[order(TemperatureQuestions$RESULT),]
 TemperatureQuestions$ERROR='Value is outside typical range of 2-23. Please confirm if value should be trusted or omitted.'
 
 
 Turb=addKEYS(tblRetrieve(Parameters=c('TURBIDITY'), Comments='Y', Years=years, Projects=projects,Protocols=protocols,SiteCodes=sitecodes,Insertion=insertion),c('PROJECT','SITE_ID','CREW_LEADER','LOC_NAME','DATE_COL','VALXSITE'))
-TurbQuestions=subset(Turb,RESULT>60)
+TurbQuestions=subset(Turb,as.numeric(RESULT)>60)
 TurbQuestions$ERROR='Value is atypical. Please confirm if value should be trusted or omitted. Check that the crew calibrated the meter AND cleaned the vial properly.'
 
 
@@ -476,6 +479,7 @@ WQ=setNames(WQ[,c('PROJECT','CREW_LEADER','SITE_ID','DATE_COL','LOC_NAME','VALXS
 ####### incision and bank height ############
 #cross checks implemented in app so just check extreme values, outliers (above), and for unit issues
 heights=addKEYS(tblRetrieve(Parameters=c('INCISED','BANKHT','BANKWID','WETWID'),Years=years, Projects=projects,Protocols=protocols,SiteCodes=sitecodes,Insertion=insertion),c('SITE_ID','CREW_LEADER','PROJECT','LOC_NAME','PROTOCOL','VALXSITE','DATE_COL'))
+heights$RESULT=as.numeric(heights$RESULT)
 heights$decimals=nchar(strsplit(as.character(heights$RESULT), "\\.")[[1]][2])
 
 decimalplaces <- function(x) {
@@ -489,6 +493,7 @@ heightssub=subset(heights,decimals>2)
 heightssub$ERROR='Heights should be collected in cm and widths should be collected in meters. For data storage purposes, heights and widths displayed here are both in meters and should only have 2 decimal places. Let the NOC know if the value displayed here was recorded in the wrong units or needs rounded to the nearest 0.01 meters.'
 
 thalweg=addKEYS(tblRetrieve(Parameters=c('DEPTH'),Years=years, Projects=projects,Protocols=protocols,SiteCodes=sitecodes,Insertion=insertion),c('SITE_ID','CREW_LEADER','PROJECT','LOC_NAME','PROTOCOL','VALXSITE','DATE_COL'))
+thalweg$RESULT=as.numeric(thalweg$RESULT)
 thalweg$decimals=decimalplaces(thalweg$RESULT)
 thalwegsub=subset(thalweg,decimals>0)
 thalwegsub$ERROR='Thalweg should be measured in cm without decimals. Ensure this is not a units issue and ensure the crew knows to round to the nearest cm when measuring heights and depths. Let the NOC know if data needs converted to different units or simply rounded.'
@@ -496,6 +501,7 @@ thalwegsub$ERROR='Thalweg should be measured in cm without decimals. Ensure this
 
 
 slopedecimals=addKEYS(tblRetrieve(Parameters=c('STARTHEIGHT','ENDHEIGHT'),Years=years, Projects=projects,Protocols=protocols,SiteCodes=sitecodes,Insertion=insertion),c('SITE_ID','CREW_LEADER','PROJECT','LOC_NAME','PROTOCOL','VALXSITE','DATE_COL'))
+slopedecimals$RESULT=as.numeric(slopedecimals$RESULT)
 slopedecimals$decimals=decimalplaces(slopedecimals$RESULT)
 slopedecimalssub=subset(slopedecimals,decimals>0)
 slopedecimalssub$ERROR='Slope should be recorded in cm without decimals. Values were either recorded to the wrong precision or wrong units. NOC will correct values but please verify crew the crew has proper equipment or the crew knows how to use the equipment properly and follows the protocol recording slope in cm.'
@@ -511,8 +517,9 @@ decimals2=setNames(decimals2[,c('PROJECT','CREW_LEADER','SITE_ID','DATE_COL','LO
 
 LwdCat=unclass(sqlQuery(wrsa1314,"select SAMPLE_TYPE,PARAMETER from tblMetadata where Sample_TYPE like 'LWDW%'"))$PARAMETER
 Lwd=tblRetrieve(Parameters=LwdCat,Projects=projects,Years=years,Protocols=protocols,SiteCodes=sitecodes,Insertion=insertion)
-Lwdpvt=setNames(addKEYS(cast(Lwd,'UID~ACTIVE',value='RESULT',fun=sum),c('SITE_ID','DATE_COL','LOC_NAME','CREW_LEADER','PROJECT','PROTOCOL','VALXSITE')),c('UID','ValueOrPercentDataMissing','SITE_ID','DATE_COL','LOC_NAME','CREW_LEADER','PROJECT','PROTOCOL','VALXSITE'))
-Lwdpvtsub=subset(Lwdpvt,ValueOrPercentDataMissing>20)
+Lwd$RESULT=as.numeric(Lwd$RESULT)
+Lwdpvt=setNames(addKEYS(cast(Lwd,'UID~ACTIVE',value='RESULT',fun=sum),c('PROJECT','CREW_LEADER','SITE_ID','DATE_COL','LOC_NAME','PROTOCOL','VALXSITE')),c('UID','ValueOrPercentDataMissing','CREW_LEADER','DATE_COL','LOC_NAME','PROJECT','PROTOCOL','SITE_ID','VALXSITE'))
+Lwdpvtsub=subset(Lwdpvt,ValueOrPercentDataMissing>33)
 Lwdpvtsub$ERROR='Value is abnormally high. Please verify this was not a typo.'
 Lwdpvtsub$DataType='Units, Precision, or Typo'
 Lwdpvtsub$IndicatorMethodOrField='Total number of pieces of wood'
@@ -557,11 +564,11 @@ DryTran=subset(DryTran,RESULT=='Y' & !(TRANSECT %in% c('XA','XB','XC','XD','XE',
 DryTranSites=data.frame("DryTranSites"=unique(DryTran$UID))
 
 WetWid=tblRetrieve(Parameters=c('WETWID'),Years=years, Projects=projects,SiteCodes=sitecodes,Insertion=insertion)
-WetWid=subset(WetWid,RESULT==0 & !(TRANSECT %in% c('XA','XB','XC','XD','XE','XF','XG','XH','XI','XJ','XK')))
+WetWid=subset(WetWid,RESULT=='0' & !(TRANSECT %in% c('XA','XB','XC','XD','XE','XF','XG','XH','XI','XJ','XK')))
 WetWid0Sites=data.frame("WetWidSites"=unique(WetWid$UID))
 
 DryThalweg=tblRetrieve(Parameters=c('DEPTH'),Years=years, Projects=projects,Protocols=protocols,SiteCodes=sitecodes,Insertion=insertion)
-DryThalweg=subset(DryThalweg,RESULT==0)
+DryThalweg=subset(DryThalweg,RESULT=='0')
 DryThalwegSites=data.frame("DryThalweg"=unique(DryThalweg$UID))
 #write.xlsx(InterruptSites,'InterruptedFlowChecks.xlsx')
 #write.xlsx(DryTranSites,'InterruptedFlowChecks.xlsx',append=TRUE)
@@ -580,7 +587,7 @@ saveWorkbook(wb, "InterruptedFlowChecks.xlsx",overwrite=TRUE) #check this file w
 #######   width  and depth dry checks #########
 #cross check for protocol issues related to dry sites                       
 Depths=tblRetrieve(Parameters=c('DEPTH'),Years=years, Projects=projects,Protocols=protocols,SiteCodes=sitecodes,Insertion=insertion)
-Depths=subset(Depths,RESULT==0 & POINT==1)
+Depths=subset(Depths,RESULT=='0' & POINT=='1')
 query=NA
 for (row in 1:nrow(Depths))
 { UID=Depths[row,"UID"]
@@ -592,7 +599,7 @@ else query[row]={print(paste("(UID='",UID,"' and TRANSECT='",TRANSECT,"')",sep="
 query2=print(paste(query,collapse=""))  
 width0=sqlQuery(wrsa1314,sprintf(paste("select * from tbltransect where parameter in('wetwid','trandry') and (%s)"), query2)) 
 width0pvt=cast(width0,"UID+TRANSECT~PARAMETER",value='RESULT')
-widthpvt0=subset(width0pvt,(WETWID!=0) |(TRANDRY=='N')|is.na(TRANDRY)=='TRUE')
+widthpvt0=subset(width0pvt,(WETWID!='0') |(TRANDRY=='N')|is.na(TRANDRY)=='TRUE')
 depthwidthpvt0=merge(widthpvt0,Depths, by=c('UID','TRANSECT'))
 if(nrow(depthwidthpvt0)>0){write.csv(depthwidthpvt0,'widths_should_be_0_based_on_depths.csv')} #any exported results should be checked with comments and other lines of evidence to see if the transect was dry or not  
 
@@ -600,7 +607,7 @@ if(nrow(depthwidthpvt0)>0){write.csv(depthwidthpvt0,'widths_should_be_0_based_on
 #do the opposite query
 Widths=tblRetrieve(Parameters=c('WETWID','BANKWID','TRANDRY'),Years=years, Projects=projects,Protocols=protocols,SiteCodes=sitecodes,Insertion=insertion)                      
 pvtWidths=cast(Widths,'UID+TRANSECT~PARAMETER',value='RESULT')
-Widths=subset(Widths,RESULT==0 & !(TRANSECT %in% c('XA','XB','XC','XD','XE','XF','XG','XH','XI','XJ','XK')))                     
+Widths=subset(Widths,RESULT=='0' & !(TRANSECT %in% c('XA','XB','XC','XD','XE','XF','XG','XH','XI','XJ','XK')))                     
 query=NA
 for (row in 1:nrow(Widths))
 { UID=Widths[row,"UID"]
@@ -611,12 +618,12 @@ else query[row]={print(paste("(UID='",UID,"' and TRANSECT='",TRANSECT,"')",sep="
 }
 query2=print(paste(query,collapse=""))  
 depth0=sqlQuery(wrsa1314,sprintf(paste("select * from tblpoint where parameter='Depth' and point='1' and (%s)"), query2)) 
-depth0=subset(depth0,RESULT!=0)
+depth0=subset(depth0,RESULT!='0')
 widthdepth0=merge(depth0,pvtWidths, by=c('UID','TRANSECT'))
 if(nrow(widthdepth0)>0){write.csv(widthdepth0,'depths_should_be_0_based_on_widths.csv')} #any exported results should be checked with comments and other lines of evidence to see if the transect was dry or not  
 
 #dry transects
-DryCheck=subset(pvtWidths,(WETWID!=0 & TRANDRY=='Y')|(WETWID==0 & TRANDRY=='N')|(WETWID==0 & is.na(TRANDRY)=='TRUE'))#likely needs tweaking                      
+DryCheck=subset(pvtWidths,(WETWID!='0' & TRANDRY=='Y')|(WETWID=='0' & TRANDRY=='N')|(WETWID=='0' & is.na(TRANDRY)=='TRUE'))#likely needs tweaking                      
 DryCheck=subset(DryCheck,!(TRANSECT %in% c('XA','XB','XC','XD','XE','XF','XG','XH','XI','XJ','XK')))
 if(nrow(DryCheck)>0){write.csv(DryCheck,'DryCheck.csv')}# any exported results should be checked with comments and other lines of evidence to see if the transect was dry or not  
 
@@ -624,15 +631,18 @@ if(nrow(DryCheck)>0){write.csv(DryCheck,'DryCheck.csv')}# any exported results s
 
 #####  floodprone width #######
 FloodWidth=tblRetrieve(Parameters=c('FLOOD_WID','FLOOD_BFWIDTH','FLOOD_HEIGHT','FLOOD_BFHEIGHT'), Projects=projects, Years=years,Protocols=protocols,SiteCode=sitecodes,Insertion=insertion)
+FloodWidth$RESULT=as.numeric(FloodWidth$RESULT)
 FloodWidthpvt=addKEYS(cast(FloodWidth,'UID+TRANSECT~PARAMETER',value='RESULT'),c('PROJECT','SITE_ID','CREW_LEADER','LOC_NAME','VALXSITE','DATE_COL'))
 FloodWidthpvtsub=subset(FloodWidthpvt,FLOOD_WID<FLOOD_BFWIDTH)
 if(nrow(FloodWidthpvtsub)>0) {write.csv(FloodWidthpvtsub,'FloodWidthLessBankfull.csv')}
                       
 # ######   bank stability and cover ######
-# #gut check values coming out of the app quickly, for real indicator values go to indicator script
-# Bank=tblRetrieve(Parameters=c('Z_PCTEROSIONALBANKS_COVERED', 'Z_PCTEROSIONALBANKS_STABLE','Z_PCTEROSIONALBANKS_TOTAL'),Years=years, Projects=projects,Protocols=protocols,SiteCodes=sitecodes,Insertion=insertion)
-# Bankpvt=addKEYS(cast(Bank,'UID~PARAMETER',value='RESULT'),c('PROJECT','SITE_ID','DATE_COL','VALXSITE','CREW_LEADER'))
-# write.csv(Bankpvt,'Bankpvt.csv')
+#gut check values coming out of the app quickly, for real indicator values go to indicator script
+Bank=tblRetrieve(Parameters=c('Z_NUMDEPOSITIONALBANKS','Z_NUMEROSIONALBANKS','Z_PCTBANKS_COVERED','Z_PCTBANKS_STABLE'),Years=years, Projects=projects,Protocols=protocols,SiteCodes=sitecodes,Insertion=insertion)
+Bank$RESULT=as.numeric(Bank$RESULT)
+Bankpvt=addKEYS(cast(Bank,'UID~PARAMETER',value='RESULT'),c('PROJECT','SITE_ID','DATE_COL','VALXSITE','CREW_LEADER'))
+Bankpvt$PCT_EROSIONALBANKS=(Bankpvt$Z_NUMEROSIONALBANKS/(Bankpvt$Z_NUMDEPOSITIONALBANKS+Bankpvt$Z_NUMEROSIONALBANKS))*100
+write.csv(Bankpvt,'Bankpvt.csv')
 
 # ####### substrate #######
 # #get sediment data
@@ -775,6 +785,7 @@ if(nrow(FloodWidthpvtsub)>0) {write.csv(FloodWidthpvtsub,'FloodWidthLessBankfull
 #Custom thalweg missing data because number of station is dynamic
 tbl=tblRetrieve(Parameters=c('DEPTH'),Project=projects, Years=years,Protocols=protocols,SiteCodes=sitecodes,Insertion=insertion)
 tbl.2=tblRetrieve(Parameters=c('NUM_THALWEG'),Project=projects, Years=years,Protocols=protocols,SiteCodes=sitecodes,Insertion=insertion)
+tbl.2$RESULT=as.numeric(tbl.2$RESULT)
 tbl3=cast(tbl.2,'UID~PARAMETER',value='RESULT',mean)
 tbl.PVT=addKEYS(cast(tbl,'UID~PARAMETER',value='RESULT',length),c('SITE_ID','CREW_LEADER','PROJECT'))# count is default
 thalweg.missing=merge(tbl.PVT,tbl3, by='UID')
@@ -867,10 +878,12 @@ pvtSlope=addKEYS(cast(Slope,'UID~PARAMETER',value='RESULT'), c('SITE_ID','CREW_L
 SlopeCheck_typicalvalues=subset(pvtSlope,as.numeric(PCT_GRADE)>14|as.numeric(PCT_GRADE)<1)
 SlopeCheck_partialno=subset(pvtSlope,SLOPE_COLLECT=='PARTIAL'|SLOPE_COLLECT=='NO SLOPE')
 Pass=tblRetrieve(Parameters=c('ENDTRAN'),Projects=projects, Years=years,Protocols=protocols,SiteCodes=sitecodes,Insertion=insertion)                 
+Pass$RESULT=as.numeric(Pass$RESULT)
 SlopeCheck_more2passes=subset(Pass,TRANSECT>2)# if more than 2 passes need to manually check which ones to average
 #NOT10PER=subset(pvtSlope,Z_SLOPEPASSQA=='N') #not particularly helpful because gets flagged as "N" if they do more than 2 passes and doesn't get flagged back as "Y" if 2 of those are within 10%
 # for any sites that failed one of the above checks, see individual passes below
 IndividualSlope=tblRetrieve(Parameters=c('SLOPE','STARTHEIGHT','ENDHEIGHT'),Projects=projects, Years=years,Protocols=protocols,SiteCodes=sitecodes,Insertion=insertion)
+IndividualSlope$RESULT=as.numeric(IndividualSlope$RESULT)
 pvtIndividualSlopeSum=addKEYS(cast(IndividualSlope,'UID+TRANSECT~PARAMETER',value='RESULT', fun=sum),c('SITE_ID','CREW_LEADER','PROJECT','DATE_COL','VALXSITE'))#note Transect=Pass
 pvtIndividualSlopeSum=pvtIndividualSlopeSum[,c(1:3,5,4,6,7)]
 pvtIndividualSlopeRaw=addKEYS(cast(IndividualSlope,'UID+TRANSECT+POINT~PARAMETER',value='RESULT'),c('SITE_ID','CREW_LEADER','PROJECT','DATE_COL','VALXSITE'))#note Transect=Pass
@@ -904,6 +917,7 @@ pool_length<-tblRetrieve(Parameters=c('LENGTH'),Projects=projects,Years=years,Pr
 pool_length$RESULT=as.numeric(pool_length$RESULT)
 pvtpools1=cast(pool_length,'UID~PARAMETER',value='RESULT',fun=sum) 
 reach_length=tblRetrieve(Parameters=c('POOLRCHLEN'),Projects=projects,Years=years,Protocols=protocols,SiteCodes=sitecodes,Insertion=insertion)
+reach_length$RESULT=as.numeric(reach_length$RESULT)
 pvtpools2=cast(reach_length,'UID~PARAMETER',value='RESULT') 
 poolsmerge<-merge(pvtpools1,pvtpools2,by=c('UID'),all=T)
 pool_great_100<-subset(poolsmerge,LENGTH>POOLRCHLEN)
@@ -913,6 +927,7 @@ if(nrow(pool_great_100)>0){write.csv(pool_great_100,'pool_great_100.csv')}#expor
 PoolFines=tblRetrieve(Parameters=c('POOLFINES2','POOLFINES6','POOLNOMEAS','POOLFINES6_512'),Projects=projects, Years=years,Protocols=protocols,SiteCode=sitecodes,Insertion=insertion)
 if(nrow(PoolFines)>0){
 pvtPoolFines=addKEYS(cast(PoolFines,'UID+TRANSECT+POINT~PARAMETER',value='RESULT'),c('SITE_ID','PROJECT','CREW_LEADER','DATE_COL','VALXSITE'))#need to pivot to create the pctPoolFInes variable
+pvtPoolFines$RESULT=as.numeric(pvtPoolFines$RESULT)
 pvtPoolFines$PctPoolFines2_CHECK=pvtPoolFines$POOLFINES2/(50-pvtPoolFines$POOLNOMEAS)*100
 pvtPoolFines$PctPoolFines6_CHECK=pvtPoolFines$POOLFINES6/(50-pvtPoolFines$POOLNOMEAS)*100
 write.csv(pvtPoolFines,'pvtPoolFines.csv')

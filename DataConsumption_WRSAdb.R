@@ -11,12 +11,19 @@
 # #this is a change
 
 #--------------------------------------------------------SETUP--------------------------------------------------------#
+secretName = 'aimReader'
+vaultPath = '//share1.bluezone.usu.edu/miller/buglab/Vault/aimReader.vault'
+keyFile = file.path( path.expand("~"), "Vault", "aimReader.key" )
+#keyFile = file.path( path.expand("~"), "Vault", "aimWriter.key" ) # uncomment line to get write access
+
 #LOAD required packages#
-requiredPACKAGES=c('reshape', 'RODBC','ggplot2','grid','gridExtra','openxlsx','zipR', 'sqldf','jpeg','spsurvey','tcltk','plyr','mapview','tidyverse')
+requiredPACKAGES=c('reshape','R6','odbc','DBI','openssl','grid','gridExtra','openxlsx','zipR', 'sqldf','jpeg','spsurvey','tcltk','plyr','mapview','tidyverse')
 for (r in 1:length(requiredPACKAGES)){
-  if ((requiredPACKAGES[r] %in% installed.packages()[,1])==FALSE){install.packages(requiredPACKAGES[r])}#auto-install if not present
+  if ((requiredPACKAGES[r] %in% installed.packages()[,1])==FALSE & requiredPACKAGES[r] %in% c('R6','odbc','DBI','openssl')){install.packages(requiredPACKAGES[r])}#auto-install if not present
   library(requiredPACKAGES[r],character.only = TRUE)
 }
+
+source('setupEnv.R');source('.BaseClass_R6.R'); source('Vault.R');
 ##needed to convert data to spatial layers and map coordinates
 ##to get this package to work properly you might also need R 3.4.4
 library(sf)#if this gives an error run the line below
@@ -25,18 +32,20 @@ library(sf)#if this gives an error run the line below
 #default working directory is the location of the Rproject which is custom to each collaborator and should automatically be set when project is loaded
 #setwd('\\\\share1.bluezone.usu.edu\\miller\\buglab\\Research Projects\\BLM_WRSA_Stream_Surveys\\Technology\\Output\\WRSA')#SWJ to do: map more dynamically but securely
 #setwd('C:\\Users\\Sarah\\Desktop\\NAMCdevelopmentLocal\\WRSA')##Sarah desktop
+dbConfig = Vault$new(vaultPath = vaultPath, keyFile = keyFile)$open()
 
-
-
-##Establish an ODBC connection##
-#the db was created in SQL Server Manager on 11/19/2013 by Sarah Judson#
-wrsaConnectSTR=sprintf("Driver={SQL Server Native Client 10.0};Server=%s;Database=%s;Uid=%s; Pwd=%s;",DBserver,DBname,DBuser, DBpassword)#specify backupdatabase or orignial database
-#wrsaConnectSTR=sprintf("Driver={SQL Server};Server=%s;Database=WRSAdb;Uid=%s; Pwd=%s;",DBserver,DBuser, DBpassword)
-if( grepl(">= 8",Sys.info()['release']) ){
-  wrsaConnectSTR=sprintf("Driver=ODBC Driver 13 for SQL Server;Server=%s;Database=%s;Uid=%s; Pwd=%s;",DBserver,DBname,DBuser, DBpassword)#specify backupdatabase or orignial database
+wrsa1314 = DBI::dbConnect(odbc::odbc(),
+	Driver = dbConfig$driver,
+	Server = dbConfig$server,
+	UID    = dbConfig$user,
+	PWD    = dbConfig$password,
+	Port   = 1433,
+	Database = dbConfig$database
+)
+sqlQuery = odbc::dbGetQuery
+sqlSave = function(conn, dat, tablename, rownames,  append){
+	odbc::dbWriteTable(conn = conn, name = tablename, value = dat, row.names = rownames, overwrite = FALSE, append = append)
 }
-#wrsaConnectSTR=sprintf("Driver={SQL Server Native Client 10.0};Server=%s;Database=WRSAdb;Uid=%s; Pwd=%s;",DBserver,DBuser, DBpassword)
-wrsa1314=odbcDriverConnect(connection = wrsaConnectSTR)
 #test that connection is open # sqlQuery(wrsa1314,"select top 10 * from tblVerification")
 #SWJ to do: throw this into a function that also prompts for server and password if missing (='')
 #SWJ to do: throw the function into a separate referenced script because multiple files are using this
@@ -81,9 +90,9 @@ sitecodes=c('AA-STR-0015','AA-TR-1085','SW-TR-1300',	'SW-TR-1195',	'SW-TR-1218',
 
 ###YEARS####
 #all years
-years=c('2018')
+years=c('2020')
 #current year
-years=c('2019')
+years=c('2019','2020')
 #WRSA years
 years=c('2013','2014','2015')#as character, not number
 #years prior to 2019
@@ -91,73 +100,66 @@ years=c('2013','2014','2015','2016','2017','2018','2019')#as character, not numb
 
 
 ###PROTOCOLS###
+#2020
+protocols=c('WADE2020','BOAT2020','WADE2016','BOAT2016')
 #2016+ protocols (current)
 protocols=c('WADE2016','BOAT2016')
 #pre 2016 protocols
 protocols=c('NRSA13','WRSA14','BOAT14','AK14')#for separating differences in overall protocol, may not be relevant for some parameters
 #all protocols
 protocols=c('NRSA13','WRSA14','BOAT14','AK14','WADE2016','BOAT2016')
+#all wadeable
+protocols=c('NRSA13','WRSA14','AK14','WADE2016')
 #all boating
 protocols=c('BOAT14','BOAT2016')
 protocols=c('')#includes failed sites
 
 
 ###PROJECTS###
-#ALL 2019 projects
-projects=c('AKEFO','AK_AN_BSWI_2017','AK_CY_PLANUNIT_2017','AK_CY_UTILITYCORRIDOR_2016','AK_GL_STANDARD_2016','AZ_TU','CA_NC','CO_FR_STANDARD_2016','CO_NW_STANDARD_2016','CO_SW_STANDARD_2016','ID_PO','ID_JA','ID_US_STANDARD_2017','ID_CT','ID_CH_STANDARD_2017','ID_CH_FISH_2017','ID_SA_STANDARD_2016','NM_SONM_STANDARD_2018','NV_NO','NV_NC','NV_NW','OR_BU','OR_LL','OR_LK','OR_VB','OR_VM','UT_CL','UT_CY_STANDARD_2017','UT_WD_SHEEPROCK_2017','WY_HD_STANDARD_2017','WY_RA_STANDARD_2016','WRSA_AZ','WRSA_CA','WRSA_CO','WRSA_ID','WRSA_MT','WRSA_NM','WRSA_NV','WRSA_OR_WA','WRSA_UT','WRSA_WY')
-
-#ALL 2018 projects
-projects=c('AKEFO','NPRA15','AK_AN_BSWI_2017','AK_CY_PLANUNIT_2017','AK_CY_UTILITYCORRIDOR_2016','AK_GL_STANDARD_2016','AK_DNP_KANTISHNAHILLS_2018','CO_FR_STANDARD_2016','CO_SW_STANDARD_2016','CO_NW_STANDARD_2016','NM_SONM_STANDARD_2018','OR_PR_WSR_2018','OR_PD_OREGONSPOTTEDFROG_2018','UT_GR_WSP_2018','WY_RA_STANDARD_2016','UT_CY_STANDARD_2017','UT_WD_SHEEPROCK_2017','WY_HD_STANDARD_2017')
-
-#ALL 2017 projects
-projects=c('AKEFO','NPRA15','AK_AN_BSWI_2017','AK_CY_PLANUNIT_2017','AK_CY_UTILITYCORRIDOR_2016','AK_GL_STANDARD_2016','WA_SP_STANDARD_2016','CO_FR_STANDARD_2016','CO_SW_STANDARD_2016','CO_NW_STANDARD_2016','ID_SA_STANDARD_2016','ID_CH_STANDARD_2017','ID_US_STANDARD_2017','NM_FMD_STANDARD_2016','OR_PR_PERENNIAL_2016','OR_PR_INTERMITTENT_2016','UT_GR_STANDARD_2016','UT_WD_STANDARD_2016','WY_RA_STANDARD_2016','UT_CY_STANDARD_2017','UT_WD_SHEEPROCK_2017','WY_HD_STANDARD_2017')
-#2017 priority projects
-projects=c('UT_GR_STANDARD_2016','UT_WD_STANDARD_2016','WY_RA_STANDARD_2016','UT_WD_SHEEPROCK_2017','ID_SA_STANDARD_2016','AKEFO')
-#2017 non priority projects
-projects=c('NPRA15','AK_AN_BSWI_2017','AK_CY_PLANUNIT_2017','AK_CY_UTILITYCORRIDOR_2016','AK_GL_STANDARD_2016','WA_SP_STANDARD_2016','CO_FR_STANDARD_2016','CO_SW_STANDARD_2016','CO_NW_STANDARD_2016','ID_CH_STANDARD_2017','ID_US_STANDARD_2017','NM_FMD_STANDARD_2016','OR_PR_PERENNIAL_2016','OR_PR_INTERMITTENT_2016','UT_CY_STANDARD_2017','WY_HD_STANDARD_2017')
-
-#ALL 2016 projects
-projects=c('AKEFO','NPRA15','AK_GL_STANDARD_2016','AK_CY_UTILITYCORRIDOR_2016','WA_SP_STANDARD_2016','CO_FR_STANDARD_2016','CO_SW_STANDARD_2016','CO_NW_STANDARD_2016','ID_SA_STANDARD_2016','ID_STATE_STANDARD_2016','NM_FMD_STANDARD_2016','OR_PR_PERENNIAL_2016','OR_PR_INTERMITTENT_2016','UT_GR_STANDARD_2016','UT_WD_STANDARD_2016','WY_RA_STANDARD_2016')
-
-#PRE 2016 projects
-projects=c('WRSA','NV','GSENM','COPLT','2015ProtocolOverlap','AKEFO','NORCAL')# most useful for separating NorCal and WRSA, note that abbreviations differ between Access and SQL/FM
-projects=c('OR_PR_PERENNIAL_2016','OR_PR_INTERMITTENT_2016')
+# #ALL 2019 projects
+# projects=c('AKEFO','AK_AN_BSWI_2017','AK_CY_PLANUNIT_2017','AK_CY_UTILITYCORRIDOR_2016','AK_GL_STANDARD_2016','AZ_TU','CA_NC','CO_FR_STANDARD_2016','CO_NW_STANDARD_2016','CO_SW_STANDARD_2016','ID_PO','ID_JA','ID_US_STANDARD_2017','ID_CT','ID_CH_STANDARD_2017','ID_CH_FISH_2017','ID_SA_STANDARD_2016','NM_SONM_STANDARD_2018','NV_NO','NV_NC','NV_NW','OR_BU','OR_LL','OR_LK','OR_VB','OR_VM','UT_CL','UT_CY_STANDARD_2017','UT_WD_SHEEPROCK_2017','WY_HD_STANDARD_2017','WY_RA_STANDARD_2016','WRSA_AZ','WRSA_CA','WRSA_CO','WRSA_ID','WRSA_MT','WRSA_NM','WRSA_NV','WRSA_OR_WA','WRSA_UT','WRSA_WY')
+# 
+# #ALL 2018 projects
+# projects=c('AKEFO','NPRA15','AK_AN_BSWI_2017','AK_CY_PLANUNIT_2017','AK_CY_UTILITYCORRIDOR_2016','AK_GL_STANDARD_2016','AK_DNP_KANTISHNAHILLS_2018','CO_FR_STANDARD_2016','CO_SW_STANDARD_2016','CO_NW_STANDARD_2016','NM_SONM_STANDARD_2018','OR_PR_WSR_2018','OR_PD_OREGONSPOTTEDFROG_2018','UT_GR_WSP_2018','WY_RA_STANDARD_2016','UT_CY_STANDARD_2017','UT_WD_SHEEPROCK_2017','WY_HD_STANDARD_2017')
+# 
+# #ALL 2017 projects
+# projects=c('AKEFO','NPRA15','AK_AN_BSWI_2017','AK_CY_PLANUNIT_2017','AK_CY_UTILITYCORRIDOR_2016','AK_GL_STANDARD_2016','WA_SP_STANDARD_2016','CO_FR_STANDARD_2016','CO_SW_STANDARD_2016','CO_NW_STANDARD_2016','ID_SA_STANDARD_2016','ID_CH_STANDARD_2017','ID_US_STANDARD_2017','NM_FMD_STANDARD_2016','OR_PR_PERENNIAL_2016','OR_PR_INTERMITTENT_2016','UT_GR_STANDARD_2016','UT_WD_STANDARD_2016','WY_RA_STANDARD_2016','UT_CY_STANDARD_2017','UT_WD_SHEEPROCK_2017','WY_HD_STANDARD_2017')
+# #2017 priority projects
+# projects=c('UT_GR_STANDARD_2016','UT_WD_STANDARD_2016','WY_RA_STANDARD_2016','UT_WD_SHEEPROCK_2017','ID_SA_STANDARD_2016','AKEFO')
+# #2017 non priority projects
+# projects=c('NPRA15','AK_AN_BSWI_2017','AK_CY_PLANUNIT_2017','AK_CY_UTILITYCORRIDOR_2016','AK_GL_STANDARD_2016','WA_SP_STANDARD_2016','CO_FR_STANDARD_2016','CO_SW_STANDARD_2016','CO_NW_STANDARD_2016','ID_CH_STANDARD_2017','ID_US_STANDARD_2017','NM_FMD_STANDARD_2016','OR_PR_PERENNIAL_2016','OR_PR_INTERMITTENT_2016','UT_CY_STANDARD_2017','WY_HD_STANDARD_2017')
+# 
+# #ALL 2016 projects
+# projects=c('AKEFO','NPRA15','AK_GL_STANDARD_2016','AK_CY_UTILITYCORRIDOR_2016','WA_SP_STANDARD_2016','CO_FR_STANDARD_2016','CO_SW_STANDARD_2016','CO_NW_STANDARD_2016','ID_SA_STANDARD_2016','ID_STATE_STANDARD_2016','NM_FMD_STANDARD_2016','OR_PR_PERENNIAL_2016','OR_PR_INTERMITTENT_2016','UT_GR_STANDARD_2016','UT_WD_STANDARD_2016','WY_RA_STANDARD_2016')
+# 
+# #PRE 2016 projects
+# projects=c('WRSA','NV','GSENM','COPLT','2015ProtocolOverlap','AKEFO','NORCAL')# most useful for separating NorCal and WRSA, note that abbreviations differ between Access and SQL/FM
+# projects=c('OR_PR_PERENNIAL_2016','OR_PR_INTERMITTENT_2016')
 
 #ALL projects
-projects=c('AKEFO','NPRA15','AK_AN_BSWI_2017','AK_CY_PLANUNIT_2017','AK_GL_STANDARD_2016','AK_CY_UTILITYCORRIDOR_2016','AK_DNP_KANTISHNAHILLS_2018','AZ_TU','CA_NC','WA_SP_STANDARD_2016','CO_FR_STANDARD_2016','CO_SW_STANDARD_2016','CO_NW_STANDARD_2016','ID_PO','ID_CT','ID_SA_STANDARD_2016','ID_STATE_STANDARD_2016','ID_CH_STANDARD_2017','ID_CH_FISH_2017','ID_JA','ID_US_STANDARD_2017','NM_FMD_STANDARD_2016','NM_SONM_STANDARD_2018','NV_NC','NV_NO','NV_NW','OR_BU','OR_LL','OR_LK','OR_VB','OR_VM','UT_CL','OR_PR_WSR_2018','OR_PD_OREGONSPOTTEDFROG_2018','UT_GR_WSP_2018','OR_PR_PERENNIAL_2016','OR_PR_INTERMITTENT_2016','UT_GR_STANDARD_2016','UT_CY_STANDARD_2017','WY_HD_STANDARD_2017','UT_WD_STANDARD_2016','UT_WD_SHEEPROCK_2017','WY_RA_STANDARD_2016','WRSA','WRSA_AZ','WRSA_CA','WRSA_CO','WRSA_ID','WRSA_MT','WRSA_NM','WRSA_NV','WRSA_OR_WA','WRSA_UT','WRSA_WY','NV','GSENM','COPLT','2015ProtocolOverlap','AKEFO','NORCAL')
-projects=c('NM_SONM_STANDARD_2018')
+# projects=c('UT_CL_STANDARD_2019','AKEFO','NPRA15','AK_AN_BSWI_2017','AK_CY_PLANUNIT_2017','AK_GL_STANDARD_2016','AK_CY_UTILITYCORRIDOR_2016','AK_DNP_KANTISHNAHILLS_2018','AZ_TU','CA_NC','WA_SP_STANDARD_2016','CO_FR_STANDARD_2016','CO_SW_STANDARD_2016','CO_NW_STANDARD_2016','ID_PO','ID_CT','ID_SA_STANDARD_2016','ID_STATE_STANDARD_2016','ID_CH_STANDARD_2017','ID_CH_FISH_2017','ID_JA','ID_US_STANDARD_2017','NM_FMD_STANDARD_2016','NM_SONM_STANDARD_2018','NV_NC','NV_NO','NV_NW','OR_BU','OR_LL','OR_LK','OR_VB','OR_VM','UT_CL','OR_PR_WSR_2018','OR_PD_OREGONSPOTTEDFROG_2018','UT_GR_WSP_2018','OR_PR_PERENNIAL_2016','OR_PR_INTERMITTENT_2016','UT_GR_STANDARD_2016','UT_CY_STANDARD_2017','WY_HD_STANDARD_2017','UT_WD_STANDARD_2016','UT_WD_SHEEPROCK_2017','WY_RA_STANDARD_2016','WRSA','WRSA_AZ','WRSA_CA','WRSA_CO','WRSA_ID','WRSA_MT','WRSA_NM','WRSA_NV','WRSA_OR_WA','WRSA_UT','WRSA_WY','NV','GSENM','COPLT','2015ProtocolOverlap','AKEFO','NORCAL')
+
+projects=c('WRSA_AZ',	'WRSA_CA',	'WRSA_CO',	'WRSA_ID',	'WRSA_MT',	'WRSA_NM',	'WRSA_NV',	'WRSA_OR_WA',	'WRSA_UT',	'WRSA_WY','2015ProtocolOverlap',	'AZ_TusconFO','AK_AnchorageFO',	'AK_ArcticDO',	'AK_CentralYukonFO',	'AK_DenaliNP',	'AK_EasternInteriorFO',	'AK_GlennallenFO',	'CA_NorthernCaliforniaDO',	'CO_NorthwestDO',	'CO_RockyMountainDO',	'CO_SouthwestDO',	'ColoradoPlateau',	'ID_ChallisFO',	'ID_CottonwoodFO',	'ID_JarbidgeFO',	'ID_PocatelloFO',	'ID_SalmonFO',	'ID_Statewide',	'ID_UpperSnakeFO',	'NM_FarmingtonDO',	'NM_SouthernNewMexico',	'NV_CarsonCityDO',	'NV_ElkoDO',	'NV_Statewide',	'NV_WinnemuccaDO',	'OR_BakerFO',	'OR_BurnsDO',	'OR_KlamathFallsFO',	'OR_LakeviewFO',	'OR_MalheurFO',	'OR_PrinevilleDO',	'UT_CanyonCountryDO',	'UT_ColorCountryDO',	'UT_GrandStaircaseEscalanteNM',	'UT_PariaRiverDO','UT_GreenRiverDO',	'UT_WestDesertDO',	'WA_SpokaneDO',	'WRSA',	'WY_HighDesertDO',	'WY_RawlinsFO')
+projects=c('WRSA_UT',	'AK_AnchorageFO',	'CA_NorthernCaliforniaDO','OR_MalheurFO')
 
 #TRAINING
 projects=c('Training','Training- Grand Junction','Training- Logan')
 
-#CO projects
-projects=c('WRSA','COPLT','CO_FR_STANDARD_2016','CO_SW_STANDARD_2016','CO_NW_STANDARD_2016')
-
+# #CO projects
+# projects=c('WRSA','COPLT','CO_FR_STANDARD_2016','CO_SW_STANDARD_2016','CO_NW_STANDARD_2016')
+#AK projects
+projects=c('AK_AnchorageFO',	'AK_ArcticDO',	'AK_CentralYukonFO',	'AK_DenaliNP',	'AK_EasternInteriorFO',	'AK_GlennallenFO')
 
 
 ###INSERTION###
 #all data 
 insertion=c('')
 
-#number of the week of the year starting on Tuesday(because Tuesday was the 1st) for 2019
-#batches of 2019 QC
-insertion=c('17','18','19','20') #April 23-May 21st
-insertion=c('28','28','29','30','31','32')
+#number of the week of the year starting on Wednesday(because Wednesday was the 1st) for 2020
+#batches of 2020 QC
+insertion=c('25') # June 10th
+insertion=c()
 
-# the number of the week starting on Monday(because monday was the 1st) for 2018
-#the last week in May is week 22
-#batches of 2018 QC
-insertion=c('22','23','24')
-insertion=c('25','26')
-insertion=c('26','27','28','29','30')
-insertion=c('22','23','24','25','26','27','28','29','30')
-insertion=c('22','23','24','25','26','27','28','29','30','31','32')
-insertion=c('31','32')
-insertion=c('32')
-insertion=c('33','34')
-insertion=c('37','38','39')
-insertion=c('40','41','42')
-insertion=c('43','44')
 
 # ####OTHER POSSIBLE FILTERS######
 # 
