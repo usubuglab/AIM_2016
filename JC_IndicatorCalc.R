@@ -4,8 +4,7 @@
 
 ###################################################################################################################
 #only indicators with "_CHECK" added on the name are in the end output. Once this output is compared to Aquamet change "_CHECK" to  "_FINAL"
-#To get the metadata table you must use the SQL code. 
-#tblMETADATA= sqlQuery(wrsa1314, "select * from tblMETADATA")
+
 # #############################################################################
 # # FIRST Run the settup section of DataConsumption_WRSAdb.R
 # # SECOND Run filters for appropriate project, years, protocols, sitecodes, and insertion. For all filter options from all years see DataConsumption_WRSAdb.R
