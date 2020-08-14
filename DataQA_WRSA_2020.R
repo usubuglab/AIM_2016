@@ -35,7 +35,7 @@ write.csv(listsites,'listsites.csv')
 #comments=addKEYS(sqlQuery(wrsa1314,sprintf("select * from tblcomments where year(insertion) in (%s) and datepart(wk,insertion) in (%s)",inLOOP(years),inLOOP(insertion))),c('SITE_ID','PROJECT'))#other option, but below is more elegant
 #comments=addKEYS(sqlQuery(wrsa1314,sprintf("select * from tblcomments where year(insertion) in (%s) and datepart(wk,insertion) in (%s)",inLOOP(years),inLOOP(insertion))),c('SITE_ID','PROJECT'))#other option, but below is more elegant
 
-comments=addKEYS(tblRetrieve(Table='tblcomments', Years=years, Projects=projects,Protocols=protocols,SiteCodes=sitecodes,Insertion=insertion),c('SITE_ID','PROJECT','VALXSITE'))
+comments=addKEYS(tblRetrieve(Table='tblcomments', Years=years, Projects=projects,Protocols=protocols,SiteCodes=sitecodes,Insertion=insertion),c('SITE_ID','PROJECT','VALXSITE','CREW_LEADER','DATE_COL'))
 #comments=subset(comments,PROJECT!='TRAINING'& PROJECT!='TESTORFAKE DATA')
 comments=setNames(comments[,c(13,14,15,1,6,4,2:3,5,7:12)],c('PROJECT','SITE_ID','VALXSITE','UID','COMMENT_TYPE','COMMENT','SAMPLE_TYPE','TRANSECT','POINT','IND','ACTIVE','OPERATION','INSERTION','DEPRECATION','REASON'))
 write.xlsx(comments,'comments.xlsx')   
@@ -202,8 +202,8 @@ MissingTotalsREACH=MissingTotalsREACH[,!names(MissingTotalsREACH) %in% c('QC:BAN
 #MissingTotalsREACH=MissingTotalsREACH[,c(Indicators)]
 #grep("^COVARIATE",colnames(MissingTotalsREACH),grep("^QC",colnames(MissingTotalsREACH)
 MissingTotalsREACH=MissingTotalsREACH[order(MissingTotalsREACH$PROJECT,MissingTotalsREACH$PROTOCOL,MissingTotalsREACH$SITE_ID),]
-MissingTotalsREACH=MissingTotalsREACH[,c('PROJECT',	'PROTOCOL',	'SITE_ID',	'LOC_NAME','VALXSITE',	'UID',	'DATE_COL',	'CREW_LEADER','REACH INFO',	'MACROINVERT',	'CONDUCTIVITY',	'PH',	'TEMPERATURE','VEG',	'CANOPY COVER',	'BANKFULL HEIGHT',	'BANKFULL WIDTH',	'WETTED WIDTH',	'BENCH HEIGHT',	'FLOODPRONE WIDTH',	'BANK STABILITY',	'STREAMBED PARTICLES',	'HUMAN INFLUENCE',	'LARGE WOOD',	'SLOPE',	'POOL',	'PHOTO',	'TNTP',	'TURBIDITY','THALWEG DEPTH PROFILE',	'BANK ANGLE','POOL TAIL FINES','VEGCOMPLEX','FISH COVER'	)]
-MissingTotalsREACH$AvgMissingData=rowMeans(MissingTotalsREACH[,c(13:18,20:23)],na.rm='TRUE')
+#MissingTotalsREACH=MissingTotalsREACH[,c('PROJECT',	'PROTOCOL',	'SITE_ID',	'LOC_NAME','VALXSITE',	'UID',	'DATE_COL',	'CREW_LEADER','REACH INFO',	'MACROINVERT',	'CONDUCTIVITY',	'PH',	'TEMPERATURE','VEG',	'CANOPY COVER',	'BANKFULL HEIGHT',	'BANKFULL WIDTH',	'WETTED WIDTH',	'BENCH HEIGHT',	'FLOODPRONE WIDTH',	'BANK STABILITY',	'STREAMBED PARTICLES',	'HUMAN INFLUENCE',	'LARGE WOOD',	'SLOPE',	'POOL',	'PHOTO',	'TNTP',	'TURBIDITY','THALWEG DEPTH PROFILE',	'BANK ANGLE','POOL TAIL FINES'	)]
+MissingTotalsREACH$AvgMissingData=rowMeans(MissingTotalsREACH[,c('VEG',	'CANOPY COVER',	'BANKFULL HEIGHT',	'BANKFULL WIDTH',	'WETTED WIDTH',	'BENCH HEIGHT','BANK STABILITY',	'STREAMBED PARTICLES',	'HUMAN INFLUENCE',	'LARGE WOOD')],na.rm='TRUE')
 MissingTotalsREACHdf=as.data.frame(MissingTotalsREACH)
 MissingTotalsREACH2=reshape2::melt(MissingTotalsREACHdf,id.vars=c('PROJECT',	'PROTOCOL',	'SITE_ID',	'LOC_NAME','VALXSITE',	'UID',	'DATE_COL',	'CREW_LEADER'))
 MissingTotalsREACH2$value=as.numeric(MissingTotalsREACH2$value)
@@ -423,11 +423,11 @@ WQCTemp$ERROR='Crew recorded that conductivity was not temperature corrected; Pl
 #                       
 #view any typical values violations for Conductivity and PH
 Conduct=addKEYS(tblRetrieve(Comments='Y',Parameters=c('CONDUCTIVITY'),Projects=projects,Years=years,Protocols=protocols,SiteCodes=sitecodes,Insertion=insertion),c('PROJECT','SITE_ID','CREW_LEADER','LOC_NAME','DATE_COL','VALXSITE'))
-ConductQuestions=subset(Conduct,as.numeric(RESULT)<30 | as.numeric(RESULT)>1000)# review comments for any sites flagged here 
+ConductQuestions=subset(Conduct,as.numeric(RESULT)<30 | as.numeric(RESULT)>2000)# review comments for any sites flagged here 
 #postseasonmetadata_ecoregion=postseasonmetadata[,c('UID','ECO_10')]
 #ConductQuestions=join(ConductQuestions,postseasonmetadata_ecoregion, by="UID",type="left")
 ConductQuestions=ConductQuestions[order(ConductQuestions$RESULT),]
-ConductQuestions$ERROR='Value is outside the typical value range of 30-1000 uS/cm. Did crew recalibrate and verify value? If not project lead should determine if value should be trusted or omitted. Values should not be removed unless it is justifiable, please explain your reasoning.'
+ConductQuestions$ERROR='Value is outside the typical value range of 30-2000 uS/cm. Did crew recalibrate and verify value? If not project lead should determine if value should be trusted or omitted. Values should not be removed unless it is justifiable, please explain your reasoning.'
 #if(nrow(ConductQuestions)>0){write.csv(ConductQuestions,'ConductQuestions.csv')}
 
 PH=addKEYS(tblRetrieve(Comments='Y',Parameters=c('PH'),Projects=projects,Years=years,Protocols=protocols,SiteCodes=sitecodes,Insertion=insertion),c('PROJECT','SITE_ID','CREW_LEADER','LOC_NAME','DATE_COL','VALXSITE'))
@@ -439,9 +439,9 @@ PHQuestions$ERROR='Value is outside typical range of 6-9. Did crew recalibrate a
 
 
 Temperature=addKEYS(tblRetrieve(Comments='Y',Parameters=c('TEMPERATURE'),Projects=projects,Years=years,Protocols=protocols,SiteCodes=sitecodes,Insertion=insertion),c('PROJECT','SITE_ID','CREW_LEADER','LOC_NAME','DATE_COL','VALXSITE'))
-TemperatureQuestions=subset(Temperature,as.numeric(RESULT)<2|as.numeric(RESULT)>23)
+TemperatureQuestions=subset(Temperature,as.numeric(RESULT)<2|as.numeric(RESULT)>30)
 TemperatureQuestions=TemperatureQuestions[order(TemperatureQuestions$RESULT),]
-TemperatureQuestions$ERROR='Value is outside typical range of 2-23. Please confirm if value should be trusted or omitted.'
+TemperatureQuestions$ERROR='Value is outside typical range of 2-30. Please confirm if value should be trusted or omitted.'
 
 
 Turb=addKEYS(tblRetrieve(Parameters=c('TURBIDITY'), Comments='Y', Years=years, Projects=projects,Protocols=protocols,SiteCodes=sitecodes,Insertion=insertion),c('PROJECT','SITE_ID','CREW_LEADER','LOC_NAME','DATE_COL','VALXSITE'))

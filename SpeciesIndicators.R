@@ -56,7 +56,7 @@ AllSpeciesFinal$PercentPlotsPresent=ifelse(AllSpeciesFinal$Type2=="NonNativeAqua
 AllSpeciesFinal$PercentPlotsPresent=ifelse(AllSpeciesFinal$Type2=="NonNativeHerb"&AllSpeciesFinal$nINVASH_CHECK<10,NA,AllSpeciesFinal$PercentPlotsPresent)
 AllSpeciesFinal$PercentPlotsPresent=ifelse(AllSpeciesFinal$Type2=="NonNativeWoody"&AllSpeciesFinal$nINVASW_CHECK<10,NA,AllSpeciesFinal$PercentPlotsPresent)
 
-AllSpeciesFinal=AllSpeciesFinal[,c('PROJECT','SITE_ID','UID','CommonName','PercentPlotsPresent','ScientificName','USDA_Code','NonNative','WoodyHerb','WetlandStatus')]
+AllSpeciesFinal=AllSpeciesFinal[,c('PROJECT','SITE_ID','UID','CommonName','PercentPlotsPresent','ScientificName','NonNative','WoodyHerb')]
 
 write.csv(AllSpeciesFinal,'SpeciesFrequencyall.csv')
 

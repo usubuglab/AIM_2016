@@ -119,7 +119,7 @@ IndicatorsFinal=IndicatorsFinal[order(IndicatorsFinal$Project,IndicatorsFinal$Si
 write.csv(IndicatorsFinal,paste0('IndicatorsFinalExport',Sys.Date(),'.csv'),na="")     
 
 historicIndicators=read.csv("Z:\\buglab\\Research Projects\\AIM\\Analysis\\QC\\Aquadat9.csv")
-historicIndicators2=historicIndicators[,c(2:3,4,5,6,8,9:11,24:101)]
+historicIndicators2=historicIndicators[,c(2:3,4,5,6,8,9:11,24:29,34:38,51,53:99)]
 historicIndicators3=melt(historicIndicators2,id.vars=c('UID','Project','SiteCode','MasterCode','VisitNumber','StreamName','FieldStatus'))
 historicInidicators4=cast(historicIndicators3,'MasterCode+variable~VisitNumber',value='value')
 uniquesites=read.csv('\\\\share1.bluezone.usu.edu\\miller\\buglab\\Research Projects\\AIM\\Design\\DesignDatabase\\site_table_for_Design_Database_unique_sites.csv')
@@ -127,9 +127,9 @@ DesignInfosub=setNames(uniquesites[,c('MS_ID','SITE_ID_CHECK')],c('MasterCode','
 historicIndicators5=join(historicInidicators4,DesignInfosub,by=c('MasterCode'), type='left')
 
 
-IndicatorsFinal=read.csv('IndicatorsFinalExport2020-06-18.csv')
+IndicatorsFinal=read.csv('IndicatorsFinalExport2020-08-12.csv')
 IndicatorsFinal=addKEYS(IndicatorsFinal,c('CREW_LEADER'))
-IndicatorsFinal2=IndicatorsFinal[,c(1,3:6,9:11,24:105)]
+IndicatorsFinal2=IndicatorsFinal[,c(1,3:6,9:11,24:31,53,55:56,58:86,88:102,105)]
 
 ComputedIndicators=melt(IndicatorsFinal2,id.vars=c('UID','Project','CREW_LEADER','SiteCode','MasterCode','StreamName','FieldStatus'))
 ComputedIndicators2=setNames(join(ComputedIndicators, historicIndicators5,type='left',by=c('SiteCode','variable')),c('UID','Project','CREW_LEADER','SiteCode','MasterCode','StreamName','FieldStatus','variable','value','MasterCode','Visit1','Visit2','Visit3','Visit4','Visit5','Visit6'))
