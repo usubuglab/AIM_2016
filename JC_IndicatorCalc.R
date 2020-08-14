@@ -408,7 +408,7 @@ Pools=setNames(subset(poolmerge2,select=c(UID,PoolPct,RPD,PoolFrq,NumPools)),c("
 
 #########################################################
 
-#                    LWD Indicators                     #
+#                    Large Wood Indicators                     #
 
 #########################################################
 #C1WM100- (Cummulative count of LWD in bankfull channel across all size classes)/(Reach Length) units are pieces/100m
@@ -504,11 +504,11 @@ LWD$V1WM100_CHECK=round(LWD$V1WM100_CHECK,digits=3)
 
 #########################################################
 
-#        PctFinesLessThan 2mm and 6mm and Other Sediment Indicators         #
+#        Streambed Particle Indicators         #
 
 #########################################################
 
-#pct_safn
+#PercentFinesLessThan 2 mm and Less than 6 mm
 
 #### 2013 data and Boating data which was also stored in Size_CLS. 2013 field protocol only collected Bed sediment, unlike 2014 and beyond which collected bed and bank sediment. 
 ####Doing sand and fines together
@@ -636,7 +636,7 @@ subQC=subset(FinalpvtPoolFines,FinalpvtPoolFines$PctPoolFines6CV>=1.41|FinalpvtP
 
 ##########################################################
 
-#          BankStability and Cover Indicators            #
+#          Bank Stability and Cover Indicators            #
 
 ##########################################################
 #Decided in 2019 not to remove depositonal banks!
@@ -837,7 +837,7 @@ BnkRatioAvg$BNK_HT_RATIO_CHECK=round(BnkRatioAvg$BNK_HT_RATIO_CHECK,digits=2)
 
 ##########################################################
 
-#                    Fish Cover Indicator              #
+#    Instream Habitat Complexity (Fish Cover) Indicator   #
 
 ##########################################################
 #XFC_NAT
