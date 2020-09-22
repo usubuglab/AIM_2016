@@ -37,7 +37,7 @@ ChannelDimmensions_Boatable=tblRetrieve(Parameters=c('WETWID','BARWID','BANKWID'
 ChannelDimmensions_Boatablepvt=addKEYS(cast(ChannelDimmensions_Boatable,'UID+TRANSECT+POINT~PARAMETER',value='RESULT'),c('PROJECT','SITE_ID','PROTOCOL','VALXSITE','CREW_LEADER'))
 write.csv(ChannelDimmensions_Boatablepvt,'ChannelDimmensions_Boatablepvt.csv',na='')
 
-fish=tblRetrieve(Parameters=c('BOULDR','BRUSH','LVTREE','OVRHNG','UNDCUT','WOODY','ALGAE','MACPHY'),Projects=projects,Years=years,Protocols=protocols,SiteCodes=sitecodes)
+fish=tblRetrieve(Parameters=c('BOULDR','BRUSH','LVTREE','OVRHNG','UNDCUT','WOODY','ALGAE','MACPHY','STRUCT'),Projects=projects,Years=years,Protocols=protocols,SiteCodes=sitecodes)
 fishpvt=addKEYS(cast(fish,'UID+TRANSECT~PARAMETER',value='RESULT'),c('PROJECT','SITE_ID','PROTOCOL','VALXSITE','CREW_LEADER'))# check data structure to make sure no duplicates
 write.csv(fishpvt,'fishpvt.csv',na='')
 
@@ -100,7 +100,7 @@ Slope_height=tblRetrieve(Parameters=c('STARTHEIGHT','ENDHEIGHT','SLOPE','STARTTR
 Slope_heightpvt=addKEYS(cast(Slope_height,'UID+TRANSECT+POINT+IND~PARAMETER',value='RESULT'),c('PROJECT','SITE_ID','PROTOCOL','VALXSITE','CREW_LEADER'))
 write.csv(Slope_heightpvt,'Slope.csv',na='')
 
-SlopePool=tblRetrieve(Parameters=c('AVGSLOPE','SLPRCHLEN','SLOPE_METHOD','TRCHLEN','POOLRCHLEN','POOL_COLLECT','SLOPE_COLLECT','PCT_GRADE','Z_SLOPEPASSQA'),Projects=projects, Years=years,Protocols=protocols,SiteCodes=sitecodes)                 
+SlopePool=tblRetrieve(Parameters=c('AVGSLOPE','SLPRCHLEN','TRCHLEN','POOLRCHLEN','POOL_COLLECT','SLOPE_COLLECT','PCT_GRADE','Z_SLOPEPASSQA'),Projects=projects, Years=years,Protocols=protocols,SiteCodes=sitecodes)                 
 pvtSlopePool=addKEYS(cast(SlopePool,'UID~PARAMETER',value='RESULT'),c('PROJECT','SITE_ID','PROTOCOL','VALXSITE','CREW_LEADER'))
 write.csv(pvtSlopePool,'SlopePool.csv',na='')
 
