@@ -78,7 +78,7 @@ RipWW=tblRetrieve(Parameters=c("CANBTRE","CANSTRE","GCWDY","UNDWDY"),Projects=pr
 RipWW$RESULT=as.numeric(RipWW$RESULT)
 RipGB=tblRetrieve(Parameters=c("BARE"),Projects=projects,Years=years,Protocols=protocols,SiteCodes=sitecodes,Insertion=insertion)
 RipGB$RESULT=as.numeric(RipGB$RESULT)
-
+RipUNDWDY_GCWDY=tblRetrieve(Parameters=c("GCWDY","UNDWDY"),Projects=projects,Years=years,Protocols=protocols,SiteCodes=sitecodes,Insertion=insertion)
 #BLM riparian cover and frequency
 RipBLM=tblRetrieve(Parameters=c('CANRIPW','UNRIPW','GCRIP','INVASW', 'NATIVW','INVASH','NATIVH','SEGRUSH','INVASAQ'),Projects=projects,Years=years,Protocols=protocols,SiteCodes=sitecodes,Insertion=insertion)
 
@@ -257,8 +257,8 @@ XCMG_new1$XCMG_CHECK=ifelse(XCMG_new1$nXCMG_CHECK<60,NA,XCMG_new1$XCMG_CHECK)#5 
 
 ################################## these are not included in the end exported file but are things that we might include eventually #################
 #####layer by layer#####
-RipXCMG$ResultsPer=ifelse(RipXCMG$RESULT == 1, 0.05,ifelse(RipXCMG$RESULT == 2, 0.25,ifelse(RipXCMG$RESULT == 3, 0.575,ifelse(RipXCMG$RESULT == 4, 0.875,ifelse(RipXCMG$RESULT ==0, 0, NA)))))
-layers=cast(RipXCMG,'UID~PARAMETER', value='ResultsPer',fun='mean')
+# RipXCMG$ResultsPer=ifelse(RipXCMG$RESULT == 1, 0.05,ifelse(RipXCMG$RESULT == 2, 0.25,ifelse(RipXCMG$RESULT == 3, 0.575,ifelse(RipXCMG$RESULT == 4, 0.875,ifelse(RipXCMG$RESULT ==0, 0, NA)))))
+# layers=cast(RipXCMG,'UID~PARAMETER', value='ResultsPer',fun='mean')
 
 ######## other EPA veg complexity variations ###########
 #RipGB
@@ -276,7 +276,14 @@ XGB_new1=setNames(aggregate(VALUE~UID,data=XGB_new,FUN=mean),list("UID","XGB_CHE
 RipWW$ResultsPer=ifelse(RipWW$RESULT == 1, 0.05,ifelse(RipWW$RESULT == 2, 0.25,ifelse(RipWW$RESULT == 3, 0.575,ifelse(RipWW$RESULT == 4, 0.875,ifelse(RipWW$RESULT ==0, 0, NA)))))
 XCMGW_new=setNames(cast(RipWW,'UID+TRANSECT+POINT~ACTIVE', value='ResultsPer',fun='sum'),list('UID',  'TRANSECT',  'POINT',  'VALUE'))
 XCMGW_new1=setNames(aggregate(VALUE~UID,data=XCMGW_new,FUN=mean),list("UID","XCMGW_CHECK"))
+XCMGW_new1$XCMGW_CHECK=round(XCMGW_new1$XCMGW_CHECK,digits=2)
 
+
+#RipUNDWDY_GCWDY
+RipUNDWDY_GCWDY$ResultsPer=ifelse(RipUNDWDY_GCWDY$RESULT == 1, 0.05,ifelse(RipUNDWDY_GCWDY$RESULT == 2, 0.25,ifelse(RipUNDWDY_GCWDY$RESULT == 3, 0.575,ifelse(RipUNDWDY_GCWDY$RESULT == 4, 0.875,ifelse(RipUNDWDY_GCWDY$RESULT ==0, 0, NA)))))
+RipUnderstoryGround=setNames(cast(RipUNDWDY_GCWDY,'UID+TRANSECT+POINT~ACTIVE', value='ResultsPer',fun='sum'),list('UID',  'TRANSECT',  'POINT',  'VALUE'))
+RipUnderstoryGround1=setNames(aggregate(VALUE~UID,data=RipUnderstoryGround,FUN=mean),list("UID","RipUnderstoryGround_CHECK"))
+RipUnderstoryGround1$RipUnderstoryGround_CHECK=round(RipUnderstoryGround1$RipUnderstoryGround_CHECK,digits=2)
 
 ###################################################################################################################################################
 
@@ -415,7 +422,7 @@ Pools=setNames(subset(poolmerge2,select=c(UID,PoolPct,RPD,PoolFrq,NumPools)),c("
 LwdWet$TRANSECT=mapvalues(LwdWet$TRANSECT, c("XA", "XB","XC","XD","XE","XF","XG","XH","XI","XJ","XK" ),c("A", "B","C","D","E","F","G","H","I","J","K"))
 LWD_test=setNames(aggregate(RESULT~UID+TRANSECT,data=LwdWet,FUN=sum),c("UID","TRANSECT","C1W"))# count of all LWD pieces per site
 LWD_test2=setNames(plyr::count(LWD_test,"UID"),c("UID","NUMTRAN"))# count of the number of transects that wood was collected for #may require package plyr which requires R version > 3????? but I have also gotten count to work in other situations with other version of R required for aquamet
-LWD=setNames(aggregate(RESULT~UID,data=LwdWet,FUN=sum),c("UID","C1W"))# count of all LWD pieces per site
+LWD=setNames(aggregate(RESULT~UID,data=LwdWet,FUN=sum),c("UID","C1W_CHECK"))# count of all LWD pieces per site
 LWD=merge(LWD_test2,LWD,by=c('UID'),all=T)
 LWD=merge(LWD,TRCHLEN1,by=c('UID'), all=T)
 #To get the reach length for which LWD was accesssed divide the total reach length by 10 to get the transect spacing and then multiply times the number of LWD transects sampled
@@ -425,7 +432,7 @@ LWD=merge(LWD,TRCHLEN1,by=c('UID'), all=T)
 #Our method could over estimate wood though...crews may have evaluated sections of the thalweg but not recorded a wood value because they forgot or something else
 #However not all crews collecting thalweg in future and may not be able to get thalweg depths where you could get wood...we probably could use another parameter that is collected at all thalweg stations (side channel presence- but did not collect this in 2016) 
 LWD$LWD_RCHLEN=(LWD$TRCHLEN/10)*LWD$NUMTRAN 
-LWD$C1WM100_CHECK=round((LWD$C1W/LWD$LWD_RCHLEN)*100,digits=3)# get the pieces/100m
+LWD$C1WM100_CHECK=round((LWD$C1W_CHECK/LWD$LWD_RCHLEN)*100,digits=3)# get the pieces/100m
 #to exclude data that has less than 50% run volume code and code below
 
 
@@ -1044,15 +1051,10 @@ avgFloodWidth=merge(avgFloodWidth,FloodWidthCount,by=c('UID'))
 
 
 #Entrenchment
-#pre2017
-#avgFloodWidth=merge(avgFloodWidth,BankWidFinal,by=c('UID'))
-#avgFloodWidth$ENTRENCH_CHECK=round(avgFloodWidth$FLD_WT_CHECK/avgFloodWidth$XBKF_W_CHECK,digits=2)
-#2017+
 FloodWidthpvt=cast(FloodWidth,'UID+TRANSECT~PARAMETER',value='RESULT')
-FloodWidthpvt$ENTRENCHpvt=FloodWidthpvt$FLOOD_WID/FloodWidthpvt$FLOOD_BFWIDTH
-entrench=setNames(aggregate(as.numeric(ENTRENCHpvt)~UID,data=FloodWidthpvt,FUN=mean),c("UID","ENTRENCH_CHECK"))
-entrench$ENTRENCH_CHECK=round(entrench$ENTRENCH_CHECK,digits=2)
-entrench$ENTRENCH_CHECK=ifelse(entrench$ENTRENCH_CHECK<1,1,ifelse(entrench$ENTRENCH_CHECK>3,3,entrench$ENTRENCH_CHECK))
+FloodWidthpvt$ENTRENCHpvt=round(FloodWidthpvt$FLOOD_WID/FloodWidthpvt$FLOOD_BFWIDTH, digits=2)
+FloodWidthpvt$ENTRENCHpvt=ifelse(FloodWidthpvt$ENTRENCHpvt<1,1,ifelse(FloodWidthpvt$ENTRENCHpvt>3,3,FloodWidthpvt$ENTRENCHpvt))
+entrench=setNames(cast(FloodWidthpvt, 'UID~TRANSECT', value='ENTRENCHpvt'),c("UID",'EntrenchmentRiffle1_CHECK','EntrenchmentRiffle2_CHECK'))
 
 
 ##########################################################
