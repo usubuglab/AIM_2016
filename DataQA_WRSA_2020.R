@@ -215,7 +215,7 @@ contingentindicators=read.csv("Z:/buglab/Research Projects/AIM/Analysis/QC/2020/
 MissingTotalsREACH2sub=join(MissingTotalsREACH2sub,contingentindicators, by=c('PROJECT','variable'))
 MissingTotalsREACH2sub=subset(MissingTotalsREACH2sub,Collect!='No'|is.na(Collect)==TRUE)
 MissingTotalsREACH2sub=setNames(MissingTotalsREACH2sub[,c('PROJECT','CREW_LEADER','SITE_ID','DATE_COL','LOC_NAME','VALXSITE','DataType','variable','value','ERROR','PROTOCOL','UID')],c('PROJECT','CREW_LEADER','SITE_ID','DATE_COL','LOC_NAME','VALXSITE','DataType','IndicatorMethodOrField','ValueOrPercentDataMissing','ERROR','PROTOCOL','UID'))
-#write.xlsx(MissingTotalsREACH,"MissingDataGeneral.xlsx")
+write.xlsx(MissingTotalsREACH,"MissingDataGeneral.xlsx")
 #write.xlsx(MissingTotalsREACH2sub,"MissingDataErrors.xlsx")
 #MissingTotalsTRAN=subset(MissingTotalsOUT,TRANSECT!='ReachTotal');write.csv(MissingTotalsTRAN,"MissingDataQCttran_nocom.csv")
 #write.csv(MissingCounts,"MissingCounts.csv")
@@ -306,7 +306,7 @@ coordinate_design_QCsub2$ValueOrPercentDataMissing=coordinate_design_QCsub2$Dist
 coordinateQCErrors=rbind.fill(coordinate_design_QCsub,coordinate_design_QCsub2)
 coordinateQCErrors$DataType='Coordinates'
 coordinateQCErrors=coordinateQCErrors[,c('PROJECT','CREW_LEADER','SITE_ID','DATE_COL','LOC_NAME','VALXSITE','DataType','IndicatorMethodOrField','ValueOrPercentDataMissing','ERROR','UID')]
-#write.csv(coordinate_design_QC,'GeneralcoordinateQC.csv',row.names = FALSE)
+write.csv(coordinate_design_QC,'GeneralcoordinateQC.csv',row.names = FALSE)
 #write.csv(coordinateQCErrors,'coordinateQCErrors.csv',row.names = FALSE)
 
 
@@ -994,43 +994,43 @@ write.csv(pvtPhotos,'photos.csv')
 #UnionTBLnum_pvtQUANTmean_Site is pretty hard to look at. I prefer to look at UnionTBLnum_pvtSUMMARYn_Site sort by parameter and then sort values to look at min and maxes for each parameter across all sites
 #uses tblMETADATA to pull what parameters are in these files so tblMETADATA must be up to date for this to pull newer parameters
 
-# UnionTBL=tblRetrieve(Table='', Years=years, Projects=projects,Protocols=protocols,SiteCodes=sitecodes,Insertion=insertion)
-# 
-# tblCOL=c('UID', 'SAMPLE_TYPE','PARAMETER','RESULT','TRANSECT','POINT')
-# pvtCOL='UID %s ~ SAMPLE_TYPE + PARAMETER';pvtCOLdefault=sprintf(pvtCOL,'');pvtCOL2=sprintf(pvtCOL,'+ TRANSECT + POINT')
-# AggLevel='Site'#options = Site, All
-# dbPARAM=sqlQuery(wrsa1314,"Select SAMPLE_TYPE, PARAMETER, LABEL,VAR_TYPE from tblMETADATA where ACTIVE='TRUE'")#parameter names (SWJ to do: iterate over Sample_Type groups to generate pivots)
-# params_N=subset(dbPARAM, subset=VAR_TYPE=='NUMERIC')
-# tblNAME='UnionTBLnum'
-# if(min(c('SAMPLE_TYPE',tblCOL) %in% colnames(UnionTBL))==1){#if minimum needed columns are present, proceed, otherwise assume it is a pivoted or otherwise human readable table
-#   #summarized quantitative data (average values per pivot cell which is per site per parameter)
-#   tblNUM=subset(UnionTBL,subset=PARAMETER %in% params_N$PARAMETER )
-#   if(nrow(tblNUM)>1){#only assign pivot to variable if not empty and only dive into subsequent if not empty
-#     if(AggLevel=='Site'){pvtCOL4='UID + SAMPLE_TYPE + PARAMETER ~.'; pvtCOL5='RESULT~UID + SAMPLE_TYPE + PARAMETER'; colUID='tblPVTnSUM2$UID';nameUID=c('UID','SAMPLE_TYPE','PARAMETER','Quant1','Quant2')} else if (AggLevel=='All') {pvtCOL4='SAMPLE_TYPE + PARAMETER ~.';pvtCOL5='RESULT~SAMPLE_TYPE + PARAMETER';colUID='';nameUID=c('SAMPLE_TYPE','PARAMETER','Quant1','Quant2')}
-#     tblNUM$RESULT=as.numeric(tblNUM$RESULT)
-#     tblNUM=subset(tblNUM,subset= is.na(RESULT)==FALSE)#apparently not removing NAs during pivot aggregation, so done manually because causing errors - have to do after conversion to number
-#     tblPVTn=cast(tblNUM, eval(parse(text=pvtCOLdefault)),value='RESULT',fun.aggregate='mean')#pivot reach average by site
-#     tblPVTnSUM1=cast(tblNUM, eval(parse(text=pvtCOL4)),value='RESULT',fun.aggregate=c(length,mean,median,min,max,sd),fill='NA') # pivot summary stats by all sites combined or individual sites
-#     tblPVTnSUM2=aggregate(eval(parse(text=pvtCOL5)),data=tblNUM,FUN='quantile',probs=c(0.25,0.75),names=FALSE)
-#     tblPVTnSUM2=data.frame(cbind(eval(parse(text=colUID)),tblPVTnSUM2$SAMPLE_TYPE,tblPVTnSUM2$PARAMETER,tblPVTnSUM2$RESULT[,1],tblPVTnSUM2$RESULT[,2]));colnames(tblPVTnSUM2)=nameUID
-#     tblPVTnSUM=merge(tblPVTnSUM1,tblPVTnSUM2,by=setdiff(nameUID,c('Quant1','Quant2')))
-#     #need to do this by UID for WRSA13 QA duplicate comparison
-#     assign(sprintf('%s_pvtQUANTmean_%s',tblNAME,AggLevel),tblPVTn)
-#     assign(sprintf('%s_pvtSUMMARYn_%s',tblNAME,AggLevel),tblPVTnSUM)
-#   }
+UnionTBL=tblRetrieve(Table='', Years=years, Projects=projects,Protocols=protocols,SiteCodes=sitecodes,Insertion=insertion)
+
+tblCOL=c('UID', 'SAMPLE_TYPE','PARAMETER','RESULT','TRANSECT','POINT')
+pvtCOL='UID %s ~ SAMPLE_TYPE + PARAMETER';pvtCOLdefault=sprintf(pvtCOL,'');pvtCOL2=sprintf(pvtCOL,'+ TRANSECT + POINT')
+AggLevel='Site'#options = Site, All
+dbPARAM=sqlQuery(wrsa1314,"Select SAMPLE_TYPE, PARAMETER, LABEL,VAR_TYPE from tblMETADATA where ACTIVE='TRUE'")#parameter names (SWJ to do: iterate over Sample_Type groups to generate pivots)
+params_N=subset(dbPARAM, subset=VAR_TYPE=='NUMERIC')
+tblNAME='UnionTBLnum'
+if(min(c('SAMPLE_TYPE',tblCOL) %in% colnames(UnionTBL))==1){#if minimum needed columns are present, proceed, otherwise assume it is a pivoted or otherwise human readable table
+  #summarized quantitative data (average values per pivot cell which is per site per parameter)
+  tblNUM=subset(UnionTBL,subset=PARAMETER %in% params_N$PARAMETER )
+  if(nrow(tblNUM)>1){#only assign pivot to variable if not empty and only dive into subsequent if not empty
+    if(AggLevel=='Site'){pvtCOL4='UID + SAMPLE_TYPE + PARAMETER ~.'; pvtCOL5='RESULT~UID + SAMPLE_TYPE + PARAMETER'; colUID='tblPVTnSUM2$UID';nameUID=c('UID','SAMPLE_TYPE','PARAMETER','Quant1','Quant2')} else if (AggLevel=='All') {pvtCOL4='SAMPLE_TYPE + PARAMETER ~.';pvtCOL5='RESULT~SAMPLE_TYPE + PARAMETER';colUID='';nameUID=c('SAMPLE_TYPE','PARAMETER','Quant1','Quant2')}
+    tblNUM$RESULT=as.numeric(tblNUM$RESULT)
+    tblNUM=subset(tblNUM,subset= is.na(RESULT)==FALSE)#apparently not removing NAs during pivot aggregation, so done manually because causing errors - have to do after conversion to number
+    tblPVTn=cast(tblNUM, eval(parse(text=pvtCOLdefault)),value='RESULT',fun.aggregate='mean')#pivot reach average by site
+    tblPVTnSUM1=cast(tblNUM, eval(parse(text=pvtCOL4)),value='RESULT',fun.aggregate=c(length,mean,median,min,max,sd),fill='NA') # pivot summary stats by all sites combined or individual sites
+    tblPVTnSUM2=aggregate(eval(parse(text=pvtCOL5)),data=tblNUM,FUN='quantile',probs=c(0.25,0.75),names=FALSE)
+    tblPVTnSUM2=data.frame(cbind(eval(parse(text=colUID)),tblPVTnSUM2$SAMPLE_TYPE,tblPVTnSUM2$PARAMETER,tblPVTnSUM2$RESULT[,1],tblPVTnSUM2$RESULT[,2]));colnames(tblPVTnSUM2)=nameUID
+    tblPVTnSUM=merge(tblPVTnSUM1,tblPVTnSUM2,by=setdiff(nameUID,c('Quant1','Quant2')))
+    #need to do this by UID for WRSA13 QA duplicate comparison
+    assign(sprintf('%s_pvtQUANTmean_%s',tblNAME,AggLevel),tblPVTn)
+    assign(sprintf('%s_pvtSUMMARYn_%s',tblNAME,AggLevel),tblPVTnSUM)
+  }
+}
+
+# #export results
+# QUANTtbls=c(grep('pvtQUANTmean',ls(),value=T),setdiff(grep('pvtSUMMARYn',ls(),value=T),"pvtSUMMARYn"))
+# for (t in 1:length(QUANTtbls)){
+#   write.csv(eval(parse(text=QUANTtbls[t])),sprintf('%s.csv',QUANTtbls[t]))#could merge-pvtQUANTmean_, but I like them grouped by categories
 # }
-# 
-# # #export results
-# # QUANTtbls=c(grep('pvtQUANTmean',ls(),value=T),setdiff(grep('pvtSUMMARYn',ls(),value=T),"pvtSUMMARYn"))
-# # for (t in 1:length(QUANTtbls)){
-# #   write.csv(eval(parse(text=QUANTtbls[t])),sprintf('%s.csv',QUANTtbls[t]))#could merge-pvtQUANTmean_, but I like them grouped by categories
-# # }
-# 
-# UnionTBLnum_pvtSUMMARYn_Site=subset(UnionTBLnum_pvtSUMMARYn_Site,PARAMETER %in% c('ANGLE180', 'BANKHT','BANKWID','BARWID','DENSIOM','DEPTH','LWD','ELEVATION','INCISED','SIZENUM','TEMPERATURE','WETWID','FLOOD_MAX_DEPTH','FLOOD_WID','FLOOD_BF_HEIGHT','FLOOD_BFWIDTH','FLOOD_HEIGHT'))
-# UnionTBLnum_pvtSUMMARYn_Site=addKEYS(UnionTBLnum_pvtSUMMARYn_Site,c('PROJECT','SITE_ID','CREW_LEADER'))
-# 
-# write.csv(UnionTBLnum_pvtSUMMARYn_Site,'UnionTBLnum_pvtSUMMARYn_Site.csv')
-# 
+
+UnionTBLnum_pvtSUMMARYn_Site=subset(UnionTBLnum_pvtSUMMARYn_Site,PARAMETER %in% c('ANGLE180', 'BANKHT','BANKWID','BARWID','DENSIOM','DEPTH','LWD','ELEVATION','INCISED','SIZENUM','TEMPERATURE','WETWID','FLOOD_MAX_DEPTH','FLOOD_WID','FLOOD_BF_HEIGHT','FLOOD_BFWIDTH','FLOOD_HEIGHT'))
+UnionTBLnum_pvtSUMMARYn_Site=addKEYS(UnionTBLnum_pvtSUMMARYn_Site,c('PROJECT','SITE_ID','CREW_LEADER'))
+
+write.csv(UnionTBLnum_pvtSUMMARYn_Site,'UnionTBLnum_pvtSUMMARYn_Site.csv')
+
 
 
 
