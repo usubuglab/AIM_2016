@@ -44,7 +44,7 @@ listsites=listsites[,c(15,9,1,4,6,10,13,14,16,7,11,8,12,2,3,5)]
 # listsites=setNames(cast(listsites,'UID~PARAMETER',value='RESULT'),c("UID","BEAVER_FLOW_MOD_CHECK","BEAVER_SIGN_CHECK","DATE_COL_CHECK","LAT_DD_CHECK","LAT_DD_BR_CHECK","LAT_DD_TR_CHECK","LOC_NAME_CHECK","LON_DD_CHECK","LON_DD_BR_CHECK","LON_DD_TR_CHECK","PROJECT_CHECK","PROTOCOL_CHECK","SITE_ID_CHECK",'VALXSITE_CHECK'))
 # #any data with 2016
 # listsites=setNames(cast(listsites,'UID~PARAMETER',value='RESULT'),c("UID","BEAVER_FLOW_MOD_CHECK","BEAVER_SIGN_CHECK","DATE_COL_CHECK","WATER_WITHDRAWAL_CHECK","LAT_DD_CHECK","LAT_DD_BR_CHECK","LAT_DD_TR_CHECK","LOC_NAME_CHECK","LON_DD_CHECK","LON_DD_BR_CHECK","LON_DD_TR_CHECK","PROJECT_CHECK","PROTOCOL_CHECK","SITE_ID_CHECK",'VALXSITE_CHECK'))
-listsites$PROTOCOL2_CHECK=ifelse(listsites$PROTOCOL=="BOAT14"|listsites$PROTOCOL=="BOAT2016","BOATABLE","WADEABLE")
+listsites$PROTOCOL2_CHECK=ifelse(listsites$PROTOCOL=="BOAT14"|listsites$PROTOCOL=="BOAT2016"|listsites$PROTOCOL=="BOAT2020","BOATABLE","WADEABLE")
 listsites$FieldStatus_CHECK=ifelse(listsites$VALXSITE_CHECK=="WADEABLE"|listsites$VALXSITE_CHECK=="BOATABLE","Sampled - Full Reach",
                              ifelse(listsites$VALXSITE_CHECK=="PARBYWADE"|listsites$VALXSITE_CHECK=="PARBYBOAT","Sampled - Partial Reach",
                                     ifelse(listsites$VALXSITE_CHECK=="INTWADE","Sampled - Interrupted Flow",
