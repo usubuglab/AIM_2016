@@ -12,12 +12,12 @@
 
 #--------------------------------------------------------SETUP--------------------------------------------------------#
 secretName = 'aimReader'
-vaultPath = '//share1.bluezone.usu.edu/miller/buglab/Vault/aimReader.vault'
-keyFile = file.path( path.expand("~"), "Vault", "aimReader.key" )
-#keyFile = file.path( path.expand("~"), "Vault", "aimWriter.key" ) # uncomment line to get write access
+#secretName = 'aimWriter'
+vaultPath = paste0('//share1.bluezone.usu.edu/miller/buglab/Vault/', secretName,'.vault')
+keyFile = file.path( path.expand("~"), "Vault", paste0(secretName,".key") )
 
 #LOAD required packages#
-requiredPACKAGES=c('reshape','R6','odbc','DBI','openssl','grid','gridExtra','openxlsx','zipR', 'sqldf','jpeg','spsurvey','tcltk','plyr','mapview','tidyverse')
+requiredPACKAGES=c('reshape','R6','odbc','DBI','openssl','grid','gridExtra','openxlsx','zipR', 'sqldf','jpeg','spsurvey','tcltk','plyr','mapview')
 for (r in 1:length(requiredPACKAGES)){
   if ((requiredPACKAGES[r] %in% installed.packages()[,1])==FALSE & requiredPACKAGES[r] %in% c('R6','odbc','DBI','openssl')){install.packages(requiredPACKAGES[r])}#auto-install if not present
   library(requiredPACKAGES[r],character.only = TRUE)
