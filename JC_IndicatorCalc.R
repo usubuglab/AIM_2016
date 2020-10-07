@@ -34,15 +34,11 @@
 ########################################################################################
 ##### Site Descriptors #####
 ########################################################################################
+
+#read in SampleReach Table; no other code is needed for this section; all the formatting below is taken care of in the new table 
 listsites=tblRetrieve(Parameters=c('SITE_ID','DATE_COL','LOC_NAME','LAT_DD','LON_DD','PROJECT','PROTOCOL','VALXSITE','LAT_DD_BR','LAT_DD_TR','LON_DD_BR','LON_DD_TR','DEWATER','BEAVER_FLOW_MOD','BEAVER_SIGN'),Projects=projects,Years=years,Protocols=protocols,SiteCodes=sitecodes,Insertion=insertion)
-#2017+
 listsites=setNames(cast(listsites,'UID~PARAMETER',value='RESULT'),c("UID","BEAVER_FLOW_MOD_CHECK","BEAVER_SIGN_CHECK","DATE_COL_CHECK","WATER_WITHDRAWAL_CHECK","LAT_DD_CHECK","LAT_DD_BR_CHECK","LAT_DD_TR_CHECK","LOC_NAME_CHECK","LON_DD_CHECK","LON_DD_BR_CHECK","LON_DD_TR_CHECK","PROJECT_CHECK","PROTOCOL_CHECK","SITE_ID_CHECK",'VALXSITE_CHECK'))
 listsites=listsites[,c(15,9,1,4,6,10,13,14,16,7,11,8,12,2,3,5)]
-# #listsites=setNames(cast(listsites,'UID~PARAMETER',value='RESULT'),c("UID","DATE_COL_CHECK","LAT_DD_CHECK","LAT_DD_BR_CHECK","LAT_DD_TR_CHECK","LON_DD_CHECK","LON_DD_BR_CHECK","LON_DD_TR_CHECK","PROJECT_CHECK","PROTOCOL_CHECK","SITE_ID_CHECK",'VALXSITE_CHECK'))
-# #don't run the last 2 lines for 2016 data because different # of columns...LOC_NAME not in 2016 data...should I join it back in?
-# listsites=setNames(cast(listsites,'UID~PARAMETER',value='RESULT'),c("UID","BEAVER_FLOW_MOD_CHECK","BEAVER_SIGN_CHECK","DATE_COL_CHECK","LAT_DD_CHECK","LAT_DD_BR_CHECK","LAT_DD_TR_CHECK","LOC_NAME_CHECK","LON_DD_CHECK","LON_DD_BR_CHECK","LON_DD_TR_CHECK","PROJECT_CHECK","PROTOCOL_CHECK","SITE_ID_CHECK",'VALXSITE_CHECK'))
-# #any data with 2016
-# listsites=setNames(cast(listsites,'UID~PARAMETER',value='RESULT'),c("UID","BEAVER_FLOW_MOD_CHECK","BEAVER_SIGN_CHECK","DATE_COL_CHECK","WATER_WITHDRAWAL_CHECK","LAT_DD_CHECK","LAT_DD_BR_CHECK","LAT_DD_TR_CHECK","LOC_NAME_CHECK","LON_DD_CHECK","LON_DD_BR_CHECK","LON_DD_TR_CHECK","PROJECT_CHECK","PROTOCOL_CHECK","SITE_ID_CHECK",'VALXSITE_CHECK'))
 listsites$PROTOCOL2_CHECK=ifelse(listsites$PROTOCOL=="BOAT14"|listsites$PROTOCOL=="BOAT2016","BOATABLE","WADEABLE")
 listsites$FieldStatus_CHECK=ifelse(listsites$VALXSITE_CHECK=="WADEABLE"|listsites$VALXSITE_CHECK=="BOATABLE","Sampled - Full Reach",
                              ifelse(listsites$VALXSITE_CHECK=="PARBYWADE"|listsites$VALXSITE_CHECK=="PARBYBOAT","Sampled - Partial Reach",
@@ -52,12 +48,12 @@ listsites$FieldStatus_CHECK=ifelse(listsites$VALXSITE_CHECK=="WADEABLE"|listsite
                                     ))))
 listsites$IndicatorsCollected_CHECK=listsitesFieldStatus_CHECK=ifelse(listsites$VALXSITE_CHECK=="SUBSETWADE","Core Subset","Core" )
 
-# #listsites=listsites[,c(1,12,6,2,3,7,10,13,11,5,9,4,8)]
-# #run list sites and TRCHLEN below to get sinuosity data
+# Sinousity  Data #
+# Create a subset of the SampleReach table that only has these two columns
 TRCHLEN1=tblRetrieve(Parameters=c('TRCHLEN','INCREMENT'),Projects=projects,Years=years,Protocols=protocols,SiteCodes=sitecodes,Insertion=insertion)#not using TRCHLEN
 TRCHLEN1$RESULT=as.numeric(TRCHLEN1$RESULT)
 
-#Side channel info
+#Get Side Channel info from ChannelDimensions_W table
 side=tblRetrieve(Parameters=c('SIDCHN','SIDCH_TYPE'),Projects=projects,Years=years,Protocols=protocols,SiteCodes=sitecodes,Insertion=insertion)
 sidecount=setNames(addKEYS(cast(side,'UID~PARAMETER',value='RESULT'),c('SITE_ID','DATE_COL','PROJECT')),c('UID','NumSideChn_CHECK','NumTran','DATE_COL','PROJECT','SITE_ID'))#count is default function
 sidecount$SIDCHN_PRES_CHECK=ifelse(sidecount$NumSideChn_CHECK>0,"PRESENT","ABSENT")
@@ -66,11 +62,15 @@ sidecount$SIDCHN_PRES_CHECK=ifelse(sidecount$NumSideChn_CHECK>0,"PRESENT","ABSEN
 ##########################################################################################
 ###### Biodiversity and Riparian Habitat Quality ######
 ##########################################################################################
-#xcdenmid and xcdenbk - canopy cover
+#read in CanopyCover_W and CanopyCover_B tables
+#PctOverheadCover and PctBankOverheadCover
+#EPA xcdenmid and xcdenbk indicators
 densiom=tblRetrieve(Parameters='DENSIOM',Projects=projects,Years=years,Protocols=protocols,SiteCodes=sitecodes,Insertion=insertion)
 densiom$RESULT=as.numeric(densiom$RESULT)
 
-#XCMG - vegetative complexity
+#read in VegComplexity table
+#VegComplexity
+#EPA XCMG Indicator
 #RipALL=tblRetrieve(Parameters=c("BARE","CANBTRE","CANSTRE","CANVEG","GCNWDY","GCWDY","UNDERVEG","UNDNWDY","UNDWDY"),Projects=projects,Years=years,Protocols=protocols,SiteCodes=sitecodes,Insertion=insertion)
 RipXCMG=tblRetrieve(Parameters=c("CANBTRE","CANSTRE","GCNWDY","GCWDY","UNDNWDY","UNDWDY"),Projects=projects,Years=years,Protocols=protocols,SiteCodes=sitecodes,Insertion=insertion)
 RipXCMG$RESULT=as.numeric(RipXCMG$RESULT)
@@ -79,8 +79,10 @@ RipWW$RESULT=as.numeric(RipWW$RESULT)
 RipGB=tblRetrieve(Parameters=c("BARE"),Projects=projects,Years=years,Protocols=protocols,SiteCodes=sitecodes,Insertion=insertion)
 RipGB$RESULT=as.numeric(RipGB$RESULT)
 RipUNDWDY_GCWDY=tblRetrieve(Parameters=c("GCWDY","UNDWDY"),Projects=projects,Years=years,Protocols=protocols,SiteCodes=sitecodes,Insertion=insertion)
-#BLM riparian cover and frequency
-RipBLM=tblRetrieve(Parameters=c('CANRIPW','UNRIPW','GCRIP','INVASW', 'NATIVW','INVASH','NATIVH','SEGRUSH','INVASAQ'),Projects=projects,Years=years,Protocols=protocols,SiteCodes=sitecodes,Insertion=insertion)
+
+#read in VegSpecies_W_B table
+#Priority Native and Noxious Frequency of Occurence
+RipBLM=tblRetrieve(Parameters=c('INVASW', 'NATIVW','INVASH','NATIVH','SEGRUSH','INVASAQ'),Projects=projects,Years=years,Protocols=protocols,SiteCodes=sitecodes,Insertion=insertion)
 
 #Bug data
 #bug metrics are calculated outside of this script and joined back in
@@ -92,7 +94,7 @@ RipBLM=tblRetrieve(Parameters=c('CANRIPW','UNRIPW','GCRIP','INVASW', 'NATIVW','I
 ###############################################################################################
 ###### Water Quality ######
 ###############################################################################################
-#All WQ data
+#read in WaterQualityMacroInvert table
 WQtbl=tblRetrieve(Parameters=c('CONDUCTIVITY','PH','NTL','PTL','TURBIDITY','TEMPERATURE','EC_PRED','TN_PRED','TP_PRED'),Projects=projects,Years=years,Protocols=protocols,SiteCodes=sitecodes,Insertion=insertion)
 WQtbl$RESULT=as.numeric(WQtbl$RESULT)
 WQpvt=cast(WQtbl,'UID~PARAMETER',value='RESULT')
@@ -103,6 +105,7 @@ WQpvt=cast(WQtbl,'UID~PARAMETER',value='RESULT')
 ###############################################################################################
 ##### Watershed Function and Instream Habitat Quality ######
 ###############################################################################################
+#read in SlopePoolSummary_W and Pools_W tables
 #Pools
 pool_length=tblRetrieve(Parameters=c('LENGTH'),Projects=projects, Years=years,Protocols=protocols,SiteCode=sitecodes,Insertion=insertion)
 pool_length$RESULT=as.numeric(pool_length$RESULT)
@@ -112,13 +115,15 @@ PoolDepth=tblRetrieve(Parameters=c('PTAILDEP','MAXDEPTH'), Projects=projects, Ye
 PoolDepth$RESULT=as.numeric(PoolDepth$RESULT)
 poolcollect=tblRetrieve(Parameters='POOL_COLLECT',Projects=projects, Years=years,Protocols=protocols,SiteCode=sitecodes,Insertion=insertion)
 
-#LWD- should query wadeable and boatable wood because boatable wood stored under wadeable?
+#read in LargeWood_W_B table
+#Large wood
 LwdCatWet=unclass(sqlQuery(wrsa1314,"select SAMPLE_TYPE,PARAMETER from tblMetadata where Sample_TYPE like 'LWDW%' and PARAMETER like 'W%'"))$PARAMETER
 LwdCatDry=unclass(sqlQuery(wrsa1314,"select SAMPLE_TYPE,PARAMETER from tblMetadata where Sample_TYPE like 'LWDW%' and PARAMETER like 'D%'"))$PARAMETER
 LwdWet=addKEYS(tblRetrieve(Parameters=LwdCatWet,Projects=projects,Years=years,Protocols=protocols,SiteCodes=sitecodes,Insertion=insertion),c('SITE_ID','DATE_COL'))
 LwdWet$RESULT=as.numeric(LwdWet$RESULT)
 LwdDry=tblRetrieve(Parameters=LwdCatDry,Projects=projects,Years=years,Protocols=protocols,SiteCodes=sitecodes,Insertion=insertion)
 LwdDry$RESULT=as.numeric(LwdDry$RESULT)
+#read in SampleReach table and subset these columns
 TRCHLEN=tblRetrieve(Parameters=c('TRCHLEN','INCREMENT'),Projects=projects,Years=years,Protocols=protocols,SiteCodes=sitecodes,Insertion=insertion)#not using TRCHLEN
 TRCHLEN$RESULT=as.numeric(TRCHLEN$RESULT)
 TRCHLEN1=cast(TRCHLEN,'UID~PARAMETER',value='RESULT')
@@ -131,42 +136,54 @@ TRCHLEN1=cast(TRCHLEN,'UID~PARAMETER',value='RESULT')
 #occuring in the dataframe for that transect, or the most common count of
 #stations (i.e. station mode) occuring at that site. 
 
-#pct_safn and other sediment metrics
+
+#read in StreambedParticles_W and ThalwegStreambedParticles_B tables
+#PctFinesLessThan2mm and other sediment metrics
 Sediment=tblRetrieve(Parameters=c('SIZE_CLS','XSIZE_CLS'),Projects=projects,Years=years,Protocols=protocols,SiteCodes=sitecodes,Insertion=insertion)
 Sed2014=tblRetrieve(Parameters=c('SIZE_NUM','LOC'),Projects=projects,Years=years,Protocols=protocols,SiteCodes=sitecodes,Insertion=insertion)
 
+#read in PoolTailFines_W table
 #Pool Tail Fines
 PoolFines=tblRetrieve(Parameters=c('POOLFINES2','POOLFINES6','POOLNOMEAS'),Projects=projects, Years=years,Protocols=protocols,SiteCode=sitecodes,Insertion=insertion)
 PoolFines$RESULT=as.numeric(PoolFines$RESULT)
 
+#read in Bank_W and Bank_B table
 #Bank Stability
 BankStab=tblRetrieve(Parameters=c('STABLE','EROSION','COVER_FOLIAR','COVER_BASAL','BNK_VEG_FOLIAR','BNK_VEG_BASAL','BNK_COBBLE','BNK_LWD','BNK_BEDROCK'), Projects=projects,Years=years,Protocols=protocols,SiteCodes=sitecodes,Insertion=insertion)
+#read in ChannelDimmensions_W and subset this column
 SideBank=tblRetrieve(Parameters=c('SIDCHN_BNK'),Projects=projects,Years=years,Protocols=protocols,SiteCodes=sitecodes,Insertion=insertion)
 
-#LINCIS_H - floodplain connectivity
-Incision=tblRetrieve(Parameters=c('INCISED','BANKHT'),Projects=projects,Years=years,Protocols=protocols,SiteCodes=sitecodes,Insertion=insertion)
-Incision$RESULT=as.numeric(Incision$RESULT)
-
-#XFC_NAT- fish cover
-fish=tblRetrieve(Parameters=c('BOULDR','BRUSH','LVTREE','OVRHNG','UNDCUT','WOODY'),Projects=projects,Years=years,Protocols=protocols,SiteCodes=sitecodes,Insertion=insertion)
-fish$RESULT=as.numeric(fish$RESULT)
-
-#Angle-PIBO method only
+#read in Bank_W table
+#BankAngle-PIBO method only
 Angle=tblRetrieve(Parameters=c('ANGLE180'),Projects=projects, Years=years,Protocols=protocols,SiteCodes=sitecodes,Insertion=insertion)
 Angle$RESULT=as.numeric(Angle$RESULT)
 
+#read in ChannelDimensions_W and ChannelDimensions_B
+#FloodplainConnectivity and ChannelIncision
+#EPA LINCIS_H - floodplain connectivity
+Incision=tblRetrieve(Parameters=c('INCISED','BANKHT'),Projects=projects,Years=years,Protocols=protocols,SiteCodes=sitecodes,Insertion=insertion)
+Incision$RESULT=as.numeric(Incision$RESULT)
+
+#read in FishCover_W_B
+#Fish Cover
+#EPA XFC_NAT
+fish=tblRetrieve(Parameters=c('BOULDR','BRUSH','LVTREE','OVRHNG','UNDCUT','WOODY'),Projects=projects,Years=years,Protocols=protocols,SiteCodes=sitecodes,Insertion=insertion)
+fish$RESULT=as.numeric(fish$RESULT)
+
+
+#read in Thalweg_W and Thalweg_StreambedParticles_B tables
 #Thalweg mean , CV, and pct dry
 thalweg=addKEYS(tblRetrieve(Parameters=c('DEPTH'), Projects=projects, Years=years,Protocols=protocols,SiteCodes=sitecodes,Insertion=insertion),c('PROTOCOL'))
 thalweg$RESULT=as.numeric(thalweg$RESULT)
 thalweg=subset(thalweg,SAMPLE_TYPE!='CROSSSECW')
 
 #RP100 and other EPA pool metrics 
-
+#see seperate R script
 
 #########################################################################################################
 ###### Covariates/ Other ######
 #########################################################################################################
-#Channel Dimensions
+#read in ChannelDimensions_W and ChannelDimensions_B
 WetWid=tblRetrieve(Parameters=c('WETWIDTH'),Projects=projects, Years=years,Protocols=protocols,SiteCode=sitecodes,Insertion=insertion)#Wetted widths from thalweg
 WetWid$RESULT=as.numeric(WetWid$RESULT)
 WetWid2=tblRetrieve(Parameters=c('WETWID'),Projects=projects, Years=years,Protocols=protocols,SiteCode=sitecodes,Insertion=insertion)#Wetted widths from main transects
@@ -174,15 +191,13 @@ WetWid2$RESULT=as.numeric(WetWid2$RESULT)
 BankWid=tblRetrieve(Parameters=c('BANKWID'),Projects=projects, Years=years,Protocols=protocols,SiteCode=sitecodes,Insertion=insertion)
 BankWid$RESULT=as.numeric(BankWid$RESULT)
 
+#read in FloodproneWidth_W
 #Floodprone width
-#pre2017
-#FloodWidth=tblRetrieve(Parameters=c('FLOOD_WID'), Projects=projects, Years=years,Protocols=protocols,SiteCode=sitecodes,Insertion=insertion)
-#2017 plus
 FloodWidth=tblRetrieve(Parameters=c('FLOOD_WID','FLOOD_BFWIDTH'), Projects=projects, Years=years,Protocols=protocols,SiteCode=sitecodes,Insertion=insertion)
 FloodWidth$RESULT=as.numeric(FloodWidth$RESULT)
-#FloodWidthpvt=cast(FloodWidth,'UID+TRANSECT~PARAMETER',value='RESULT')
-#Slope
-#2017
+
+
+#read in SlopePoolSummary_W
 Slope=tblRetrieve(Parameters=c('AVGSLOPE','SLPRCHLEN','PCT_GRADE'),Projects=projects,Years=years,Protocols=protocols,SiteCodes=sitecodes,Insertion=insertion)                 
 Slope$RESULT=as.numeric(Slope$RESULT)
 
@@ -193,7 +208,8 @@ Slope$RESULT=as.numeric(Slope$RESULT)
 ##########################################################################################################
 ##### Other metrics still being worked on or old metrics no longer used #####
 ##########################################################################################################
-#W1_HALL- human influence
+#read in HumanInfluence_W_B
+#EPA W1_HALL- human influence
 #Figure out the differences... Human influence sample type...
 Human_Influ=tblRetrieve(Parameters=c('BUILD','LOG','MINE','PARK','PAST','PAVE','PIPES','ROAD','ROW','TRASH','WALL'), Projects=projects,Years=years,Protocols=protocols,SiteCodes=sitecodes)
 
@@ -217,7 +233,8 @@ Human_Influ=tblRetrieve(Parameters=c('BUILD','LOG','MINE','PARK','PAST','PAVE','
 
 ############################################
 
-#xcdenmid -pct overhead cover
+#PctOverheadCover
+#EPA xcdenmid 
 ##just averages across side channels
 MidDensiom = subset(densiom, POINT == "CU"|POINT =="CD"|POINT == "CL"|POINT == "CR")
 DensPvt=cast(MidDensiom,'UID~PARAMETER',value='RESULT',fun=mean)
@@ -227,7 +244,9 @@ DensPvt=merge(nDensPvt,DensPvt,by="UID")
 DensPvt$XCDENMID_CHECK=ifelse(DensPvt$nXCDENMID_CHECK<20,NA,DensPvt$XCDENMID_CHECK)
 DensPvt$XCDENMID_CHECK=round(DensPvt$XCDENMID_CHECK,digits=1)
 
-#xcdenbk -bank overhead cover ######changed calculation of boating sites in 2017 to include all 4 measurements taken at a bank
+#PctBankOverheadCover 
+#EPA xcdenbk 
+######changed calculation of boating sites in 2017 to include all 4 measurements taken at a bank
 ##just averages across sidechannels
 BnkDensiom = subset(densiom, POINT == "LF"|POINT =="RT"|POINT=="UP"|POINT=="DN")
 BnkDensPvt=cast(BnkDensiom,'UID~PARAMETER',value='RESULT',fun=mean)
@@ -239,11 +258,12 @@ BnkDensPvt$XCDENBK_CHECK=round(BnkDensPvt$XCDENBK_CHECK,digits=1)
 
 #########################################################
 
-#          Veg and Riparian Complexity Indicators       #
+#          Veg Complexity and Species Indicators       #
 
 #########################################################
 
-# xcmg - vegative complexity
+#VegComplexity 
+#EPA xcmg 
 RipXCMG$ResultsPer=ifelse(RipXCMG$RESULT == 1, 0.05,ifelse(RipXCMG$RESULT == 2, 0.25,ifelse(RipXCMG$RESULT == 3, 0.575,ifelse(RipXCMG$RESULT == 4, 0.875,ifelse(RipXCMG$RESULT ==0, 0, NA)))))
 XCMG_new=setNames(cast(RipXCMG,'UID+TRANSECT+POINT~ACTIVE', value='ResultsPer',fun='sum'),list('UID',  'TRANSECT',  'POINT',  'VALUE'))
 XCMG_new1=setNames(aggregate(VALUE~UID,data=XCMG_new,FUN=mean),list("UID","XCMG_CHECK"))
@@ -253,20 +273,8 @@ nXCMG_new=setNames(plyr::count(RipXCMG,"UID"),c("UID","nXCMG_CHECK"))#6 strata(c
 XCMG_new1=merge(nXCMG_new,XCMG_new1, by="UID")
 XCMG_new1$XCMG_CHECK=ifelse(XCMG_new1$nXCMG_CHECK<60,NA,XCMG_new1$XCMG_CHECK)#5 sites 3 WRSA 54-60
 
-
-
-################################## these are not included in the end exported file but are things that we might include eventually #################
-#####layer by layer#####
-# RipXCMG$ResultsPer=ifelse(RipXCMG$RESULT == 1, 0.05,ifelse(RipXCMG$RESULT == 2, 0.25,ifelse(RipXCMG$RESULT == 3, 0.575,ifelse(RipXCMG$RESULT == 4, 0.875,ifelse(RipXCMG$RESULT ==0, 0, NA)))))
-# layers=cast(RipXCMG,'UID~PARAMETER', value='ResultsPer',fun='mean')
-
-######## other EPA veg complexity variations ###########
-#RipGB
-RipGB$ResultsPer=ifelse(RipGB$RESULT == 1, 0.05,ifelse(RipGB$RESULT == 2, 0.25,ifelse(RipGB$RESULT == 3, 0.575,ifelse(RipGB$RESULT == 4, 0.875,ifelse(RipGB$RESULT ==0, 0, NA)))))
-XGB_new=setNames(cast(RipGB,'UID+TRANSECT+POINT~ACTIVE', value='ResultsPer',fun='sum'),list('UID',  'TRANSECT',  'POINT',  'VALUE'))
-XGB_new1=setNames(aggregate(VALUE~UID,data=XGB_new,FUN=mean),list("UID","XGB_CHECK"))
-
-#xcmgw
+#VegComplexityWoody
+#EPA xcmgw
 #xcmgw=XC+XMW+XGW: However, this is not how aquamet is calculating it, the order of operation would give different results if XC was caluclated and then added to XMW and XMG
 #More true to aquamet calculation: XCMG=XCL+XCS+XMW+XGW
 #Need to just calculate it by transect side first then average at an entire site.
@@ -279,31 +287,24 @@ XCMGW_new1=setNames(aggregate(VALUE~UID,data=XCMGW_new,FUN=mean),list("UID","XCM
 XCMGW_new1$XCMGW_CHECK=round(XCMGW_new1$XCMGW_CHECK,digits=2)
 
 
-#RipUNDWDY_GCWDY
+#VegComplexityUnderstoryGround
 RipUNDWDY_GCWDY$ResultsPer=ifelse(RipUNDWDY_GCWDY$RESULT == 1, 0.05,ifelse(RipUNDWDY_GCWDY$RESULT == 2, 0.25,ifelse(RipUNDWDY_GCWDY$RESULT == 3, 0.575,ifelse(RipUNDWDY_GCWDY$RESULT == 4, 0.875,ifelse(RipUNDWDY_GCWDY$RESULT ==0, 0, NA)))))
 RipUnderstoryGround=setNames(cast(RipUNDWDY_GCWDY,'UID+TRANSECT+POINT~ACTIVE', value='ResultsPer',fun='sum'),list('UID',  'TRANSECT',  'POINT',  'VALUE'))
 RipUnderstoryGround1=setNames(aggregate(VALUE~UID,data=RipUnderstoryGround,FUN=mean),list("UID","RipUnderstoryGround_CHECK"))
 RipUnderstoryGround1$RipUnderstoryGround_CHECK=round(RipUnderstoryGround1$RipUnderstoryGround_CHECK,digits=2)
 
+
+######## other EPA veg complexity variations ###########
+#VegComplexityBareGround
+RipGB$ResultsPer=ifelse(RipGB$RESULT == 1, 0.05,ifelse(RipGB$RESULT == 2, 0.25,ifelse(RipGB$RESULT == 3, 0.575,ifelse(RipGB$RESULT == 4, 0.875,ifelse(RipGB$RESULT ==0, 0, NA)))))
+XGB_new=setNames(cast(RipGB,'UID+TRANSECT+POINT~ACTIVE', value='ResultsPer',fun='sum'),list('UID',  'TRANSECT',  'POINT',  'VALUE'))
+XGB_new1=setNames(aggregate(VALUE~UID,data=XGB_new,FUN=mean),list("UID","XGB_CHECK"))
+
+
 ###################################################################################################################################################
 
-##BLM riparian cover and frequency##
-#Riparian vegetation cover
-RIP_VEG=subset(RipBLM, PARAMETER == 'CANRIPW'|PARAMETER == 'UNRIPW'|PARAMETER == 'GCRIP')
-RIP_VEG$RESULT=as.numeric(RIP_VEG$RESULT)
-RIP_VEG$ResultsPer=ifelse(RIP_VEG$RESULT == 1, 0.05,ifelse(RIP_VEG$RESULT == 2, 0.25,ifelse(RIP_VEG$RESULT == 3, 0.575,ifelse(RIP_VEG$RESULT == 4, 0.875,ifelse(RIP_VEG$RESULT ==0, 0, NA)))))
-nRIP_VEG=setNames(plyr::count(RIP_VEG,c("UID",'PARAMETER')),c("UID",'PARAMETER',"nRIP_VEG_CHECK"))#
-nRIP_VEG=setNames(cast(nRIP_VEG,"UID~PARAMETER",value="nRIP_VEG_CHECK",fun="sum"),c('UID','nCANRIPW_CHECK','nUNRIPW_CHECK', 'nGCRIP_CHECK'))
-RIP_VEG=setNames(cast(RIP_VEG,'UID~PARAMETER', value='ResultsPer',fun='mean'),c('UID','CANRIPW_CHECK','UNRIPW_CHECK', 'GCRIP_CHECK'))
-RIP_VEG=merge(nRIP_VEG,RIP_VEG,by="UID")
-RIP_VEG$CANRIPW_CHECK=round(RIP_VEG$CANRIPW_CHECK,digits=2)
-RIP_VEG$UNRIPW_CHECK=round(RIP_VEG$UNRIPW_CHECK,digits=2)
-RIP_VEG$GCRIP_CHECK=round(RIP_VEG$GCRIP_CHECK,digits=2)
-RIP_VEG$CANRIPW_CHECK=ifelse(RIP_VEG$nCANRIPW_CHECK<10,NA,RIP_VEG$CANRIPW_CHECK)#total=22,but collected at 5 transects=10, so min N=10
-RIP_VEG$UNRIPW_CHECK=ifelse(RIP_VEG$nUNRIPW_CHECK<10,NA,RIP_VEG$UNRIPW_CHECK)#total=22,but collected at 5 transects=10, so min N=10
-RIP_VEG$GCRIP_CHECK=ifelse(RIP_VEG$nGCRIP_CHECK<10,NA,RIP_VEG$GCRIP_CHECK)#total=22,but collected at 5 transects=10, so min N=10
+##Priority Native and Noxious Frequency of Occurence##
 
-#Riparian vegetation frequency
 # #pre2019 data doesnt have INVASAQ and derived indicators
 # FQCY_VEG=subset(RipBLM, PARAMETER == 'INVASW'|PARAMETER == 'NATIVW'|PARAMETER == 'INVASH'|PARAMETER == 'NATIVH'|
 #                   PARAMETER == 'SEGRUSH')
@@ -358,12 +359,6 @@ FQCY_VEG$SEGRUSH_CHECK=ifelse(FQCY_VEG$nSEGRUSH_CHECK<10,NA,FQCY_VEG$SEGRUSH_CHE
 WQpvt$CONDUCTIVITY_CHECK=round(WQpvt$CONDUCTIVITY,digits=2)
 WQpvt$PTL_CHECK=round(WQpvt$PTL,digits=1)
 WQpvt$NTL_CHECK=round(WQpvt$NTL,digits=1)
-WQpvt$TN_PRED_CHECK=round(WQpvt$TN_PRED,digits=1)
-WQpvt$TP_PRED_CHECK=round(WQpvt$TP_PRED,digits=1)
-WQpvt$EC_PRED_CHECK=round(WQpvt$EC_PRED,digits=1)
-WQpvt$OE_EC_CHECK=round(WQpvt$CONDUCTIVITY-WQpvt$EC_PRED,digits=2)
-WQpvt$OE_TN_CHECK=round(WQpvt$NTL-WQpvt$TN_PRED,digits=1)
-WQpvt$OE_TP_CHECK=round(WQpvt$PTL-WQpvt$TP_PRED,digits=1)
 WQpvt$TURBIDITY_CHECK=round(WQpvt$TURBIDITY,digits=2)
 WQpvt$PH_CHECK=WQpvt$PH
 WQpvt$TEMPERATURE_CHECK=WQpvt$TEMPERATURE
@@ -385,20 +380,20 @@ WQfinal=WQpvt
 
 #########################################################
 
-#Percent pools
+#PctPools
 pool_length$RESULT=as.numeric(pool_length$RESULT)
 pvtpools1=cast(pool_length,'UID~PARAMETER',value='RESULT',fun=sum) 
 pvtpools2=cast(reach_length,'UID~PARAMETER',value='RESULT') 
 poolsmerge=merge(pvtpools1,pvtpools2,by=c('UID'),all=T)
 poolsmerge$PoolPct=round((poolsmerge$LENGTH/poolsmerge$POOLRCHLEN)*100,digits=2)
 
-#residual pool depth
+#ResPoolDepth - residual pool depth
 PoolDepth=cast(PoolDepth,'UID+TRANSECT+POINT~PARAMETER',value='RESULT')
 PoolDepth$RPD=(PoolDepth$MAXDEPTH-PoolDepth$PTAILDEP)/100# convert from cm to m
 RPD=setNames(aggregate(PoolDepth$RPD,list(UID=PoolDepth$UID),mean),c("UID","RPD"))#converted to m
 RPD$RPD=round(RPD$RPD,digits=2)
 
-#combine all pool metrics and add pool frequency
+#combine all pool metrics and add PoolFreq
 count=setNames(plyr::count(PoolDepth,"UID"),c("UID","NumPools"))
 poolmerge2=join_all(list(poolsmerge,count,RPD), by="UID")
 poolmerge2$PoolFrq=round((poolmerge2$NumPools/poolmerge2$POOLRCHLEN)*1000,digits=1)###need to consider what reach length to use here #may need shorted lengths for parial reaches#change to use new parameter POOLRCHLEN
@@ -418,7 +413,8 @@ Pools=setNames(subset(poolmerge2,select=c(UID,PoolPct,RPD,PoolFrq,NumPools)),c("
 #                    Large Wood Indicators                     #
 
 #########################################################
-#C1WM100- (Cummulative count of LWD in bankfull channel across all size classes)/(Reach Length) units are pieces/100m
+#LargeWoodCount and LargeWoodFreq
+# EPA C1WM100- (Cummulative count of LWD in bankfull channel across all size classes)/(Reach Length) units are pieces/100m
 LwdWet$TRANSECT=mapvalues(LwdWet$TRANSECT, c("XA", "XB","XC","XD","XE","XF","XG","XH","XI","XJ","XK" ),c("A", "B","C","D","E","F","G","H","I","J","K"))
 LWD_test=setNames(aggregate(RESULT~UID+TRANSECT,data=LwdWet,FUN=sum),c("UID","TRANSECT","C1W"))# count of all LWD pieces per site
 LWD_test2=setNames(plyr::count(LWD_test,"UID"),c("UID","NUMTRAN"))# count of the number of transects that wood was collected for #may require package plyr which requires R version > 3????? but I have also gotten count to work in other situations with other version of R required for aquamet
@@ -435,7 +431,7 @@ LWD$LWD_RCHLEN=(LWD$TRCHLEN/10)*LWD$NUMTRAN
 LWD$C1WM100_CHECK=round((LWD$C1W_CHECK/LWD$LWD_RCHLEN)*100,digits=3)# get the pieces/100m
 #to exclude data that has less than 50% run volume code and code below
 
-
+#LargeWoodVol
 #V1WM100
 #MUST run C1WM100 code prior to this code so that the RCHLEN (reach length) code works. 
 #Duplications of size classes below are so that the table works with sites sampled with the 2013 protocol as well as the 2014 and later protocol 
@@ -515,7 +511,7 @@ LWD$V1WM100_CHECK=round(LWD$V1WM100_CHECK,digits=3)
 
 #########################################################
 
-#PercentFinesLessThan 2 mm and Less than 6 mm
+#PctFinesLessThan2mm and PctFinesLessThan6mm
 
 #### 2013 data and Boating data which was also stored in Size_CLS. 2013 field protocol only collected Bed sediment, unlike 2014 and beyond which collected bed and bank sediment. 
 ####Doing sand and fines together
@@ -622,6 +618,7 @@ ALLSED$D84_CHECK=ifelse(grepl("^AK", ALLSED$PROJECT)==TRUE, ifelse(ALLSED$nallPC
 #                Pool Tail Fines Indicators             #
 
 #########################################################
+#PctPoolFinesLessThan2mm and PctPoolFinesLessThan6mm
 pvtPoolFines=cast(PoolFines,'UID+TRANSECT+POINT~PARAMETER',value='RESULT')#need to pivot to create the pctPoolFInes variable
 pvtPoolFines$PctPoolFines2_CHECK=pvtPoolFines$POOLFINES2/(50-pvtPoolFines$POOLNOMEAS)*100
 pvtPoolFines$PctPoolFines6_CHECK=pvtPoolFines$POOLFINES6/(50-pvtPoolFines$POOLNOMEAS)*100
@@ -683,7 +680,7 @@ Banks=subset(Banks,Banks$SIDCHN_BNK==Banks$POINT)
 #Banks$CoverValueBasal=as.numeric(ifelse(Banks$COVER_BASAL=='UC',"0",ifelse(Banks$COVER_BASAL=='CV',"1",NA)))
 Banks$CoverValueFoliar=as.numeric(ifelse(Banks$COVER_FOLIAR=='UC',"0",ifelse(Banks$COVER_FOLIAR=='CV',"1",NA)))
 #I want to calculate the percent of banks that are Stable (Absent) 
-# Unstable==(Fracture, slump, slough, eroding)
+# Unstable is (Fracture, slump, slough, eroding)
 BanksNA=subset(Banks,is.na(EROSION)==TRUE)
 BanksNA$StableValue=NA
 BanksDepositionalFoliar=subset(Banks,EROSION=='DP'&is.na(Banks$CoverValueFoliar)==FALSE)
@@ -777,7 +774,8 @@ if(exists('BnkAllBoatable')==TRUE) {BnkAll=rbind(BnkAllWadeable,BnkAllBoatable)}
 #          Floodplain Connectivty Indicators            #
 
 ##########################################################
-#LINCIS_H
+#ChannelIncision, BenchHeightAvg, BankfullHeightAvg
+#EPA LINCIS_H
 #2019 changed to not collect this data at side channels in 2019 so need to remove historic side channel data from calculations
 ### Then take the average at each site for bank height and incised height. Merge the data back together and then calculate LINCIS_H
 #note that mathematically it does not matter whether you take the mean bankfull height and subtract it from the mean incision height or if you take the paired bankfull height and incision height differences and then calculate a mean if N is same
@@ -800,8 +798,7 @@ IncBnk$LINCIS_H_CHECK=round(log10(IncBnk$xinc_h_CHECK-IncBnk$xbnk_h_CHECK+0.1),d
 IncBnk$xinc_h_CHECK=round(IncBnk$xinc_h_CHECK,digits=2)
 IncBnk$xbnk_h_CHECK=round(IncBnk$xbnk_h_CHECK,digits=2)
 
-
-#BNK_HT_RATIO
+#FloodplainConnectivity or BankHeightRatio
 #get thawleg info and fix differences in protocols and data storage among years
 #thawleg was stored differently in 2013-2015 than in 2016 on. Points differ among years by one so one needs added to older data
 ##UNCOMMENT THIS SECTION IF DATA OLDER THAN 2017
@@ -817,7 +814,7 @@ thalweg_ratio5=addKEYS(tblRetrieve(Parameters=c('DEPTH'), Projects=projects, Yea
 thalweg_ratio5$RESULT=as.numeric(thalweg_ratio5$RESULT)
 depth=subset(thalweg_ratio5,POINT==1)
 depth$RESULT=depth$RESULT/100
-#get bank info
+#read in BenchHeight and BankHeight from ChannelDimensions Table
 BnkRatio=tblRetrieve(Parameters=c('INCISED','BANKHT'), Projects=projects, Years=years,Protocols=protocols,SiteCodes=sitecodes,Insertion=insertion)
 BnkRatio$RESULT=as.numeric(BnkRatio$RESULT)
 #side channels don't need removed because thalweg not collected on side channels so side channel data not used anyway
@@ -847,7 +844,8 @@ BnkRatioAvg$BNK_HT_RATIO_CHECK=round(BnkRatioAvg$BNK_HT_RATIO_CHECK,digits=2)
 #    Instream Habitat Complexity (Fish Cover) Indicator   #
 
 ##########################################################
-#XFC_NAT
+#InstreamHabitatComplexity or FishCover
+#EPA XFC_NAT
 ###Get the approrpaite fish parameters from NC_DataConsumption
 ######'BOULDR','BRUSH','LVTREE','OVRHNG','UNDCUT','WOODY'
 ###### Change numeric categories into appropriate percentages, pivot to take the mean or each fish cover category at a site. 
@@ -868,7 +866,7 @@ fishpvt2$XFC_NAT_CHECK=round(fishpvt2$XFC_NAT_CHECK,digits=2)
 #                    Bank Angle  Indicator              #
 
 ##########################################################
-#Angle
+#BankAngleAvg
 Angle$RESULT=ifelse(Angle$RESULT<45,45,Angle$RESULT)
 Angle$RESULT=as.numeric(Angle$RESULT)
 
@@ -918,7 +916,7 @@ PctDry$PctDry_CHECK=round(PctDry$PctDry_CHECK,digits=1)
 
 Thalweg=merge(Thalweg,PctDry, by=c('UID'),all=TRUE)
 
-#omit cases with incomplete thalweg 2016+ data 
+#omit cases with incomplete thalweg  
 tbl=tblRetrieve(Parameters=c('DEPTH'),Project=projects, Years=years,Protocols=protocols,SiteCodes=sitecodes)
 tbl$RESULT=as.numeric(tbl$RESULT)
 tbl.2=tblRetrieve(Parameters=c('NUM_THALWEG'),Project=projects, Years=years,Protocols=protocols,SiteCodes=sitecodes)
@@ -933,50 +931,6 @@ Thalweg$XDEPTH_CHECK=ifelse(Thalweg$VALXSITE %in% c('PARBYWADE','PARBYBOAT','INT
 Thalweg$CVDEPTH_CHECK=ifelse(Thalweg$VALXSITE %in% c('PARBYWADE','PARBYBOAT','INTPARBYWADE'),ifelse(Thalweg$pctcomplete<40,NA,Thalweg$CVDEPTH_CHECK),ifelse(Thalweg$pctcomplete<80,NA,Thalweg$CVDEPTH_CHECK))#changed from 100 to 80 in 2019
 Thalweg$CVDEPTH_CHECK=ifelse(Thalweg$PctDry_CHECK>0,NA,Thalweg$CVDEPTH_CHECK)# omit cases with dry thalwegs
 Thalweg$PctDry_CHECK=ifelse(Thalweg$VALXSITE %in% c('PARBYWADE','PARBYBOAT','INTPARBYWADE'),ifelse(Thalweg$pctcomplete<40,NA,Thalweg$PctDry_CHECK),ifelse(Thalweg$pctcomplete<80,NA,Thalweg$PctDry_CHECK))#changed from 100 to 80 in 2019 #changed from 100 to 80 in 2019 
-
-
-
-# #omit cases with incomplete thalweg 2014-2015
-# thalweg.missing2014=sqlQuery(wrsa1314,sprintf("select Station.UID, StationCNT,DepthCNT from 
-#                                               (select distinct UID,
-#                                               CASE 
-#                                               WHEN parameter='sub_5_7' and RESULT='5' THEN cast((RESULT*2)*10 as numeric)
-#                                               WHEN parameter='sub_5_7' and RESULT='7' THEN cast((RESULT*2+1)*10 as numeric)
-#                                               WHEN parameter='sub_5_7' and RESULT='14' THEN cast ((RESULT*2+2)*10 as numeric)
-#                                               ELSE 'ISSUE'
-#                                               END as StationCNT from tbltransect where parameter='SUB_5_7' and ACTIVE='true') as station
-#                                               join
-#                                               (select UID,  count(point) as DepthCNT from tblpoint where parameter='DEPTH' and SAMPLE_TYPE='THALW'  and ACTIVE='true' group by UID) as depth
-#                                               on station.uid=depth.uid
-#                                               --- where StationCNT > DepthCNT 
-#                                               order by Station.UID"))
-# thalweg.missing2014$pctcomplete=thalweg.missing2014$DepthCNT/thalweg.missing2014$StationCNT*100
-# #omit cases with incomplete thalweg 2013
-# thalweg.missing2013=sqlQuery(wrsa1314,sprintf("select Station.UID, StationDUPLICATES,StationCNT,DepthCNT from 
-#                                               (select distinct UID,
-#                                               CASE 
-#                                               WHEN RESULT='5' THEN cast(RESULT*20 as numeric)
-#                                               WHEN RESULT='7' THEN cast(RESULT*20+10 as numeric)
-#                                               WHEN RESULT='14' THEN cast (RESULT*20+20 as numeric)
-#                                               ELSE 'ISSUE'
-#                                               END as StationCNT from tblpoint where parameter='SUB_5_7' and ACTIVE='true') as station
-#                                               join
-#                                               (select UID,count(result) as StationDUPLICATES from (select distinct UID, result from tblpoint where parameter='SUB_5_7' and ACTIVE='true') as stcnt group by UID) as stationcount
-#                                               on station.uid=stationcount.uid
-#                                               join 
-#                                               (select UID, count(point) as DepthCNT from tblpoint where parameter='DEPTH' and POINT not in('CT','LC','LF','RC','RT') and ACTIVE='true' group by UID) as depth
-#                                               on station.uid=depth.uid
-#                                               --where StationCNT > DepthCNT or stationDUPLICATES>1
-#                                               order by Station.UID"))
-# thalweg.missing2013$pctcomplete=thalweg.missing2013$DepthCNT/thalweg.missing2013$StationCNT*100                             
-# Thalweg2014=merge(Thalweg,thalweg.missing2014, by=c('UID'))
-# Thalweg2013=merge(Thalweg,thalweg.missing2013, by=c('UID') ) 
-# Thalweg_2013_2014=merge(Thalweg2013,Thalweg2014,by=c('UID'),all=TRUE)# mannually exclude data because such a mess
-# # Thalweg_2013_2014$XDEPTH_CHECK=ifelse(Thalweg2014$pctcomplete<100,NA,Thalweg2014$XDEPTH_CHECK)
-# # Thalweg_2013_2014$CVDEPTH_CHECK=ifelse(Thalweg2014$pctcomplete<100,NA,Thalweg2014$CVDEPTH_CHECK)              
-# # Thalweg2013$XDEPTH_CHECK=ifelse(Thalweg2013$pctcomplete<100,NA,Thalweg2013$XDEPTH_CHECK)
-# # Thalweg2013$CVDEPTH_CHECK=ifelse(Thalweg2013$pctcomplete<100,NA,Thalweg2013$CVDEPTH_CHECK)  
-# 
 
              
 ###################################################################################################################
@@ -1011,6 +965,7 @@ Slope_Per=Slope_Per1
 #                Channel Dimensions                     #
 
 ##########################################################
+#WettedWidthAvg
 #note the EPA combines all side channel, main and intermediate transects and then takes the max wetted width for a total of 10 values (excluding transect K?) instead of 21. This is likely an artifact of them adding intermediate transects halway through the project
 #We are deviating from the EPA's method of calculating wetted width. We take the max value for main vs. side channels (should in theory always be main channel); then we average across all 21 values (main and intermediate)
 #Because of this deviation, in the future we should remove the variable differences of wetwid and wetwidth and make them the same variable
@@ -1026,7 +981,7 @@ WetWidFinal=merge(nWetWid,WetWidFinal)
 WetWidFinal$XWIDTH_CHECK=ifelse(WetWidFinal$nXWIDTH_CHECK<9,NA,WetWidFinal$XWIDTH_CHECK)# changed from 10 to 9 in 2019 because 5 main and 4 intermediate=9
 WetWidFinal$XWIDTH_CHECK=round(WetWidFinal$XWIDTH_CHECK,digits=2)
 
-
+#BankfullWidthAvg
 BankWid$TRANSECT=mapvalues(BankWid$TRANSECT, c("XA", "XB","XC","XD","XE","XF","XG","XH","XI","XJ","XK" ),c("A", "B","C","D","E","F","G","H","I","J","K"))#change all side channels to normal transects
 BankWid$RESULT=as.numeric(BankWid$RESULT)
 BankWidpvt=cast(BankWid,'UID+TRANSECT~PARAMETER', value='RESULT', fun=sum)#sum across side channels and main transects
@@ -1041,14 +996,6 @@ BankWidFinal$XBKF_W_CHECK=round(BankWidFinal$XBKF_W_CHECK,digits=2)
 #                Flood Prone Width                     #
 
 ##########################################################
-#Flood Prone Width
-FloodWidthCount=setNames(plyr::count(FloodWidth,"UID"),c('UID','nFloodWidth_CHECK'))#count doesn't appear to be working
-FloodWidth$RESULT=as.numeric(FloodWidth$RESULT)
-avgFloodWidth=setNames(cast(FloodWidth,'UID~PARAMETER',value='RESULT', fun=mean),c("UID","BNK_WT_CHECK","FLD_WT_CHECK"))
-avgFloodWidth$FLD_WT_CHECK=round(avgFloodWidth$FLD_WT_CHECK,digits=2)
-avgFloodWidth=merge(avgFloodWidth,FloodWidthCount,by=c('UID'))
-
-
 
 #Entrenchment
 FloodWidthpvt=cast(FloodWidth,'UID+TRANSECT~PARAMETER',value='RESULT')
@@ -1062,6 +1009,7 @@ entrench=setNames(cast(FloodWidthpvt, 'UID~TRANSECT', value='ENTRENCHpvt'),c("UI
 #                    Sinuosity                           #
 
 ##########################################################
+#Sinuosity
 #Data from site descriptors 
 listsites$straightline=acos(sin(as.numeric(listsites$LAT_DD_BR_CHECK)*3.141593/180)*sin(as.numeric(listsites$LAT_DD_TR_CHECK)*3.141593/180) + cos(as.numeric(listsites$LAT_DD_BR_CHECK)*3.141593/180)*cos(as.numeric(listsites$LAT_DD_TR_CHECK)*3.141593/180)*cos(as.numeric(listsites$LON_DD_TR_CHECK)*3.141593/180-as.numeric(listsites$LON_DD_BR_CHECK)*3.141593/180)) * 6371000
 TRCHLEN=setNames(cast(TRCHLEN,'UID~PARAMETER',value='RESULT'),c('UID','INCREMENT','TRCHLEN_CHECK'))
@@ -1080,9 +1028,9 @@ listsites$SINUOSITY_CHECK=ifelse(listsites$VALXSITE_CHECK=="PARBYWADE"|listsites
 ###################################################################################################################
 ###################################################################################################################
 ###################################################################################################################
-
-# #W1_HALL- human influence
-# #Be careful, the documentation says to use P=0.667, but the aquamet code says 0.6667, if there ends up being a lot of P's in the data this makes a difference!!! 
+#Human Influence
+#EPA W1_HALL- human influence
+#Be careful, the documentation says to use P=0.667, but the aquamet code says 0.6667, if there ends up being a lot of P's in the data this makes a difference!!! 
 # #EMAP_WEST
 # Human_Influ$EMAP_Weights=ifelse(Human_Influ$RESULT == "B", 1.5,ifelse(Human_Influ$RESULT == "C", 1.0, ifelse(Human_Influ$RESULT == "P", 0.6667, 0))) 
 # W1_HALL=cast(Human_Influ,'UID~PARAMETER', value='EMAP_Weights',fun='mean')
@@ -1105,7 +1053,7 @@ W1_HALL$NRSA_W1_HALL_CHECK=rowSums(W1_HALL_NRSA[,c(2:12)])
 ###################################################################################################################
 # ###combine all objects that exist in workspace that contain indicator values####
 IndicatorCheckJoin=listsites
-IndicatorList=c("DensPvt","BnkDensPvt","XCMG_new1", "RIP_VEG","FQCY_VEG","WQfinal","Pools","LWD","ALLSED","FinalpvtPoolFines","BnkAll","IncBnk","BnkRatioAvg","fishpvt2","MeanAngle","Thalweg","BankWidFinal","WetWidFinal","avgFloodWidth","entrench","Slope_Per","sidecount")
+IndicatorList=c("DensPvt","BnkDensPvt","XCMG_new1","XCMGW_new1","RipUnderstoryGround1","XGB_new1" ,"FQCY_VEG","WQfinal","Pools","LWD","ALLSED","FinalpvtPoolFines","BnkAll","IncBnk","BnkRatioAvg","fishpvt2","MeanAngle","Thalweg","BankWidFinal","WetWidFinal","entrench","Slope_Per","sidecount")
 for (s in 1:length(IndicatorList)) {
 if(exists(IndicatorList[s])==TRUE){IndicatorCheckJoin=join_all(list(IndicatorCheckJoin,as.data.frame(get(IndicatorList[s]))),by="UID")}
   else {IndicatorCheckJoin=IndicatorCheckJoin}
