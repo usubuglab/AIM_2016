@@ -1,9 +1,10 @@
-##### Non-Natives ######
+##### Priority Native and Noxious Species ######
+#Read data in from VegSpecies_W_B
 speciesdata=addKEYS(tblRetrieve(Parameters=c('INVAS_COMMON_NAME'),Years=years, Projects=projects,SiteCodes=sitecodes,Insertion=insertion),c('SITE_ID'))
 speciesdata$CommonName=speciesdata$RESULT
 countspeciesdata=plyr::count(speciesdata,c("UID","CommonName"))
 
-
+#Kent we likely will need to work collaboratively on this section to get what we need give that the data is in a very different format now
 #add full list of species from each state along with scientific name #need full list of sites query unique UIDs for nonnative presence absence and join....
 RipBLM=tblRetrieve(Parameters=c('CANRIPW','UNRIPW','GCRIP','INVASW', 'NATIVW','INVASH','NATIVH','SEGRUSH','INVASAQ'),Projects=projects,Years=years,Protocols=protocols,SiteCodes=sitecodes,Insertion=insertion)
 FQCY_VEG=subset(RipBLM, PARAMETER == 'INVASW'|PARAMETER == 'NATIVW'|PARAMETER == 'INVASH'|PARAMETER == 'NATIVH'|
@@ -32,9 +33,11 @@ speciesDataFreq=addKEYS(join(FQCY_VEG,countspeciesdata, by="UID",type="left"),c(
 sites=unique(speciesDataFreq$SITE_ID)
 
 #add state info
+#Kent I think we will need to do a spatial join to BLM admin unit layer to get BLM admin state
 designs=read.csv('\\\\share1.bluezone.usu.edu\\miller\\buglab\\Research Projects\\AIM\\Design\\DesignDatabase\\lkp_GRTS_SiteInfo.csv')
 state=designs[,c('SITE_ID','STATE')]
 
+#read in LU_SpeciesMetdata table
 specieslists=read.csv("Z:\\buglab\\Research Projects\\AIM\\Protocols\\NonNativeVeg\\Comprehensive Aquatic AIM Nonnative Riparian Plant Species List_JC2020.csv")
 
 statespecies=join(state,specieslists,by="STATE", type="left")
