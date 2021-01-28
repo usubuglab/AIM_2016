@@ -12,9 +12,9 @@
 
 #set working directory to be desired analysis folder
 setwd('Z:\\buglab\\Research Projects\\AIM\\Projects\\Colorado\\StatewideAssessment\\Analysis\\Weights_ExtentEstimates\\Benchmark Boxplots')
-
+setwd('Z:\\buglab')
 #run the extent estimate code to merge the benchmark tool output with the reporting unit info from designs, then write out the SiteInfo file
-sampled=read.csv('Z:\\buglab\\Research Projects\\AIM\\Projects\\Colorado\\StatewideAssessment\\Analysis\\Weights_ExtentEstimates\\SiteInfo.csv')
+sampled=read.csv('Z:\\buglab\\Research Projects\\AIM\\Projects\\Colorado\\StatewideAssessment\\Analysis\\Weights_ExtentEstimates\\SiteInfosubset.csv')
 str(sampled)
 
 #get column names from benchmark tool to match EPA reference data
@@ -113,11 +113,11 @@ dev.off()
 
 #MMI
 #option1
-biotype=c("Biotype1","Biotype2","Biotype3")
+biotype=c("Biotype 1","Biotype 2","Biotype 3")
 png(file="MMI_by_reporting_unit.png", width=1200,height=700,pointsize=24)
 par(mfrow=c(1,3),oma = c(0, 0, 2, 0),mgp=c(3,1.5,0))
 for (b in 1:length(biotype)){
-sampledBug=subset(sampled,MODEL==paste("CO_EDAS2017-",biotype[b],sep=""))
+sampledBug=subset(sampled,MODEL==paste("CO-EDAS2017 - ",biotype[b],sep=""))
 t=boxplot(OE~POPULATION,names=c('CO','RMD','SWD','NWD'),main=biotype[b],data=sampledBug,ylab="CO MMI Score",ylim=c(10,85),show.names=TRUE,plot=FALSE)
 boxplot(OE~POPULATION,names=paste0(t$names, " \n(n=",t$n,")"),main=biotype[b],data=sampledBug,ylab="CO MMI Score",ylim=c(10,85),show.names=TRUE)
 
@@ -131,6 +131,21 @@ t=boxplot(OE~MODEL,names=c("Biotype1","Biotype2","Biotype3"),data=sampled,ylab="
 boxplot(OE~MODEL,names=paste0(t$names, " \n(n=",t$n,")"),data=sampled,ylab="CO MMI Score",ylim=c(10,85))
 
 dev.off()
+
+
+####Sediment#####
+#option1
+biotype=c("Region1","Region2","Region3")
+png(file="Sediment_by_region.png", width=1200,height=700,pointsize=24)
+par(mfrow=c(1,3),oma = c(0, 0, 2, 0),mgp=c(3,1.5,0))
+for (b in 1:length(biotype)){
+  sampledBug=subset(sampled,SedBenchmark==paste(biotype[b]))
+  t=boxplot(PCT_SAFN~POPULATION,names=c('CO','RMD','SWD','NWD'),main=biotype[b],data=sampledBug,ylab="% Fine Sediment",ylim=c(0,100),show.names=TRUE,plot=FALSE)
+  boxplot(PCT_SAFN~POPULATION,names=paste0(t$names, " \n(n=",t$n,")"),main=biotype[b],data=sampledBug,ylab="% Fine Sediment",ylim=c(0,100),show.names=TRUE)
+  
+}
+dev.off()
+
 
 
 ####  Best professional judgment indicators  #####
@@ -156,7 +171,7 @@ for (i in 2:length(indicators)){
 ######    PHAB indicators with EPA data benchmarks   ######
 
 ##read in EPA reference data, this should be the "revised_EPAreference.csv" export from the end of the EPA_reference_site_rescreening.R file
-reference=read.csv("Z:\\buglab\\Research Projects\\AIM\\Analysis\\Benchmarks\\EPA_Data\\RevisingThresholds\\revised_EPAreference.csv")
+reference=read.csv("Z:\\buglab\\Research Projects\\AIM\\Analysis\\Archive_transfered to sharepoint\\Benchmarks\\EPA_Data\\RevisingThresholds\\revised_EPAreference.csv")
 
 ##get reference data and sampled data in similar formats
 #make data more manageable and subset only relevant columns
@@ -164,6 +179,7 @@ reference=reference[,c("SITE_ID","ECO10","EPA_hybird","Ecoregion_spelledout","RE
 #identify data as reference
 reference$POPULATION="R"
 #subset sampled data to only columns needed and make sure these match reference data
+
 sampled=sampled[,c("POPULATION","SITE_ID","Ecoregion_spelledout","REALM","BNK_THRESH","THRESH3","PCT_SAFN","LINCIS_H","XCDENBK","XFC_NAT","XCMG","XCMGW")]
 #merge reference and sampled data and for any columns that don't match append and fill with NA
 data=rbind.fill(reference,sampled)
@@ -181,7 +197,6 @@ axislabels=c('POPULATION','THRESH3','BNK_THRESH','% Fine Sediment','Floodplain C
 #specify y axis min and max, must be in same order as indicators and axislabels!!
 min=c(1,1,1,0,-1,0,0,0,0)
 max=c(200,200,200,100,1,100,2.3,3.5,2.6)
-
 
 ##create boxplots after changing "names" argument below for a given analysis
 data=data[,indicators]

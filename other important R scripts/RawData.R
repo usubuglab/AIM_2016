@@ -4,6 +4,7 @@
 #run this script to export all raw data for desired sites.
 #this script can also be used to QC data to make sure that the pivots using the cast function dont aggregate data.
 ##if you get an error that data was aggregated that means that there are duplicate values in the database that need to be removed prior to indicator computation
+library(xlsx)
 
 #####Reach
 #Metadata
@@ -100,14 +101,14 @@ thalwegpvt=addKEYS(cast(thalweg,'UID+TRANSECT+POINT~PARAMETER',value='RESULT'),c
 unique(thalwegpvt$POINT)
 
 #Pools
-pool=tblRetrieve(Parameters=c('LENGTH','PTAILDEP','MAXDEPTH'),Projects=projects, Years=years,Protocols=protocols,SiteCode=sitecodes)
+pool=tblRetrieve(Parameters=c('HABTYPE','LENGTH','PTAILDEP','MAXDEPTH'),Projects=projects, Years=years,Protocols=protocols,SiteCode=sitecodes)
 poolreach=tblRetrieve(Parameters=c('POOLRCHLEN','POOL_COLLECT'),Projects=projects, Years=years,Protocols=protocols,SiteCode=sitecodes)
 poolpvt=cast(pool,'UID+TRANSECT~PARAMETER',value='RESULT')
 poolreachpvt=addKEYS(cast(poolreach,'UID~PARAMETER',value='RESULT'),c('SITE_ID'))
 poolfinal=merge(poolpvt,poolreachpvt,by='UID')
 
 #Pool Tail Fines
-PoolFines=tblRetrieve(Parameters=c('POOLFINES2','POOLFINES6','POOLNOMEAS'),Projects=projects, Years=years,Protocols=protocols,SiteCode=sitecodes)
+PoolFines=tblRetrieve(Parameters=c('POOLFINES2','POOLFINES6','POOLNOMEAS',"POOLFINES6_512"),Projects=projects, Years=years,Protocols=protocols,SiteCode=sitecodes)
 pvtPoolFines=addKEYS(cast(PoolFines,'UID+TRANSECT+POINT~PARAMETER',value='RESULT'),c('SITE_ID'))
 
 #Comments

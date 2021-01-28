@@ -177,10 +177,10 @@ sitesUSEDprep$stratum=sitesUSEDprep$ReportingUnit3
 districts=c('MT_NROCK','MT_PNW','MT_SROCK','Other','XE_EPLAT','XE_NORTH','XE_SOUTH')
 #ReportingUnit2
 sitesUSEDprep$stratum=sitesUSEDprep$ReportingUnit2
-districts=c('ROCKY MOUNTAIN DISTRICT OFFICE','NORTHWEST DISTRICT OFFICE','SOUTHWEST DISTRICT OFFICE')
+districts=c('VernalFO','PriceFO')
 #ReportingUnit1
 sitesUSEDprep$stratum=sitesUSEDprep$ReportingUnit1
-districts=c('CO')
+districts=c('UT_GreenRiverDO')
 
 
 ##WRSA code
