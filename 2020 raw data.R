@@ -25,7 +25,7 @@ Bank_Boatable2=join(Bank_Boatable2,Chosen,type='full',by=c('UID','TRANSECT'))
 write.csv(Bank_Boatable2,'Bank_Boatable2.csv',na='')
 
 CANOPY_COVER=tblRetrieve(Parameters=c('DENSIOM'),Projects=projects,Years=years,Protocols=protocols,SiteCodes=sitecodes)
-CANOPY_COVERpvt=addKEYS(cast(CANOPY_COVER,'UID+TRANSECT+POINT~PARAMETER',value='RESULT'),c('PROJECT','SITE_ID','PROTOCOL','VALXSITE','CREW_LEADER'))
+CANOPY_COVERpvt=addKEYS(cast(CANOPY_COVER,'UID+TRANSECT~PARAMETER+POINT',value='RESULT'),c('PROJECT','SITE_ID','PROTOCOL','VALXSITE','CREW_LEADER'))
 write.csv(CANOPY_COVERpvt,'CANOPY_COVERpvt.csv',na='')
 
 ChannelDimmensions_Wadeable=tblRetrieve(Parameters=c('WETWID',	'BARWID',	'TRANDRY',	'BANKWID',	'BANKHT',	'INCISED',	'SIDCHN',	'SIDCH_TYPE',	'SIDCHN_BNK',	'SIDCHN_FLOW'),Projects=projects,Years=years,Protocols=protocols,SiteCodes=sitecodes)
@@ -46,7 +46,7 @@ FloodWidth=tblRetrieve(Parameters=c('FLOOD_WID','FLOOD_HEIGHT','FLOOD_BFHEIGHT',
 pvtFloodWidth=addKEYS(cast(FloodWidth,'UID+TRANSECT~PARAMETER',value='RESULT'),c('PROJECT','SITE_ID','PROTOCOL','VALXSITE','CREW_LEADER'))
 write.csv(pvtFloodWidth,'pvtFloodWidth.csv',na='')
 
-Human_Influ=tblRetrieve(Parameters=c('BUILD','LOG','MINE','PARK','PAST','PAVE','PIPES','ROAD','ROW','TRASH','WALL','GRAZ','HYDR','LIVE','RECR'), Projects=projects,Years=years,Protocols=protocols,SiteCodes=sitecodes)                       
+Human_Influ=tblRetrieve(Parameters=c('BUILD','LOG','MINE','PARK','PAST','PAVE','PIPES','ROAD','ROW','TRASH','WALL','GRAZ','HYDR','LIVE','RECR','RESTORATION'), Projects=projects,Years=years,Protocols=protocols,SiteCodes=sitecodes)                       
 Human_Influpvt=addKEYS(cast(Human_Influ,'UID+TRANSECT+POINT~PARAMETER',value='RESULT'),c('PROJECT','SITE_ID','PROTOCOL','VALXSITE','CREW_LEADER'))
 write.csv(Human_Influpvt,'Human_Influpvt.csv',na='')
 
@@ -60,9 +60,11 @@ LittoralSubstrate=tblRetrieve(Parameters=c('BOTTOMDOM','BOTTOMSEC','SHOREDOM','S
 LittoralSubstratepvt=addKEYS(cast(LittoralSubstrate,'UID+TRANSECT~PARAMETER',value='RESULT'),c('PROJECT','SITE_ID','PROTOCOL','VALXSITE','CREW_LEADER'))
 write.csv(LittoralSubstratepvt,'LittoralSubstratepvt.csv',na='')
 
+#wood location!!!
 LWD=unclass(sqlQuery(wrsa1314,"select SAMPLE_TYPE,PARAMETER from tblMetadata where Sample_TYPE like 'LWDW%' "))$PARAMETER
 LWD2=addKEYS(tblRetrieve(Parameters=LWD,Projects=projects,Years=years,Protocols=protocols,SiteCodes=sitecodes),c('SITE_ID'))
-write.csv(LWD2,'LWD.csv',na='')
+LWD3=addKEYS(cast(LWD2,'UID+TRANSECT~PARAMETER',value='RESULT'),c('SITE_ID'))
+write.csv(LWD3,'LWD.csv',na='')
 
 #Pools
 pool=tblRetrieve(Parameters=c('HABTYPE','LENGTH','PTAILDEP','MAXDEPTH'),Projects=projects, Years=years,Protocols=protocols,SiteCode=sitecodes)
@@ -96,8 +98,8 @@ StreambedParticlespvt=addKEYS(cast(StreambedParticles,'UID+TRANSECT+POINT~PARAME
 write.csv(StreambedParticlespvt,'StreambedParticlespvt.csv',na='')
                               
 #Slope
-Slope_height=tblRetrieve(Parameters=c('STARTHEIGHT','ENDHEIGHT','SLOPE','STARTTRAN','ENDTRAN'), Projects=projects, Years=years,Protocols=protocols,SiteCodes=sitecodes)
-Slope_heightpvt=addKEYS(cast(Slope_height,'UID+TRANSECT+POINT+IND~PARAMETER',value='RESULT'),c('PROJECT','SITE_ID','PROTOCOL','VALXSITE','CREW_LEADER'))
+Slope_height=tblRetrieve(Parameters=c('STARTHEIGHT','ENDHEIGHT','SLOPE','STARTTRAN','ENDTRAN','METHOD'), Projects=projects, Years=years,Protocols=protocols,SiteCodes=sitecodes)
+Slope_heightpvt=addKEYS(cast(Slope_height,'UID+TRANSECT+POINT~PARAMETER',value='RESULT'),c('PROJECT','SITE_ID','PROTOCOL','VALXSITE','CREW_LEADER'))
 write.csv(Slope_heightpvt,'Slope.csv',na='')
 
 SlopePool=tblRetrieve(Parameters=c('AVGSLOPE','SLPRCHLEN','TRCHLEN','POOLRCHLEN','POOL_COLLECT','SLOPE_COLLECT','PCT_GRADE','Z_SLOPEPASSQA'),Projects=projects, Years=years,Protocols=protocols,SiteCodes=sitecodes)                 
@@ -127,7 +129,11 @@ SegRush=tblRetrieve(Parameters=c('SEGRUSH'),Projects=projects,Years=years,Protoc
 SegRush$RESULT=ifelse(SegRush$RESULT=='Y','SedgeRush',ifelse(SegRush$RESULT=='N','NoSedgeRush',SegRush$RESULT))
 write.csv(SegRush,'SegRush.csv',na='')
 
-siteinfo=tblRetrieve(Parameters=c('ACC_BR',	'ACC_TR',	'AGENCY',	'BEAVER_FLOW_MOD',	'BEAVER_SIGN',	'CREW_LEADER',	'DEWATER',	'ELEVATION',	'LAT_DD',	'LON_DD',	'LAT_DD_BR',	'LAT_DD_TR',	'LOC_NAME',	'LON_DD_BR',	'LON_DD_TR',	'MERGE',	'NAME1',	'NAME2',	'NAME3',	'NUM_TRAN_PHAB',	'PARTIAL_RCHLEN',	'RCHWIDTH_BANKFULL',	'RCHWIDTH_WET',	'REPEAT_VISIT',	'SITE_ID',	'SLIDE_YN',	'TRCHLEN',	'INCREMENT',	'NUM_THALWEG',	'VISIT_NO',	'Z_DISTANCEFROMX',	'Z_FINALQA_AUTHORIZED',	'Z_FINALQA_COMMENT',	'Z_FINALQACHECK',	'Z_INDICATORS',	'UID',	'VALXSITE',	'XSTATUS',	'DATE_COL',	'PROJECT',	'PROTOCOL',	'NOT_COLLECTED'),Projects=projects,Years=years,Protocols=protocols,SiteCodes=sitecodes,Insertion=insertion)
+#add monument lat long, accuracy of coordinates typical widths, weather conditions, waterwidtdrawl, data collection org
+siteinfo=tblRetrieve(Parameters=c('ACC_BR',	'ACC_TR',	'AGENCY',	'BEAVER_FLOW_MOD',	'BEAVER_SIGN',	'CREW_LEADER',	'DEWATER',	'ELEVATION',	'LAT_DD',	'LON_DD',	'LAT_DD_BR',	'LAT_DD_TR',	'LOC_NAME',	'LON_DD_BR',	'LON_DD_TR',	'MERGE',	'NAME1',	'NAME2',	'NAME3',	'NUM_TRAN_PHAB',	'PARTIAL_RCHLEN',	'RCHWIDTH',	'RCHWIDTH_WET',	'REPEAT_VISIT',	'SITE_ID',	'SLIDE_YN',	'TRCHLEN',	'INCREMENT',	'NUM_THALWEG',	'VISIT_NO',	'Z_DISTANCEFROMX',	'Z_FINALQA_AUTHORIZED',	'Z_FINALQA_COMMENT',	'Z_FINALQACHECK',	'Z_INDICATORS',	'UID',	'VALXSITE',	'XSTATUS',	'DATE_COL',	'PROJECT',	'PROTOCOL',	'NOT_COLLECTED','LAT_DD_F', 'LON_DD_F'),Projects=projects,Years=years,Protocols=protocols,SiteCodes=sitecodes,Insertion=insertion)
 siteinfo=cast(siteinfo,'UID~PARAMETER',value='RESULT')
 write.csv(siteinfo,'siteinfo.csv', na='')
+
+#photos
+#comments
 
