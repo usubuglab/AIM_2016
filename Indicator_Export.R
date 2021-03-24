@@ -8,7 +8,7 @@
 #either use saved csv or run the JC_IndicatorCalc.R
 #Indicators=read.csv('Z:\\buglab\\Research Projects\\BLM_WRSA_Stream_Surveys\\Results and Reports\\SRM_2015\\final_updated_crosschecked_metrics.csv')
 #IndicatorCheck=read.csv('Z:\\buglab\\Research Projects\\AIM\\Projects\\Utah\\GSENM\\Aquatics\\IndicatorCheck_21Dec2016_GrandStaircase.csv')
-#IndicatorCheck=read.csv('IndicatorCheck2019-12-05.csv')
+#IndicatorCheck=read.csv('IndicatorCheck2021-01-29.csv')
 #IndicatorCheck=read.csv('Z:\\buglab\\Research Projects\\BLM_WRSA_Stream_Surveys\\Results and Reports\\AIM_2011_2015_results\\IndicatorCheck_29April2016.csv')
 #IndicatorCheck=read.csv('Z:\\buglab\\Research Projects\\AIM\\Analysis\\QC\\2017\\priority projects\\IndicatorCheck7Nov2017.csv')
 #IndicatorCheck=read.csv('Z:\\buglab\\Research Projects\\AIM\\Projects\\Idaho\\Statewide\\Analysis\\Weights_ExtentEstimates\\IndicatorCheckIDstatewidedata_13April2017.csv')
@@ -33,7 +33,7 @@ Indicators=join(IndicatorCheck, SiteInfo, by=c("SITE_ID_CHECK"),type="left",matc
 
 #join ecoregions, size class, and protocol info
 Indicators$BNK_THRESH=ifelse(Indicators$PROTOCOL2_CHECK=='BOATABLE',"Boatable",Indicators$BNK_THRESH)
-Indicators$NAMC_Benchmark=paste(Indicators$Ecoregion_spelledout,Indicators$BNK_THRESH, sep="_")
+Indicators$NAMC_Benchmark=paste(Indicators$Ecoregion,Indicators$BNK_THRESH, sep="_")
 Indicators$NAMC_Benchmark=ifelse(Indicators$NAMC_Benchmark=="NorthernRockies_Boatable"|Indicators$NAMC_Benchmark=="SouthernRockies_Boatable"|Indicators$NAMC_Benchmark=="NorthernXericBasin_Boatable","NorthernRockiesSouthernRockiesNorthernXericBasin_Boatable",
                                  ifelse(Indicators$NAMC_Benchmark=="EasternXericBasin_Boatable"|Indicators$NAMC_Benchmark=="SouthernXericBasin_Boatable", "EasternXericBasinSouthernXericBasin_Boatable", Indicators$NAMC_Benchmark))
 
@@ -81,7 +81,7 @@ Indicators=join(Indicators,Bugs, by="UID",type="left")
 
 
 #########Join in Temperature data
-Temperature=read.csv("\\\\share1.bluezone.usu.edu\\miller\\GIS\\Projects\\ModeledStreamTemperature\\2019finaltemperature.csv")
+Temperature=read.csv("\\\\share1.bluezone.usu.edu\\miller\\GIS\\Projects\\ModeledStreamTemperature\\2020finaltemperature.csv")
 Indicators=join(Indicators,Temperature, by="UID",type="left")
 
 ###########May need to join in WQ data as well if WQ not complete at the time of indicator calc, if so uncomment all lines
